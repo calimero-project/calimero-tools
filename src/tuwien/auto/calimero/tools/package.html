@@ -1,0 +1,33 @@
+<html>
+	<body>
+		Contains the Calimero tools, each providing a different functionality of the Calimero library.
+		<p>
+		A tool shows a particular feature of the Calimero library, and aims to help
+		in getting familiar with the library and interact with the offered library API.
+		Nevertheless, while hopefully allowing some insight in the APIs, 
+		every tool tries to implement ready-to-use functionality on its own.<br>
+		In general, the tool implementations are console based, i.e., they are 
+		intended to run in a terminal or command line window.
+		<p>
+		Every tool keeps all its required code in the same file to
+		avoid additional file dependencies, which should help when examining the code of
+		a tool in the first place. On the other hand, copies of some source code
+		utility functionality might therefore appear in several tool files.
+		To check out the implementation and control flow of a tool, a good point 
+		to start is the <code>main</code>-method of that tool. 
+		<p>
+		Access to the KNX network can be done with KNXnet/IP, using an 
+		IP network connection, or with FT1.2, using a serial port connection.
+		<p>
+		KNXnet/IP address considerations:<br>
+		On more than one IP address assigned to the local host, and possibly several local network 
+		interfaces available (also known as multi-homed hosts), the default chosen local host 
+		might not be the one expected by the user. In that situation, the local IP
+		address has to be supplied manually, using command line options.<br>  
+		The KNXnet/IP protocol expects IPv4 addresses by default.<br> 
+		Network Address Translation (NAT) aware communication can only be used, 
+		if the remote KNXnet/IP server supports it. 
+		Otherwise, connection timeouts will occur. With NAT enabled, 
+		KNXnet/IP also works with IPv6 addresses.
+	</body>
+</html>
