@@ -165,7 +165,7 @@ public class IPConfig implements Runnable
 	 */
 	public static void main(final String[] args)
 	{
-		final LogWriter w = new LogStreamWriter(LogLevel.ALL, System.out, true, false);
+		final LogWriter w = LogStreamWriter.newUnformatted(LogLevel.ALL, System.out, true, false);
 		out.addWriter(w);
 		try {
 			new IPConfig(args).run();

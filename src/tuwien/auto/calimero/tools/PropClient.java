@@ -161,11 +161,7 @@ public class PropClient implements Runnable
 	 */
 	public static void main(final String[] args)
 	{
-		final LogWriter w = new LogStreamWriter(LogLevel.INFO, System.out, true, false)	{
-			{
-				formatOutput = false;
-			}
-		};
+		final LogWriter w = LogStreamWriter.newUnformatted(LogLevel.INFO, System.out, true, false);
 		Property.out.addWriter(w);
 		try {
 			final PropClient pc = new PropClient(args);

@@ -142,7 +142,7 @@ public class DeviceInfo implements Runnable
 	 */
 	public static void main(final String[] args)
 	{
-		final LogWriter w = new LogStreamWriter(LogLevel.WARN, System.out, true, false);
+		final LogWriter w = LogStreamWriter.newUnformatted(LogLevel.WARN, System.out, true, false);
 		out.addWriter(w);
 		try {
 			final DeviceInfo d = new DeviceInfo(args);

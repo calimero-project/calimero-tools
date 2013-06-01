@@ -178,12 +178,8 @@ public class ProcComm implements Runnable
 	public static void main(final String[] args)
 	{
 		try {
-			// TODO all tools writer in general should be set to unformatted output
-			final LogWriter w = new LogStreamWriter(LogLevel.INFO, System.out, true, false) {
-				{
-					formatOutput = false;
-				}
-			};
+			final LogWriter w = LogStreamWriter.newUnformatted(LogLevel.INFO, System.out, true,
+					false);
 			out.addWriter(w);
 			final ProcComm pc = new ProcComm(args, null);
 			// adjust log level, if specified

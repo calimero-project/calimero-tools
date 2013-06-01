@@ -132,7 +132,7 @@ public class Discover implements Runnable
 	public static void main(final String[] args)
 	{
 		// use a log writer to System.out
-		final LogWriter w = new LogStreamWriter(LogLevel.INFO, System.out, true, false);
+		final LogWriter w = LogStreamWriter.newUnformatted(LogLevel.INFO, System.out, true, false);
 		out.addWriter(w);
 		try {
 			final Discover d = new Discover(args);

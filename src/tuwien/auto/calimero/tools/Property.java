@@ -177,7 +177,7 @@ public class Property implements Runnable, PropertyAdapterListener
 	 */
 	public static void main(final String[] args)
 	{
-		final LogWriter w = new LogStreamWriter(LogLevel.WARN, System.out, true, false);
+		final LogWriter w = LogStreamWriter.newUnformatted(LogLevel.WARN, System.out, true, false);
 		LogManager.getManager().addWriter(null, w);
 		try {
 			final Property p = new Property(args);
