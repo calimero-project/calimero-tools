@@ -416,7 +416,7 @@ public class DeviceInfo implements Runnable
 				options.put("serial", arg);
 			else if (!options.containsKey("host"))
 				// otherwise add a host key with argument as host
-				parseHost(args[++i], false, options);
+				parseHost(arg, false, options);
 			else if (!options.containsKey("device"))
 				// otherwise create the KNX device address from the argument
 				try {
