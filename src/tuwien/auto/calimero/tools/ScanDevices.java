@@ -46,12 +46,17 @@ import tuwien.auto.calimero.mgmt.ManagementProcedures;
 import tuwien.auto.calimero.mgmt.ManagementProceduresImpl;
 
 /**
- * A tool to list existing (and responsive) KNX devices on a KNX network.
+ * A tool to list existing (and responsive) KNX devices on a KNX network, or checking whether a
+ * specific KNX individual address is currently assigned to a KNX device.
  * <p>
  * ScanDevices is a {@link Runnable} tool implementation allowing a user to scan for KNX devices in
- * a KNX network. This tool shows the necessary interaction with the Calimero 2 API for management
- * procedures. The main part of this tool implementation interacts with the type
- * {@link ManagementProcedures} in the library.<br>
+ * a KNX network. It provides a list of the assigned KNX device addresses in the scanned
+ * <code>area.line</code> of the network.<br>
+ * Alternatively, ScanDevices allows to check whether a specific KNX individual address is currently
+ * assigned to a device, i.e, occupied in the KNX network.<br>
+ * This tool shows the necessary interaction with the Calimero 2 API for management procedures. The
+ * main part of this tool implementation interacts with the type {@link ManagementProcedures} in the
+ * library.<br>
  * When running this tool from the terminal, the <code>main</code>- method of this class is invoked,
  * otherwise execute it like a {@link Runnable}.
  * <p>
@@ -65,7 +70,7 @@ import tuwien.auto.calimero.mgmt.ManagementProceduresImpl;
 public class ScanDevices implements Runnable
 {
 	private static final String tool = "ScanDevices";
-	private static final String version = "0.3a";
+	private static final String version = "0.4a";
 	private static final String sep = System.getProperty("line.separator");
 
 	// TODO for use as runnable, we should get rid of the static tool logger
@@ -78,10 +83,11 @@ public class ScanDevices implements Runnable
 	/**
 	 * Entry point for running ScanDevices.
 	 * <p>
-	 * Syntax: ScanDevices [options] &lt;host|port&gt; &lt;area.line&gt;
+	 * Syntax: ScanDevices [options] &lt;host|port&gt; &lt;area.line[.device]&gt;
 	 * <p>
-	 * The area and line are expected as numbers in the range [0..0x0F]; accepted are decimal,
-	 * hexadecimal (0x), or octal (0) representations.<br>
+	 * The area and line are expected as numbers in the range [0..0x0F]; the (optional) device
+	 * address part is in the range [0..0x0FF]. Accepted are decimal, hexadecimal (0x), or octal (0)
+	 * representations.<br>
 	 * To show usage message of the tool on the console, supply the command line option -help (or
 	 * -h).<br>
 	 * Command line options are treated case sensitive. Available options for connecting to the KNX
@@ -167,15 +173,24 @@ public class ScanDevices implements Runnable
 				LogManager.getManager().addWriter(link.getName(), w);
 				LogManager.getManager().addWriter("MgmtProc", w);
 			}
-			// for now, range is always expected to be area.line
+
 			final String[] range = ((String) options.get("range")).split("\\.");
 			final int area = Integer.decode(range[0]).intValue();
 			final int line = Integer.decode(range[1]).intValue();
-			out.log(LogLevel.ALWAYS, "start scan of " + area + "." + line + ".[0..255] ...", null);
-			// this call is interruptible (via exception), in which case we won't get any result,
-			// even though some devices might have answered already
-			// ??? think whether to refactor scanning into interruptible with partial result set
-			found = mp.scanNetworkDevices(area, line);
+			if (range.length == 3) {
+				final int device = Integer.decode(range[2]).intValue();
+				final IndividualAddress addr = new IndividualAddress(area, line, device);
+				if (mp.isAddressOccupied(addr))
+					found = new IndividualAddress[] {addr};
+			}
+			else {
+				out.log(LogLevel.ALWAYS, "start scan of " + area + "." + line + ".[0..255] ...",
+						null);
+				// this call is interruptible (via exception), in which case we won't get any
+				// result, even though some devices might have answered already
+				// ??? think whether to refactor scanning into interruptible with partial result set
+				found = mp.scanNetworkDevices(area, line);
+			}
 		}
 		catch (final KNXException e) {
 			thrown = e;
@@ -337,9 +352,9 @@ public class ScanDevices implements Runnable
 	private static void showUsage()
 	{
 		final StringBuffer sb = new StringBuffer();
-		// TODO make it <area.line[.device]> to check for specific device
 		// ??? accept several line requests
-		sb.append("usage: ").append(tool).append(" [options] <host|port> <area.line>").append(sep);
+		sb.append("usage: ").append(tool).append(" [options] <host|port> <area.line[.device]>")
+				.append(sep);
 		sb.append("options:").append(sep);
 		sb.append(" -help -h                show this help message").append(sep);
 		sb.append(" -version                show tool/library version and exit").append(sep);
@@ -355,6 +370,7 @@ public class ScanDevices implements Runnable
 				.append(sep);
 		sb.append("The area and line are given as numbers in the range [0..0x0F], e.g., 3.1")
 				.append(sep);
+		sb.append("The (optional) device address part is in the range [0..0x0FF]").append(sep);
 		out.log(LogLevel.ALWAYS, sb.toString(), null);
 	}
 
