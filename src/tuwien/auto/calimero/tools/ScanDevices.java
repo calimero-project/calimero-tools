@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2013 B. Malinowsky
+    Copyright (c) 2013, 2014 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -87,7 +87,7 @@ import tuwien.auto.calimero.mgmt.ManagementProceduresImpl;
 public class ScanDevices implements Runnable
 {
 	private static final String tool = "ScanDevices";
-	private static final String version = "0.4a";
+	private static final String version = "1.0";
 	private static final String sep = System.getProperty("line.separator");
 
 	// TODO for use as runnable, we should get rid of the static tool logger
@@ -129,7 +129,7 @@ public class ScanDevices implements Runnable
 	public static void main(final String[] args)
 	{
 		w = LogStreamWriter.newUnformatted(LogLevel.WARN, System.out, true, false);
-		out.addWriter(w);
+		LogManager.getManager().addWriter(null, w);
 		try {
 			final ScanDevices scan = new ScanDevices(args);
 			w.setLogLevel(scan.options.containsKey("verbose") ? LogLevel.TRACE : LogLevel.WARN);

@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2011 B. Malinowsky
+    Copyright (c) 2006, 2014 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -95,7 +95,7 @@ import tuwien.auto.calimero.process.ProcessListener;
 public class ProcComm implements Runnable
 {
 	private static final String tool = "ProcComm";
-	private static final String version = "1.1";
+	private static final String version = "1.2";
 	private static final String sep = System.getProperty("line.separator");
 
 	private static LogService out = LogManager.getManager().getLogService("tools");
@@ -197,7 +197,7 @@ public class ProcComm implements Runnable
 		try {
 			final LogWriter w = LogStreamWriter.newUnformatted(LogLevel.INFO, System.out, true,
 					false);
-			out.addWriter(w);
+			LogManager.getManager().addWriter("", w);
 			final ProcComm pc = new ProcComm(args, null);
 			// adjust log level, if specified
 			if (!pc.options.containsKey("verbose"))
