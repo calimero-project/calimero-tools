@@ -95,7 +95,7 @@ public class ScanDevices implements Runnable
 	// terminal writer
 	private static LogWriter w;
 
-	private final Map options = new HashMap();
+	private final Map<String, Object> options = new HashMap<>();
 
 	/**
 	 * Entry point for running ScanDevices.
@@ -415,7 +415,8 @@ public class ScanDevices implements Runnable
 		}
 	}
 
-	private static void parseHost(final String host, final boolean local, final Map options)
+	private static void parseHost(final String host, final boolean local,
+		final Map<String, Object> options)
 	{
 		try {
 			options.put(local ? "localhost" : "host", InetAddress.getByName(host));

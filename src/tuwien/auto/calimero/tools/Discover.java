@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2011 B. Malinowsky
+    Copyright (c) 2006, 2014 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -86,7 +86,7 @@ public class Discover implements Runnable
 	private static LogService out = LogManager.getManager().getLogService(Discoverer.LOG_SERVICE);
 
 	private final Discoverer d;
-	private final Map options = new HashMap();
+	private final Map<String, Object> options = new HashMap<>();
 
 	/**
 	 * Creates a new Discover instance using the supplied options.
@@ -115,8 +115,7 @@ public class Discover implements Runnable
 		final int lp = ((Integer) options.get("localport")).intValue();
 		// if a network interface was specified, use an assigned IP for local host
 		final NetworkInterface nif = (NetworkInterface) options.get("if");
-		final InetAddress local = (InetAddress) (nif != null ? nif.getInetAddresses().nextElement()
-				: null);
+		final InetAddress local = nif != null ? nif.getInetAddresses().nextElement() : null;
 		d = new Discoverer(local, lp, options.containsKey("nat"), true);
 	}
 
@@ -418,7 +417,8 @@ public class Discover implements Runnable
 		out.log(LogLevel.ALWAYS, sb.toString(), null);
 	}
 
-	private static void parseHost(final String host, final boolean local, final Map options)
+	private static void parseHost(final String host, final boolean local,
+		final Map<String, Object> options)
 	{
 		try {
 			options.put(local ? "localhost" : "host", InetAddress.getByName(host));

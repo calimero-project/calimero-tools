@@ -112,7 +112,7 @@ public class ProcComm implements Runnable
 	protected ProcessCommunicator pc;
 
 	// specifies parameters to use for the network link and process communication
-	private final Map options = new HashMap();
+	private final Map<String, Object> options = new HashMap<>();
 	//private final LogWriter w;
 
 	/**
@@ -611,7 +611,7 @@ public class ProcComm implements Runnable
 	}
 
 	private static void parseHost(final String host, final boolean local,
-		final Map options)
+		final Map<String, Object> options)
 	{
 		try {
 			options.put(local ? "localhost" : "host", InetAddress.getByName(host));

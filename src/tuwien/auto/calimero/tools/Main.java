@@ -38,7 +38,7 @@ package tuwien.auto.calimero.tools;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -72,11 +72,10 @@ public final class Main
 		{ DEV_INFO, "Read KNX device information", "" },
 	};
 
-	private static final Class[] tools = new Class[] {
+	private static final List<Class<? extends Runnable>> tools = Arrays.asList(
 		Discover.class, Discover.class, ScanDevices.class, IPConfig.class, NetworkMonitor.class,
 		ProcComm.class, ProcComm.class, ProcComm.class, Property.class, Property.class,
-		DeviceInfo.class
-	};
+		DeviceInfo.class);
 
 	private Main() {}
 
@@ -98,15 +97,11 @@ public final class Main
 		for (int i = 0; i < cmds.length; i++) {
 			if (cmds[i][0].equals(cmd)) {
 				try {
-					final Method m = tools[i].getMethod("main", new Class[] { String[].class });
+					final Method m = tools.get(i).getMethod("main", String[].class);
 					args[0] = cmds[i][2];
-					final List toolArgs = new ArrayList();
-					for (int j = 0; j < args.length; j++) {
-						final String s = args[j];
-						if (s.length() > 0)
-							toolArgs.add(s);
-					}
-					m.invoke(null, new Object[] {toolArgs.toArray(new String[toolArgs.size()])});
+					final String[] toolargs = args[0].isEmpty() ? Arrays.copyOfRange(args, 1,
+							args.length) : args;
+					m.invoke(null, new Object[] { toolargs });
 				}
 				catch (final InvocationTargetException e) {
 					e.getCause().printStackTrace();
