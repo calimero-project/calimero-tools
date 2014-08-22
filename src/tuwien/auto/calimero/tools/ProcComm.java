@@ -125,7 +125,7 @@ public class ProcComm implements Runnable
 	 * @param args list with options
 	 * @throws KNXIllegalArgumentException
 	 */
-	public ProcComm(final String[] args) throws KNXIllegalArgumentException
+	public ProcComm(final String[] args)
 	{
 		this(args, null);
 	}
@@ -141,7 +141,7 @@ public class ProcComm implements Runnable
 	 * @param w a log writer, might be <code>null</code>: this parameter is ignored for now!
 	 * @throws KNXIllegalArgumentException
 	 */
-	protected ProcComm(final String[] args, final LogWriter w) throws KNXIllegalArgumentException
+	protected ProcComm(final String[] args, final LogWriter w)
 	{
 		//this.w = w;
 		try {
@@ -289,11 +289,11 @@ public class ProcComm implements Runnable
 			pc.addProcessListener(l);
 
 		// this is the listener if group monitoring is requested
-		final ProcessListener monitor = new ProcessListenerEx(){
-			public void groupWrite(ProcessEvent e) { onGroupEvent(e); }
-			public void groupReadResponse(ProcessEvent e) { onGroupEvent(e); }
-			public void groupReadRequest(ProcessEvent e) { onGroupEvent(e); }
-			public void detached(DetachEvent e) {}
+		final ProcessListener monitor = new ProcessListenerEx() {
+			public void groupWrite(final ProcessEvent e) { onGroupEvent(e); }
+			public void groupReadResponse(final ProcessEvent e) { onGroupEvent(e); }
+			public void groupReadRequest(final ProcessEvent e) { onGroupEvent(e); }
+			public void detached(final DetachEvent e) {}
 		};
 		pc.addProcessListener(monitor);
 
@@ -363,7 +363,7 @@ public class ProcComm implements Runnable
 	 * @param dptMainNumber DPT main number &ge; 0, can be 0 if the <code>dptID</code> is unique
 	 * @param dptID datapoint type ID to lookup the translator
 	 * @return the datapoint value
-	 * @throws KNXException
+	 * @throws KNXException on failed creation of translator, or translator not available
 	 */
 	protected String asString(final byte[] asdu, final int dptMainNumber, final String dptID)
 		throws KNXException

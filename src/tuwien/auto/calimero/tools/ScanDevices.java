@@ -145,6 +145,12 @@ public class ScanDevices implements Runnable
 		}
 	}
 
+	/**
+	 * Constructs a new ScanDevices.
+	 * <p>
+	 *
+	 * @param args tool arguments
+	 */
 	public ScanDevices(final String[] args)
 	{
 		// read in user-supplied command line options

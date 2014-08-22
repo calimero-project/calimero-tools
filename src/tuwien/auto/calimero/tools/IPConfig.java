@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2011 B. Malinowsky
+    Copyright (c) 2006, 2014 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -335,19 +335,24 @@ public class IPConfig implements Runnable
 		add(config, PropertyAccess.PID.FRIENDLY_NAME, "name", queryFriendlyName());
 
 		pid = PropertyAccess.PID.IP_CAPABILITIES;
-		if ((data = query(pid)) != null)
+		data = query(pid);
+		if (data != null)
 			add(config, pid, "supported IP assignment methods",
 					getIPAssignment(new byte[] { (byte) (data[0] << 1 | 0x01) }));
+
 		pid = PropertyAccess.PID.IP_ASSIGNMENT_METHOD;
-		if ((data = query(pid)) != null)
+		data = query(pid);
+		if (data != null)
 			add(config, pid, "enabled IP assignment methods", getIPAssignment(data));
 
 		pid = PropertyAccess.PID.CURRENT_IP_ASSIGNMENT_METHOD;
-		if ((data = query(pid)) != null)
+		data = query(pid);
+		if (data != null)
 			add(config, pid, "current IP assignment method", getIPAssignment(data));
 
 		pid = PropertyAccess.PID.KNXNETIP_ROUTING_CAPABILITIES;
-		if ((data = query(pid)) != null)
+		data = query(pid);
+		if (data != null)
 			add(config, pid, "routing capabilities", getRoutingCaps(data));
 
 		addIP(config, PropertyAccess.PID.IP_ADDRESS, "IP address configured");
@@ -403,8 +408,8 @@ public class IPConfig implements Runnable
 			final byte[] data = query(pid);
 			return data == null ? "PID not found" : InetAddress.getByAddress(data).getHostAddress();
 		}
-		catch (final UnknownHostException e) {}
-		catch (final KNXException e) {}
+		catch (final UnknownHostException e) { }
+		catch (final KNXException e) { }
 		return "-";
 	}
 

@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2010, 2011 B. Malinowsky
+    Copyright (c) 2010, 2014 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -103,7 +103,7 @@ public class Property implements Runnable, PropertyAdapterListener
 
 	static LogService out = LogManager.getManager().getLogService("tools");
 
-	/** tool options map */
+	/** Contains tool options after parsing command line. */
 	protected final Map options = new HashMap();
 
 	private PropertyClient pc;
@@ -276,6 +276,10 @@ public class Property implements Runnable, PropertyAdapterListener
 		}
 	}
 
+	/* (non-Javadoc)
+	 * @see tuwien.auto.calimero.mgmt.PropertyAdapterListener#adapterClosed(
+	 * tuwien.auto.calimero.CloseEvent)
+	 */
 	public void adapterClosed(final CloseEvent e)
 	{
 		out.log(LogLevel.INFO, "connection closed (" + e.getReason() + ")", null);
@@ -535,33 +539,33 @@ public class Property implements Runnable, PropertyAdapterListener
 
 	private void getProperty(final String[] args) throws KNXException
 	{
-		String out = "sorry, wrong number of arguments";
+		String s = "sorry, wrong number of arguments";
 		if (args.length == 2 && args[1].equals("?"))
-			out = "get object-idx pid [start-idx elements]";
+			s = "get object-idx pid [start-idx elements]";
 		else if (args.length == 3 || args.length == 5) {
 			final int oi = toInt(args[1]);
 			final int pid = toInt(args[2]);
 			try {
 				if (args.length == 3)
-					out = pc.getProperty(oi, pid);
+					s = pc.getProperty(oi, pid);
 				else
-					out = Arrays.asList(pc.getPropertyTranslated(oi, pid, toInt(args[3]),
+					s = Arrays.asList(pc.getPropertyTranslated(oi, pid, toInt(args[3]),
 							toInt(args[4])).getAllValues()).toString();
 			}
 			catch (final KNXException e) {
 				if (args.length == 3)
-					out = "0x" + DataUnitBuilder.toHex(pc.getProperty(oi, pid, 1, 1), "");
+					s = "0x" + DataUnitBuilder.toHex(pc.getProperty(oi, pid, 1, 1), "");
 				else {
 					final int elems = toInt(args[4]);
-					final String s = DataUnitBuilder.toHex(
+					final String hex = DataUnitBuilder.toHex(
 							pc.getProperty(oi, pid, toInt(args[3]), elems), "");
-					final int chars = s.length() / elems;
+					final int chars = hex.length() / elems;
 					for (int i = 0; i < elems; ++i)
-						out += "0x" + s.substring(i * chars, (i + 1) * chars) + " ";
+						s += "0x" + hex.substring(i * chars, (i + 1) * chars) + " ";
 				}
 			}
 		}
-		Property.out.log(LogLevel.ALWAYS, out, null);
+		out.log(LogLevel.ALWAYS, s, null);
 	}
 
 	private void getDescription(final String[] args) throws KNXException
@@ -745,7 +749,7 @@ public class Property implements Runnable, PropertyAdapterListener
 		return arg.equals(longOpt) || shortOpt != null && arg.equals(shortOpt);
 	}
 
-	private static int toInt(final String number) throws NumberFormatException
+	private static int toInt(final String number)
 	{
 		return Integer.decode(number).intValue();
 	}

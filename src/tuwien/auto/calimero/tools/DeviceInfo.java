@@ -286,8 +286,8 @@ public class DeviceInfo implements Runnable
 		// validity check on mask and hardware type octets
 		// AN059v3, AN089v3
 		if ((maskVersion == 0x25 || maskVersion == 0x0705) && hwData[0] != 0) {
-			info.append("manufacturer-specific device identification of hardware type should " +
-					"be 0 for this mask!").append("\n");
+			info.append("manufacturer-specific device identification of hardware type should "
+					+ "be 0 for this mask!").append("\n");
 		}
 		// Serial Number
 		data = read(deviceObjectIdx, PropertyAccess.PID.SERIAL_NUMBER);
