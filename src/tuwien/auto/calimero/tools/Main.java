@@ -48,6 +48,7 @@ public final class Main
 {
 	private static final String DISCOVER = "discover";
 	private static final String DESCRIPTION = "describe";
+	private static final String SCAN = "scan";
 	private static final String IPCONFIG = "ipconfig";
 	private static final String MONITOR = "monitor";
 	private static final String COM_READ = "read";
@@ -60,6 +61,7 @@ public final class Main
 	private static final String[][] cmds = new String[][] {
 		{ DISCOVER, "Discover KNXnet/IP servers", "-search"},
 		{ DESCRIPTION, "KNXnet/IP server self-description", "-description" },
+		{ SCAN, "Determine the existing KNX devices on a KNX subnetwork", ""},
 		{ IPCONFIG, "KNXnet/IP device address configuration", "" },
 		{ MONITOR, "Monitor a KNX network", "" },
 		{ COM_READ, "Read a value using KNX process communication", "read" },
@@ -71,12 +73,12 @@ public final class Main
 	};
 
 	private static final Class[] tools = new Class[] {
-		Discover.class, Discover.class, IPConfig.class, NetworkMonitor.class, ProcComm.class,
-		ProcComm.class, ProcComm.class, Property.class, Property.class, DeviceInfo.class
+		Discover.class, Discover.class, ScanDevices.class, IPConfig.class, NetworkMonitor.class,
+		ProcComm.class, ProcComm.class, ProcComm.class, Property.class, Property.class,
+		DeviceInfo.class
 	};
 
-	private Main()
-	{}
+	private Main() {}
 
 	/**
 	 * Provides a common entry point for running the Calimero Tools.
