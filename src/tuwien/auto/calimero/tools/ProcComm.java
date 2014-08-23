@@ -70,7 +70,6 @@ import tuwien.auto.calimero.process.ProcessCommunicator;
 import tuwien.auto.calimero.process.ProcessCommunicatorImpl;
 import tuwien.auto.calimero.process.ProcessEvent;
 import tuwien.auto.calimero.process.ProcessListener;
-import tuwien.auto.calimero.process.ProcessListenerEx;
 
 /**
  * A tool for Calimero 2 providing basic process communication.
@@ -289,10 +288,10 @@ public class ProcComm implements Runnable
 			pc.addProcessListener(l);
 
 		// this is the listener if group monitoring is requested
-		final ProcessListener monitor = new ProcessListenerEx() {
-			public void groupWrite(final ProcessEvent e) { onGroupEvent(e); }
-			public void groupReadResponse(final ProcessEvent e) { onGroupEvent(e); }
+		final ProcessListener monitor = new ProcessListener() {
 			public void groupReadRequest(final ProcessEvent e) { onGroupEvent(e); }
+			public void groupReadResponse(final ProcessEvent e) { onGroupEvent(e); }
+			public void groupWrite(final ProcessEvent e) { onGroupEvent(e); }
 			public void detached(final DetachEvent e) {}
 		};
 		pc.addProcessListener(monitor);
