@@ -47,6 +47,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+
 import tuwien.auto.calimero.CloseEvent;
 import tuwien.auto.calimero.DataUnitBuilder;
 import tuwien.auto.calimero.IndividualAddress;
@@ -65,8 +67,6 @@ import tuwien.auto.calimero.link.medium.TPSettings;
 import tuwien.auto.calimero.log.LogLevel;
 import tuwien.auto.calimero.log.LogManager;
 import tuwien.auto.calimero.log.LogService;
-import tuwien.auto.calimero.log.LogStreamWriter;
-import tuwien.auto.calimero.log.LogWriter;
 import tuwien.auto.calimero.mgmt.Description;
 import tuwien.auto.calimero.mgmt.LocalDeviceMgmtAdapter;
 import tuwien.auto.calimero.mgmt.PropertyAdapter;
@@ -101,7 +101,7 @@ public class Property implements Runnable, PropertyAdapterListener
 	private static final String version = "1.1";
 	private static final String sep = System.getProperty("line.separator");
 
-	static LogService out = LogManager.getManager().getLogService("tools");
+	static Logger out;
 
 	/** Contains tool options after parsing command line. */
 	protected final Map<String, Object> options = new HashMap<>();
@@ -194,19 +194,15 @@ public class Property implements Runnable, PropertyAdapterListener
 	 */
 	public static void main(final String[] args)
 	{
-		final LogWriter w = LogStreamWriter.newUnformatted(LogLevel.WARN, System.out, true, false);
-		LogManager.getManager().addWriter(null, w);
+		setLogVerbosity(Arrays.asList(args));
 		try {
-			final Property p = new Property(args);
-			if (p.options.containsKey("verbose"))
-				w.setLogLevel(LogLevel.INFO);
-			p.run();
+			new Property(args).run();
 		}
 		catch (final Throwable t) {
-			out.log(LogLevel.ERROR, "parsing option", t);
+			out.error("parsing option", t);
 		}
 		finally {
-			LogManager.getManager().shutdown(true);
+			LogManager.getManager().flush();
 		}
 	}
 
@@ -217,9 +213,9 @@ public class Property implements Runnable, PropertyAdapterListener
 	{
 		// ??? as with the other tools, maybe put this into the try block to also call onCompletion
 		if (options.isEmpty()) {
-			out.log(LogLevel.ALWAYS, "A tool for KNX property access", null);
+			LogService.log(out, LogLevel.ALWAYS, "A tool for KNX property access", null);
 			showVersion();
-			out.log(LogLevel.ALWAYS, "type -help for help message", null);
+			LogService.log(out, LogLevel.ALWAYS, "type -help for help message", null);
 			return;
 		}
 		if (options.containsKey("help")) {
@@ -238,8 +234,7 @@ public class Property implements Runnable, PropertyAdapterListener
 				defs = PropertyClient.loadDefinitions((String) options.get("definitions"), null);
 			}
 			catch (final KNXException e) {
-				out.log(LogLevel.ERROR,
-						"loading definitions from " + options.get("definitions") + " failed", e);
+				out.error("loading definitions from " + options.get("definitions") + " failed", e);
 			}
 		}
 
@@ -282,7 +277,7 @@ public class Property implements Runnable, PropertyAdapterListener
 	 */
 	public void adapterClosed(final CloseEvent e)
 	{
-		out.log(LogLevel.INFO, "connection closed (" + e.getReason() + ")", null);
+		out.info("connection closed (" + e.getReason() + ")");
 		if (e.getInitiator() != CloseEvent.USER_REQUEST)
 			interruptOnClose.interrupt();
 	}
@@ -310,13 +305,13 @@ public class Property implements Runnable, PropertyAdapterListener
 			else if ("?".equals(what))
 				showCommandList(cmd);
 			else
-				out.log(LogLevel.INFO, "unknown command, type ? for help", null);
+				out.info("unknown command, type ? for help");
 		}
 		catch (final KNXException e) {
-			out.log(LogLevel.ERROR, e.getMessage(), null);
+			out.error(e.getMessage());
 		}
 		catch (final NumberFormatException e) {
-			out.log(LogLevel.ERROR, "invalid number (" + e.getMessage() + ")", null);
+			out.error("invalid number (" + e.getMessage() + ")");
 		}
 	}
 
@@ -331,9 +326,9 @@ public class Property implements Runnable, PropertyAdapterListener
 	protected void onCompletion(final Exception thrown, final boolean canceled)
 	{
 		if (canceled)
-			out.log(LogLevel.INFO, "reading property canceled", null);
+			out.info("reading property canceled");
 		if (thrown != null)
-			out.log(LogLevel.ERROR, "on completion", thrown);
+			out.error("on completion", thrown);
 	}
 
 	/**
@@ -439,7 +434,7 @@ public class Property implements Runnable, PropertyAdapterListener
 		buf.append(", max. " + d.getMaxElements());
 		buf.append(", r/w access " + d.getReadLevel() + "/" + d.getWriteLevel());
 		buf.append(d.isWriteEnabled() ? ", w.enabled" : ", r.only");
-		out.log(LogLevel.ALWAYS, buf.toString(), null);
+		LogService.log(out, LogLevel.ALWAYS, buf.toString(), null);
 	}
 
 	private tuwien.auto.calimero.mgmt.PropertyClient.Property getPropertyDef(final int objType,
@@ -532,7 +527,7 @@ public class Property implements Runnable, PropertyAdapterListener
 
 	void showVersion()
 	{
-		out.log(LogLevel.ALWAYS, tool + " version " + version + " using "
+		LogService.log(out, LogLevel.ALWAYS, tool + " version " + version + " using "
 				+ Settings.getLibraryHeader(false), null);
 	}
 
@@ -564,7 +559,7 @@ public class Property implements Runnable, PropertyAdapterListener
 				}
 			}
 		}
-		out.log(LogLevel.ALWAYS, s, null);
+		LogService.log(out, LogLevel.ALWAYS, s, null);
 	}
 
 	private void getDescription(final String[] args) throws KNXException
@@ -576,13 +571,13 @@ public class Property implements Runnable, PropertyAdapterListener
 		if (args.length == 2 && args[1].equals("?"))
 			printHelp("desc object-idx pid" + sep + "desc object-idx \"i\" prop-idx");
 		else
-			out.log(LogLevel.INFO, "sorry, wrong number of arguments", null);
+			out.info("sorry, wrong number of arguments");
 	}
 
 	private void setProperty(final String[] args) throws KNXException
 	{
 		if (args.length < 4 || args.length > 6) {
-			out.log(LogLevel.INFO, "sorry, wrong number of arguments", null);
+			out.info("sorry, wrong number of arguments");
 			return;
 		}
 		if (args.length == 2 && args[1].equals("?"))
@@ -617,7 +612,7 @@ public class Property implements Runnable, PropertyAdapterListener
 		else if (cnt == 3 && args[2].equals("all"))
 			l = pc.scanProperties(toInt(args[1]), true);
 		else
-			out.log(LogLevel.INFO, "sorry, wrong number of arguments", null);
+			out.info("sorry, wrong number of arguments");
 
 		for (final Iterator<Description> i = l.iterator(); i.hasNext();) {
 			final Description d = i.next();
@@ -633,12 +628,24 @@ public class Property implements Runnable, PropertyAdapterListener
 		buf.append("set  - write property value(s)" + sep);
 		buf.append("desc - read one property description" + sep);
 		buf.append("scan - read property descriptions" + sep);
-		out.log(LogLevel.INFO, buf.toString(), null);
+		out.info(buf.toString());
 	}
 
 	private void printHelp(final String help)
 	{
-		out.log(LogLevel.INFO, help, null);
+		out.info(help);
+	}
+
+	// a helper in case slf4j simple logger is used
+	private static void setLogVerbosity(final List<String> args)
+	{
+		// TODO problem: this overrules the log level from a simplelogger.properties file!!
+		final String simpleLoggerLogLevel = "org.slf4j.simpleLogger.defaultLogLevel";
+		if (!System.getProperties().containsKey(simpleLoggerLogLevel)) {
+			final String lvl = args.contains("-v") || args.contains("-verbose") ? "info" : "warn";
+			System.setProperty(simpleLoggerLogLevel, lvl);
+		}
+		out = LogManager.getManager().getSlf4jLogger("tools");
 	}
 
 	private static void showUsage()
@@ -683,7 +690,7 @@ public class Property implements Runnable, PropertyAdapterListener
 				.append(sep);
 		sb.append("  ?                                      show command help").append(sep);
 
-		out.log(LogLevel.ALWAYS, sb.toString(), null);
+		LogService.log(out, LogLevel.ALWAYS, sb.toString(), null);
 	}
 
 	//

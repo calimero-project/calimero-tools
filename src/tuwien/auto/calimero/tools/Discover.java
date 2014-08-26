@@ -44,6 +44,8 @@ import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+
 import tuwien.auto.calimero.Settings;
 import tuwien.auto.calimero.exception.KNXException;
 import tuwien.auto.calimero.exception.KNXIllegalArgumentException;
@@ -54,8 +56,6 @@ import tuwien.auto.calimero.knxnetip.servicetype.SearchResponse;
 import tuwien.auto.calimero.log.LogLevel;
 import tuwien.auto.calimero.log.LogManager;
 import tuwien.auto.calimero.log.LogService;
-import tuwien.auto.calimero.log.LogStreamWriter;
-import tuwien.auto.calimero.log.LogWriter;
 
 /**
  * A tool for Calimero showing the KNXnet/IP discovery and self description feature.
@@ -83,7 +83,7 @@ public class Discover implements Runnable
 	private static final String version = "1.1";
 	private static final String sep = System.getProperty("line.separator");
 
-	private static LogService out = LogManager.getManager().getLogService(Discoverer.LOG_SERVICE);
+	private static Logger out = LogManager.getManager().getSlf4jLogger(Discoverer.LOG_SERVICE);
 
 	private final Discoverer d;
 	private final Map<String, Object> options = new HashMap<>();
@@ -147,9 +147,8 @@ public class Discover implements Runnable
 	 */
 	public static void main(final String[] args)
 	{
-		// use a log writer to System.out
-		final LogWriter w = LogStreamWriter.newUnformatted(LogLevel.INFO, System.out, true, false);
-		out.addWriter(w);
+		// TODO set default warning level for slf4j
+		final Logger w; // = LogStreamWriter.newUnformatted(LogLevel.INFO, System.out, true, false);
 		try {
 			final Discover d = new Discover(args);
 			final ShutdownHandler sh = new ShutdownHandler().register();
@@ -159,7 +158,7 @@ public class Discover implements Runnable
 		catch (final Throwable t) {
 			out.error("parsing options", t);
 		}
-		LogManager.getManager().shutdown(true);
+		LogManager.getManager().flush();
 	}
 
 	/* (non-Javadoc)
@@ -171,10 +170,10 @@ public class Discover implements Runnable
 		boolean canceled = false;
 		try {
 			if (options.isEmpty()) {
-				out.log(LogLevel.ALWAYS, "A tool for KNXnet/IP router discovery "
+				LogService.log(out, LogLevel.ALWAYS, "A tool for KNXnet/IP router discovery "
 						+ "& self description", null);
 				showVersion();
-				out.log(LogLevel.ALWAYS, "type -help for help message", null);
+				LogService.log(out, LogLevel.ALWAYS, "type -help for help message", null);
 			}
 			else if (options.containsKey("help"))
 				showUsage();
@@ -414,7 +413,7 @@ public class Discover implements Runnable
 		sb.append(" -description -d <host>  query description from host").append(sep);
 		sb.append(" -serverport -p <number> server UDP port for description (default ")
 				.append(KNXnetIPConnection.DEFAULT_PORT).append(")").append(sep);
-		out.log(LogLevel.ALWAYS, sb.toString(), null);
+		LogService.log(out, LogLevel.ALWAYS, sb.toString(), null);
 	}
 
 	private static void parseHost(final String host, final boolean local,
@@ -435,7 +434,7 @@ public class Discover implements Runnable
 
 	private static void showVersion()
 	{
-		out.log(LogLevel.ALWAYS,
+		LogService.log(out, LogLevel.ALWAYS,
 				tool + " version " + version + " using " + Settings.getLibraryHeader(false), null);
 	}
 

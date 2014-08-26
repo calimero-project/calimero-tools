@@ -47,6 +47,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
+import org.slf4j.Logger;
+
 import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.Settings;
 import tuwien.auto.calimero.exception.KNXException;
@@ -64,8 +66,6 @@ import tuwien.auto.calimero.link.medium.TPSettings;
 import tuwien.auto.calimero.log.LogLevel;
 import tuwien.auto.calimero.log.LogManager;
 import tuwien.auto.calimero.log.LogService;
-import tuwien.auto.calimero.log.LogStreamWriter;
-import tuwien.auto.calimero.log.LogWriter;
 import tuwien.auto.calimero.mgmt.Description;
 import tuwien.auto.calimero.mgmt.LocalDeviceMgmtAdapter;
 import tuwien.auto.calimero.mgmt.PropertyAccess;
@@ -100,7 +100,7 @@ public class IPConfig implements Runnable
 	private static final String sep = System.getProperty("line.separator");
 	private static final int IPObjType = 11;
 
-	private static LogService out = LogManager.getManager().getLogService("tools");
+	private static Logger out = LogManager.getManager().getSlf4jLogger("tools");
 
 	private KNXNetworkLink lnk;
 	private PropertyClient pc;
@@ -182,15 +182,13 @@ public class IPConfig implements Runnable
 	 */
 	public static void main(final String[] args)
 	{
-		final LogWriter w = LogStreamWriter.newUnformatted(LogLevel.ALL, System.out, true, false);
-		out.addWriter(w);
 		try {
 			new IPConfig(args).run();
 		}
 		catch (final Throwable t) {
 			out.error("IP config", t);
 		}
-		LogManager.getManager().shutdown(true);
+		LogManager.getManager().flush();
 	}
 
 	/* (non-Javadoc)
@@ -202,9 +200,10 @@ public class IPConfig implements Runnable
 		boolean canceled = false;
 		try {
 			if (options.isEmpty()) {
-				out.log(LogLevel.ALWAYS, "A tool for KNXnet/IP address configuration", null);
+				LogService.log(out, LogLevel.ALWAYS, "A tool for KNXnet/IP address configuration",
+						null);
 				showVersion();
-				out.log(LogLevel.ALWAYS, "type -help for help message", null);
+				LogService.log(out, LogLevel.ALWAYS, "type -help for help message", null);
 				return;
 			}
 			if (options.containsKey("help")) {
@@ -279,7 +278,7 @@ public class IPConfig implements Runnable
 			final String[] s = config.get(i);
 			sb.append(s[1]).append(padding.substring(s[1].length()) + s[2]).append(sep);
 		}
-		out.log(LogLevel.ALWAYS, sb.toString(), null);
+		LogService.log(out, LogLevel.ALWAYS, sb.toString(), null);
 	}
 
 	/**
@@ -648,12 +647,12 @@ public class IPConfig implements Runnable
 		sb.append("  dhcp           enable DHCP IP assignment for current IP address").append(sep);
 		sb.append("  autoip         enable automatic IP assignment for current " + "IP address")
 				.append(sep);
-		out.log(LogLevel.ALWAYS, sb.toString(), null);
+		LogService.log(out, LogLevel.ALWAYS, sb.toString(), null);
 	}
 
 	private static void showVersion()
 	{
-		out.log(LogLevel.ALWAYS,
+		LogService.log(out, LogLevel.ALWAYS,
 				tool + " version " + version + " using " + Settings.getLibraryHeader(false), null);
 	}
 

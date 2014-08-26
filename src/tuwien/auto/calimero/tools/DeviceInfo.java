@@ -39,8 +39,12 @@ package tuwien.auto.calimero.tools;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
+import org.slf4j.Logger;
 
 import tuwien.auto.calimero.DataUnitBuilder;
 import tuwien.auto.calimero.IndividualAddress;
@@ -61,8 +65,6 @@ import tuwien.auto.calimero.link.medium.TPSettings;
 import tuwien.auto.calimero.log.LogLevel;
 import tuwien.auto.calimero.log.LogManager;
 import tuwien.auto.calimero.log.LogService;
-import tuwien.auto.calimero.log.LogStreamWriter;
-import tuwien.auto.calimero.log.LogWriter;
 import tuwien.auto.calimero.mgmt.Destination;
 import tuwien.auto.calimero.mgmt.ManagementClient;
 import tuwien.auto.calimero.mgmt.ManagementClientImpl;
@@ -99,7 +101,7 @@ public class DeviceInfo implements Runnable
 	// Interface Object "Device Object" in interface object server
 	private static final int deviceObjectIdx = 0;
 
-	private static LogService out = LogManager.getManager().getLogService("tools");
+	private static Logger out;
 
 	private ManagementClient mc;
 	private Destination d;
@@ -158,20 +160,20 @@ public class DeviceInfo implements Runnable
 	 */
 	public static void main(final String[] args)
 	{
-		final LogWriter w = LogStreamWriter.newUnformatted(LogLevel.WARN, System.out, true, false);
-		LogManager.getManager().addWriter("", w);
+		setLogVerbosity(Arrays.asList(args));
+
+		out = LogManager.getManager().getSlf4jLogger("tools");
 		try {
 			final DeviceInfo d = new DeviceInfo(args);
-			w.setLogLevel(d.options.containsKey("verbose") ? LogLevel.TRACE : LogLevel.WARN);
 			final ShutdownHandler sh = new ShutdownHandler().register();
 			d.run();
 			sh.unregister();
 		}
 		catch (final Throwable t) {
-			out.log(LogLevel.ERROR, "parsing options", t);
+			out.error("parsing options", t);
 		}
 		finally {
-			LogManager.getManager().shutdown(true);
+			LogManager.getManager().flush();
 		}
 	}
 
@@ -182,9 +184,9 @@ public class DeviceInfo implements Runnable
 	{
 		// ??? as with the other tools, maybe put this into the try block to also call onCompletion
 		if (options.isEmpty()) {
-			out.log(LogLevel.ALWAYS, "A tool for reading KNX device information", null);
+			LogService.log(out, LogLevel.ALWAYS, "A tool for reading KNX device information", null);
 			showVersion();
-			out.log(LogLevel.ALWAYS, "type -help for help message", null);
+			LogService.log(out, LogLevel.ALWAYS, "type -help for help message", null);
 			return;
 		}
 		if (options.containsKey("help")) {
@@ -323,8 +325,8 @@ public class DeviceInfo implements Runnable
 			return mc.readProperty(d, objectIndex, pid, 1, 1);
 		}
 		catch (final KNXException e) {
-			out.log(LogLevel.WARN, "object index " + objectIndex + " property " + pid
-					+ " error, " + e.getMessage(), null);
+			out.warn("object index " + objectIndex + " property " + pid + " error, "
+					+ e.getMessage());
 		}
 		return null;
 	}
@@ -349,9 +351,9 @@ public class DeviceInfo implements Runnable
 	protected void onCompletion(final Exception thrown, final boolean canceled)
 	{
 		if (canceled)
-			out.log(LogLevel.INFO, "reading device info canceled", null);
+			out.info("reading device info canceled");
 		if (thrown != null)
-			out.log(LogLevel.ERROR, "completed", thrown);
+			out.error("completed", thrown);
 	}
 
 	/**
@@ -451,6 +453,18 @@ public class DeviceInfo implements Runnable
 			throw new KNXIllegalArgumentException("KNX device individual address missing");
 	}
 
+	// a helper in case slf4j simple logger is used
+	private static void setLogVerbosity(final List<String> args)
+	{
+		// TODO problem: this overrules the log level from a simplelogger.properties file!!
+		final String simpleLoggerLogLevel = "org.slf4j.simpleLogger.defaultLogLevel";
+		if (!System.getProperties().containsKey(simpleLoggerLogLevel)) {
+			final String lvl = args.contains("-v") || args.contains("-verbose") ? "info" : "error";
+			System.setProperty(simpleLoggerLogLevel, lvl);
+		}
+		out = LogManager.getManager().getSlf4jLogger("tools");
+	}
+
 	private static InetSocketAddress createLocalSocket(final InetAddress host, final Integer port)
 	{
 		final int p = port != null ? port.intValue() : 0;
@@ -517,12 +531,12 @@ public class DeviceInfo implements Runnable
 		sb.append(" -routing                use KNXnet/IP routing").append(sep);
 		sb.append(" -medium -m <id>         KNX medium [tp0|tp1|p110|p132|rf] " + "(default tp1)")
 				.append(sep);
-		out.log(LogLevel.ALWAYS, sb.toString(), null);
+		LogService.log(out, LogLevel.ALWAYS, sb.toString(), null);
 	}
 
 	private static void showVersion()
 	{
-		out.log(LogLevel.ALWAYS,
+		LogService.log(out, LogLevel.ALWAYS,
 				tool + " version " + version + " using " + Settings.getLibraryHeader(false), null);
 	}
 

@@ -39,8 +39,12 @@ package tuwien.auto.calimero.tools;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
+import org.slf4j.Logger;
 
 import tuwien.auto.calimero.DataUnitBuilder;
 import tuwien.auto.calimero.DetachEvent;
@@ -64,8 +68,6 @@ import tuwien.auto.calimero.link.medium.TPSettings;
 import tuwien.auto.calimero.log.LogLevel;
 import tuwien.auto.calimero.log.LogManager;
 import tuwien.auto.calimero.log.LogService;
-import tuwien.auto.calimero.log.LogStreamWriter;
-import tuwien.auto.calimero.log.LogWriter;
 import tuwien.auto.calimero.process.ProcessCommunicator;
 import tuwien.auto.calimero.process.ProcessCommunicatorImpl;
 import tuwien.auto.calimero.process.ProcessEvent;
@@ -103,7 +105,7 @@ public class ProcComm implements Runnable
 	private static final String version = "1.2";
 	private static final String sep = System.getProperty("line.separator");
 
-	private static LogService out = LogManager.getManager().getLogService("tools");
+	private static Logger out;
 
 	/**
 	 * The used process communicator.
@@ -112,7 +114,7 @@ public class ProcComm implements Runnable
 
 	// specifies parameters to use for the network link and process communication
 	private final Map<String, Object> options = new HashMap<>();
-	//private final LogWriter w;
+
 
 	/**
 	 * Creates a new ProcComm instance using the supplied options.
@@ -126,23 +128,6 @@ public class ProcComm implements Runnable
 	 */
 	public ProcComm(final String[] args)
 	{
-		this(args, null);
-	}
-
-	/**
-	 * Creates a new ProcComm instance using the supplied options.
-	 * <p>
-	 * Mandatory arguments are an IP host or a FT1.2 port identifier, depending on the
-	 * type of connection to the KNX network. See {@link #main(String[])} for the list of
-	 * options.
-	 *
-	 * @param args list with options
-	 * @param w a log writer, might be <code>null</code>: this parameter is ignored for now!
-	 * @throws KNXIllegalArgumentException
-	 */
-	protected ProcComm(final String[] args, final LogWriter w)
-	{
-		//this.w = w;
 		try {
 			parseOptions(args);
 		}
@@ -202,14 +187,9 @@ public class ProcComm implements Runnable
 	 */
 	public static void main(final String[] args)
 	{
+		setLogVerbosity(Arrays.asList(args));
 		try {
-			final LogWriter w = LogStreamWriter.newUnformatted(LogLevel.INFO, System.out, true,
-					false);
-			LogManager.getManager().addWriter("", w);
-			final ProcComm pc = new ProcComm(args, null);
-			// adjust log level, if specified
-			if (!pc.options.containsKey("verbose"))
-				w.setLogLevel(LogLevel.ERROR);
+			final ProcComm pc = new ProcComm(args);
 			final ShutdownHandler sh = pc.new ShutdownHandler().register();
 			pc.run();
 			sh.unregister();
@@ -217,7 +197,7 @@ public class ProcComm implements Runnable
 		catch (final Throwable t) {
 			out.error("tool options", t);
 		}
-		LogManager.getManager().shutdown(true);
+		LogManager.getManager().flush();
 	}
 
 	/* (non-Javadoc)
@@ -266,9 +246,9 @@ public class ProcComm implements Runnable
 	public void start(final ProcessListener l) throws KNXException, InterruptedException
 	{
 		if (options.isEmpty()) {
-			out.log(LogLevel.ALWAYS, "A tool for KNX process communication", null);
+			LogService.log(out, LogLevel.ALWAYS, "A tool for KNX process communication", null);
 			showVersion();
-			out.log(LogLevel.ALWAYS, "type -help for help message", null);
+			LogService.log(out, LogLevel.ALWAYS, "type -help for help message", null);
 			return;
 		}
 		if (options.containsKey("help")) {
@@ -334,7 +314,7 @@ public class ProcComm implements Runnable
 		}
 		catch (final KNXException ke) {}
 		catch (final KNXIllegalArgumentException iae) {}
-		out.log(LogLevel.ALWAYS, s, null);
+		LogService.log(out, LogLevel.ALWAYS, s, null);
 	}
 
 	/**
@@ -444,12 +424,12 @@ public class ProcComm implements Runnable
 		// handle the DPT stuff, so an already formatted string will be returned
 		final Datapoint dp = new StateDP(main, "", 0, getDPT());
 		if (options.containsKey("read"))
-			out.log(LogLevel.ALWAYS, "read value: " + pc.read(dp), null);
+			LogService.log(out, LogLevel.ALWAYS, "read value: " + pc.read(dp), null);
 		if (options.containsKey("write")) {
 			// note, a write to a non existing datapoint might finish successfully,
 			// too.. no check for existence or read back of a written value is done
 			pc.write(dp, (String) options.get("value"));
-			out.log(LogLevel.ALWAYS, "write successful", null);
+			LogService.log(out, LogLevel.ALWAYS, "write successful", null);
 		}
 	}
 
@@ -546,6 +526,18 @@ public class ProcComm implements Runnable
 		throw new KNXIllegalArgumentException("either read or write - not both");
 	}
 
+	// a helper in case slf4j simple logger is used
+	private static void setLogVerbosity(final List<String> args)
+	{
+		// TODO problem: this overrules the log level from a simplelogger.properties file!!
+		final String simpleLoggerLogLevel = "org.slf4j.simpleLogger.defaultLogLevel";
+		if (!System.getProperties().containsKey(simpleLoggerLogLevel)) {
+			final String lvl = args.contains("-v") || args.contains("-verbose") ? "info" : "error";
+			System.setProperty(simpleLoggerLogLevel, lvl);
+		}
+		out = LogManager.getManager().getSlf4jLogger("tools");
+	}
+
 	private static void showUsage()
 	{
 		final StringBuffer sb = new StringBuffer();
@@ -573,7 +565,7 @@ public class ProcComm implements Runnable
 		sb.append("  switch (1.001), bool (1.002), string (16.001), float/float2 (9.002)")
 				.append(sep)
 				.append("  float4 (14.005), ucount (5.010), int (13.001), angle (5.003)");
-		out.log(LogLevel.ALWAYS, sb.toString(), null);
+		LogService.log(out, LogLevel.ALWAYS, sb.toString(), null);
 	}
 
 	//
@@ -582,7 +574,7 @@ public class ProcComm implements Runnable
 
 	private static void showVersion()
 	{
-		out.log(LogLevel.ALWAYS, tool + " version " + version + " using "
+		LogService.log(out, LogLevel.ALWAYS, tool + " version " + version + " using "
 				+ Settings.getLibraryHeader(false), null);
 	}
 

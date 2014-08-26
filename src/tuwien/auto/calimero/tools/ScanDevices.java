@@ -39,8 +39,12 @@ package tuwien.auto.calimero.tools;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
+import org.slf4j.Logger;
 
 import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.Settings;
@@ -57,8 +61,6 @@ import tuwien.auto.calimero.link.medium.TPSettings;
 import tuwien.auto.calimero.log.LogLevel;
 import tuwien.auto.calimero.log.LogManager;
 import tuwien.auto.calimero.log.LogService;
-import tuwien.auto.calimero.log.LogStreamWriter;
-import tuwien.auto.calimero.log.LogWriter;
 import tuwien.auto.calimero.mgmt.ManagementProcedures;
 import tuwien.auto.calimero.mgmt.ManagementProceduresImpl;
 
@@ -91,9 +93,7 @@ public class ScanDevices implements Runnable
 	private static final String sep = System.getProperty("line.separator");
 
 	// TODO for use as runnable, we should get rid of the static tool logger
-	private static LogService out = LogManager.getManager().getLogService("tools");
-	// terminal writer
-	private static LogWriter w;
+	private static Logger out;
 
 	private final Map<String, Object> options = new HashMap<>();
 
@@ -128,20 +128,18 @@ public class ScanDevices implements Runnable
 	 */
 	public static void main(final String[] args)
 	{
-		w = LogStreamWriter.newUnformatted(LogLevel.WARN, System.out, true, false);
-		LogManager.getManager().addWriter(null, w);
+		setLogVerbosity(Arrays.asList(args));
 		try {
 			final ScanDevices scan = new ScanDevices(args);
-			w.setLogLevel(scan.options.containsKey("verbose") ? LogLevel.TRACE : LogLevel.WARN);
 			final ShutdownHandler sh = new ShutdownHandler().register();
 			scan.run();
 			sh.unregister();
 		}
 		catch (final Throwable t) {
-			out.log(LogLevel.ERROR, "parsing options", t);
+			out.error("parsing options", t);
 		}
 		finally {
-			LogManager.getManager().shutdown(true);
+			LogManager.getManager().flush();
 		}
 	}
 
@@ -175,9 +173,9 @@ public class ScanDevices implements Runnable
 			// TODO onCompletion prints '0 network devices found' on showing help etc., either
 			// suppress that or move the following out of the try (skipping onCompletion altogether)
 			if (options.isEmpty()) {
-				out.log(LogLevel.ALWAYS, "A tool for scanning KNX devices in the network", null);
+				LogService.log(out, LogLevel.ALWAYS, "A tool for scanning KNX devices in the network", null);
 				showVersion();
-				out.log(LogLevel.ALWAYS, "type -help for help message", null);
+				LogService.log(out, LogLevel.ALWAYS, "type -help for help message", null);
 				return;
 			}
 			if (options.containsKey("help")) {
@@ -191,11 +189,6 @@ public class ScanDevices implements Runnable
 
 			link = createLink();
 			final ManagementProcedures mp = new ManagementProceduresImpl(link);
-			if (w != null && options.containsKey("verbose")) {
-				// XXX replace with instance specific name, and preferably access writers via out
-				LogManager.getManager().addWriter(link.getName(), w);
-				LogManager.getManager().addWriter("MgmtProc", w);
-			}
 
 			final String[] range = ((String) options.get("range")).split("\\.");
 			final int area = Integer.decode(range[0]).intValue();
@@ -207,8 +200,8 @@ public class ScanDevices implements Runnable
 					found = new IndividualAddress[] {addr};
 			}
 			else {
-				out.log(LogLevel.ALWAYS, "start scan of " + area + "." + line + ".[0..255] ...",
-						null);
+				LogService.log(out, LogLevel.ALWAYS, "start scan of " + area + "." + line
+						+ ".[0..255] ...", null);
 				// this call is interruptible (via exception), in which case we won't get any
 				// result, even though some devices might have answered already
 				// ??? think whether to refactor scanning into interruptible with partial result set
@@ -280,10 +273,10 @@ public class ScanDevices implements Runnable
 		if (thrown != null)
 			out.error("completed", thrown);
 
-		out.log(LogLevel.ALWAYS, "found " + devices.length + " network devices", null);
+		LogService.log(out, LogLevel.ALWAYS, "found " + devices.length + " network devices", null);
 		for (int i = 0; i < devices.length; i++) {
 			final IndividualAddress a = devices[i];
-			out.log(LogLevel.ALWAYS, a.toString(), null);
+			LogService.log(out, LogLevel.ALWAYS, a.toString(), null);
 		}
 	}
 
@@ -353,6 +346,18 @@ public class ScanDevices implements Runnable
 		return arg.equals(longOpt) || shortOpt != null && arg.equals(shortOpt);
 	}
 
+	// a helper in case slf4j simple logger is used
+	private static void setLogVerbosity(final List<String> args)
+	{
+		// TODO problem: this overrules the log level from a simplelogger.properties file!!
+		final String simpleLoggerLogLevel = "org.slf4j.simpleLogger.defaultLogLevel";
+		if (!System.getProperties().containsKey(simpleLoggerLogLevel)) {
+			final String lvl = args.contains("-v") || args.contains("-verbose") ? "trace" : "warn";
+			System.setProperty(simpleLoggerLogLevel, lvl);
+		}
+		out = LogManager.getManager().getSlf4jLogger("tools");
+	}
+
 	private static KNXMediumSettings getMedium(final String id)
 	{
 		// for now, the local device address is always left 0 in the
@@ -394,12 +399,12 @@ public class ScanDevices implements Runnable
 		sb.append("The area and line are given as numbers in the range [0..0x0F], e.g., 3.1")
 				.append(sep);
 		sb.append("The (optional) device address part is in the range [0..0x0FF]").append(sep);
-		out.log(LogLevel.ALWAYS, sb.toString(), null);
+		LogService.log(out, LogLevel.ALWAYS, sb.toString(), null);
 	}
 
 	private static void showVersion()
 	{
-		out.log(LogLevel.ALWAYS,
+		LogService.log(out, LogLevel.ALWAYS,
 				tool + " version " + version + " using " + Settings.getLibraryHeader(false), null);
 	}
 

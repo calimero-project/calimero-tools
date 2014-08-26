@@ -39,8 +39,12 @@ package tuwien.auto.calimero.tools;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
+import org.slf4j.Logger;
 
 import tuwien.auto.calimero.CloseEvent;
 import tuwien.auto.calimero.DataUnitBuilder;
@@ -63,8 +67,6 @@ import tuwien.auto.calimero.link.medium.TPSettings;
 import tuwien.auto.calimero.log.LogLevel;
 import tuwien.auto.calimero.log.LogManager;
 import tuwien.auto.calimero.log.LogService;
-import tuwien.auto.calimero.log.LogStreamWriter;
-import tuwien.auto.calimero.log.LogWriter;
 
 /**
  * A tool for Calimero allowing monitoring of KNX network messages.
@@ -100,7 +102,7 @@ public class NetworkMonitor implements Runnable
 	private static final String version = "1.2";
 	private static final String sep = System.getProperty("line.separator");
 
-	private static LogService out = LogManager.getManager().getLogService("tools");
+	private static Logger out;
 
 	private final Map<String, Object> options = new HashMap<>();
 	private KNXNetworkMonitor m;
@@ -168,14 +170,10 @@ public class NetworkMonitor implements Runnable
 	 */
 	public static void main(final String[] args)
 	{
-		final LogWriter w = new LogStreamWriter(LogLevel.WARN, System.out, true, false);
-		LogManager.getManager().addWriter("", w);
+		setLogVerbosity(Arrays.asList(args));
 		try {
 			// if listener is null, we create our default one
 			final NetworkMonitor m = new NetworkMonitor(args);
-			if (m.options.containsKey("verbose"))
-				w.setLogLevel(LogLevel.TRACE);
-
 			final ShutdownHandler sh = m.new ShutdownHandler().register();
 			m.run();
 			sh.unregister();
@@ -183,7 +181,7 @@ public class NetworkMonitor implements Runnable
 		catch (final KNXIllegalArgumentException e) {
 			out.error("parsing options", e);
 		}
-		LogManager.getManager().shutdown(true);
+		LogManager.getManager().flush();
 	}
 
 	/* (non-Javadoc)
@@ -246,9 +244,9 @@ public class NetworkMonitor implements Runnable
 	public void start() throws KNXException, InterruptedException
 	{
 		if (options.isEmpty()) {
-			out.log(LogLevel.ALWAYS, "A tool for monitoring a KNX network", null);
+			LogService.log(out, LogLevel.ALWAYS, "A tool for monitoring a KNX network", null);
 			showVersion();
-			out.log(LogLevel.ALWAYS, "type -help for help message", null);
+			LogService.log(out, LogLevel.ALWAYS, "type -help for help message", null);
 			return;
 		}
 		if (options.containsKey("help")) {
@@ -306,7 +304,7 @@ public class NetworkMonitor implements Runnable
 				sb.append(": ").append(DataUnitBuilder.decode(f.getTPDU(), f.getDestination()));
 			}
 		}
-		out.log(LogLevel.ALWAYS, sb.toString(), null);
+		LogService.log(out, LogLevel.ALWAYS, sb.toString(), null);
 	}
 
 	/**
@@ -420,6 +418,18 @@ public class NetworkMonitor implements Runnable
 		return arg.equals(longOpt) || shortOpt != null && arg.equals(shortOpt);
 	}
 
+	// a helper in case slf4j simple logger is used
+	private static void setLogVerbosity(final List<String> args)
+	{
+		// TODO problem: this overrules the log level from a simplelogger.properties file!!
+		final String simpleLoggerLogLevel = "org.slf4j.simpleLogger.defaultLogLevel";
+		if (!System.getProperties().containsKey(simpleLoggerLogLevel)) {
+			final String lvl = args.contains("-v") || args.contains("-verbose") ? "trace" : "warn";
+			System.setProperty(simpleLoggerLogLevel, lvl);
+		}
+		out = LogManager.getManager().getSlf4jLogger("tools");
+	}
+
 	private static void showUsage()
 	{
 		final StringBuffer sb = new StringBuffer();
@@ -437,12 +447,12 @@ public class NetworkMonitor implements Runnable
 		sb.append("  -serial -s              use FT1.2 serial communication").append(sep);
 		sb.append("  -medium -m <id>         KNX medium [tp0|tp1|p110|p132|rf] " + "(default tp1)")
 				.append(sep);
-		out.log(LogLevel.ALWAYS, sb.toString(), null);
+		LogService.log(out, LogLevel.ALWAYS, sb.toString(), null);
 	}
 
 	private static void showVersion()
 	{
-		out.log(LogLevel.ALWAYS,
+		LogService.log(out, LogLevel.ALWAYS,
 				tool + " version " + version + " using " + Settings.getLibraryHeader(false), null);
 	}
 

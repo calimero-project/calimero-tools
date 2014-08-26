@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2011 B. Malinowsky
+    Copyright (c) 2006, 2014 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -46,8 +46,7 @@ import tuwien.auto.calimero.Settings;
 import tuwien.auto.calimero.exception.KNXIllegalArgumentException;
 import tuwien.auto.calimero.log.LogLevel;
 import tuwien.auto.calimero.log.LogManager;
-import tuwien.auto.calimero.log.LogStreamWriter;
-import tuwien.auto.calimero.log.LogWriter;
+import tuwien.auto.calimero.log.LogService;
 import tuwien.auto.calimero.mgmt.PropertyAdapter;
 import tuwien.auto.calimero.mgmt.PropertyClient;
 
@@ -118,7 +117,7 @@ public class PropClient implements Runnable
 
 		void showVersion()
 		{
-			Property.out.log(LogLevel.ALWAYS,
+			LogService.log(Property.out, LogLevel.ALWAYS,
 					tool + " version " + version + " using " + Settings.getLibraryHeader(false),
 					null);
 		}
@@ -178,8 +177,6 @@ public class PropClient implements Runnable
 	 */
 	public static void main(final String[] args)
 	{
-		final LogWriter w = LogStreamWriter.newUnformatted(LogLevel.INFO, System.out, true, false);
-		Property.out.addWriter(w);
 		try {
 			final PropClient pc = new PropClient(args);
 			pc.run();
@@ -187,7 +184,7 @@ public class PropClient implements Runnable
 		catch (final Throwable t) {
 			Property.out.error("client error", t);
 		}
-		LogManager.getManager().shutdown(true);
+		LogManager.getManager().flush();
 	}
 
 	/* (non-Javadoc)
