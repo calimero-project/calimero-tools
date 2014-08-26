@@ -39,6 +39,7 @@
 				<directory>resources</directory>
 				<includes>
 					<include>properties.xml</include>
+					<include>simplelogger.properties</include>
 				</includes>
 			</resource>
 		</resources>
