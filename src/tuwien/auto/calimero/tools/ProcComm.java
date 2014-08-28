@@ -335,7 +335,7 @@ public class ProcComm implements Runnable
 		}
 		catch (final KNXException ke) {}
 		catch (final KNXIllegalArgumentException iae) {}
-		out.log(LogLevel.ALWAYS, s, null);
+		out.log(options.containsKey("monitor") ? LogLevel.ALWAYS : LogLevel.INFO, s, null);
 	}
 
 	/**
