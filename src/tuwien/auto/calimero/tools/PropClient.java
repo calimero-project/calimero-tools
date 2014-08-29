@@ -42,11 +42,8 @@ import java.io.InputStreamReader;
 import java.io.InterruptedIOException;
 import java.util.StringTokenizer;
 
-import tuwien.auto.calimero.Settings;
 import tuwien.auto.calimero.exception.KNXIllegalArgumentException;
-import tuwien.auto.calimero.log.LogLevel;
 import tuwien.auto.calimero.log.LogManager;
-import tuwien.auto.calimero.log.LogService;
 import tuwien.auto.calimero.mgmt.PropertyAdapter;
 import tuwien.auto.calimero.mgmt.PropertyClient;
 
@@ -71,7 +68,6 @@ import tuwien.auto.calimero.mgmt.PropertyClient;
 public class PropClient implements Runnable
 {
 	private static final String tool = "PropClient";
-	private static final String version = "1.1";
 
 	class PropertyEx extends tuwien.auto.calimero.tools.Property
 	{
@@ -113,13 +109,6 @@ public class PropClient implements Runnable
 			catch (final IOException e) {
 				System.out.println("I/O error, " + e.getMessage());
 			}
-		}
-
-		void showVersion()
-		{
-			LogService.log(Property.out, LogLevel.ALWAYS,
-					tool + " version " + version + " using " + Settings.getLibraryHeader(false),
-					null);
 		}
 	}
 

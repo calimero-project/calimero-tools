@@ -98,7 +98,6 @@ import tuwien.auto.calimero.mgmt.RemotePropertyServiceAdapter;
 public class Property implements Runnable, PropertyAdapterListener
 {
 	private static final String tool = "Property";
-	private static final String version = "1.1";
 	private static final String sep = System.getProperty("line.separator");
 
 	static Logger out;
@@ -213,9 +212,9 @@ public class Property implements Runnable, PropertyAdapterListener
 	{
 		// ??? as with the other tools, maybe put this into the try block to also call onCompletion
 		if (options.isEmpty()) {
-			LogService.log(out, LogLevel.ALWAYS, "A tool for KNX property access", null);
+			LogService.log(out, LogLevel.ALWAYS, " - Access KNX properties", null);
 			showVersion();
-			LogService.log(out, LogLevel.ALWAYS, "type -help for help message", null);
+			LogService.log(out, LogLevel.ALWAYS, "Type -help for help message", null);
 			return;
 		}
 		if (options.containsKey("help")) {
@@ -525,12 +524,6 @@ public class Property implements Runnable, PropertyAdapterListener
 	// utility methods
 	//
 
-	void showVersion()
-	{
-		LogService.log(out, LogLevel.ALWAYS, tool + " version " + version + " using "
-				+ Settings.getLibraryHeader(false), null);
-	}
-
 	private void getProperty(final String[] args) throws KNXException
 	{
 		String s = "sorry, wrong number of arguments";
@@ -696,6 +689,11 @@ public class Property implements Runnable, PropertyAdapterListener
 	//
 	// utility methods
 	//
+
+	private static void showVersion()
+	{
+		LogService.log(out, LogLevel.ALWAYS, Settings.getLibraryHeader(false), null);
+	}
 
 	private static KNXMediumSettings getMedium(final String id)
 	{

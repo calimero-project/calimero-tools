@@ -90,7 +90,6 @@ import tuwien.auto.calimero.mgmt.PropertyAccess;
 public class DeviceInfo implements Runnable
 {
 	private static final String tool = "DeviceInfo";
-	private static final String version = "1.1";
 	private static final String sep = System.getProperty("line.separator");
 
 	// Interface Object "Application Program Object" in interface object server
@@ -184,9 +183,9 @@ public class DeviceInfo implements Runnable
 	{
 		// ??? as with the other tools, maybe put this into the try block to also call onCompletion
 		if (options.isEmpty()) {
-			LogService.log(out, LogLevel.ALWAYS, "A tool for reading KNX device information", null);
+			LogService.log(out, LogLevel.ALWAYS, tool + " - Read KNX device information", null);
 			showVersion();
-			LogService.log(out, LogLevel.ALWAYS, "type -help for help message", null);
+			LogService.log(out, LogLevel.ALWAYS, "Type -help for help message", null);
 			return;
 		}
 		if (options.containsKey("help")) {
@@ -536,8 +535,7 @@ public class DeviceInfo implements Runnable
 
 	private static void showVersion()
 	{
-		LogService.log(out, LogLevel.ALWAYS,
-				tool + " version " + version + " using " + Settings.getLibraryHeader(false), null);
+		LogService.log(out, LogLevel.ALWAYS, Settings.getLibraryHeader(false), null);
 	}
 
 	private static int toUnsigned(final byte[] data)

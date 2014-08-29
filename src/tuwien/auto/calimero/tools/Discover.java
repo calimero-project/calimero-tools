@@ -80,7 +80,6 @@ import tuwien.auto.calimero.log.LogService;
 public class Discover implements Runnable
 {
 	private static final String tool = "Discover";
-	private static final String version = "1.1";
 	private static final String sep = System.getProperty("line.separator");
 
 	private static Logger out = LogManager.getManager().getSlf4jLogger(Discoverer.LOG_SERVICE);
@@ -170,10 +169,10 @@ public class Discover implements Runnable
 		boolean canceled = false;
 		try {
 			if (options.isEmpty()) {
-				LogService.log(out, LogLevel.ALWAYS, "A tool for KNXnet/IP router discovery "
+				LogService.log(out, LogLevel.ALWAYS, " - KNXnet/IP server discovery "
 						+ "& self description", null);
 				showVersion();
-				LogService.log(out, LogLevel.ALWAYS, "type -help for help message", null);
+				LogService.log(out, LogLevel.ALWAYS, "Type -help for help message", null);
 			}
 			else if (options.containsKey("help"))
 				showUsage();
@@ -434,8 +433,7 @@ public class Discover implements Runnable
 
 	private static void showVersion()
 	{
-		LogService.log(out, LogLevel.ALWAYS,
-				tool + " version " + version + " using " + Settings.getLibraryHeader(false), null);
+		LogService.log(out, LogLevel.ALWAYS, Settings.getLibraryHeader(false), null);
 	}
 
 	private static final class ShutdownHandler extends Thread

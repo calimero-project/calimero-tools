@@ -95,7 +95,6 @@ import tuwien.auto.calimero.mgmt.RemotePropertyServiceAdapter;
 public class IPConfig implements Runnable
 {
 	private static final String tool = "IPConfig";
-	private static final String version = "1.1";
 
 	private static final String sep = System.getProperty("line.separator");
 	private static final int IPObjType = 11;
@@ -200,10 +199,10 @@ public class IPConfig implements Runnable
 		boolean canceled = false;
 		try {
 			if (options.isEmpty()) {
-				LogService.log(out, LogLevel.ALWAYS, "A tool for KNXnet/IP address configuration",
+				LogService.log(out, LogLevel.ALWAYS, " - KNXnet/IP address configuration",
 						null);
 				showVersion();
-				LogService.log(out, LogLevel.ALWAYS, "type -help for help message", null);
+				LogService.log(out, LogLevel.ALWAYS, "Type -help for help message", null);
 				return;
 			}
 			if (options.containsKey("help")) {
@@ -652,8 +651,7 @@ public class IPConfig implements Runnable
 
 	private static void showVersion()
 	{
-		LogService.log(out, LogLevel.ALWAYS,
-				tool + " version " + version + " using " + Settings.getLibraryHeader(false), null);
+		LogService.log(out, LogLevel.ALWAYS, Settings.getLibraryHeader(false), null);
 	}
 
 	private static KNXMediumSettings getMedium(final String id)

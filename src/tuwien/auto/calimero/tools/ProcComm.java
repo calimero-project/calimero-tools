@@ -102,7 +102,6 @@ import tuwien.auto.calimero.process.ProcessListener;
 public class ProcComm implements Runnable
 {
 	private static final String tool = "ProcComm";
-	private static final String version = "1.2";
 	private static final String sep = System.getProperty("line.separator");
 
 	private static Logger out;
@@ -246,9 +245,9 @@ public class ProcComm implements Runnable
 	public void start(final ProcessListener l) throws KNXException, InterruptedException
 	{
 		if (options.isEmpty()) {
-			LogService.log(out, LogLevel.ALWAYS, "A tool for KNX process communication", null);
+			LogService.log(out, LogLevel.ALWAYS, " - KNX process communication", null);
 			showVersion();
-			LogService.log(out, LogLevel.ALWAYS, "type -help for help message", null);
+			LogService.log(out, LogLevel.ALWAYS, "Type -help for help message", null);
 			return;
 		}
 		if (options.containsKey("help")) {
@@ -574,8 +573,7 @@ public class ProcComm implements Runnable
 
 	private static void showVersion()
 	{
-		LogService.log(out, LogLevel.ALWAYS, tool + " version " + version + " using "
-				+ Settings.getLibraryHeader(false), null);
+		LogService.log(out, LogLevel.ALWAYS, Settings.getLibraryHeader(false), null);
 	}
 
 	/**

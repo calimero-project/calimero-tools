@@ -99,7 +99,6 @@ import tuwien.auto.calimero.log.LogService;
 public class NetworkMonitor implements Runnable
 {
 	private static final String tool = "NetworkMonitor";
-	private static final String version = "1.2";
 	private static final String sep = System.getProperty("line.separator");
 
 	private static Logger out;
@@ -244,9 +243,9 @@ public class NetworkMonitor implements Runnable
 	public void start() throws KNXException, InterruptedException
 	{
 		if (options.isEmpty()) {
-			LogService.log(out, LogLevel.ALWAYS, "A tool for monitoring a KNX network", null);
+			LogService.log(out, LogLevel.ALWAYS, " - Monitor a KNX network", null);
 			showVersion();
-			LogService.log(out, LogLevel.ALWAYS, "type -help for help message", null);
+			LogService.log(out, LogLevel.ALWAYS, "Type -help for help message", null);
 			return;
 		}
 		if (options.containsKey("help")) {
@@ -452,8 +451,7 @@ public class NetworkMonitor implements Runnable
 
 	private static void showVersion()
 	{
-		LogService.log(out, LogLevel.ALWAYS,
-				tool + " version " + version + " using " + Settings.getLibraryHeader(false), null);
+		LogService.log(out, LogLevel.ALWAYS, Settings.getLibraryHeader(false), null);
 	}
 
 	/**

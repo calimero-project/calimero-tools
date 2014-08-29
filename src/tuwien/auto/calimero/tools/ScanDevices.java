@@ -89,7 +89,6 @@ import tuwien.auto.calimero.mgmt.ManagementProceduresImpl;
 public class ScanDevices implements Runnable
 {
 	private static final String tool = "ScanDevices";
-	private static final String version = "1.0";
 	private static final String sep = System.getProperty("line.separator");
 
 	// TODO for use as runnable, we should get rid of the static tool logger
@@ -173,9 +172,10 @@ public class ScanDevices implements Runnable
 			// TODO onCompletion prints '0 network devices found' on showing help etc., either
 			// suppress that or move the following out of the try (skipping onCompletion altogether)
 			if (options.isEmpty()) {
-				LogService.log(out, LogLevel.ALWAYS, "A tool for scanning KNX devices in the network", null);
+				LogService.log(out, LogLevel.ALWAYS,
+						" - Determine existing KNX devices on a KNX subnetwork", null);
 				showVersion();
-				LogService.log(out, LogLevel.ALWAYS, "type -help for help message", null);
+				LogService.log(out, LogLevel.ALWAYS, "Type -help for help message", null);
 				return;
 			}
 			if (options.containsKey("help")) {
@@ -404,8 +404,7 @@ public class ScanDevices implements Runnable
 
 	private static void showVersion()
 	{
-		LogService.log(out, LogLevel.ALWAYS,
-				tool + " version " + version + " using " + Settings.getLibraryHeader(false), null);
+		LogService.log(out, LogLevel.ALWAYS, Settings.getLibraryHeader(false), null);
 	}
 
 	private static InetSocketAddress createLocalSocket(final InetAddress host, final Integer port)
