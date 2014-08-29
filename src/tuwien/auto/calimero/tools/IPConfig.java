@@ -137,44 +137,43 @@ public class IPConfig implements Runnable
 	 * <p>
 	 * An IP host or port identifier has to be supplied to specify the endpoint for the KNX network
 	 * access.<br>
-	 * To show the usage message of this tool on the console, supply the command line option -help
+	 * To show the usage message of this tool on the console, supply the command line option --help
 	 * (or -h).<br>
 	 * Command line options are treated case sensitive. Available options:
 	 * <ul>
-	 * <li><code>-help -h</code> show help message</li>
-	 * <li><code>-version</code> show tool/library version and exit</li>
-	 * <li><code>-local -l</code> local device management</li>
-	 * <li><code>-remote -r</code> <i>KNX addr</i> &nbsp;remote property service</li>
-	 * <li><code>-localhost</code> <i>id</i> &nbsp;local IP/host name</li>
-	 * <li><code>-localport</code> <i>number</i> &nbsp;local UDP port (default system assigned)</li>
-	 * <li><code>-port -p</code> <i>number</i> &nbsp;UDP port on host (default 3671)</li>
-	 * <li><code>-nat -n</code> enable Network Address Translation</li>
-	 * <li><code>-serial -s</code> use FT1.2 serial communication</li>
+	 * <li><code>--help -h</code> show help message</li>
+	 * <li><code>--version</code> show tool/library version and exit</li>
+	 * <li><code>--local -l</code> local device management</li>
+	 * <li><code>--remote -r</code> <i>KNX addr</i> &nbsp;remote property service</li>
+	 * <li><code>--localhost</code> <i>id</i> &nbsp;local IP/host name</li>
+	 * <li><code>--localport</code> <i>number</i> &nbsp;local UDP port (default system assigned)</li>
+	 * <li><code>--port -p</code> <i>number</i> &nbsp;UDP port on host (default 3671)</li>
+	 * <li><code>--nat -n</code> enable Network Address Translation</li>
+	 * <li><code>--serial -s</code> use FT1.2 serial communication</li>
 	 * </ul>
 	 * For remote property service these options are available:
 	 * <ul>
-	 * <li><code>-routing</code> use KNXnet/IP routing</li>
-	 * <li><code>-medium -m</code> <i>id</i> &nbsp;KNX medium [tp0|tp1|p110|p132|rf] (defaults to
+	 * <li><code>--routing</code> use KNXnet/IP routing</li>
+	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp0|tp1|p110|p132|rf] (defaults to
 	 * tp1)</li>
-	 * <li><code>-connect -c</code> connection oriented mode</li>
-	 * <li><code>-authorize -a</code> <i>key</i> &nbsp;authorize key to access KNX device</li>
+	 * <li><code>--connect -c</code> connection oriented mode</li>
+	 * <li><code>--authorize -a</code> <i>key</i> &nbsp;authorize key to access KNX device</li>
 	 * </ul>
 	 * <br>
 	 * In any case, the tool reads out the IP configuration of the connected endpoint and writes it
 	 * to standard output.<br>
-	 * Supply one or more of the following commands to change the IP configuration (all commands are
-	 * treated case-insensitive):
+	 * Supply one or more of the following commands to change the IP configuration:
 	 * <ul>
-	 * <li><code>IP</code> <i>address</i> &nbsp;set the configured fixed IP address</li>
+	 * <li><code>ip</code> <i>address</i> &nbsp;set the configured fixed IP address</li>
 	 * <li><code>subnet</code> <i>address</i> &nbsp;set the configured IP subnet mask</li>
 	 * <li><code>gateway</code> <i>address</i> &nbsp;set the configured IP address of the default
 	 * gateway</li>
 	 * <li><code>multicast</code> <i>address</i> &nbsp;set the routing multicast address</li>
 	 * <li><code>manual</code> set manual IP assignment for the current IP address to enabled</li>
-	 * <li><code>BootP</code> set Bootstrap Protocol IP assignment for the current IP address to
+	 * <li><code>bootp</code> set Bootstrap Protocol IP assignment for the current IP address to
 	 * enabled</li>
-	 * <li><code>DHCP</code> set DHCP IP assignment for the current IP address to enabled</li>
-	 * <li><code>AutoIP</code> set automatic IP assignment for the current IP address to enabled</li>
+	 * <li><code>dhcp</code> set DHCP IP assignment for the current IP address to enabled</li>
+	 * <li><code>auto</code> set automatic IP assignment for the current IP address to enabled</li>
 	 * </ul>
 	 *
 	 * @param args command line options to run the tool
@@ -305,7 +304,7 @@ public class IPConfig implements Runnable
 			assignment |= 0x02;
 		if (options.containsKey("dhcp"))
 			assignment |= 0x04;
-		if (options.containsKey("autoip"))
+		if (options.containsKey("auto"))
 			assignment |= 0x08;
 		if (assignment != 0)
 			pc.setProperty(objIndex, PropertyAccess.PID.IP_ASSIGNMENT_METHOD, 1, 1,
@@ -420,11 +419,11 @@ public class IPConfig implements Runnable
 		if ((bitset & 0x01) != 0)
 			s = "manual";
 		if ((bitset & 0x02) != 0)
-			s += (s.length() == 0 ? "" : div) + "BootP";
+			s += (s.length() == 0 ? "" : div) + "Bootstrap Protocol";
 		if ((bitset & 0x04) != 0)
 			s += (s.length() == 0 ? "" : div) + "DHCP";
 		if ((bitset & 0x08) != 0)
-			s += (s.length() == 0 ? "" : div) + "AutoIP";
+			s += (s.length() == 0 ? "" : div) + "Auto IP";
 		return s;
 	}
 
@@ -539,40 +538,40 @@ public class IPConfig implements Runnable
 
 		for (final Iterator<String> i = l.iterator(); i.hasNext();) {
 			final String arg = i.next();
-			if (isOption(arg, "-help", "-h")) {
+			if (isOption(arg, "help", "h")) {
 				options.put("help", null);
 				return;
 			}
-			if (isOption(arg, "-version", null)) {
+			if (isOption(arg, "version", null)) {
 				options.put("version", null);
 				return;
 			}
-			if (isOption(arg, "-local", "-l"))
+			if (isOption(arg, "local", "l"))
 				options.put("localDM", null);
-			else if (isOption(arg, "-remote", "-r"))
+			else if (isOption(arg, "remote", "r"))
 				try {
 					options.put("remote", new IndividualAddress(i.next()));
 				}
 				catch (final KNXFormatException e) {
 					throw new KNXIllegalArgumentException(e.getMessage(), e);
 				}
-			else if (isOption(arg, "-localhost", null))
+			else if (isOption(arg, "localhost", null))
 				parseIP(i.next(), "localhost", options);
-			else if (isOption(arg, "-localport", null))
+			else if (isOption(arg, "localport", null))
 				options.put("localport", Integer.decode(i.next()));
-			else if (isOption(arg, "-port", "-p"))
+			else if (isOption(arg, "port", "p"))
 				options.put("port", Integer.decode(i.next()));
-			else if (isOption(arg, "-nat", "-n"))
+			else if (isOption(arg, "nat", "n"))
 				options.put("nat", null);
-			else if (isOption(arg, "-serial", "-s"))
+			else if (isOption(arg, "serial", "s"))
 				options.put("serial", null);
-			else if (isOption(arg, "-medium", "-m"))
+			else if (isOption(arg, "medium", "m"))
 				options.put("medium", getMedium(i.next()));
-			else if (isOption(arg, "-connect", "-c"))
+			else if (isOption(arg, "connect", "c"))
 				options.put("connect", null);
-			else if (isOption(arg, "-authorize", "-a"))
+			else if (isOption(arg, "authorize", "a"))
 				options.put("authorize", getAuthorizeKey(i.next()));
-			else if (isOption(arg, "-routing", null))
+			else if (isOption(arg, "routing", null))
 				options.put("routing", null);
 			// IP configuration options
 			else if (arg.equalsIgnoreCase("manual"))
@@ -581,8 +580,8 @@ public class IPConfig implements Runnable
 				options.put("bootp", null);
 			else if (arg.equalsIgnoreCase("dhcp"))
 				options.put("dhcp", null);
-			else if (arg.equalsIgnoreCase("autoip"))
-				options.put("autoip", null);
+			else if (arg.equalsIgnoreCase("auto"))
+				options.put("auto", null);
 			else if (arg.equalsIgnoreCase("ip"))
 				parseIP(i.next(), "ip", options);
 			else if (arg.equalsIgnoreCase("subnet"))
@@ -612,26 +611,25 @@ public class IPConfig implements Runnable
 		final StringBuffer sb = new StringBuffer();
 		sb.append("usage: ").append(tool).append(" [options] <host|port>").append(sep);
 		sb.append("options:").append(sep);
-		sb.append("  -help -h                show this help message and exit").append(sep);
-		sb.append("  -version                show tool/library version and exit").append(sep);
-		sb.append("  -local -l               local device management").append(sep);
-		sb.append("  -remote -r <KNX addr>   remote property service").append(sep);
-		sb.append("  -localhost <id>         local IP/host name").append(sep);
-		sb.append("  -localport <number>     local UDP port (default system assigned)").append(sep);
-		sb.append("  -port -p <number>       UDP port on <host> (default ")
+		sb.append("  --help -h                show this help message and exit").append(sep);
+		sb.append("  --version                show tool/library version and exit").append(sep);
+		sb.append("  --local -l               local device management").append(sep);
+		sb.append("  --remote -r <KNX addr>   remote property service").append(sep);
+		sb.append("  --localhost <id>         local IP/host name").append(sep);
+		sb.append("  --localport <number>     local UDP port (default system assigned)").append(sep);
+		sb.append("  --port -p <number>       UDP port on <host> (default ")
 				.append(KNXnetIPConnection.DEFAULT_PORT).append(")").append(sep);
-		sb.append("  -nat -n                 enable Network Address Translation").append(sep);
-		sb.append("  -serial -s              use FT1.2 serial communication").append(sep);
+		sb.append("  --nat -n                 enable Network Address Translation").append(sep);
+		sb.append("  --serial -s              use FT1.2 serial communication").append(sep);
 		sb.append(" remote property service only:").append(sep);
-		sb.append("  -routing                use KNXnet/IP routing " + "(always on port 3671)")
+		sb.append("  --routing                use KNXnet/IP routing " + "(always on port 3671)")
 				.append(sep);
-		sb.append("  -medium -m <id>         KNX medium [tp0|tp1|p110|p132|rf] " + "(default tp1)")
+		sb.append("  --medium -m <id>         KNX medium [tp0|tp1|p110|p132|rf] " + "(default tp1)")
 				.append(sep);
-		sb.append("  -connect -c             connection oriented mode").append(sep);
-		sb.append("  -authorize -a <key>     authorize key to access KNX device").append(sep);
+		sb.append("  --connect -c             connection oriented mode").append(sep);
+		sb.append("  --authorize -a <key>     authorize key to access KNX device").append(sep);
 		sb.append(
-				"To change the IP configuration, supply one or more commands "
-						+ "(case insensitive):").append(sep);
+				"To change the IP configuration, supply one or more commands:").append(sep);
 		sb.append("  ip <address>            set the configured fixed IP address").append(sep);
 		sb.append("  subnet <address>        set the configured IP subnet mask").append(sep);
 		sb.append(
@@ -644,7 +642,7 @@ public class IPConfig implements Runnable
 				"  bootp          enable Bootstrap Protocol IP assignment for current "
 						+ "IP address").append(sep);
 		sb.append("  dhcp           enable DHCP IP assignment for current IP address").append(sep);
-		sb.append("  autoip         enable automatic IP assignment for current " + "IP address")
+		sb.append("  auto           enable automatic IP assignment for current " + "IP address")
 				.append(sep);
 		LogService.log(out, LogLevel.ALWAYS, sb.toString(), null);
 	}
@@ -707,6 +705,13 @@ public class IPConfig implements Runnable
 
 	private static boolean isOption(final String arg, final String longOpt, final String shortOpt)
 	{
-		return arg.equals(longOpt) || shortOpt != null && arg.equals(shortOpt);
+		final boolean lo = arg.startsWith("--")
+				&& arg.regionMatches(2, longOpt, 0, arg.length() - 2);
+		final boolean so = shortOpt != null && arg.charAt(0) == '-'
+				&& arg.regionMatches(1, shortOpt, 0, arg.length() - 1);
+		// notify about change of prefix for long options
+		if (arg.equals("-" + longOpt))
+			throw new KNXIllegalArgumentException("use --" + longOpt);
+		return lo || so;
 	}
 }

@@ -122,23 +122,23 @@ public class Discover implements Runnable
 	 * Entry point for running Discover.
 	 * <p>
 	 * To show usage message of the tool on the console, supply the command line option
-	 * -help (or -h).<br>
+	 * --help (or -h).<br>
 	 * Command line options are treated case sensitive. Available options for
 	 * discovery/self description:
 	 * <ul>
 	 * <li>no arguments: only show short description and version info</li>
-	 * <li><code>-help -h</code> show help message</li>
-	 * <li><code>-version</code> show tool/library version and exit</li>
-	 * <li><code>-localport</code> <i>number</i> &nbsp;local UDP port (default system
+	 * <li><code>--help -h</code> show help message</li>
+	 * <li><code>--version</code> show tool/library version and exit</li>
+	 * <li><code>--localport</code> <i>number</i> &nbsp;local UDP port (default system
 	 * assigned)</li>
-	 * <li><code>-nat -n</code> enable Network Address Translation</li>
-	 * <li><code>-timeout -t</code> discovery/self description response timeout in seconds</li>
-	 * <li><code>-search -s</code> start a discovery search</li>
-	 * <li><code>-interface -i</code> <i>if-name</i> | <i>ip-address</i> &nbsp;local
+	 * <li><code>--nat -n</code> enable Network Address Translation</li>
+	 * <li><code>--timeout -t</code> discovery/self description response timeout in seconds</li>
+	 * <li><code>--search -s</code> start a discovery search</li>
+	 * <li><code>--interface -i</code> <i>if-name</i> | <i>ip-address</i> &nbsp;local
 	 * multicast network interface for discovery or local host for self description
 	 * (default system assigned)</li>
-	 * <li><code>-description -d <i>host</i></code> &nbsp;query description from host</li>
-	 * <li><code>-serverport -p</code> <i>number</i> &nbsp;server UDP port for description
+	 * <li><code>--description -d <i>host</i></code> &nbsp;query description from host</li>
+	 * <li><code>--serverport -p</code> <i>number</i> &nbsp;server UDP port for description
 	 * (defaults to port 3671)</li>
 	 * </ul>
 	 *
@@ -337,32 +337,32 @@ public class Discover implements Runnable
 		int i = 0;
 		for (; i < args.length; i++) {
 			final String arg = args[i];
-			if (isOption(arg, "-help", "-h")) {
+			if (isOption(arg, "help", "h")) {
 				options.put("help", null);
 				return;
 			}
-			if (isOption(arg, "-version", null)) {
+			if (isOption(arg, "version", null)) {
 				options.put("version", null);
 				return;
 			}
 
-			if (isOption(arg, "-localport", null))
+			if (isOption(arg, "localport", null))
 				options.put("localport", Integer.decode(args[++i]));
-			else if (isOption(arg, "-nat", "-n"))
+			else if (isOption(arg, "nat", "n"))
 				options.put("nat", null);
-			else if (isOption(arg, "-interface", "-i"))
+			else if (isOption(arg, "interface", "i"))
 				options.put("if", getNetworkIF(args[++i]));
-			else if (isOption(arg, "-timeout", "-t")) {
+			else if (isOption(arg, "timeout", "t")) {
 				final Integer timeout = Integer.valueOf(args[++i]);
 				// a value of 0 means infinite timeout
 				if (timeout.intValue() > 0)
 					options.put("timeout", timeout);
 			}
-			else if (isOption(arg, "-search", "-s"))
+			else if (isOption(arg, "search", "s"))
 				options.put("search", null);
-			else if (isOption(arg, "-description", "-d"))
+			else if (isOption(arg, "description", "d"))
 				parseHost(args[++i], false, options);
-			else if (isOption(arg, "-serverport", "-p"))
+			else if (isOption(arg, "serverport", "p"))
 				options.put("serverport", Integer.decode(args[++i]));
 			else
 				throw new KNXIllegalArgumentException("unknown option " + arg);
@@ -400,17 +400,17 @@ public class Discover implements Runnable
 		final StringBuffer sb = new StringBuffer();
 		sb.append("usage: ").append(tool).append(" [options]").append(sep);
 		sb.append("options:").append(sep);
-		sb.append(" -help -h                show this help message").append(sep);
-		sb.append(" -version                show tool/library version and exit").append(sep);
-		sb.append(" -localport <number>     local UDP port (default system assigned)").append(sep);
-		sb.append(" -nat -n                 enable Network Address Translation").append(sep);
-		sb.append(" -timeout -t             discovery/description response timeout").append(sep);
-		sb.append(" -search -s              start a discovery search").append(sep);
-		sb.append(" -interface -i <IF name | host name | IP address>").append(sep);
+		sb.append(" --help -h                show this help message").append(sep);
+		sb.append(" --version                show tool/library version and exit").append(sep);
+		sb.append(" --localport <number>     local UDP port (default system assigned)").append(sep);
+		sb.append(" --nat -n                 enable Network Address Translation").append(sep);
+		sb.append(" --timeout -t             discovery/description response timeout").append(sep);
+		sb.append(" --search -s              start a discovery search").append(sep);
+		sb.append(" --interface -i <IF name | host name | IP address>").append(sep);
 		sb.append("      local multicast network interface for discovery or").append(sep);
 		sb.append("      local host for self description (default system assigned)").append(sep);
-		sb.append(" -description -d <host>  query description from host").append(sep);
-		sb.append(" -serverport -p <number> server UDP port for description (default ")
+		sb.append(" --description -d <host>  query description from host").append(sep);
+		sb.append(" --serverport -p <number> server UDP port for description (default ")
 				.append(KNXnetIPConnection.DEFAULT_PORT).append(")").append(sep);
 		LogService.log(out, LogLevel.ALWAYS, sb.toString(), null);
 	}
@@ -428,7 +428,14 @@ public class Discover implements Runnable
 
 	private static boolean isOption(final String arg, final String longOpt, final String shortOpt)
 	{
-		return arg.equals(longOpt) || shortOpt != null && arg.equals(shortOpt);
+		final boolean lo = arg.startsWith("--")
+				&& arg.regionMatches(2, longOpt, 0, arg.length() - 2);
+		final boolean so = shortOpt != null && arg.charAt(0) == '-'
+				&& arg.regionMatches(1, shortOpt, 0, arg.length() - 1);
+		// notify about change of prefix for long options
+		if (arg.equals("-" + longOpt))
+			throw new KNXIllegalArgumentException("use --" + longOpt);
+		return lo || so;
 	}
 
 	private static void showVersion()

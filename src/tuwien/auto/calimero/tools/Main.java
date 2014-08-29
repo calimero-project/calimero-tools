@@ -59,8 +59,8 @@ public final class Main
 	private static final String DEV_INFO = "devinfo";
 
 	private static final String[][] cmds = new String[][] {
-		{ DISCOVER, "Discover KNXnet/IP servers", "-search"},
-		{ DESCRIPTION, "KNXnet/IP server self-description", "-description" },
+		{ DISCOVER, "Discover KNXnet/IP servers", "--search"},
+		{ DESCRIPTION, "KNXnet/IP server self-description", "--description" },
 		{ SCAN, "Determine the existing KNX devices on a KNX subnetwork", ""},
 		{ IPCONFIG, "KNXnet/IP device address configuration", "" },
 		{ MONITOR, "Monitor a KNX network", "" },

@@ -143,21 +143,21 @@ public class ProcComm implements Runnable
 	 * <p>
 	 * An IP host or port identifier has to be supplied, specifying the endpoint for the KNX network
 	 * access.<br>
-	 * To show the usage message of this tool on the console, supply the command line option -help
+	 * To show the usage message of this tool on the console, supply the command line option --help
 	 * (or -h).<br>
 	 * Command line options are treated case sensitive. Available options for the communication
 	 * connection:
 	 * <ul>
-	 * <li><code>-help -h</code> show help message</li>
-	 * <li><code>-version</code> show tool/library version and exit</li>
-	 * <li><code>-verbose -v</code> enable verbose status output</li>
-	 * <li><code>-localhost</code> <i>id</i> &nbsp;local IP/host name</li>
-	 * <li><code>-localport</code> <i>number</i> &nbsp;local UDP port (default system assigned)</li>
-	 * <li><code>-port -p</code> <i>number</i> &nbsp;UDP port on host (default 3671)</li>
-	 * <li><code>-nat -n</code> enable Network Address Translation</li>
-	 * <li><code>-routing</code> use KNXnet/IP routing</li>
-	 * <li><code>-serial -s</code> use FT1.2 serial communication</li>
-	 * <li><code>-medium -m</code> <i>id</i> &nbsp;KNX medium [tp0|tp1|p110|p132|rf] (defaults to
+	 * <li><code>--help -h</code> show help message</li>
+	 * <li><code>--version</code> show tool/library version and exit</li>
+	 * <li><code>--verbose -v</code> enable verbose status output</li>
+	 * <li><code>--localhost</code> <i>id</i> &nbsp;local IP/host name</li>
+	 * <li><code>--localport</code> <i>number</i> &nbsp;local UDP port (default system assigned)</li>
+	 * <li><code>--port -p</code> <i>number</i> &nbsp;UDP port on host (default 3671)</li>
+	 * <li><code>--nat -n</code> enable Network Address Translation</li>
+	 * <li><code>--routing</code> use KNXnet/IP routing</li>
+	 * <li><code>--serial -s</code> use FT1.2 serial communication</li>
+	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp0|tp1|p110|p132|rf] (defaults to
 	 * tp1)</li>
 	 * </ul>
 	 * Available commands for process communication:
@@ -455,15 +455,15 @@ public class ProcComm implements Runnable
 		int i = 0;
 		for (; i < args.length; i++) {
 			final String arg = args[i];
-			if (isOption(arg, "-help", "-h")) {
+			if (isOption(arg, "help", "h")) {
 				options.put("help", null);
 				return;
 			}
-			else if (isOption(arg, "-version", null)) {
+			else if (isOption(arg, "version", null)) {
 				options.put("version", null);
 				return;
 			}
-			else if (isOption(arg, "-verbose", "-v"))
+			else if (isOption(arg, "verbose", "v"))
 				options.put("verbose", null);
 			else if (isOption(arg, "read", null)) {
 				if (i + 2 >= args.length)
@@ -492,21 +492,21 @@ public class ProcComm implements Runnable
 			}
 			else if (isOption(arg, "monitor", null))
 				options.put("monitor", null);
-			else if (isOption(arg, "-localhost", null))
+			else if (isOption(arg, "localhost", null))
 				parseHost(args[++i], true, options);
-			else if (isOption(arg, "-localport", null))
+			else if (isOption(arg, "localport", null))
 				options.put("localport", Integer.decode(args[++i]));
-			else if (isOption(arg, "-port", "-p"))
+			else if (isOption(arg, "port", "p"))
 				options.put("port", Integer.decode(args[++i]));
-			else if (isOption(arg, "-nat", "-n"))
+			else if (isOption(arg, "nat", "n"))
 				options.put("nat", null);
-			else if (isOption(arg, "-serial", "-s"))
+			else if (isOption(arg, "serial", "s"))
 				options.put("serial", null);
-			else if (isOption(arg, "-medium", "-m"))
+			else if (isOption(arg, "medium", "m"))
 				options.put("medium", getMedium(args[++i]));
-			else if (isOption(arg, "-timeout", "-t"))
+			else if (isOption(arg, "timeout", "t"))
 				options.put("timeout", Integer.decode(args[++i]));
-			else if (isOption(arg, "-routing", null))
+			else if (isOption(arg, "routing", null))
 				options.put("routing", null);
 			else if (options.containsKey("serial"))
 				// add port number/identifier to serial option
@@ -531,7 +531,7 @@ public class ProcComm implements Runnable
 		// TODO problem: this overrules the log level from a simplelogger.properties file!!
 		final String simpleLoggerLogLevel = "org.slf4j.simpleLogger.defaultLogLevel";
 		if (!System.getProperties().containsKey(simpleLoggerLogLevel)) {
-			final String lvl = args.contains("-v") || args.contains("-verbose") ? "info" : "error";
+			final String lvl = args.contains("-v") || args.contains("--verbose") ? "info" : "error";
 			System.setProperty(simpleLoggerLogLevel, lvl);
 		}
 		out = LogManager.getManager().getSlf4jLogger("tools");
@@ -542,18 +542,19 @@ public class ProcComm implements Runnable
 		final StringBuffer sb = new StringBuffer();
 		sb.append("usage: ").append(tool + " [options] <host|port>").append(sep);
 		sb.append("options:").append(sep);
-		sb.append("  -help -h                show this help message").append(sep);
-		sb.append("  -version                show tool/library version and exit").append(sep);
-		sb.append("  -verbose -v             enable verbose status output").append(sep);
-		sb.append("  -localhost <id>         local IP/host name").append(sep);
-		sb.append("  -localport <number>     local UDP port (default system assigned)").append(sep);
-		sb.append("  -port -p <number>       UDP port on <host> (default ")
-				.append(KNXnetIPConnection.DEFAULT_PORT + ")").append(sep);
-		sb.append("  -nat -n                 enable Network Address Translation").append(sep);
-		sb.append("  -routing                use KNX net/IP routing " + "(always on port 3671)")
+		sb.append("  --help -h                show this help message").append(sep);
+		sb.append("  --version                show tool/library version and exit").append(sep);
+		sb.append("  --verbose -v             enable verbose status output").append(sep);
+		sb.append("  --localhost <id>         local IP/host name").append(sep);
+		sb.append("  --localport <number>     local UDP port (default system assigned)")
 				.append(sep);
-		sb.append("  -serial -s              use FT1.2 serial communication").append(sep);
-		sb.append("  -medium -m <id>         KNX medium [tp0|tp1|p110|p132|rf] " + "(default tp1)")
+		sb.append("  --port -p <number>       UDP port on <host> (default ")
+				.append(KNXnetIPConnection.DEFAULT_PORT + ")").append(sep);
+		sb.append("  --nat -n                 enable Network Address Translation").append(sep);
+		sb.append("  --routing                use KNX net/IP routing " + "(always on port 3671)")
+				.append(sep);
+		sb.append("  --serial -s              use FT1.2 serial communication").append(sep);
+		sb.append("  --medium -m <id>         KNX medium [tp0|tp1|p110|p132|rf] " + "(default tp1)")
 				.append(sep);
 		sb.append("Available commands for process communication:").append(sep);
 		sb.append("  read <DPT> <KNX address>           read from group address").append(sep);
@@ -622,10 +623,16 @@ public class ProcComm implements Runnable
 		}
 	}
 
-	private static boolean isOption(final String arg, final String longOpt,
-		final String shortOpt)
+	private static boolean isOption(final String arg, final String longOpt, final String shortOpt)
 	{
-		return arg.equals(longOpt) || shortOpt != null && arg.equals(shortOpt);
+		final boolean lo = arg.startsWith("--")
+				&& arg.regionMatches(2, longOpt, 0, arg.length() - 2);
+		final boolean so = shortOpt != null && arg.charAt(0) == '-'
+				&& arg.regionMatches(1, shortOpt, 0, arg.length() - 1);
+		// notify about change of prefix for long options
+		if (arg.equals("-" + longOpt))
+			throw new KNXIllegalArgumentException("use --" + longOpt);
+		return lo || so;
 	}
 
 	private final class ShutdownHandler extends Thread

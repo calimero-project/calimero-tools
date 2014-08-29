@@ -135,39 +135,39 @@ public class Property implements Runnable, PropertyAdapterListener
 	/**
 	 * Entry point for running the Property tool from the console.
 	 * <p>
-	 * An IP host or port identifier has to be supplied to specify the endpoint for the
+	 * An IP host or port identifier has to be supplied to specify the endpoint for
 	 * KNX network access.<br>
 	 * To show the usage message of this tool on the console, supply the command line
-	 * option -help (or -h).<br>
+	 * option --help (or -h).<br>
 	 * Command line options are treated case sensitive. Available options are:
 	 * <ul>
-	 * <li><code>-help -h</code> show help message</li>
-	 * <li><code>-version</code> show tool/library version and exit</li>
-	 * <li><code>-verbose -v</code> enable verbose status output</li>
-	 * <li><code>-local -l</code> local device management</li>
-	 * <li><code>-remote -r</code> <i>KNX addr</i> &nbsp;remote property service</li>
-	 * <li><code>-definitions -d</code> <i>file</i> &nbsp;use property definition file</li>
-	 * <li><code>-localhost</code> <i>id</i> &nbsp;local IP/host name</li>
-	 * <li><code>-localport</code> <i>number</i> &nbsp;local UDP port (default system
+	 * <li><code>--help -h</code> show help message</li>
+	 * <li><code>--version</code> show tool/library version and exit</li>
+	 * <li><code>--verbose -v</code> enable verbose status output</li>
+	 * <li><code>--local -l</code> local device management</li>
+	 * <li><code>--remote -r</code> <i>KNX addr</i> &nbsp;remote property service</li>
+	 * <li><code>--definitions -d</code> <i>file</i> &nbsp;use property definition file</li>
+	 * <li><code>--localhost</code> <i>id</i> &nbsp;local IP/host name</li>
+	 * <li><code>--localport</code> <i>number</i> &nbsp;local UDP port (default system
 	 * assigned)</li>
-	 * <li><code>-port -p</code> <i>number</i> &nbsp;UDP port on host (default 3671)</li>
-	 * <li><code>-nat -n</code> enable Network Address Translation</li>
-	 * <li><code>-serial -s</code> use FT1.2 serial communication</li>
+	 * <li><code>--port -p</code> <i>number</i> &nbsp;UDP port on host (default 3671)</li>
+	 * <li><code>--nat -n</code> enable Network Address Translation</li>
+	 * <li><code>--serial -s</code> use FT1.2 serial communication</li>
 	 * </ul>
 	 * For local device management these options are available:
 	 * <ul>
-	 * <li><code>-emulatewriteenable -e</code> check write-enable of a property</li>
+	 * <li><code>--emulatewriteenable -e</code> check write-enable of a property</li>
 	 * </ul>
 	 * For remote property service these options are available:
 	 * <ul>
-	 * <li><code>-routing</code> use KNXnet/IP routing</li>
-	 * <li><code>-medium -m</code> <i>id</i> &nbsp;KNX medium [tp0|tp1|p110|p132|rf]
+	 * <li><code>--routing</code> use KNXnet/IP routing</li>
+	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp0|tp1|p110|p132|rf]
 	 * (defaults to tp1)</li>
-	 * <li><code>-connect -c</code> connection oriented mode</li>
-	 * <li><code>-authorize -a</code> <i>key</i> &nbsp;authorize key to access the KNX
+	 * <li><code>--connect -c</code> connection oriented mode</li>
+	 * <li><code>--authorize -a</code> <i>key</i> &nbsp;authorize key to access the KNX
 	 * device</li>
 	 * </ul>
-	 * Use one of the following options to specify the actual property command, with
+	 * Use one of the following commands for property access, with
 	 * <i>object-idx</i> being the interface object index, and <i>pid</i> the KNX property
 	 * identifier:
 	 * <ul>
@@ -455,47 +455,48 @@ public class Property implements Runnable, PropertyAdapterListener
 		int i = 0;
 		for (; i < args.length; i++) {
 			final String arg = args[i];
-			if (isOption(arg, "-help", "-h")) {
+			if (isOption(arg, "help", "h")) {
 				options.put("help", null);
 				return;
 			}
-			if (isOption(arg, "-version", null)) {
+			if (isOption(arg, "version", null)) {
 				options.put("version", null);
 				return;
 			}
-			if (isOption(arg, "-local", "-l"))
+			if (isOption(arg, "local", "l"))
 				options.put("local", null);
-			else if (isOption(arg, "-remote", "-r"))
+			else if (isOption(arg, "remote", "r"))
 				try {
 					options.put("remote", new IndividualAddress(args[++i]));
 				}
 				catch (final KNXFormatException e) {
 					throw new KNXIllegalArgumentException(e.getMessage(), e);
 				}
-			else if (isOption(arg, "-definitions", "-d"))
+			else if (isOption(arg, "definitions", "d"))
 				options.put("definitions", args[++i]);
-			else if (isOption(arg, "-verbose", "-v"))
+			else if (isOption(arg, "verbose", "v"))
 				options.put("verbose", null);
-			else if (isOption(arg, "-localhost", null))
+			else if (isOption(arg, "localhost", null))
 				parseHost(args[++i], true, options);
-			else if (isOption(arg, "-localport", null))
+			else if (isOption(arg, "localport", null))
 				options.put("localport", Integer.decode(args[++i]));
-			else if (isOption(arg, "-port", "-p"))
+			else if (isOption(arg, "port", "p"))
 				options.put("port", Integer.decode(args[++i]));
-			else if (isOption(arg, "-nat", "-n"))
+			else if (isOption(arg, "nat", "n"))
 				options.put("nat", null);
-			else if (isOption(arg, "-serial", "-s"))
+			else if (isOption(arg, "serial", "s"))
 				options.put("serial", null);
-			else if (isOption(arg, "-medium", "-m"))
+			else if (isOption(arg, "medium", "m"))
 				options.put("medium", getMedium(args[++i]));
-			else if (isOption(arg, "-emulatewriteenable", "-e"))
+			else if (isOption(arg, "emulatewriteenable", "e"))
 				options.put("emulatewriteenable", null);
-			else if (isOption(arg, "-connect", "-c"))
+			else if (isOption(arg, "connect", "c"))
 				options.put("connect", null);
-			else if (isOption(arg, "-authorize", "-a"))
+			else if (isOption(arg, "authorize", "a"))
 				options.put("authorize", getAuthorizeKey(args[++i]));
-			else if (isOption(arg, "-routing", null))
+			else if (isOption(arg, "routing", null))
 				options.put("routing", null);
+			// XXX parsing commands with isOption is not correct anymore
 			else if (isOption(arg, "get", null) || isOption(arg, "set", null)
 					|| isOption(arg, "desc", null) || isOption(arg, "scan", null)
 					|| isOption(arg, "?", null)) {
@@ -635,7 +636,7 @@ public class Property implements Runnable, PropertyAdapterListener
 		// TODO problem: this overrules the log level from a simplelogger.properties file!!
 		final String simpleLoggerLogLevel = "org.slf4j.simpleLogger.defaultLogLevel";
 		if (!System.getProperties().containsKey(simpleLoggerLogLevel)) {
-			final String lvl = args.contains("-v") || args.contains("-verbose") ? "info" : "warn";
+			final String lvl = args.contains("-v") || args.contains("--verbose") ? "info" : "warn";
 			System.setProperty(simpleLoggerLogLevel, lvl);
 		}
 		out = LogManager.getManager().getSlf4jLogger("tools");
@@ -646,26 +647,27 @@ public class Property implements Runnable, PropertyAdapterListener
 		final StringBuffer sb = new StringBuffer();
 		sb.append("usage: ").append(tool).append(" [options] <host|port>").append(sep);
 		sb.append("options:").append(sep);
-		sb.append("  -help -h                show this help message").append(sep);
-		sb.append("  -version                show tool/library version and exit").append(sep);
-		sb.append("  -verbose -v             enable verbose status output").append(sep);
-		sb.append("  -local -l               local device management").append(sep);
-		sb.append("  -remote -r <KNX addr>   remote property service").append(sep);
-		sb.append("  -definitions -d <file>  use property definition file").append(sep);
-		sb.append("  -localhost <id>         local IP/host name").append(sep);
-		sb.append("  -localport <number>     local UDP port (default system assigned)").append(sep);
-		sb.append("  -port -p <number>       UDP port on <host> (default ")
-				.append(KNXnetIPConnection.DEFAULT_PORT).append(")").append(sep);
-		sb.append("  -nat -n                 enable Network Address Translation").append(sep);
-		sb.append("  -serial -s              use FT1.2 serial communication").append(sep);
-		sb.append(" local DM only:").append(sep);
-		sb.append("  -emulatewriteenable -e  check write-enable of a property").append(sep);
-		sb.append(" remote property service only:").append(sep);
-		sb.append("  -routing                use KNXnet/IP routing").append(sep);
-		sb.append("  -medium -m <id>         KNX medium [tp0|tp1|p110|p132|rf] " + "(default tp1)")
+		sb.append("  --help -h                show this help message").append(sep);
+		sb.append("  --version                show tool/library version and exit").append(sep);
+		sb.append("  --verbose -v             enable verbose status output").append(sep);
+		sb.append("  --local -l               local device management").append(sep);
+		sb.append("  --remote -r <KNX addr>   remote property service").append(sep);
+		sb.append("  --definitions -d <file>  use property definition file").append(sep);
+		sb.append("  --localhost <id>         local IP/host name").append(sep);
+		sb.append("  --localport <number>     local UDP port (default system assigned)")
 				.append(sep);
-		sb.append("  -connect -c             connection oriented mode").append(sep);
-		sb.append("  -authorize -a <key>     authorize key to access KNX device").append(sep);
+		sb.append("  --port -p <number>       UDP port on <host> (default ")
+			.append(KNXnetIPConnection.DEFAULT_PORT).append(")").append(sep);
+		sb.append("  --nat -n                 enable Network Address Translation").append(sep);
+		sb.append("  --serial -s              use FT1.2 serial communication").append(sep);
+		sb.append(" local device management mode only:").append(sep);
+		sb.append("  --emulatewriteenable -e  check write-enable of a property").append(sep);
+		sb.append(" remote property service mode only:").append(sep);
+		sb.append("  --routing                use KNXnet/IP routing").append(sep);
+		sb.append("  --medium -m <id>         KNX medium [tp0|tp1|p110|p132|rf] " + "(default tp1)")
+				.append(sep);
+		sb.append("  --connect -c             connection oriented mode").append(sep);
+		sb.append("  --authorize -a <key>     authorize key to access KNX device").append(sep);
 		sb.append(" tool commands:").append(sep);
 		sb.append("  get <object-idx> <pid> [<start-idx> <elements>]  get the property value(s)")
 				.append(sep);
@@ -677,8 +679,8 @@ public class Property implements Runnable, PropertyAdapterListener
 						+ "get the property description of the property ID").append(sep);
 		sb.append("  desc <object-idx> \"i\" <prop-idx>       "
 						+ "get the property description of the property index").append(sep);
-		sb.append("  scan [<object-idx>]                    list interface object type descriptions")
-				.append(sep);
+		sb.append("  scan [<object-idx>]"
+				+ "                    list interface object type descriptions").append(sep);
 		sb.append("  scan [<object-idx>] \"all\"              list all property descriptions")
 				.append(sep);
 		sb.append("  ?                                      show command help").append(sep);
@@ -747,10 +749,16 @@ public class Property implements Runnable, PropertyAdapterListener
 		}
 	}
 
-	private static boolean isOption(final String arg, final String longOpt,
-		final String shortOpt)
+	private static boolean isOption(final String arg, final String longOpt, final String shortOpt)
 	{
-		return arg.equals(longOpt) || shortOpt != null && arg.equals(shortOpt);
+		final boolean lo = arg.startsWith("--")
+				&& arg.regionMatches(2, longOpt, 0, arg.length() - 2);
+		final boolean so = shortOpt != null && arg.charAt(0) == '-'
+				&& arg.regionMatches(1, shortOpt, 0, arg.length() - 1);
+		// notify about change of prefix for long options
+		if (arg.equals("-" + longOpt))
+			throw new KNXIllegalArgumentException("use --" + longOpt);
+		return lo || so;
 	}
 
 	private static int toInt(final String number)
