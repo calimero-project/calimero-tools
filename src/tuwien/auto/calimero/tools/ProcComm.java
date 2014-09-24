@@ -435,25 +435,30 @@ public class ProcComm implements Runnable
 	private String getDPT()
 	{
 		final String dpt = (String) options.get("dpt");
-		if ("switch".equals(dpt))
+		return fromDptName(dpt);
+	}
+
+	private static String fromDptName(final String id)
+	{
+		if ("switch".equals(id))
 			return "1.001";
-		if ("bool".equals(dpt))
+		if ("bool".equals(id))
 			return "1.002";
-		if ("string".equals(dpt))
+		if ("string".equals(id))
 			return "16.001";
-		if ("float".equals(dpt))
+		if ("float".equals(id))
 			return "9.002";
-		if ("float2".equals(dpt))
+		if ("float2".equals(id))
 			return "9.002";
-		if ("float4".equals(dpt))
+		if ("float4".equals(id))
 			return "14.005";
-		if ("ucount".equals(dpt))
+		if ("ucount".equals(id))
 			return "5.010";
-		if ("int".equals(dpt))
+		if ("int".equals(id))
 			return "13.001";
-		if ("angle".equals(dpt))
+		if ("angle".equals(id))
 			return "5.003";
-		return dpt;
+		return id;
 	}
 
 	private void readWrite() throws KNXException, InterruptedException
@@ -491,8 +496,7 @@ public class ProcComm implements Runnable
 			if ("exit".equalsIgnoreCase(cmd))
 				return;
 			final String addr = s[1];
-			// TODO allow human readable names in addition of DPT IDs
-			final String dptId = s[2];
+			final String dptId = fromDptName(s[2]);
 			final StateDP dp = new StateDP(new GroupAddress(addr), "tmp", 0, dptId);
 			datapoints.remove(dp);
 			datapoints.add(dp);
