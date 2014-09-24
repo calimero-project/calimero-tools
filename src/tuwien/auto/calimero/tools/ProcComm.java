@@ -36,6 +36,9 @@
 
 package tuwien.auto.calimero.tools;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -47,6 +50,8 @@ import tuwien.auto.calimero.DetachEvent;
 import tuwien.auto.calimero.GroupAddress;
 import tuwien.auto.calimero.Settings;
 import tuwien.auto.calimero.datapoint.Datapoint;
+import tuwien.auto.calimero.datapoint.DatapointMap;
+import tuwien.auto.calimero.datapoint.DatapointModel;
 import tuwien.auto.calimero.datapoint.StateDP;
 import tuwien.auto.calimero.dptxlator.DPTXlator;
 import tuwien.auto.calimero.dptxlator.TranslatorTypes;
@@ -113,6 +118,9 @@ public class ProcComm implements Runnable
 
 	// specifies parameters to use for the network link and process communication
 	private final Map options = new HashMap();
+	// contains the datapoints for which translation information is known in monitor mode
+	private final DatapointModel datapoints = new DatapointMap();
+
 	//private final LogWriter w;
 
 	/**
@@ -232,13 +240,13 @@ public class ProcComm implements Runnable
 			start(null);
 			readWrite();
 			if (options.containsKey("monitor")) {
-				synchronized (this) {
-					while (true)
-						wait();
-				}
+				runMonitorLoop();
 			}
 		}
 		catch (final KNXException e) {
+			thrown = e;
+		}
+		catch (final IOException e) {
 			thrown = e;
 		}
 		catch (final InterruptedException e) {
@@ -332,6 +340,11 @@ public class ProcComm implements Runnable
 		try {
 			if (e.getDestination().equals(dst) && asdu.length > 0)
 				s = s + " (" + asString(asdu, 0, getDPT()) + ")";
+			else {
+				final Datapoint dp = datapoints.get(e.getDestination());
+				if (dp != null)
+					s = s + " (" + asString(asdu, 0, dp.getDPT()) + ")";
+			}
 		}
 		catch (final KNXException ke) {}
 		catch (final KNXIllegalArgumentException iae) {}
@@ -454,6 +467,23 @@ public class ProcComm implements Runnable
 		}
 	}
 
+	private void runMonitorLoop() throws KNXFormatException, IOException
+	{
+		final BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+		// TODO check interruptible I/O
+		for (String line = in.readLine(); line != null; line = in.readLine()) {
+			final String[] s = line.split(" ");
+			final String cmd = s[0];
+			if ("exit".equalsIgnoreCase(cmd))
+				return;
+			final String addr = s[1];
+			// TODO allow human readable names in addition of DPT IDs
+			final String dptId = s[2];
+			final StateDP dp = new StateDP(new GroupAddress(addr), "tmp", 0, dptId);
+			datapoints.remove(dp);
+			datapoints.add(dp);
+		}
+	}
 	/**
 	 * Reads all options in the specified array, and puts relevant options into the
 	 * supplied options map.
