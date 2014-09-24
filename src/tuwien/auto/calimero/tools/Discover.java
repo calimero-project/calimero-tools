@@ -53,7 +53,6 @@ import tuwien.auto.calimero.knxnetip.Discoverer;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.knxnetip.servicetype.DescriptionResponse;
 import tuwien.auto.calimero.knxnetip.servicetype.SearchResponse;
-import tuwien.auto.calimero.log.LogLevel;
 import tuwien.auto.calimero.log.LogManager;
 import tuwien.auto.calimero.log.LogService;
 
@@ -82,7 +81,7 @@ public class Discover implements Runnable
 	private static final String tool = "Discover";
 	private static final String sep = System.getProperty("line.separator");
 
-	private static Logger out = LogManager.getManager().getSlf4jLogger(Discoverer.LOG_SERVICE);
+	private static Logger out = LogService.getLogger(Discoverer.LOG_SERVICE);
 
 	private final Discoverer d;
 	private final Map<String, Object> options = new HashMap<>();
@@ -169,10 +168,9 @@ public class Discover implements Runnable
 		boolean canceled = false;
 		try {
 			if (options.isEmpty()) {
-				LogService.log(out, LogLevel.ALWAYS, " - KNXnet/IP server discovery "
-						+ "& self description", null);
+				LogService.logAlways(out, " - KNXnet/IP server discovery & self description");
 				showVersion();
-				LogService.log(out, LogLevel.ALWAYS, "Type -help for help message", null);
+				LogService.logAlways(out, "Type -help for help message");
 			}
 			else if (options.containsKey("help"))
 				showUsage();
@@ -412,7 +410,7 @@ public class Discover implements Runnable
 		sb.append(" --description -d <host>  query description from host").append(sep);
 		sb.append(" --serverport -p <number> server UDP port for description (default ")
 				.append(KNXnetIPConnection.DEFAULT_PORT).append(")").append(sep);
-		LogService.log(out, LogLevel.ALWAYS, sb.toString(), null);
+		LogService.logAlways(out, sb.toString());
 	}
 
 	private static void parseHost(final String host, final boolean local,
@@ -440,7 +438,7 @@ public class Discover implements Runnable
 
 	private static void showVersion()
 	{
-		LogService.log(out, LogLevel.ALWAYS, Settings.getLibraryHeader(false), null);
+		LogService.logAlways(out, Settings.getLibraryHeader(false));
 	}
 
 	private static final class ShutdownHandler extends Thread

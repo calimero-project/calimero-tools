@@ -65,7 +65,6 @@ import tuwien.auto.calimero.link.medium.KNXMediumSettings;
 import tuwien.auto.calimero.link.medium.PLSettings;
 import tuwien.auto.calimero.link.medium.RFSettings;
 import tuwien.auto.calimero.link.medium.TPSettings;
-import tuwien.auto.calimero.log.LogLevel;
 import tuwien.auto.calimero.log.LogManager;
 import tuwien.auto.calimero.log.LogService;
 import tuwien.auto.calimero.process.ProcessCommunicator;
@@ -245,9 +244,9 @@ public class ProcComm implements Runnable
 	public void start(final ProcessListener l) throws KNXException, InterruptedException
 	{
 		if (options.isEmpty()) {
-			LogService.log(out, LogLevel.ALWAYS, " - KNX process communication", null);
+			LogService.logAlways(out, " - KNX process communication");
 			showVersion();
-			LogService.log(out, LogLevel.ALWAYS, "Type -help for help message", null);
+			LogService.logAlways(out, "Type -help for help message");
 			return;
 		}
 		if (options.containsKey("help")) {
@@ -313,7 +312,7 @@ public class ProcComm implements Runnable
 		}
 		catch (final KNXException ke) {}
 		catch (final KNXIllegalArgumentException iae) {}
-		LogService.log(out, LogLevel.ALWAYS, s, null);
+		LogService.logAlways(out, s);
 	}
 
 	/**
@@ -423,12 +422,12 @@ public class ProcComm implements Runnable
 		// handle the DPT stuff, so an already formatted string will be returned
 		final Datapoint dp = new StateDP(main, "", 0, getDPT());
 		if (options.containsKey("read"))
-			LogService.log(out, LogLevel.ALWAYS, "read value: " + pc.read(dp), null);
+			LogService.logAlways(out, "read value: " + pc.read(dp));
 		if (options.containsKey("write")) {
 			// note, a write to a non existing datapoint might finish successfully,
 			// too.. no check for existence or read back of a written value is done
 			pc.write(dp, (String) options.get("value"));
-			LogService.log(out, LogLevel.ALWAYS, "write successful", null);
+			LogService.logAlways(out, "write successful");
 		}
 	}
 
@@ -534,7 +533,7 @@ public class ProcComm implements Runnable
 			final String lvl = args.contains("-v") || args.contains("--verbose") ? "info" : "error";
 			System.setProperty(simpleLoggerLogLevel, lvl);
 		}
-		out = LogManager.getManager().getSlf4jLogger("tools");
+		out = LogService.getLogger("tools");
 	}
 
 	private static void showUsage()
@@ -565,7 +564,7 @@ public class ProcComm implements Runnable
 		sb.append("  switch (1.001), bool (1.002), string (16.001), float/float2 (9.002)")
 				.append(sep)
 				.append("  float4 (14.005), ucount (5.010), int (13.001), angle (5.003)");
-		LogService.log(out, LogLevel.ALWAYS, sb.toString(), null);
+		LogService.logAlways(out, sb.toString());
 	}
 
 	//
@@ -574,7 +573,7 @@ public class ProcComm implements Runnable
 
 	private static void showVersion()
 	{
-		LogService.log(out, LogLevel.ALWAYS, Settings.getLibraryHeader(false), null);
+		LogService.logAlways(out, Settings.getLibraryHeader(false));
 	}
 
 	/**

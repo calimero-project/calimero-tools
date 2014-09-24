@@ -62,7 +62,6 @@ import tuwien.auto.calimero.link.medium.KNXMediumSettings;
 import tuwien.auto.calimero.link.medium.PLSettings;
 import tuwien.auto.calimero.link.medium.RFSettings;
 import tuwien.auto.calimero.link.medium.TPSettings;
-import tuwien.auto.calimero.log.LogLevel;
 import tuwien.auto.calimero.log.LogManager;
 import tuwien.auto.calimero.log.LogService;
 import tuwien.auto.calimero.mgmt.Destination;
@@ -161,7 +160,7 @@ public class DeviceInfo implements Runnable
 	{
 		setLogVerbosity(Arrays.asList(args));
 
-		out = LogManager.getManager().getSlf4jLogger("tools");
+		out = LogService.getLogger("tools");
 		try {
 			final DeviceInfo d = new DeviceInfo(args);
 			final ShutdownHandler sh = new ShutdownHandler().register();
@@ -183,9 +182,9 @@ public class DeviceInfo implements Runnable
 	{
 		// ??? as with the other tools, maybe put this into the try block to also call onCompletion
 		if (options.isEmpty()) {
-			LogService.log(out, LogLevel.ALWAYS, tool + " - Read KNX device information", null);
+			LogService.logAlways(out, tool + " - Read KNX device information");
 			showVersion();
-			LogService.log(out, LogLevel.ALWAYS, "Type -help for help message", null);
+			LogService.logAlways(out, "Type -help for help message");
 			return;
 		}
 		if (options.containsKey("help")) {
@@ -461,7 +460,7 @@ public class DeviceInfo implements Runnable
 			final String lvl = args.contains("-v") || args.contains("--verbose") ? "info" : "error";
 			System.setProperty(simpleLoggerLogLevel, lvl);
 		}
-		out = LogManager.getManager().getSlf4jLogger("tools");
+		out = LogService.getLogger("tools");
 	}
 
 	private static InetSocketAddress createLocalSocket(final InetAddress host, final Integer port)
@@ -536,12 +535,12 @@ public class DeviceInfo implements Runnable
 		sb.append(" --routing                use KNXnet/IP routing").append(sep);
 		sb.append(" --medium -m <id>         KNX medium [tp0|tp1|p110|p132|rf] " + "(default tp1)")
 				.append(sep);
-		LogService.log(out, LogLevel.ALWAYS, sb.toString(), null);
+		LogService.logAlways(out, sb.toString());
 	}
 
 	private static void showVersion()
 	{
-		LogService.log(out, LogLevel.ALWAYS, Settings.getLibraryHeader(false), null);
+		LogService.logAlways(out, Settings.getLibraryHeader(false));
 	}
 
 	private static int toUnsigned(final byte[] data)

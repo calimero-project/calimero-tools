@@ -64,7 +64,6 @@ import tuwien.auto.calimero.link.medium.RFSettings;
 import tuwien.auto.calimero.link.medium.RawFrame;
 import tuwien.auto.calimero.link.medium.RawFrameBase;
 import tuwien.auto.calimero.link.medium.TPSettings;
-import tuwien.auto.calimero.log.LogLevel;
 import tuwien.auto.calimero.log.LogManager;
 import tuwien.auto.calimero.log.LogService;
 
@@ -243,9 +242,9 @@ public class NetworkMonitor implements Runnable
 	public void start() throws KNXException, InterruptedException
 	{
 		if (options.isEmpty()) {
-			LogService.log(out, LogLevel.ALWAYS, " - Monitor a KNX network", null);
+			LogService.logAlways(out, " - Monitor a KNX network");
 			showVersion();
-			LogService.log(out, LogLevel.ALWAYS, "Type -help for help message", null);
+			LogService.logAlways(out, "Type -help for help message");
 			return;
 		}
 		if (options.containsKey("help")) {
@@ -303,7 +302,7 @@ public class NetworkMonitor implements Runnable
 				sb.append(": ").append(DataUnitBuilder.decode(f.getTPDU(), f.getDestination()));
 			}
 		}
-		LogService.log(out, LogLevel.ALWAYS, sb.toString(), null);
+		LogService.logAlways(out, sb.toString());
 	}
 
 	/**
@@ -433,7 +432,7 @@ public class NetworkMonitor implements Runnable
 			final String lvl = args.contains("-v") || args.contains("--verbose") ? "trace" : "warn";
 			System.setProperty(simpleLoggerLogLevel, lvl);
 		}
-		out = LogManager.getManager().getSlf4jLogger("tools");
+		out = LogService.getLogger("tools");
 	}
 
 	private static void showUsage()
@@ -453,12 +452,12 @@ public class NetworkMonitor implements Runnable
 		sb.append("  --serial -s              use FT1.2 serial communication").append(sep);
 		sb.append("  --medium -m <id>         KNX medium [tp0|tp1|p110|p132|rf] " + "(default tp1)")
 				.append(sep);
-		LogService.log(out, LogLevel.ALWAYS, sb.toString(), null);
+		LogService.logAlways(out, sb.toString());
 	}
 
 	private static void showVersion()
 	{
-		LogService.log(out, LogLevel.ALWAYS, Settings.getLibraryHeader(false), null);
+		LogService.logAlways(out, Settings.getLibraryHeader(false));
 	}
 
 	/**

@@ -58,7 +58,6 @@ import tuwien.auto.calimero.link.medium.KNXMediumSettings;
 import tuwien.auto.calimero.link.medium.PLSettings;
 import tuwien.auto.calimero.link.medium.RFSettings;
 import tuwien.auto.calimero.link.medium.TPSettings;
-import tuwien.auto.calimero.log.LogLevel;
 import tuwien.auto.calimero.log.LogManager;
 import tuwien.auto.calimero.log.LogService;
 import tuwien.auto.calimero.mgmt.ManagementProcedures;
@@ -172,10 +171,9 @@ public class ScanDevices implements Runnable
 			// TODO onCompletion prints '0 network devices found' on showing help etc., either
 			// suppress that or move the following out of the try (skipping onCompletion altogether)
 			if (options.isEmpty()) {
-				LogService.log(out, LogLevel.ALWAYS,
-						" - Determine existing KNX devices on a KNX subnetwork", null);
+				LogService.logAlways(out, " - Determine existing KNX devices on a KNX subnetwork");
 				showVersion();
-				LogService.log(out, LogLevel.ALWAYS, "Type -help for help message", null);
+				LogService.logAlways(out, "Type -help for help message");
 				return;
 			}
 			if (options.containsKey("help")) {
@@ -200,8 +198,7 @@ public class ScanDevices implements Runnable
 					found = new IndividualAddress[] {addr};
 			}
 			else {
-				LogService.log(out, LogLevel.ALWAYS, "start scan of " + area + "." + line
-						+ ".[0..255] ...", null);
+				LogService.logAlways(out, "start scan of " + area + "." + line + ".[0..255] ...");
 				// this call is interruptible (via exception), in which case we won't get any
 				// result, even though some devices might have answered already
 				// ??? think whether to refactor scanning into interruptible with partial result set
@@ -273,10 +270,10 @@ public class ScanDevices implements Runnable
 		if (thrown != null)
 			out.error("completed", thrown);
 
-		LogService.log(out, LogLevel.ALWAYS, "found " + devices.length + " network devices", null);
+		LogService.logAlways(out, "found " + devices.length + " network devices");
 		for (int i = 0; i < devices.length; i++) {
 			final IndividualAddress a = devices[i];
-			LogService.log(out, LogLevel.ALWAYS, a.toString(), null);
+			LogService.logAlways(out, a.toString());
 		}
 	}
 
@@ -362,7 +359,7 @@ public class ScanDevices implements Runnable
 			final String lvl = args.contains("-v") || args.contains("--verbose") ? "trace" : "warn";
 			System.setProperty(simpleLoggerLogLevel, lvl);
 		}
-		out = LogManager.getManager().getSlf4jLogger("tools");
+		out = LogService.getLogger("tools");
 	}
 
 	private static KNXMediumSettings getMedium(final String id)
@@ -406,12 +403,12 @@ public class ScanDevices implements Runnable
 		sb.append("The area and line are given as numbers in the range [0..0x0F], e.g., 3.1")
 				.append(sep);
 		sb.append("The (optional) device address part is in the range [0..0x0FF]").append(sep);
-		LogService.log(out, LogLevel.ALWAYS, sb.toString(), null);
+		LogService.logAlways(out, sb.toString());
 	}
 
 	private static void showVersion()
 	{
-		LogService.log(out, LogLevel.ALWAYS, Settings.getLibraryHeader(false), null);
+		LogService.logAlways(out, Settings.getLibraryHeader(false));
 	}
 
 	private static InetSocketAddress createLocalSocket(final InetAddress host, final Integer port)

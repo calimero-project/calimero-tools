@@ -64,7 +64,6 @@ import tuwien.auto.calimero.link.medium.KNXMediumSettings;
 import tuwien.auto.calimero.link.medium.PLSettings;
 import tuwien.auto.calimero.link.medium.RFSettings;
 import tuwien.auto.calimero.link.medium.TPSettings;
-import tuwien.auto.calimero.log.LogLevel;
 import tuwien.auto.calimero.log.LogManager;
 import tuwien.auto.calimero.log.LogService;
 import tuwien.auto.calimero.mgmt.Description;
@@ -212,9 +211,9 @@ public class Property implements Runnable, PropertyAdapterListener
 	{
 		// ??? as with the other tools, maybe put this into the try block to also call onCompletion
 		if (options.isEmpty()) {
-			LogService.log(out, LogLevel.ALWAYS, " - Access KNX properties", null);
+			LogService.logAlways(out, " - Access KNX properties");
 			showVersion();
-			LogService.log(out, LogLevel.ALWAYS, "Type -help for help message", null);
+			LogService.logAlways(out, "Type -help for help message");
 			return;
 		}
 		if (options.containsKey("help")) {
@@ -433,7 +432,7 @@ public class Property implements Runnable, PropertyAdapterListener
 		buf.append(", max. " + d.getMaxElements());
 		buf.append(", r/w access " + d.getReadLevel() + "/" + d.getWriteLevel());
 		buf.append(d.isWriteEnabled() ? ", w.enabled" : ", r.only");
-		LogService.log(out, LogLevel.ALWAYS, buf.toString(), null);
+		LogService.logAlways(out, buf.toString());
 	}
 
 	private tuwien.auto.calimero.mgmt.PropertyClient.Property getPropertyDef(final int objType,
@@ -553,7 +552,7 @@ public class Property implements Runnable, PropertyAdapterListener
 				}
 			}
 		}
-		LogService.log(out, LogLevel.ALWAYS, s, null);
+		LogService.logAlways(out, s);
 	}
 
 	private void getDescription(final String[] args) throws KNXException
@@ -639,7 +638,7 @@ public class Property implements Runnable, PropertyAdapterListener
 			final String lvl = args.contains("-v") || args.contains("--verbose") ? "info" : "warn";
 			System.setProperty(simpleLoggerLogLevel, lvl);
 		}
-		out = LogManager.getManager().getSlf4jLogger("tools");
+		out = LogService.getLogger("tools");
 	}
 
 	private static void showUsage()
@@ -685,7 +684,7 @@ public class Property implements Runnable, PropertyAdapterListener
 				.append(sep);
 		sb.append("  ?                                      show command help").append(sep);
 
-		LogService.log(out, LogLevel.ALWAYS, sb.toString(), null);
+		LogService.logAlways(out, sb.toString());
 	}
 
 	//
@@ -694,7 +693,7 @@ public class Property implements Runnable, PropertyAdapterListener
 
 	private static void showVersion()
 	{
-		LogService.log(out, LogLevel.ALWAYS, Settings.getLibraryHeader(false), null);
+		LogService.logAlways(out, Settings.getLibraryHeader(false));
 	}
 
 	private static KNXMediumSettings getMedium(final String id)

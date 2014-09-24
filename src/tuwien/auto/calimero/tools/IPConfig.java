@@ -63,7 +63,6 @@ import tuwien.auto.calimero.link.medium.KNXMediumSettings;
 import tuwien.auto.calimero.link.medium.PLSettings;
 import tuwien.auto.calimero.link.medium.RFSettings;
 import tuwien.auto.calimero.link.medium.TPSettings;
-import tuwien.auto.calimero.log.LogLevel;
 import tuwien.auto.calimero.log.LogManager;
 import tuwien.auto.calimero.log.LogService;
 import tuwien.auto.calimero.mgmt.Description;
@@ -99,7 +98,7 @@ public class IPConfig implements Runnable
 	private static final String sep = System.getProperty("line.separator");
 	private static final int IPObjType = 11;
 
-	private static Logger out = LogManager.getManager().getSlf4jLogger("tools");
+	private static Logger out = LogService.getLogger("tools");
 
 	private KNXNetworkLink lnk;
 	private PropertyClient pc;
@@ -198,10 +197,9 @@ public class IPConfig implements Runnable
 		boolean canceled = false;
 		try {
 			if (options.isEmpty()) {
-				LogService.log(out, LogLevel.ALWAYS, " - KNXnet/IP address configuration",
-						null);
+				LogService.logAlways(out, " - KNXnet/IP address configuration");
 				showVersion();
-				LogService.log(out, LogLevel.ALWAYS, "Type -help for help message", null);
+				LogService.logAlways(out, "Type -help for help message");
 				return;
 			}
 			if (options.containsKey("help")) {
@@ -276,7 +274,7 @@ public class IPConfig implements Runnable
 			final String[] s = config.get(i);
 			sb.append(s[1]).append(padding.substring(s[1].length()) + s[2]).append(sep);
 		}
-		LogService.log(out, LogLevel.ALWAYS, sb.toString(), null);
+		LogService.logAlways(out, sb.toString());
 	}
 
 	/**
@@ -644,12 +642,12 @@ public class IPConfig implements Runnable
 		sb.append("  dhcp           enable DHCP IP assignment for current IP address").append(sep);
 		sb.append("  auto           enable automatic IP assignment for current " + "IP address")
 				.append(sep);
-		LogService.log(out, LogLevel.ALWAYS, sb.toString(), null);
+		LogService.logAlways(out, sb.toString());
 	}
 
 	private static void showVersion()
 	{
-		LogService.log(out, LogLevel.ALWAYS, Settings.getLibraryHeader(false), null);
+		LogService.logAlways(out, Settings.getLibraryHeader(false));
 	}
 
 	private static KNXMediumSettings getMedium(final String id)
