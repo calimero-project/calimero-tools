@@ -463,22 +463,30 @@ public class ProcComm implements Runnable
 
 	private void readWrite() throws KNXException, InterruptedException
 	{
+		final boolean write = options.containsKey("write");
+		if (!write && !options.containsKey("read"))
+			return;
 		final GroupAddress main = (GroupAddress) options.get("dst");
 		// encapsulate information into a datapoint
 		// this is a convenient way to let the process communicator
 		// handle the DPT stuff, so an already formatted string will be returned
-		final Datapoint dp = new StateDP(main, "", 0, getDPT());
-		if (options.containsKey("read"))
+		readWrite(new StateDP(main, "", 0, getDPT()), write, (String) options.get("value"));
+	}
+
+	private void readWrite(final Datapoint dp, final boolean write, final String value)
+		throws KNXException, InterruptedException
+	{
+		if (!write)
 			out.log(LogLevel.ALWAYS, "read value: " + pc.read(dp), null);
-		if (options.containsKey("write")) {
+		else {
 			// note, a write to a non existing datapoint might finish successfully,
 			// too.. no check for existence or read back of a written value is done
-			pc.write(dp, (String) options.get("value"));
+			pc.write(dp, value);
 			out.log(LogLevel.ALWAYS, "write successful", null);
 		}
 	}
 
-	private void runMonitorLoop() throws KNXFormatException, IOException
+	private void runMonitorLoop() throws IOException, KNXException, InterruptedException
 	{
 		try {
 			final XMLReader r = XMLFactory.getInstance().createXMLReader(toolDatapointsFile);
@@ -491,15 +499,19 @@ public class ProcComm implements Runnable
 		final BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 		// TODO check interruptible I/O
 		for (String line = in.readLine(); line != null; line = in.readLine()) {
+			// NYI validate input data before usage
 			final String[] s = line.split(" ");
 			final String cmd = s[0];
 			if ("exit".equalsIgnoreCase(cmd))
 				return;
 			final String addr = s[1];
+			// TODO allow read/write without DPT from known datapoint
 			final String dptId = fromDptName(s[2]);
 			final StateDP dp = new StateDP(new GroupAddress(addr), "tmp", 0, dptId);
 			datapoints.remove(dp);
 			datapoints.add(dp);
+			// we make read the default
+			readWrite(dp, cmd.equalsIgnoreCase("write"), s.length == 4 ? s[3] : null);
 		}
 	}
 
