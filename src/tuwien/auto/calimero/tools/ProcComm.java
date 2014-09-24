@@ -76,6 +76,10 @@ import tuwien.auto.calimero.process.ProcessCommunicatorImpl;
 import tuwien.auto.calimero.process.ProcessEvent;
 import tuwien.auto.calimero.process.ProcessListener;
 import tuwien.auto.calimero.process.ProcessListenerEx;
+import tuwien.auto.calimero.xml.KNXMLException;
+import tuwien.auto.calimero.xml.XMLFactory;
+import tuwien.auto.calimero.xml.XMLReader;
+import tuwien.auto.calimero.xml.XMLWriter;
 
 /**
  * A tool for Calimero 2 providing basic process communication.
@@ -108,6 +112,7 @@ public class ProcComm implements Runnable
 	private static final String tool = "ProcComm";
 	private static final String version = "1.2";
 	private static final String sep = System.getProperty("line.separator");
+	private static final String toolDatapointsFile = "." + tool.toLowerCase() + "_dplist.xml";
 
 	private static LogService out = LogManager.getManager().getLogService("tools");
 
@@ -321,6 +326,7 @@ public class ProcComm implements Runnable
 		if (pc != null) {
 			final KNXNetworkLink lnk = pc.detach();
 			lnk.close();
+			saveDatapoints();
 		}
 	}
 
@@ -469,6 +475,14 @@ public class ProcComm implements Runnable
 
 	private void runMonitorLoop() throws KNXFormatException, IOException
 	{
+		try {
+			final XMLReader r = XMLFactory.getInstance().createXMLReader(toolDatapointsFile);
+			datapoints.load(r);
+			r.close();
+		}
+		catch (final KNXMLException e) {
+			out.trace("no monitor datapoint information loaded, " + e.getMessage());
+		}
 		final BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 		// TODO check interruptible I/O
 		for (String line = in.readLine(); line != null; line = in.readLine()) {
@@ -484,6 +498,25 @@ public class ProcComm implements Runnable
 			datapoints.add(dp);
 		}
 	}
+
+	private void saveDatapoints()
+	{
+		if (!options.containsKey("monitor"))
+			return;
+		try {
+			final XMLWriter w = XMLFactory.getInstance().createXMLWriter(toolDatapointsFile);
+			try {
+				datapoints.save(w);
+			}
+			finally {
+				w.close();
+			}
+		}
+		catch (final KNXMLException e) {
+			out.warn("on saving monitor datapoint information to " + toolDatapointsFile, e);
+		}
+	}
+
 	/**
 	 * Reads all options in the specified array, and puts relevant options into the
 	 * supplied options map.
