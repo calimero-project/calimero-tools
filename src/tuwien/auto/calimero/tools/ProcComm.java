@@ -54,6 +54,10 @@ import tuwien.auto.calimero.datapoint.DatapointMap;
 import tuwien.auto.calimero.datapoint.DatapointModel;
 import tuwien.auto.calimero.datapoint.StateDP;
 import tuwien.auto.calimero.dptxlator.DPTXlator;
+import tuwien.auto.calimero.dptxlator.DPTXlator2ByteFloat;
+import tuwien.auto.calimero.dptxlator.DPTXlator4ByteFloat;
+import tuwien.auto.calimero.dptxlator.DPTXlator8BitUnsigned;
+import tuwien.auto.calimero.dptxlator.DPTXlatorBoolean;
 import tuwien.auto.calimero.dptxlator.TranslatorTypes;
 import tuwien.auto.calimero.exception.KNXException;
 import tuwien.auto.calimero.exception.KNXFormatException;
@@ -484,6 +488,33 @@ public class ProcComm implements Runnable
 			pc.write(dp, value);
 			out.log(LogLevel.ALWAYS, "write successful", null);
 		}
+	}
+
+	// guess the DPT based on the length of the supplied ASDU
+	private String decodeDptFromAsduLength(final byte[] asdu, final boolean optimized)
+		throws KNXFormatException
+	{
+		final int length = optimized ? 0 : asdu.length;
+		final DPTXlator t;
+		switch (length) {
+		case 0:
+			t = new DPTXlatorBoolean(DPTXlatorBoolean.DPT_SWITCH);
+			break;
+		case 1:
+			t = new DPTXlator8BitUnsigned(DPTXlator8BitUnsigned.DPT_VALUE_1_UCOUNT);
+			break;
+		case 2:
+			t = new DPTXlator2ByteFloat(DPTXlator2ByteFloat.DPT_RAIN_AMOUNT);
+			break;
+		case 4:
+			t = new DPTXlator4ByteFloat(DPTXlator4ByteFloat.DPT_TEMPERATURE_DIFFERENCE);
+			break;
+		default:
+			return "";
+		}
+		t.setAppendUnit(false);
+		t.setData(asdu);
+		return t.getValue();
 	}
 
 	private void runMonitorLoop() throws IOException, KNXException, InterruptedException
