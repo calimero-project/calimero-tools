@@ -88,26 +88,26 @@ import tuwien.auto.calimero.xml.XMLWriter;
 /**
  * A tool for Calimero 2 providing basic process communication.
  * <p>
- * ProcComm is a {@link Runnable} tool implementation allowing a user to read or write
- * datapoint values in a KNX network. It supports KNX network access using a KNXnet/IP
- * connection or an FT1.2 connection.
+ * ProcComm is a {@link Runnable} tool implementation allowing a user to read, write, and monitor
+ * datapoint values in a KNX network. It supports KNX network access using a KNXnet/IP connection or
+ * an FT1.2 connection.
  * <p>
- * The tool implementation shows the necessary interaction with the Calimero library
- * API for this particular task. The main part of this tool implementation uses the
- * library's {@link ProcessCommunicator}, which offers high level access for reading and
- * writing process values. It also shows creation of a {@link KNXNetworkLink}, which is
- * supplied to the process communicator, serving as the link to the KNX network.
+ * The tool implementation shows the necessary interaction with the Calimero library API for this
+ * particular task. The main part of this tool implementation uses the library's
+ * {@link ProcessCommunicator}, which offers high-level access for reading and writing process
+ * values. It also shows creation of a {@link KNXNetworkLink}, which is supplied to the process
+ * communicator, serving as the link to the KNX network. For monitoring, the tool uses
+ * {@link Datapoint} and {@link DatapointModel} to persist datapoints between tool invocations.
  * <p>
- * When running this tool from the console to read or write one value, the
- * <code>main</code> -method of this class is invoked, otherwise use this class in the
- * context appropriate to a {@link Runnable} or use start and {@link #quit()}. <br>
- * In console mode, the values read from datapoints, as well as occurring problems are written to
+ * When running this tool from the terminal, method <code>main</code> of this class is invoked;
+ * otherwise, use this class in the context appropriate to a {@link Runnable}, or use
+ * {@link #start(ProcessListener)} and {@link #quit()}.<br>
+ * In console mode, datapoint values as well as occurring problems are written to
  * <code>System.out</code>.
  * <p>
- * Note that by default the communication will use common settings, if not specified
- * otherwise using command line options. Since these settings might be system dependent
- * (for example the local host) and not always predictable, a user may want to specify
- * particular settings using the available options.
+ * Note that communication will use default settings if not specified otherwise using command line
+ * options. Since these settings might be system dependent (for example, the local host) and not
+ * always predictable, a user may want to specify particular settings using the available options.
  *
  * @author B. Malinowsky
  */
@@ -346,18 +346,20 @@ public class ProcComm implements Runnable
 		String s = e.getSourceAddr() + "->" + e.getDestination() + " "
 				+ DataUnitBuilder.decodeAPCI(e.getServiceCode()) + " "
 				+ DataUnitBuilder.toHex(asdu, " ");
-		final GroupAddress dst = (GroupAddress) options.get("dst");
-		try {
-			if (e.getDestination().equals(dst) && asdu.length > 0)
-				s = s + " (" + asString(asdu, 0, getDPT()) + ")";
-			else {
-				final Datapoint dp = datapoints.get(e.getDestination());
-				if (dp != null)
+		if (asdu.length > 0) {
+			final Datapoint dp = datapoints.get(e.getDestination());
+			try {
+				if (e.getDestination().equals((GroupAddress) options.get("dst")))
+					s = s + " (" + asString(asdu, 0, getDPT()) + ")";
+				else if (dp != null && dp.getDPT() != null)
 					s = s + " (" + asString(asdu, 0, dp.getDPT()) + ")";
+				else
+					s = s + " (" + decodeDptFromAsduLength(asdu, e.isOptimizedASDU()) + ")";
 			}
+			catch (final KNXException ke) {}
+			catch (final KNXIllegalArgumentException iae) {}
+			catch (final RuntimeException rte) {}
 		}
-		catch (final KNXException ke) {}
-		catch (final KNXIllegalArgumentException iae) {}
 		out.log(options.containsKey("monitor") ? LogLevel.ALWAYS : LogLevel.INFO, s, null);
 	}
 
@@ -530,19 +532,39 @@ public class ProcComm implements Runnable
 		final BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 		// TODO check interruptible I/O
 		for (String line = in.readLine(); line != null; line = in.readLine()) {
-			// NYI validate input data before usage
 			final String[] s = line.split(" ");
-			final String cmd = s[0];
-			if ("exit".equalsIgnoreCase(cmd))
+			if (s.length == 1 && "exit".equalsIgnoreCase(s[0]))
 				return;
-			final String addr = s[1];
-			// TODO allow read/write without DPT from known datapoint
-			final String dptId = fromDptName(s[2]);
-			final StateDP dp = new StateDP(new GroupAddress(addr), "tmp", 0, dptId);
-			datapoints.remove(dp);
-			datapoints.add(dp);
-			// we make read the default
-			readWrite(dp, cmd.equalsIgnoreCase("write"), s.length == 4 ? s[3] : null);
+			if (s.length > 1) {
+				// expected order: <cmd> <addr> [<dpt>] [<value>]
+				// cmd = ("r"|"read") | ("w"|"write")
+				final String cmd = s[0];
+				final String addr = s[1];
+
+				final boolean read = cmd.equals("read") || cmd.equals("r");
+				final boolean write = cmd.equals("write") || cmd.equals("w");
+				if (read || write) {
+					final boolean withDpt = read && s.length == 3 || write && s.length >= 4;
+					try {
+						final GroupAddress ga = new GroupAddress(addr);
+						if (withDpt) {
+							final Datapoint dp = new StateDP(ga, "tmp", 0, fromDptName(s[2]));
+							datapoints.remove(dp);
+							datapoints.add(dp);
+						}
+						else if (!datapoints.contains(ga))
+							datapoints.add(new StateDP(ga, "no DptID"));
+						// NYI write > 4 substrings (value string with space inside)
+						readWrite(datapoints.get(ga), write, write ? s[s.length - 1] : null);
+					}
+					catch (final KNXException e) {
+						out.log(LogLevel.ERROR, "[" + line + "]", e);
+					}
+					catch (final RuntimeException e) {
+						out.log(LogLevel.ERROR, "[" + line + "]", e);
+					}
+				}
+			}
 		}
 	}
 
