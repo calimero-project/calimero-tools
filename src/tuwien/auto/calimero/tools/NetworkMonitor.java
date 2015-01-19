@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2014 B. Malinowsky
+    Copyright (c) 2006, 2015 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -64,7 +64,6 @@ import tuwien.auto.calimero.link.medium.RFSettings;
 import tuwien.auto.calimero.link.medium.RawFrame;
 import tuwien.auto.calimero.link.medium.RawFrameBase;
 import tuwien.auto.calimero.link.medium.TPSettings;
-import tuwien.auto.calimero.log.LogManager;
 import tuwien.auto.calimero.log.LogService;
 
 /**
@@ -179,7 +178,6 @@ public class NetworkMonitor implements Runnable
 		catch (final KNXIllegalArgumentException e) {
 			out.error("parsing options", e);
 		}
-		LogManager.getManager().flush();
 	}
 
 	/* (non-Javadoc)
