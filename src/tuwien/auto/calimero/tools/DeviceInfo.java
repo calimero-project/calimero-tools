@@ -160,7 +160,7 @@ public class DeviceInfo implements Runnable
 	{
 		setLogVerbosity(Arrays.asList(args));
 
-		out = LogService.getLogger("tools");
+		out = LogService.getLogger("calimero.tools");
 		try {
 			final DeviceInfo d = new DeviceInfo(args);
 			final ShutdownHandler sh = new ShutdownHandler().register();
@@ -460,7 +460,7 @@ public class DeviceInfo implements Runnable
 			final String lvl = args.contains("-v") || args.contains("--verbose") ? "info" : "error";
 			System.setProperty(simpleLoggerLogLevel, lvl);
 		}
-		out = LogService.getLogger("tools");
+		out = LogService.getLogger("calimero.tools");
 	}
 
 	private static InetSocketAddress createLocalSocket(final InetAddress host, final Integer port)

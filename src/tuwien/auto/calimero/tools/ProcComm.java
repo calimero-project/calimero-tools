@@ -533,7 +533,7 @@ public class ProcComm implements Runnable
 			final String lvl = args.contains("-v") || args.contains("--verbose") ? "info" : "error";
 			System.setProperty(simpleLoggerLogLevel, lvl);
 		}
-		out = LogService.getLogger("tools");
+		out = LogService.getLogger("calimero.tools");
 	}
 
 	private static void showUsage()

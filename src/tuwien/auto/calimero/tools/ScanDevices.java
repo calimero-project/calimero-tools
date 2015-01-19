@@ -359,7 +359,7 @@ public class ScanDevices implements Runnable
 			final String lvl = args.contains("-v") || args.contains("--verbose") ? "trace" : "warn";
 			System.setProperty(simpleLoggerLogLevel, lvl);
 		}
-		out = LogService.getLogger("tools");
+		out = LogService.getLogger("calimero.tools");
 	}
 
 	private static KNXMediumSettings getMedium(final String id)

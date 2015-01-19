@@ -636,7 +636,7 @@ public class Property implements Runnable, PropertyAdapterListener
 			final String lvl = args.contains("-v") || args.contains("--verbose") ? "info" : "warn";
 			System.setProperty(simpleLoggerLogLevel, lvl);
 		}
-		out = LogService.getLogger("tools");
+		out = LogService.getLogger("calimero.tools");
 	}
 
 	private static void showUsage()

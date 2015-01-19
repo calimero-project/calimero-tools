@@ -98,7 +98,7 @@ public class IPConfig implements Runnable
 	private static final String sep = System.getProperty("line.separator");
 	private static final int IPObjType = 11;
 
-	private static Logger out = LogService.getLogger("tools");
+	private static Logger out = LogService.getLogger("calimero.tools");
 
 	private KNXNetworkLink lnk;
 	private PropertyClient pc;
