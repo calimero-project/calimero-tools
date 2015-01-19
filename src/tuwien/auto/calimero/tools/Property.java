@@ -495,10 +495,8 @@ public class Property implements Runnable, PropertyAdapterListener
 				options.put("authorize", getAuthorizeKey(args[++i]));
 			else if (isOption(arg, "routing", null))
 				options.put("routing", null);
-			// XXX parsing commands with isOption is not correct anymore
-			else if (isOption(arg, "get", null) || isOption(arg, "set", null)
-					|| isOption(arg, "desc", null) || isOption(arg, "scan", null)
-					|| isOption(arg, "?", null)) {
+			else if (arg.equals("get") || arg.equals("set") || arg.equals("desc")
+					|| arg.equals("scan") || arg.equals("?")) {
 				final String[] command = Arrays.asList(args).subList(i, args.length)
 						.toArray(new String[0]);
 				options.put("command", command);

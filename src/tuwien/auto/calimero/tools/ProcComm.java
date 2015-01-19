@@ -464,7 +464,7 @@ public class ProcComm implements Runnable
 			}
 			else if (isOption(arg, "verbose", "v"))
 				options.put("verbose", null);
-			else if (isOption(arg, "read", null)) {
+			else if (arg.equals("read")) {
 				if (i + 2 >= args.length)
 					break;
 				options.put("read", null);
@@ -476,7 +476,7 @@ public class ProcComm implements Runnable
 					throw new KNXIllegalArgumentException("read DPT: " + e.getMessage(), e);
 				}
 			}
-			else if (isOption(arg, "write", null)) {
+			else if (arg.equals("write")) {
 				if (i + 3 >= args.length)
 					break;
 				options.put("write", null);
@@ -489,7 +489,7 @@ public class ProcComm implements Runnable
 					throw new KNXIllegalArgumentException("write DPT: " + e.getMessage(), e);
 				}
 			}
-			else if (isOption(arg, "monitor", null))
+			else if (arg.equals("monitor"))
 				options.put("monitor", null);
 			else if (isOption(arg, "localhost", null))
 				parseHost(args[++i], true, options);
