@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2014 B. Malinowsky
+    Copyright (c) 2006, 2015 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -200,8 +200,7 @@ public class ProcComm implements Runnable
 	 * value format</li>
 	 * <li><code>write</code> <i>DPT &nbsp;value &nbsp;KNX-address</i> &nbsp;write to group address,
 	 * using DPT value format</li>
-	 * <li><code>monitor</code> enter group monitoring, can also be used together with the
-	 * <code>read</code> or <code>write</code> command</li>
+	 * <li><code>monitor</code> enter group monitoring</li>
 	 * </ul>
 	 * For the more common datapoint types (DPTs) the following name aliases can be used instead of
 	 * the general DPT number string:
@@ -349,7 +348,7 @@ public class ProcComm implements Runnable
 		if (asdu.length > 0) {
 			final Datapoint dp = datapoints.get(e.getDestination());
 			try {
-				if (e.getDestination().equals((GroupAddress) options.get("dst")))
+				if (e.getDestination().equals(options.get("dst")))
 					s = s + " (" + asString(asdu, 0, getDPT()) + ")";
 				else if (dp != null && dp.getDPT() != null)
 					s = s + " (" + asString(asdu, 0, dp.getDPT()) + ")";
@@ -672,11 +671,10 @@ public class ProcComm implements Runnable
 		}
 		if (options.containsKey("host") == options.containsKey("serial"))
 			throw new KNXIllegalArgumentException("no host or serial port specified");
-		if (!(options.containsKey("monitor") || options.containsKey("read") || options
-				.containsKey("write")))
-			throw new KNXIllegalArgumentException("specify read, write, or group monitoring");
-		if (options.containsKey("read") && options.containsKey("write"))
-		throw new KNXIllegalArgumentException("either read or write - not both");
+
+		if ((options.containsKey("monitor") ? 1 : 0) + (options.containsKey("read") ? 1 : 0)
+				+ (options.containsKey("write") ? 1 : 0) != 1)
+			throw new KNXIllegalArgumentException("specify either read, write, or group monitoring");
 	}
 
 	private static void showUsage()
