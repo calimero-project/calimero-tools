@@ -330,7 +330,7 @@ public class Discover implements Runnable
 		// add defaults
 		options.put("localport", new Integer(0));
 		options.put("serverport", new Integer(KNXnetIPConnection.DEFAULT_PORT));
-		options.put("timeout", new Integer(5));
+		options.put("timeout", new Integer(3));
 
 		int i = 0;
 		for (; i < args.length; i++) {
