@@ -213,7 +213,7 @@ public class Property implements Runnable, PropertyAdapterListener
 		if (options.isEmpty()) {
 			LogService.logAlways(out, " - Access KNX properties");
 			showVersion();
-			LogService.logAlways(out, "Type -help for help message");
+			LogService.logAlways(out, "Type --help for help message");
 			return;
 		}
 		if (options.containsKey("help")) {

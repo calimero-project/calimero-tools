@@ -136,30 +136,30 @@ public class PropClient implements Runnable
 	 * Command line options are treated case sensitive. Available options for the property
 	 * client:
 	 * <ul>
-	 * <li><code>-help -h</code> show help message</li>
-	 * <li><code>-version</code> show tool/library version and exit</li>
-	 * <li><code>-verbose -v</code> enable verbose status output</li>
-	 * <li><code>-local -l</code> local device management</li>
-	 * <li><code>-remote -r</code> <i>KNX addr</i> &nbsp;remote property service</li>
-	 * <li><code>-definitions -d</code> <i>file</i> &nbsp;use property definition file</li>
-	 * <li><code>-localhost</code> <i>id</i> &nbsp;local IP/host name</li>
-	 * <li><code>-localport</code> <i>number</i> &nbsp;local UDP port (default system
+	 * <li><code>--help -h</code> show help message</li>
+	 * <li><code>--version</code> show tool/library version and exit</li>
+	 * <li><code>--verbose -v</code> enable verbose status output</li>
+	 * <li><code>--local -l</code> local device management</li>
+	 * <li><code>--remote -r</code> <i>KNX addr</i> &nbsp;remote property service</li>
+	 * <li><code>--definitions -d</code> <i>file</i> &nbsp;use property definition file</li>
+	 * <li><code>--localhost</code> <i>id</i> &nbsp;local IP/host name</li>
+	 * <li><code>--localport</code> <i>number</i> &nbsp;local UDP port (default system
 	 * assigned)</li>
-	 * <li><code>-port -p</code> <i>number</i> &nbsp;UDP port on host (default 3671)</li>
-	 * <li><code>-nat -n</code> enable Network Address Translation</li>
-	 * <li><code>-serial -s</code> use FT1.2 serial communication</li>
+	 * <li><code>--port -p</code> <i>number</i> &nbsp;UDP port on host (default 3671)</li>
+	 * <li><code>--nat -n</code> enable Network Address Translation</li>
+	 * <li><code>--serial -s</code> use FT1.2 serial communication</li>
 	 * </ul>
 	 * For local device management these options are available:
 	 * <ul>
-	 * <li><code>-emulatewriteenable -e</code> check write-enable of a property</li>
+	 * <li><code>--emulatewriteenable -e</code> check write-enable of a property</li>
 	 * </ul>
 	 * For remote property service these options are available:
 	 * <ul>
-	 * <li><code>-routing</code> use KNXnet/IP routing</li>
-	 * <li><code>-medium -m</code> <i>id</i> &nbsp;KNX medium [tp0|tp1|p110|p132|rf]
+	 * <li><code>--routing</code> use KNXnet/IP routing</li>
+	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp0|tp1|p110|p132|rf]
 	 * (defaults to tp1)</li>
-	 * <li><code>-connect -c</code> connection oriented mode</li>
-	 * <li><code>-authorize -a</code> <i>key</i> &nbsp;authorize key to access KNX device</li>
+	 * <li><code>--connect -c</code> connection oriented mode</li>
+	 * <li><code>--authorize -a</code> <i>key</i> &nbsp;authorize key to access KNX device</li>
 	 * </ul>
 	 *
 	 * @param args command line options for property client

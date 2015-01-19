@@ -173,7 +173,7 @@ public class ScanDevices implements Runnable
 			if (options.isEmpty()) {
 				LogService.logAlways(out, " - Determine existing KNX devices on a KNX subnetwork");
 				showVersion();
-				LogService.logAlways(out, "Type -help for help message");
+				LogService.logAlways(out, "Type --help for help message");
 				return;
 			}
 			if (options.containsKey("help")) {

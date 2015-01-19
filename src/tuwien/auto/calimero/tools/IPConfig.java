@@ -199,7 +199,7 @@ public class IPConfig implements Runnable
 			if (options.isEmpty()) {
 				LogService.logAlways(out, " - KNXnet/IP address configuration");
 				showVersion();
-				LogService.logAlways(out, "Type -help for help message");
+				LogService.logAlways(out, "Type --help for help message");
 				return;
 			}
 			if (options.containsKey("help")) {

@@ -244,7 +244,7 @@ public class NetworkMonitor implements Runnable
 		if (options.isEmpty()) {
 			LogService.logAlways(out, " - Monitor a KNX network");
 			showVersion();
-			LogService.logAlways(out, "Type -help for help message");
+			LogService.logAlways(out, "Type --help for help message");
 			return;
 		}
 		if (options.containsKey("help")) {

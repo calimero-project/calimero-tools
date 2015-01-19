@@ -170,7 +170,7 @@ public class Discover implements Runnable
 			if (options.isEmpty()) {
 				LogService.logAlways(out, " - KNXnet/IP server discovery & self description");
 				showVersion();
-				LogService.logAlways(out, "Type -help for help message");
+				LogService.logAlways(out, "Type --help for help message");
 			}
 			else if (options.containsKey("help"))
 				showUsage();

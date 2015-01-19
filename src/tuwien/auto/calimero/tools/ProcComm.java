@@ -246,7 +246,7 @@ public class ProcComm implements Runnable
 		if (options.isEmpty()) {
 			LogService.logAlways(out, " - KNX process communication");
 			showVersion();
-			LogService.logAlways(out, "Type -help for help message");
+			LogService.logAlways(out, "Type --help for help message");
 			return;
 		}
 		if (options.containsKey("help")) {
