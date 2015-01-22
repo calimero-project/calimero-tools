@@ -42,6 +42,7 @@ import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.UnknownHostException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -50,6 +51,7 @@ import tuwien.auto.calimero.Settings;
 import tuwien.auto.calimero.exception.KNXException;
 import tuwien.auto.calimero.exception.KNXIllegalArgumentException;
 import tuwien.auto.calimero.knxnetip.Discoverer;
+import tuwien.auto.calimero.knxnetip.Discoverer.Result;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.knxnetip.servicetype.DescriptionResponse;
 import tuwien.auto.calimero.knxnetip.servicetype.SearchResponse;
@@ -199,17 +201,20 @@ public class Discover implements Runnable
 	 * <p>
 	 * This default implementation writes the endpoint information to standard output.
 	 *
-	 * @param response the received search response containing information about a
-	 *        KNXnet/IP endpoint
+	 * @param result the search result containing the received search response with information
+	 *        about a KNXnet/IP endpoint
 	 */
-	protected void onEndpointReceived(final SearchResponse response)
+	protected void onEndpointReceived(final Result<SearchResponse> result)
 	{
-		final StringBuffer buf = new StringBuffer();
-		buf.append(sep).append("control endpoint ");
-		buf.append(response.getControlEndpoint().toString()).append(sep);
-		buf.append(response.getDevice().toString());
-		buf.append(sep).append(sep).append("supported service families:").append(sep);
-		buf.append(response.getServiceFamilies().toString());
+		final StringBuffer buf = new StringBuffer(sep);
+		buf.append("Using ").append(result.getAddress()).append(" on ")
+				.append(nameOf(result.getNetworkInterface())).append(sep);
+		buf.append("----------------------------------------").append(sep);
+		final SearchResponse response = result.getResponse();
+		buf.append("control endpoint ").append(response.getControlEndpoint()).append(sep);
+		buf.append(response.getDevice().toString()).append(sep);
+		buf.append("supported service families:").append(sep);
+		buf.append('\t').append(response.getServiceFamilies().toString().replace(", ", sep + "\t"));
 		for (int i = buf.indexOf(", "); i != -1; i = buf.indexOf(", "))
 			buf.replace(i, i + 2, sep);
 		System.out.println(buf);
@@ -218,20 +223,23 @@ public class Discover implements Runnable
 	/**
 	 * Invoked by this tool immediately after receiving a description response.
 	 * <p>
-	 * This default implementation extracts the information and writes it to the standard
-	 * output.
+	 * This default implementation extracts the information and writes it to the standard output.
 	 * <p>
 	 *
-	 * @param r the received description response
+	 * @param result the description result containing the received description response
 	 */
-	protected void onDescriptionReceived(final DescriptionResponse r)
+	protected void onDescriptionReceived(final Result<DescriptionResponse> result)
 	{
-		final StringBuffer buf = new StringBuffer();
-		buf.append(r.getDevice().toString());
-		buf.append(sep).append(sep).append("supported service families:").append(sep);
-		buf.append(r.getServiceFamilies().toString());
-		if (r.getManufacturerData() != null)
-			buf.append(sep).append(sep).append(r.getManufacturerData().toString());
+		final StringBuffer buf = new StringBuffer(sep);
+		buf.append("Using ").append(result.getAddress()).append(" on ")
+				.append(nameOf(result.getNetworkInterface())).append(sep);
+		buf.append("----------------------------------------").append(sep);
+		final DescriptionResponse response = result.getResponse();
+		buf.append(response.getDevice().toString()).append(sep);
+		buf.append("supported service families:").append(sep);
+		buf.append('\t').append(response.getServiceFamilies().toString().replace(", ", sep + '\t'));
+		if (response.getManufacturerData() != null)
+			buf.append(sep).append(sep).append(response.getManufacturerData().toString());
 		for (int i = buf.indexOf(", "); i != -1; i = buf.indexOf(", "))
 			buf.replace(i, i + 2, sep);
 		System.out.println(buf);
@@ -277,13 +285,10 @@ public class Discover implements Runnable
 		try {
 			while (d.isSearching()) {
 				Thread.sleep(250);
-				final SearchResponse[] res = d.getSearchResponses();
-				for (; displayed < res.length; ++displayed)
-					onEndpointReceived(res[displayed]);
+				final List<Result<SearchResponse>> res = d.getSearchResponses();
+				for (; displayed < res.size(); ++displayed)
+					onEndpointReceived(res.get(displayed));
 			}
-			final SearchResponse[] res = d.getSearchResponses();
-			for (; displayed < res.length; ++displayed)
-				onEndpointReceived(res[displayed]);
 		}
 		finally {
 			out.info("search stopped after " + timeout + " seconds with " + displayed
@@ -300,12 +305,11 @@ public class Discover implements Runnable
 	private void description() throws KNXException
 	{
 		// create socket address of server to request self description from
-		final InetSocketAddress host = new InetSocketAddress(
-			(InetAddress) options.get("host"),
-			((Integer) options.get("serverport")).intValue());
+		final InetSocketAddress host = new InetSocketAddress((InetAddress) options.get("host"),
+				((Integer) options.get("serverport")).intValue());
 		final int timeout = ((Integer) options.get("timeout")).intValue();
 		// request description
-		final DescriptionResponse res = d.getDescription(host, timeout);
+		final Result<DescriptionResponse> res = d.getDescription(host, timeout);
 		onDescriptionReceived(res);
 	}
 
@@ -363,6 +367,14 @@ public class Discover implements Runnable
 			else
 				throw new KNXIllegalArgumentException("unknown option " + arg);
 		}
+	}
+
+	private static String nameOf(final NetworkInterface nif) {
+		final String name = nif.getName();
+		final String friendly = nif.getDisplayName();
+		if (friendly != null & !name.equals(friendly))
+			return name + " (" + friendly + ")";
+		return name;
 	}
 
 	/**
