@@ -42,6 +42,7 @@ import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.UnknownHostException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -55,6 +56,7 @@ import tuwien.auto.calimero.knxnetip.Discoverer.Result;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.knxnetip.servicetype.DescriptionResponse;
 import tuwien.auto.calimero.knxnetip.servicetype.SearchResponse;
+import tuwien.auto.calimero.knxnetip.util.HPAI;
 import tuwien.auto.calimero.log.LogService;
 
 /**
@@ -178,6 +180,8 @@ public class Discover implements Runnable
 				showVersion();
 			else if (options.containsKey("search"))
 				search();
+			else if (options.containsKey("searchWithDescription"))
+				searchWithDescription();
 			else
 				description();
 		}
@@ -230,10 +234,17 @@ public class Discover implements Runnable
 	 */
 	protected void onDescriptionReceived(final Result<DescriptionResponse> result)
 	{
+		onDescriptionReceived(result, null);
+	}
+
+	private void onDescriptionReceived(final Result<DescriptionResponse> result, final HPAI hpai)
+	{
 		final StringBuffer buf = new StringBuffer(sep);
 		buf.append("Using ").append(result.getAddress()).append(" on ")
 				.append(nameOf(result.getNetworkInterface())).append(sep);
 		buf.append("----------------------------------------").append(sep);
+		if (hpai != null)
+			buf.append("control endpoint ").append(hpai).append(sep);
 		final DescriptionResponse response = result.getResponse();
 		buf.append(response.getDevice().toString()).append(sep);
 		buf.append("supported service families:").append(sep);
@@ -313,6 +324,36 @@ public class Discover implements Runnable
 		onDescriptionReceived(res);
 	}
 
+	// implements search combined with description as done by ETS
+	private void searchWithDescription() throws KNXException, InterruptedException
+	{
+		final int timeout = ((Integer) options.get("timeout"));
+		// start the search, using a particular network interface if supplied
+		if (options.containsKey("if"))
+			d.startSearch(0, (NetworkInterface) options.get("if"), timeout, true);
+		else
+			d.startSearch(timeout, true);
+		final List<Result<SearchResponse>> res = d.getSearchResponses();
+		new HashSet<>(res).parallelStream().forEach(this::description);
+	}
+
+	private void description(final Result<SearchResponse> r)
+	{
+		final SearchResponse sr = r.getResponse();
+		final HPAI hpai = sr.getControlEndpoint();
+		final InetSocketAddress server = new InetSocketAddress(hpai.getAddress(), hpai.getPort());
+		final int timeout = 2;
+		try {
+			final Result<DescriptionResponse> dr = new Discoverer(r.getAddress(), 0,
+					options.containsKey("nat"), false).getDescription(server, timeout);
+			onDescriptionReceived(dr, hpai);
+		}
+		catch (final KNXException e) {
+			System.out.println("description failed for server " + hpai + " using " + r.getAddress()
+					+ " on " + r.getNetworkInterface() + ": " + e.getMessage());
+		}
+	}
+
 	/**
 	 * Reads all command line options, and puts relevant options into the supplied options
 	 * map.
@@ -360,6 +401,8 @@ public class Discover implements Runnable
 			}
 			else if (isOption(arg, "search", "s"))
 				options.put("search", null);
+			else if (arg.equals("sd"))
+				options.put("searchWithDescription", null);
 			else if (isOption(arg, "description", "d"))
 				parseHost(args[++i], false, options);
 			else if (isOption(arg, "serverport", "p"))
