@@ -112,12 +112,12 @@ public class Discover implements Runnable
 
 		// create a new discoverer with a (default) local port and specify
 		// whether network address translation (NAT) should be used
-		final int lp = ((Integer) options.get("localport")).intValue();
+		final Integer lp = ((Integer) options.get("localport"));
 		// if a network interface was specified, use an assigned IP for local host
 		final NetworkInterface nif = (NetworkInterface) options.get("if");
 		final InetAddress local = (InetAddress) (nif != null ? nif.getInetAddresses().nextElement()
 				: null);
-		d = new Discoverer(local, lp, options.containsKey("nat"), true);
+		d = new Discoverer(local, lp != null ? lp.intValue() : 0, options.containsKey("nat"), true);
 	}
 
 	/**
