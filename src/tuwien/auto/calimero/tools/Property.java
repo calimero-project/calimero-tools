@@ -203,6 +203,7 @@ public class Property implements Runnable, PropertyAdapterListener
 	/* (non-Javadoc)
 	 * @see java.lang.Runnable#run()
 	 */
+	@Override
 	public void run()
 	{
 		// ??? as with the other tools, maybe put this into the try block to also call onCompletion
@@ -269,6 +270,7 @@ public class Property implements Runnable, PropertyAdapterListener
 	 * @see tuwien.auto.calimero.mgmt.PropertyAdapterListener#adapterClosed(
 	 * tuwien.auto.calimero.CloseEvent)
 	 */
+	@Override
 	public void adapterClosed(final CloseEvent e)
 	{
 		out.info("connection closed (" + e.getReason() + ")");
@@ -496,6 +498,9 @@ public class Property implements Runnable, PropertyAdapterListener
 				final String[] command = Arrays.asList(args).subList(i, args.length)
 						.toArray(new String[0]);
 				options.put("command", command);
+				// XXX the break enforces that the actual command is last, necessary to allow the
+				// variable command argument list. This won't permit invocation from
+				// class Main with single get/set commands, as those are required last in sequence
 				break;
 			}
 			else if (options.containsKey("serial"))
@@ -511,7 +516,7 @@ public class Property implements Runnable, PropertyAdapterListener
 		if (!options.containsKey("host") && !options.containsKey("serial"))
 			throw new KNXIllegalArgumentException("no host or serial port specified");
 		if (options.containsKey("serial") && !options.containsKey("remote"))
-			throw new KNXIllegalArgumentException("-remote option is mandatory with -serial");
+			throw new KNXIllegalArgumentException("--remote option is mandatory with --serial");
 	}
 
 	//
