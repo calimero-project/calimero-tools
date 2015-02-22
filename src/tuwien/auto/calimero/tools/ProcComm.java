@@ -88,8 +88,29 @@ import tuwien.auto.calimero.xml.XMLWriter;
  * A tool for Calimero 2 providing basic process communication.
  * <p>
  * ProcComm is a {@link Runnable} tool implementation allowing a user to read, write, and monitor
- * datapoint values in a KNX network. It supports KNX network access using a KNXnet/IP connection or
- * an FT1.2 connection.
+ * datapoint (DP) values in a KNX network. It supports KNX network access using a KNXnet/IP
+ * connection or an FT1.2 connection.
+ * <p>
+ * <i>Monitor mode</i>:<br>
+ * When in monitor mode, process communication lists group write, read, and read response commands
+ * issued on the KNX network. Datapoint values in monitored group commands are decoded for
+ * appropriate KNX datapoint types (DPT). In addition, a user can issue read and write commands on
+ * the terminal. Commands have the the following syntax: <code>cmd DP [DPT] [value]</code>, with
+ * <code>cmd = ("r"|"read") | ("w"|"write")</code>. For example, <code>r 1/0/3</code> will read the
+ * current value of datapoint <code>1/0/3</code>. The command <code>w 1/0/3 1.002 true</code> will
+ * write the boolean value <code>true</code> for datapoint <code>1/0/3</code>.<br>
+ * Issuing a read or write command and specifying a datapoint type will override the default
+ * datapoint type translation behavior of this tool. For example, <code>r 1/0/3 1.005</code> will
+ * decode subsequent values of that datapoint using the DPT 1.005 "Alarm" and its value
+ * representations "alarm" and "no alarm". A subsequent write can then simply issue
+ * <code>w 1/0/3 alarm</code>.<br>
+ * When the tool exits, information about any datapoint that was monitored is stored in a file on
+ * disk in the current working directory (if file creation is permitted). That file is named
+ * something like ".proccomm_dplist.xml" (hidden file on Unix-based systems). It allows the tool to
+ * remember user-specific settings of datapoint types between tool invocations, important for the
+ * appropriate decoding of datapoint values. The file uses the layout of {@link DatapointMap}, and
+ * can be edited or used at any other place Calimero expects a {@link DatapointModel}. Note that any
+ * actual datapoint <i>values</i> are not stored in that file.
  * <p>
  * The tool implementation shows the necessary interaction with the Calimero library API for this
  * particular task. The main part of this tool implementation uses the library's
@@ -112,6 +133,9 @@ import tuwien.auto.calimero.xml.XMLWriter;
  */
 public class ProcComm implements Runnable
 {
+	// XXX The expected sequence for read/write commands on the terminal differs between
+	// the tool command line arguments and monitor mode input --> unify.
+
 	private static final String tool = "ProcComm";
 	private static final String version = "1.2";
 	private static final String sep = System.getProperty("line.separator");
@@ -201,6 +225,9 @@ public class ProcComm implements Runnable
 	 * using DPT value format</li>
 	 * <li><code>monitor</code> enter group monitoring</li>
 	 * </ul>
+	 * In monitor mode, read/write commands can be issued on the terminal using
+	 * <code>cmd DP [DPT] [value]</code>, with <code>cmd = ("r"|"read") | ("w"|"write")</code>.
+	 * <p>
 	 * For the more common datapoint types (DPTs) the following name aliases can be used instead of
 	 * the general DPT number string:
 	 * <ul>
