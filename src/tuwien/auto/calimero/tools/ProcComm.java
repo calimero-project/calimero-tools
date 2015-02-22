@@ -43,6 +43,8 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import tuwien.auto.calimero.DataUnitBuilder;
@@ -54,11 +56,8 @@ import tuwien.auto.calimero.datapoint.DatapointMap;
 import tuwien.auto.calimero.datapoint.DatapointModel;
 import tuwien.auto.calimero.datapoint.StateDP;
 import tuwien.auto.calimero.dptxlator.DPTXlator;
-import tuwien.auto.calimero.dptxlator.DPTXlator2ByteFloat;
-import tuwien.auto.calimero.dptxlator.DPTXlator4ByteFloat;
-import tuwien.auto.calimero.dptxlator.DPTXlator8BitUnsigned;
-import tuwien.auto.calimero.dptxlator.DPTXlatorBoolean;
 import tuwien.auto.calimero.dptxlator.TranslatorTypes;
+import tuwien.auto.calimero.dptxlator.TranslatorTypes.MainType;
 import tuwien.auto.calimero.exception.KNXException;
 import tuwien.auto.calimero.exception.KNXFormatException;
 import tuwien.auto.calimero.exception.KNXIllegalArgumentException;
@@ -353,7 +352,7 @@ public class ProcComm implements Runnable
 				else if (dp != null && dp.getDPT() != null)
 					s = s + " (" + asString(asdu, 0, dp.getDPT()) + ")";
 				else
-					s = s + " (" + decodeDptFromAsduLength(asdu, e.isOptimizedASDU()) + ")";
+					s = s + " (" + decodeAsduByLength(asdu, e.isOptimizedASDU()) + ")";
 			}
 			catch (final KNXException ke) {}
 			catch (final KNXIllegalArgumentException iae) {}
@@ -491,31 +490,24 @@ public class ProcComm implements Runnable
 		}
 	}
 
-	// guess the DPT based on the length of the supplied ASDU
-	private String decodeDptFromAsduLength(final byte[] asdu, final boolean optimized)
+	// shows one DPT of each matching main type based on the length of the supplied ASDU
+	private String decodeAsduByLength(final byte[] asdu, final boolean optimized)
 		throws KNXFormatException
 	{
-		final int length = optimized ? 0 : asdu.length;
-		final DPTXlator t;
-		switch (length) {
-		case 0:
-			t = new DPTXlatorBoolean(DPTXlatorBoolean.DPT_SWITCH);
-			break;
-		case 1:
-			t = new DPTXlator8BitUnsigned(DPTXlator8BitUnsigned.DPT_VALUE_1_UCOUNT);
-			break;
-		case 2:
-			t = new DPTXlator2ByteFloat(DPTXlator2ByteFloat.DPT_RAIN_AMOUNT);
-			break;
-		case 4:
-			t = new DPTXlator4ByteFloat(DPTXlator4ByteFloat.DPT_TEMPERATURE_DIFFERENCE);
-			break;
-		default:
-			return "";
+		final StringBuffer sb = new StringBuffer();
+		final List typesBySize = TranslatorTypes.getMainTypesBySize(optimized ? 0 : asdu.length);
+		for (final Iterator i = typesBySize.iterator(); i.hasNext();) {
+			final MainType main = (MainType) i.next();
+			try {
+				final String dptid = (String) main.getSubTypes().keySet().iterator().next();
+				final DPTXlator t = TranslatorTypes.createTranslator(main.getMainNumber(), dptid);
+				t.setData(asdu);
+				sb.append(t.getValue()).append(" [").append(dptid).append("]")
+						.append(i.hasNext() ? ", " : "");
+			}
+			catch (final KNXException ignore) {}
 		}
-		t.setAppendUnit(false);
-		t.setData(asdu);
-		return t.getValue();
+		return sb.toString();
 	}
 
 	private void runMonitorLoop() throws IOException, KNXException, InterruptedException
