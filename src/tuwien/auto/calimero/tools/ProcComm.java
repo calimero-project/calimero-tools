@@ -272,10 +272,10 @@ public class ProcComm implements Runnable
 		boolean canceled = false;
 		try {
 			start(null);
-			readWrite();
-			if (options.containsKey("monitor")) {
+			if (options.containsKey("monitor"))
 				runMonitorLoop();
-			}
+			else
+				readWrite();
 		}
 		catch (final KNXException e) {
 			thrown = e;
@@ -331,13 +331,15 @@ public class ProcComm implements Runnable
 			pc.addProcessListener(l);
 
 		// this is the listener if group monitoring is requested
-		final ProcessListener monitor = new ProcessListenerEx() {
-			public void groupWrite(final ProcessEvent e) { onGroupEvent(e); }
-			public void groupReadResponse(final ProcessEvent e) { onGroupEvent(e); }
-			public void groupReadRequest(final ProcessEvent e) { onGroupEvent(e); }
-			public void detached(final DetachEvent e) {}
-		};
-		pc.addProcessListener(monitor);
+		if (options.containsKey("monitor")) {
+			final ProcessListener monitor = new ProcessListenerEx() {
+				public void groupWrite(final ProcessEvent e) { onGroupEvent(e); }
+				public void groupReadResponse(final ProcessEvent e) { onGroupEvent(e); }
+				public void groupReadRequest(final ProcessEvent e) { onGroupEvent(e); }
+				public void detached(final DetachEvent e) {}
+			};
+			pc.addProcessListener(monitor);
+		}
 
 		// user might specify a response timeout for KNX message
 		// answers from the KNX network
@@ -374,12 +376,11 @@ public class ProcComm implements Runnable
 		if (asdu.length > 0) {
 			final Datapoint dp = datapoints.get(e.getDestination());
 			try {
-				if (e.getDestination().equals(options.get("dst")))
-					s = s + " (" + asString(asdu, 0, getDPT()) + ")";
-				else if (dp != null && dp.getDPT() != null)
-					s = s + " (" + asString(asdu, 0, dp.getDPT()) + ")";
+				final String decodesep = ": ";
+				if (dp != null)
+					s = s + decodesep + asString(asdu, 0, dp.getDPT());
 				else
-					s = s + " (" + decodeAsduByLength(asdu, e.isOptimizedASDU()) + ")";
+					s = s + decodesep + decodeAsduByLength(asdu, e.isOptimizedASDU());
 			}
 			catch (final KNXException ke) {}
 			catch (final KNXIllegalArgumentException iae) {}
