@@ -549,9 +549,11 @@ public class ProcComm implements Runnable
 			out.trace("no monitor datapoint information loaded, " + e.getMessage());
 		}
 		final BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
-		// TODO check interruptible I/O
-		for (String line = in.readLine(); line != null; line = in.readLine()) {
-			final String[] s = line.split(" ");
+		while (true) {
+			while (!in.ready())
+				Thread.sleep(250);
+			final String line = in.readLine();
+			final String[] s = line.trim().split(" +");
 			if (s.length == 1 && "exit".equalsIgnoreCase(s[0]))
 				return;
 			if (s.length > 1) {
