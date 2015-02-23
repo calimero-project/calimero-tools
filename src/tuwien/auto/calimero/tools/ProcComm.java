@@ -568,15 +568,14 @@ public class ProcComm implements Runnable
 					final boolean withDpt = read && s.length == 3 || write && s.length >= 4;
 					try {
 						final GroupAddress ga = new GroupAddress(addr);
+						final Datapoint dp = new StateDP(ga, "tmp", 0, withDpt ? fromDptName(s[2])
+								: null);
 						if (withDpt) {
-							final Datapoint dp = new StateDP(ga, "tmp", 0, fromDptName(s[2]));
 							datapoints.remove(dp);
 							datapoints.add(dp);
 						}
-						else if (!datapoints.contains(ga))
-							datapoints.add(new StateDP(ga, "no DptID"));
 						// NYI write > 4 substrings (value string with space inside)
-						readWrite(datapoints.get(ga), write, write ? s[s.length - 1] : null);
+						readWrite(dp, write, write ? s[s.length - 1] : null);
 					}
 					catch (final KNXException e) {
 						out.log(LogLevel.ERROR, "[" + line + "]", e);
