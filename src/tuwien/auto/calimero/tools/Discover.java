@@ -62,20 +62,19 @@ import tuwien.auto.calimero.tools.Main.ShutdownHandler;
 /**
  * A tool for Calimero showing the KNXnet/IP discovery and self description feature.
  * <p>
- * Discover is a {@link Runnable} tool implementation allowing a user to do KNXnet/IP
- * discovery and self description of KNXnet/IP capable devices. As the protocol name
- * already implies, this is done using the IP protocol. This tool shows the necessary
- * interaction with the Calimero 2 API for discovering KNXnet/IP capable devices and
- * query descriptions. The main part of this tool implementation interacts with the type
- * {@link Discoverer} in the library, which implements the necessary discovery and self
- * description features.<br>
- * When running this tool from the console, the <code>main</code>- method of this class is
- * invoked, otherwise use it in the context appropriate to a {@link Runnable}.
+ * Discover is a {@link Runnable} tool implementation allowing a user to do KNXnet/IP discovery and
+ * self description of KNXnet/IP capable devices. As the protocol name already implies, this is done
+ * using the IP protocol. This tool shows the necessary interaction with the Calimero 2 API for
+ * discovering KNXnet/IP capable devices and query descriptions. The main part of this tool
+ * implementation interacts with the type {@link Discoverer} in the library, which implements the
+ * necessary discovery and self description features.<br>
+ * When running this tool from the console, the <code>main</code>- method of this class is invoked,
+ * otherwise use it in the context appropriate to a {@link Runnable}.
  * <p>
- * To cancel a running discovery/description request on the console, use a user interrupt
- * for termination, for example, <code>^C</code>.<br>
- * In console mode, discovery and self description responses, as well as errors and
- * problems during discovery/description are written to <code>System.out</code>.
+ * To cancel a running discovery/description request on the console, use a user interrupt for
+ * termination, for example, <code>^C</code>.<br>
+ * In console mode, discovery and self description responses, as well as errors and problems during
+ * discovery/description are written to <code>System.out</code>.
  *
  * @author B. Malinowsky
  */
@@ -123,22 +122,20 @@ public class Discover implements Runnable
 	/**
 	 * Entry point for running Discover.
 	 * <p>
-	 * To show usage message of the tool on the console, supply the command line option
-	 * --help (or -h).<br>
-	 * Command line options are treated case sensitive. Available options for
-	 * discovery/self description:
+	 * To show usage message of the tool on the console, supply the command line option --help (or
+	 * -h).<br>
+	 * Command line options are treated case sensitive. Available options for discovery/self
+	 * description:
 	 * <ul>
 	 * <li>no arguments: only show short description and version info</li>
 	 * <li><code>--help -h</code> show help message</li>
 	 * <li><code>--version</code> show tool/library version and exit</li>
-	 * <li><code>--localport</code> <i>number</i> &nbsp;local UDP port (default system
-	 * assigned)</li>
+	 * <li><code>--localport</code> <i>number</i> &nbsp;local UDP port (default system assigned)</li>
 	 * <li><code>--nat -n</code> enable Network Address Translation</li>
 	 * <li><code>--timeout -t</code> discovery/self description response timeout in seconds</li>
 	 * <li><code>--search -s</code> start a discovery search</li>
-	 * <li><code>--interface -i</code> <i>if-name</i> | <i>ip-address</i> &nbsp;local
-	 * multicast network interface for discovery or local host for self description
-	 * (default system assigned)</li>
+	 * <li><code>--interface -i</code> <i>if-name</i> | <i>ip-address</i> &nbsp;local multicast
+	 * network interface for discovery or local host for self description (default system assigned)</li>
 	 * <li><code>--description -d <i>host</i></code> &nbsp;query description from host</li>
 	 * <li><code>--serverport -p</code> <i>number</i> &nbsp;server UDP port for description
 	 * (defaults to port 3671)</li>
@@ -260,8 +257,8 @@ public class Discover implements Runnable
 	 * Called by this tool on completion.
 	 * <p>
 	 *
-	 * @param thrown the thrown exception if operation completed due to a raised
-	 *        exception, <code>null</code> otherwise
+	 * @param thrown the thrown exception if operation completed due to a raised exception,
+	 *        <code>null</code> otherwise
 	 * @param canceled whether the operation got canceled before its planned end
 	 */
 	protected void onCompletion(final Exception thrown, final boolean canceled)
@@ -355,13 +352,12 @@ public class Discover implements Runnable
 	}
 
 	/**
-	 * Reads all command line options, and puts relevant options into the supplied options
-	 * map.
+	 * Reads all command line options, and puts relevant options into the supplied options map.
 	 * <p>
-	 * On options not relevant for doing discovery/description (like <code>help</code>),
-	 * this method will take appropriate action (like showing usage information). On
-	 * occurrence of such an option, other options will be ignored. On unknown options, a
-	 * KNXIllegalArgumentException is thrown.
+	 * On options not relevant for doing discovery/description (like <code>help</code>), this method
+	 * will take appropriate action (like showing usage information). On occurrence of such an
+	 * option, other options will be ignored. On unknown options, a KNXIllegalArgumentException is
+	 * thrown.
 	 *
 	 * @param args array with command line options
 	 */
@@ -404,7 +400,7 @@ public class Discover implements Runnable
 			else if (arg.equals("sd"))
 				options.put("searchWithDescription", null);
 			else if (Main.isOption(arg, "description", "d"))
-				Main.parseHost(args[++i], false, options);
+				options.put("host", Main.parseHost(args[++i]));
 			else if (Main.isOption(arg, "serverport", "p"))
 				options.put("serverport", Integer.decode(args[++i]));
 			else
@@ -412,7 +408,8 @@ public class Discover implements Runnable
 		}
 	}
 
-	private static String nameOf(final NetworkInterface nif) {
+	private static String nameOf(final NetworkInterface nif)
+	{
 		final String name = nif.getName();
 		final String friendly = nif.getDisplayName();
 		if (friendly != null & !name.equals(friendly))
@@ -424,8 +421,8 @@ public class Discover implements Runnable
 	 * Gets the local network interface using the supplied identifier.
 	 * <p>
 	 *
-	 * @param id identifier associated with the network interface, either an network
-	 *        interface name, a host name, or an IP address bound to that interface
+	 * @param id identifier associated with the network interface, either an network interface name,
+	 *        a host name, or an IP address bound to that interface
 	 * @return the network interface
 	 * @throws KNXIllegalArgumentException if no network interface found
 	 */

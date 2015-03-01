@@ -60,6 +60,7 @@ import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.KNXNetworkLinkFT12;
 import tuwien.auto.calimero.link.KNXNetworkLinkIP;
+import tuwien.auto.calimero.link.KNXNetworkLinkUsb;
 import tuwien.auto.calimero.link.medium.KNXMediumSettings;
 import tuwien.auto.calimero.link.medium.TPSettings;
 import tuwien.auto.calimero.log.LogService;
@@ -72,7 +73,7 @@ import tuwien.auto.calimero.process.ProcessListener;
  * A tool for Calimero 2 providing basic process communication.
  * <p>
  * ProcComm is a {@link Runnable} tool implementation allowing a user to read or write datapoint
- * values in a KNX network. It supports KNX network access using a KNXnet/IP connection or an FT1.2
+ * values in a KNX network. It supports KNX network access using a KNXnet/IP, USB, or FT1.2
  * connection.
  * <p>
  * The tool implementation shows the necessary interaction with the Calimero library API for this
@@ -150,6 +151,7 @@ public class ProcComm implements Runnable
 	 * <li><code>--nat -n</code> enable Network Address Translation</li>
 	 * <li><code>--routing</code> use KNXnet/IP routing</li>
 	 * <li><code>--serial -s</code> use FT1.2 serial communication</li>
+	 * <li><code>--usb -u</code> use KNX USB communication</li>
 	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp0|tp1|p110|p132|rf] (defaults to
 	 * tp1)</li>
 	 * </ul>
@@ -353,25 +355,29 @@ public class ProcComm implements Runnable
 	 */
 	private KNXNetworkLink createLink() throws KNXException, InterruptedException
 	{
+		final String host = (String) options.get("host");
 		final KNXMediumSettings medium = (KNXMediumSettings) options.get("medium");
 		if (options.containsKey("serial")) {
 			// create FT1.2 network link
-			final String p = (String) options.get("serial");
 			try {
-				return new KNXNetworkLinkFT12(Integer.parseInt(p), medium);
+				return new KNXNetworkLinkFT12(Integer.parseInt(host), medium);
 			}
 			catch (final NumberFormatException e) {
-				return new KNXNetworkLinkFT12(p, medium);
+				return new KNXNetworkLinkFT12(host, medium);
 			}
+		}
+		if (options.containsKey("usb")) {
+			// create USB network link
+			return new KNXNetworkLinkUsb(host, medium);
 		}
 		// create local and remote socket address for network link
 		final InetSocketAddress local = Main.createLocalSocket(
 				(InetAddress) options.get("localhost"), (Integer) options.get("localport"));
-		final InetSocketAddress host = new InetSocketAddress((InetAddress) options.get("host"),
+		final InetSocketAddress remote = new InetSocketAddress(Main.parseHost(host),
 				((Integer) options.get("port")).intValue());
 		final int mode = options.containsKey("routing") ? KNXNetworkLinkIP.ROUTING
 				: KNXNetworkLinkIP.TUNNELING;
-		return new KNXNetworkLinkIP(mode, local, host, options.containsKey("nat"), medium);
+		return new KNXNetworkLinkIP(mode, local, remote, options.containsKey("nat"), medium);
 	}
 
 	/**
@@ -484,7 +490,7 @@ public class ProcComm implements Runnable
 			else if (arg.equals("monitor"))
 				options.put("monitor", null);
 			else if (Main.isOption(arg, "localhost", null))
-				Main.parseHost(args[++i], true, options);
+				options.put("localhost", Main.parseHost(args[++i]));
 			else if (Main.isOption(arg, "localport", null))
 				options.put("localport", Integer.decode(args[++i]));
 			else if (Main.isOption(arg, "port", "p"))
@@ -493,22 +499,22 @@ public class ProcComm implements Runnable
 				options.put("nat", null);
 			else if (Main.isOption(arg, "serial", "s"))
 				options.put("serial", null);
+			else if (Main.isOption(arg, "usb", "u"))
+				options.put("usb", null);
 			else if (Main.isOption(arg, "medium", "m"))
 				options.put("medium", Main.getMedium(args[++i]));
 			else if (Main.isOption(arg, "timeout", "t"))
 				options.put("timeout", Integer.decode(args[++i]));
 			else if (Main.isOption(arg, "routing", null))
 				options.put("routing", null);
-			else if (options.containsKey("serial"))
-				// add port number/identifier to serial option
-				options.put("serial", arg);
 			else if (!options.containsKey("host"))
-				Main.parseHost(arg, false, options);
+				options.put("host", arg);
 			else
 				throw new KNXIllegalArgumentException("unknown option " + arg);
 		}
-		if (options.containsKey("host") == options.containsKey("serial"))
-			throw new KNXIllegalArgumentException("no host or serial port specified");
+		if (!options.containsKey("host")
+				|| (options.containsKey("serial") && options.containsKey("usb")))
+			throw new KNXIllegalArgumentException("specify either IP host, serial port, or device");
 		if (!(options.containsKey("monitor") || options.containsKey("read") || options
 				.containsKey("write")))
 			throw new KNXIllegalArgumentException("specify read, write, or group monitoring");
@@ -522,7 +528,7 @@ public class ProcComm implements Runnable
 		// TODO problem: this overrules the log level from a simplelogger.properties file!!
 		final String simpleLoggerLogLevel = "org.slf4j.simpleLogger.defaultLogLevel";
 		if (!System.getProperties().containsKey(simpleLoggerLogLevel)) {
-			final String lvl = args.contains("-v") || args.contains("--verbose") ? "info" : "error";
+			final String lvl = args.contains("-v") || args.contains("--verbose") ? "trace" : "info";
 			System.setProperty(simpleLoggerLogLevel, lvl);
 		}
 		out = LogService.getLogger("calimero.tools");
@@ -545,6 +551,7 @@ public class ProcComm implements Runnable
 		sb.append("  --routing                use KNX net/IP routing (always on port 3671)")
 				.append(sep);
 		sb.append("  --serial -s              use FT1.2 serial communication").append(sep);
+		sb.append("  --usb -u                 use KNX USB communication").append(sep);
 		sb.append("  --medium -m <id>         KNX medium [tp0|tp1|p110|p132|rf] (default tp1)")
 				.append(sep);
 		sb.append("Available commands for process communication:").append(sep);

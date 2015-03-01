@@ -55,6 +55,7 @@ import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.link.KNXNetworkMonitor;
 import tuwien.auto.calimero.link.KNXNetworkMonitorFT12;
 import tuwien.auto.calimero.link.KNXNetworkMonitorIP;
+import tuwien.auto.calimero.link.KNXNetworkMonitorUsb;
 import tuwien.auto.calimero.link.LinkListener;
 import tuwien.auto.calimero.link.MonitorFrameEvent;
 import tuwien.auto.calimero.link.medium.KNXMediumSettings;
@@ -67,7 +68,7 @@ import tuwien.auto.calimero.log.LogService;
  * A tool for Calimero allowing monitoring of KNX network messages.
  * <p>
  * NetworkMonitor is a {@link Runnable} tool implementation allowing a user to track KNX network
- * messages in a KNX network. It provides monitoring access using a KNXnet/IP connection or FT1.2
+ * messages in a KNX network. It provides monitoring access using a KNXnet/IP, USB, or FT1.2
  * connection. NetworkMonitor shows the necessary interaction with the core library API for this
  * particular task.<br>
  * Note that by default the network monitor will run with default settings, if not specified
@@ -101,8 +102,7 @@ public class NetworkMonitor implements Runnable
 	private final Map<String, Object> options = new HashMap<>();
 	private KNXNetworkMonitor m;
 
-	private final LinkListener l = new LinkListener()
-	{
+	private final LinkListener l = new LinkListener() {
 		public void indication(final FrameEvent e)
 		{
 			NetworkMonitor.this.onIndication(e);
@@ -156,6 +156,7 @@ public class NetworkMonitor implements Runnable
 	 * <li><code>--port -p</code> <i>number</i> &nbsp;UDP port on host (default 3671)</li>
 	 * <li><code>--nat -n</code> enable Network Address Translation</li>
 	 * <li><code>--serial -s</code> use FT1.2 serial communication</li>
+	 * <li><code>--usb -u</code> use KNX USB communication</li>
 	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp0|tp1|p110|p132|rf] (defaults to
 	 * tp1)</li>
 	 * </ul>
@@ -327,26 +328,30 @@ public class NetworkMonitor implements Runnable
 	 */
 	private KNXNetworkMonitor createMonitor() throws KNXException, InterruptedException
 	{
+		final String host = (String) options.get("host");
 		final KNXMediumSettings medium = (KNXMediumSettings) options.get("medium");
 		if (options.containsKey("serial")) {
 			// create FT1.2 monitor link
-			final String p = (String) options.get("serial");
 			try {
-				return new KNXNetworkMonitorFT12(Integer.parseInt(p), medium);
+				return new KNXNetworkMonitorFT12(Integer.parseInt(host), medium);
 			}
 			catch (final NumberFormatException e) {
-				return new KNXNetworkMonitorFT12(p, medium);
+				return new KNXNetworkMonitorFT12(host, medium);
 			}
 		}
+		if (options.containsKey("usb")) {
+			// create USB network monitor
+			return new KNXNetworkMonitorUsb(host, medium);
+		}
 		// create local and remote socket address for monitor link
-		final InetSocketAddress local = Main.createLocalSocket((InetAddress) options.get("localhost"),
-				(Integer) options.get("localport"));
-		final InetSocketAddress host = new InetSocketAddress((InetAddress) options.get("host"),
+		final InetSocketAddress local = Main.createLocalSocket(
+				(InetAddress) options.get("localhost"), (Integer) options.get("localport"));
+		final InetSocketAddress remote = new InetSocketAddress(Main.parseHost(host),
 				((Integer) options.get("port")).intValue());
 		// create the monitor link, based on the KNXnet/IP protocol
 		// specify whether network address translation shall be used,
 		// and tell the physical medium of the KNX network
-		return new KNXNetworkMonitorIP(local, host, options.containsKey("nat"), medium);
+		return new KNXNetworkMonitorIP(local, remote, options.containsKey("nat"), medium);
 	}
 
 	/**
@@ -383,7 +388,7 @@ public class NetworkMonitor implements Runnable
 			if (Main.isOption(arg, "verbose", "v"))
 				options.put("verbose", null);
 			else if (Main.isOption(arg, "localhost", null))
-				Main.parseHost(args[++i], true, options);
+				options.put("localhost", Main.parseHost(args[++i]));
 			else if (Main.isOption(arg, "localport", null))
 				options.put("localport", Integer.decode(args[++i]));
 			else if (Main.isOption(arg, "port", "p"))
@@ -392,18 +397,18 @@ public class NetworkMonitor implements Runnable
 				options.put("nat", null);
 			else if (Main.isOption(arg, "serial", "s"))
 				options.put("serial", null);
+			else if (Main.isOption(arg, "usb", "u"))
+				options.put("usb", null);
 			else if (Main.isOption(arg, "medium", "m"))
 				options.put("medium", Main.getMedium(args[++i]));
-			else if (options.containsKey("serial"))
-				// add port number/identifier to serial option
-				options.put("serial", arg);
 			else if (!options.containsKey("host"))
-				Main.parseHost(arg, false, options);
+				options.put("host", arg);
 			else
 				throw new KNXIllegalArgumentException("unknown option " + arg);
 		}
-		if (!options.containsKey("host") && !options.containsKey("serial"))
-			throw new KNXIllegalArgumentException("no host or serial port specified");
+		if (!options.containsKey("host")
+				|| (options.containsKey("serial") && options.containsKey("usb")))
+			throw new KNXIllegalArgumentException("specify either IP host, serial port, or device");
 	}
 
 	// a helper in case slf4j simple logger is used
@@ -435,6 +440,7 @@ public class NetworkMonitor implements Runnable
 		sb.append("  --serial -s              use FT1.2 serial communication").append(sep);
 		sb.append("  --medium -m <id>         KNX medium [tp0|tp1|p110|p132|rf] (default tp1)")
 				.append(sep);
+		sb.append("  --usb -u                 use KNX USB communication").append(sep);
 		LogService.logAlways(out, sb.toString());
 	}
 

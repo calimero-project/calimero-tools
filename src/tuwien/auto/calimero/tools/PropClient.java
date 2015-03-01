@@ -42,31 +42,28 @@ import java.io.InputStreamReader;
 import java.io.InterruptedIOException;
 
 import tuwien.auto.calimero.exception.KNXIllegalArgumentException;
+import tuwien.auto.calimero.log.LogService;
 import tuwien.auto.calimero.mgmt.PropertyAdapter;
 import tuwien.auto.calimero.mgmt.PropertyClient;
 
 /**
- * A tool for Calimero showing features of the {@link PropertyClient} used for KNX
- * property access.
+ * A tool for Calimero showing features of the {@link PropertyClient} used for KNX property access.
  * <p>
- * PropClient is a console based tool implementation for reading and writing KNX
- * properties. It supports network access using a KNXnet/IP connection or FT1.2
- * connection. To start the PropClient, invoke the <code>main</code>-method of this class.
- * Take a look at the command line options to configure the tool with the desired
- * communication settings.
+ * PropClient is a console based tool implementation for reading and writing KNX properties. It
+ * supports network access using a KNXnet/IP, USB, or FT1.2 connection. To start the PropClient,
+ * invoke the <code>main</code>-method of this class. Take a look at the command line options to
+ * configure the tool with the desired communication settings.
  * <p>
- * The main part of this tool implementation interacts with the PropertyClient interface,
- * which offers high level access to KNX property information. It also shows creation of
- * the {@link PropertyAdapter}, necessary for a property client to work. All queried
- * property values, as well as occurring problems are written to <code>System.out
+ * The main part of this tool implementation interacts with the PropertyClient interface, which
+ * offers high level access to KNX property information. It also shows creation of the
+ * {@link PropertyAdapter}, necessary for a property client to work. All queried property values, as
+ * well as occurring problems are written to <code>System.out
  * </code>.
  *
  * @author B. Malinowsky
  */
 public class PropClient implements Runnable
 {
-	private static final String tool = "PropClient";
-
 	class PropertyEx extends tuwien.auto.calimero.tools.Property
 	{
 		public PropertyEx(final String[] args)
@@ -99,10 +96,10 @@ public class PropClient implements Runnable
 				}
 			}
 			catch (final InterruptedException e) {
-				System.out.println("received quit (interrupt), closing ...");
+				System.out.println("received interrupt, closing ...");
 			}
 			catch (final InterruptedIOException e) {
-				System.out.println("received quit (interrupt), closing ...");
+				System.out.println("received interrupt, closing ...");
 			}
 			catch (final IOException e) {
 				System.out.println("I/O error, " + e.getMessage());
@@ -127,12 +124,11 @@ public class PropClient implements Runnable
 	/**
 	 * Entry point for running the PropClient.
 	 * <p>
-	 * An IP host or port identifier has to be supplied to specify the endpoint for the
-	 * KNX network access.<br>
-	 * To show the usage message of this tool on the console, supply the command line
-	 * option -help (or -h).<br>
-	 * Command line options are treated case sensitive. Available options for the property
-	 * client:
+	 * An IP host or port identifier has to be supplied to specify the endpoint for the KNX network
+	 * access.<br>
+	 * To show the usage message of this tool on the console, supply the command line option -help
+	 * (or -h).<br>
+	 * Command line options are treated case sensitive. Available options for the property client:
 	 * <ul>
 	 * <li><code>--help -h</code> show help message</li>
 	 * <li><code>--version</code> show tool/library version and exit</li>
@@ -141,11 +137,11 @@ public class PropClient implements Runnable
 	 * <li><code>--remote -r</code> <i>KNX addr</i> &nbsp;remote property service</li>
 	 * <li><code>--definitions -d</code> <i>file</i> &nbsp;use property definition file</li>
 	 * <li><code>--localhost</code> <i>id</i> &nbsp;local IP/host name</li>
-	 * <li><code>--localport</code> <i>number</i> &nbsp;local UDP port (default system
-	 * assigned)</li>
+	 * <li><code>--localport</code> <i>number</i> &nbsp;local UDP port (default system assigned)</li>
 	 * <li><code>--port -p</code> <i>number</i> &nbsp;UDP port on host (default 3671)</li>
 	 * <li><code>--nat -n</code> enable Network Address Translation</li>
 	 * <li><code>--serial -s</code> use FT1.2 serial communication</li>
+	 * <li><code>--usb -u</code> use KNX USB communication</li>
 	 * </ul>
 	 * For local device management these options are available:
 	 * <ul>
@@ -154,8 +150,8 @@ public class PropClient implements Runnable
 	 * For remote property service these options are available:
 	 * <ul>
 	 * <li><code>--routing</code> use KNXnet/IP routing</li>
-	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp0|tp1|p110|p132|rf]
-	 * (defaults to tp1)</li>
+	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp0|tp1|p110|p132|rf] (defaults to
+	 * tp1)</li>
 	 * <li><code>--connect -c</code> connection oriented mode</li>
 	 * <li><code>--authorize -a</code> <i>key</i> &nbsp;authorize key to access KNX device</li>
 	 * </ul>
@@ -164,6 +160,7 @@ public class PropClient implements Runnable
 	 */
 	public static void main(final String[] args)
 	{
+		Property.out = LogService.getLogger("calimero.tools");
 		try {
 			final PropClient pc = new PropClient(args);
 			pc.run();

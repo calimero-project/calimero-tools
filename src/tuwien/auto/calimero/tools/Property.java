@@ -59,23 +59,26 @@ import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.KNXNetworkLinkFT12;
 import tuwien.auto.calimero.link.KNXNetworkLinkIP;
+import tuwien.auto.calimero.link.KNXNetworkLinkUsb;
 import tuwien.auto.calimero.link.medium.KNXMediumSettings;
 import tuwien.auto.calimero.link.medium.TPSettings;
 import tuwien.auto.calimero.log.LogService;
 import tuwien.auto.calimero.mgmt.Description;
 import tuwien.auto.calimero.mgmt.LocalDeviceMgmtAdapter;
+import tuwien.auto.calimero.mgmt.LocalDeviceManagementUsb;
 import tuwien.auto.calimero.mgmt.PropertyAdapter;
 import tuwien.auto.calimero.mgmt.PropertyAdapterListener;
 import tuwien.auto.calimero.mgmt.PropertyClient;
 import tuwien.auto.calimero.mgmt.PropertyClient.PropertyKey;
 import tuwien.auto.calimero.mgmt.RemotePropertyServiceAdapter;
+import tuwien.auto.calimero.serial.usb.UsbConnection;
 
 /**
  * A tool for Calimero showing features of the {@link PropertyClient} used for KNX property access.
  * <p>
  * Property is a {@link Runnable} tool implementation to set or get a KNX property from an Interface
  * Object Server (IOS), get its KNX property description, or scan the KNX descriptions available. It
- * supports network access using a KNXnet/IP connection or FT1.2 connection. <br>
+ * supports network access using a KNXnet/IP, USB, or FT1.2 connection.<br>
  * The tool implementation mainly interacts with {@link PropertyClient}, which offers high-level
  * access to KNX property information. It also shows creation of the {@link PropertyAdapter},
  * necessary for a property client to work. All queried property values, as well as occurring
@@ -99,6 +102,7 @@ public class Property implements Runnable, PropertyAdapterListener
 
 	private PropertyClient pc;
 	private KNXNetworkLink lnk;
+	private UsbConnection usb;
 	private Map<PropertyKey, PropertyClient.Property> definitions;
 
 	private final Thread interruptOnClose;
@@ -127,8 +131,8 @@ public class Property implements Runnable, PropertyAdapterListener
 	/**
 	 * Entry point for running the Property tool from the console.
 	 * <p>
-	 * An IP host or port identifier has to be supplied to specify the endpoint for KNX network
-	 * access.<br>
+	 * A communication device, host, or port identifier has to be supplied to specify the endpoint
+	 * for KNX network access.<br>
 	 * To show the usage message of this tool on the console, supply the command line option --help
 	 * (or -h).<br>
 	 * Command line options are treated case sensitive. Available options are:
@@ -136,7 +140,7 @@ public class Property implements Runnable, PropertyAdapterListener
 	 * <li><code>--help -h</code> show help message</li>
 	 * <li><code>--version</code> show tool/library version and exit</li>
 	 * <li><code>--verbose -v</code> enable verbose status output</li>
-	 * <li><code>--local -l</code> local device management</li>
+	 * <li><code>--local -l</code> local device management (default)</li>
 	 * <li><code>--remote -r</code> <i>KNX addr</i> &nbsp;remote property service</li>
 	 * <li><code>--definitions -d</code> <i>file</i> &nbsp;use property definition file</li>
 	 * <li><code>--localhost</code> <i>id</i> &nbsp;local IP/host name</li>
@@ -144,6 +148,7 @@ public class Property implements Runnable, PropertyAdapterListener
 	 * <li><code>--port -p</code> <i>number</i> &nbsp;UDP port on host (default 3671)</li>
 	 * <li><code>--nat -n</code> enable Network Address Translation</li>
 	 * <li><code>--serial -s</code> use FT1.2 serial communication</li>
+	 * <li><code>--usb -u</code> use KNX USB communication</li>
 	 * </ul>
 	 * For local device management these options are available:
 	 * <ul>
@@ -251,6 +256,8 @@ public class Property implements Runnable, PropertyAdapterListener
 				pc.close();
 			if (lnk != null)
 				lnk.close();
+			if (usb != null)
+				usb.close();
 			onCompletion(thrown, canceled);
 		}
 	}
@@ -320,10 +327,11 @@ public class Property implements Runnable, PropertyAdapterListener
 	 * Creates the property adapter to be used with the property client depending on the supplied
 	 * user <code>options</code>.
 	 * <p>
-	 * There are two types of property adapters. One uses KNXnet/IP local device management to
-	 * access KNX properties in an interface object, the other type uses remote property services.
-	 * The remote adapter needs a KNX network link to access the KNX network, the link is also
-	 * created by this method if this adapter type is requested.
+	 * There are two types of property adapters. One is for local device management to access KNX
+	 * properties of the connected interface, specifically, KNXnet/IP and KNX USB devices. The other
+	 * type uses remote property services to access KNX properties of a KNX device over the KNX bus.
+	 * If a remote property service adapter is requested, the required KNX network link to access
+	 * the KNX network is automatically created.
 	 *
 	 * @return the created adapter
 	 * @throws KNXException on adapter creation problem
@@ -331,62 +339,78 @@ public class Property implements Runnable, PropertyAdapterListener
 	 */
 	private PropertyAdapter createAdapter() throws KNXException, InterruptedException
 	{
-		// create local and remote socket address for use in adapter
-		final InetSocketAddress local = Main.createLocalSocket(
-				(InetAddress) options.get("localhost"), (Integer) options.get("localport"));
-		final InetSocketAddress host = new InetSocketAddress((InetAddress) options.get("host"),
-				((Integer) options.get("port")).intValue());
+		final String host = (String) options.get("host");
 		// decide what type of adapter to create
-		if (options.containsKey("local"))
-			return createLocalDMAdapter(local, host);
-		return createRemoteAdapter(local, host);
+		if (options.containsKey("local")) {
+			if (options.containsKey("usb"))
+				return createUsbAdapter(host);
+			// create local and remote socket address for use in adapter
+			return createLocalDMAdapter(host);
+		}
+		return createRemoteAdapter(host);
 	}
 
 	/**
-	 * Creates a local device management adapter.
-	 * <p>
+	 * Creates a KNXnet/IP local device management adapter.
 	 *
-	 * @param local local socket address
-	 * @param host remote socket address of host
+	 * @param host remote host
 	 * @return local device management adapter
 	 * @throws KNXException on adapter creation problem
 	 * @throws InterruptedException on interrupted thread
 	 */
-	private PropertyAdapter createLocalDMAdapter(final InetSocketAddress local,
-		final InetSocketAddress host) throws KNXException, InterruptedException
+	private PropertyAdapter createLocalDMAdapter(final String host) throws KNXException,
+		InterruptedException
 	{
-		return new LocalDeviceMgmtAdapter(local, host, options.containsKey("nat"), this,
+		final InetSocketAddress local = Main.createLocalSocket(
+				(InetAddress) options.get("localhost"), (Integer) options.get("localport"));
+		return new LocalDeviceMgmtAdapter(local, new InetSocketAddress(Main.parseHost(host),
+				((Integer) options.get("port")).intValue()), options.containsKey("nat"), this,
 				options.containsKey("emulatewriteenable"));
 	}
 
 	/**
-	 * Creates a remote property service adapter for one device in the KNX network.
-	 * <p>
-	 * The adapter uses a KNX network link for access, also is created by this method.
+	 * Creates a local device management adapter for a KNX USB interface.
+	 */
+	private PropertyAdapter createUsbAdapter(final String device) throws KNXException,
+		InterruptedException
+	{
+		usb = new UsbConnection(device);
+		return new LocalDeviceManagementUsb(usb, this, options.containsKey("emulatewriteenable"));
+	}
+
+	/**
+	 * Creates the KNX network link and remote property service adapter for one device in the KNX
+	 * network. The adapter uses a KNX network link for access, also is created by this method.
 	 *
-	 * @param local local socket address
-	 * @param host remote socket address of host
+	 * @param host remote host
 	 * @return remote property service adapter
 	 * @throws KNXException on adapter creation problem
 	 * @throws InterruptedException on interrupted thread
 	 */
-	private PropertyAdapter createRemoteAdapter(final InetSocketAddress local,
-		final InetSocketAddress host) throws KNXException, InterruptedException
+	private PropertyAdapter createRemoteAdapter(final String host) throws KNXException,
+		InterruptedException
 	{
 		final KNXMediumSettings medium = (KNXMediumSettings) options.get("medium");
 		if (options.containsKey("serial")) {
 			// create FT1.2 network link
-			final String p = (String) options.get("serial");
 			try {
-				lnk = new KNXNetworkLinkFT12(Integer.parseInt(p), medium);
+				lnk = new KNXNetworkLinkFT12(Integer.parseInt(host), medium);
 			}
 			catch (final NumberFormatException e) {
-				lnk = new KNXNetworkLinkFT12(p, medium);
+				lnk = new KNXNetworkLinkFT12(host, medium);
 			}
 		}
+		else if (options.containsKey("usb")) {
+			// create KNX USB HID network link
+			lnk = new KNXNetworkLinkUsb(host, medium);
+		}
 		else {
+			final InetSocketAddress local = Main.createLocalSocket(
+					(InetAddress) options.get("localhost"), (Integer) options.get("localport"));
+			final InetSocketAddress sa = new InetSocketAddress(Main.parseHost(host),
+					((Integer) options.get("port")).intValue());
 			lnk = new KNXNetworkLinkIP(options.containsKey("routing") ? KNXNetworkLinkIP.ROUTING
-					: KNXNetworkLinkIP.TUNNELING, local, host, options.containsKey("nat"), medium);
+					: KNXNetworkLinkIP.TUNNELING, local, sa, options.containsKey("nat"), medium);
 		}
 		final IndividualAddress remote = (IndividualAddress) options.get("remote");
 		// if an authorization key was supplied, the adapter uses
@@ -462,7 +486,7 @@ public class Property implements Runnable, PropertyAdapterListener
 			else if (Main.isOption(arg, "verbose", "v"))
 				options.put("verbose", null);
 			else if (Main.isOption(arg, "localhost", null))
-				Main.parseHost(args[++i], true, options);
+				options.put("localhost", Main.parseHost(args[++i]));
 			else if (Main.isOption(arg, "localport", null))
 				options.put("localport", Integer.decode(args[++i]));
 			else if (Main.isOption(arg, "port", "p"))
@@ -471,6 +495,8 @@ public class Property implements Runnable, PropertyAdapterListener
 				options.put("nat", null);
 			else if (Main.isOption(arg, "serial", "s"))
 				options.put("serial", null);
+			else if (Main.isOption(arg, "usb", "u"))
+				options.put("usb", null);
 			else if (Main.isOption(arg, "medium", "m"))
 				options.put("medium", Main.getMedium(args[++i]));
 			else if (Main.isOption(arg, "emulatewriteenable", "e"))
@@ -491,18 +517,15 @@ public class Property implements Runnable, PropertyAdapterListener
 				// class Main with single get/set commands, as those are required last in sequence
 				break;
 			}
-			else if (options.containsKey("serial"))
-				// add port number/identifier to serial option
-				options.put("serial", arg);
 			else if (!options.containsKey("host"))
-				Main.parseHost(arg, false, options);
+				options.put("host", arg);
 			else
 				throw new KNXIllegalArgumentException("unknown option " + arg);
 		}
-		if (!options.containsKey("local") && !options.containsKey("remote"))
-			throw new KNXIllegalArgumentException("no connection category specified");
-		if (!options.containsKey("host") && !options.containsKey("serial"))
-			throw new KNXIllegalArgumentException("no host or serial port specified");
+		if (!options.containsKey("remote"))
+			options.put("local", null);
+		if (!options.containsKey("host"))
+			throw new KNXIllegalArgumentException("no communication device/host specified");
 		if (options.containsKey("serial") && !options.containsKey("remote"))
 			throw new KNXIllegalArgumentException("--remote option is mandatory with --serial");
 	}
@@ -622,7 +645,7 @@ public class Property implements Runnable, PropertyAdapterListener
 		// TODO problem: this overrules the log level from a simplelogger.properties file!!
 		final String simpleLoggerLogLevel = "org.slf4j.simpleLogger.defaultLogLevel";
 		if (!System.getProperties().containsKey(simpleLoggerLogLevel)) {
-			final String lvl = args.contains("-v") || args.contains("--verbose") ? "info" : "warn";
+			final String lvl = args.contains("-v") || args.contains("--verbose") ? "debug" : "warn";
 			System.setProperty(simpleLoggerLogLevel, lvl);
 		}
 		out = LogService.getLogger("calimero.tools");
@@ -646,6 +669,7 @@ public class Property implements Runnable, PropertyAdapterListener
 				.append(KNXnetIPConnection.DEFAULT_PORT).append(")").append(sep);
 		sb.append("  --nat -n                 enable Network Address Translation").append(sep);
 		sb.append("  --serial -s              use FT1.2 serial communication").append(sep);
+		sb.append("  --usb -u                 use KNX USB communication").append(sep);
 		sb.append(" local device management mode only:").append(sep);
 		sb.append("  --emulatewriteenable -e  check write-enable of a property").append(sep);
 		sb.append(" remote property service mode only:").append(sep);

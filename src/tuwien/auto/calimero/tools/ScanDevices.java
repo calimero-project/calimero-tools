@@ -53,6 +53,7 @@ import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.KNXNetworkLinkFT12;
 import tuwien.auto.calimero.link.KNXNetworkLinkIP;
+import tuwien.auto.calimero.link.KNXNetworkLinkUsb;
 import tuwien.auto.calimero.link.medium.KNXMediumSettings;
 import tuwien.auto.calimero.link.medium.TPSettings;
 import tuwien.auto.calimero.log.LogService;
@@ -114,6 +115,7 @@ public class ScanDevices implements Runnable
 	 * <li><code>--port -p</code> <i>port</i> &nbsp;UDP port on host (default 3671)</li>
 	 * <li><code>--nat -n</code> enable Network Address Translation</li>
 	 * <li><code>--serial -s</code> use FT1.2 serial communication</li>
+	 * <li><code>--usb -u</code> use KNX USB communication</li>
 	 * <li><code>--routing</code> use KNXnet/IP routing</li>
 	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp0|tp1|p110|p132|rf] (defaults to
 	 * tp1)</li>
@@ -226,25 +228,29 @@ public class ScanDevices implements Runnable
 	 */
 	private KNXNetworkLink createLink() throws KNXException, InterruptedException
 	{
+		final String host = (String) options.get("host");
 		final KNXMediumSettings medium = (KNXMediumSettings) options.get("medium");
 		if (options.containsKey("serial")) {
 			// create FT1.2 network link
-			final String p = (String) options.get("serial");
 			try {
-				return new KNXNetworkLinkFT12(Integer.parseInt(p), medium);
+				return new KNXNetworkLinkFT12(Integer.parseInt(host), medium);
 			}
 			catch (final NumberFormatException e) {
-				return new KNXNetworkLinkFT12(p, medium);
+				return new KNXNetworkLinkFT12(host, medium);
 			}
+		}
+		if (options.containsKey("usb")) {
+			// create USB network link
+			return new KNXNetworkLinkUsb(host, medium);
 		}
 		// create local and remote socket address for network link
 		final InetSocketAddress local = Main.createLocalSocket(
 				(InetAddress) options.get("localhost"), (Integer) options.get("localport"));
-		final InetSocketAddress host = new InetSocketAddress((InetAddress) options.get("host"),
+		final InetSocketAddress remote = new InetSocketAddress(Main.parseHost(host),
 				((Integer) options.get("port")).intValue());
 		final int mode = options.containsKey("routing") ? KNXNetworkLinkIP.ROUTING
 				: KNXNetworkLinkIP.TUNNELING;
-		return new KNXNetworkLinkIP(mode, local, host, options.containsKey("nat"), medium);
+		return new KNXNetworkLinkIP(mode, local, remote, options.containsKey("nat"), medium);
 	}
 
 	/**
@@ -301,7 +307,7 @@ public class ScanDevices implements Runnable
 			if (Main.isOption(arg, "verbose", "v"))
 				options.put("verbose", null);
 			else if (Main.isOption(arg, "localhost", null))
-				Main.parseHost(args[++i], true, options);
+				options.put("localhost", Main.parseHost(args[++i]));
 			else if (Main.isOption(arg, "localport", null))
 				options.put("localport", Integer.decode(args[++i]));
 			else if (Main.isOption(arg, "port", "p"))
@@ -312,22 +318,21 @@ public class ScanDevices implements Runnable
 				options.put("routing", null);
 			else if (Main.isOption(arg, "serial", "s"))
 				options.put("serial", null);
+			else if (Main.isOption(arg, "usb", "u"))
+				options.put("usb", null);
 			else if (Main.isOption(arg, "medium", "m"))
 				options.put("medium", Main.getMedium(args[++i]));
-			else if (options.containsKey("serial") && options.get("serial") == null)
-				// add argument as serial port number/identifier to serial option
-				options.put("serial", arg);
 			else if (!options.containsKey("host"))
 				// otherwise add a host key with argument as host
-				Main.parseHost(arg, false, options);
+				options.put("host", arg);
 			else if (!options.containsKey("range"))
 				// otherwise save the range for scanning
 				options.put("range", arg);
 			else
 				throw new KNXIllegalArgumentException("unknown option " + arg);
 		}
-		if (options.containsKey("host") == options.containsKey("serial"))
-			throw new KNXIllegalArgumentException("specify either IP host or serial port");
+		if (!options.containsKey("host"))
+			throw new KNXIllegalArgumentException("specify either IP host, serial port, or device");
 		if (!options.containsKey("range"))
 			throw new KNXIllegalArgumentException("Missing area.line range to scan for devices");
 	}
@@ -360,6 +365,7 @@ public class ScanDevices implements Runnable
 				.append(KNXnetIPConnection.DEFAULT_PORT).append(")").append(sep);
 		sb.append(" --nat -n                 enable Network Address Translation").append(sep);
 		sb.append(" --serial -s              use FT1.2 serial communication").append(sep);
+		sb.append(" --usb -u                 use KNX USB communication").append(sep);
 		sb.append(" --routing                use KNXnet/IP routing").append(sep);
 		sb.append(" --medium -m <id>         KNX medium [tp0|tp1|p110|p132|rf] (default tp1)")
 				.append(sep);

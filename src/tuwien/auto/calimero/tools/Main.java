@@ -43,7 +43,6 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 import tuwien.auto.calimero.exception.KNXIllegalArgumentException;
 import tuwien.auto.calimero.link.medium.KNXMediumSettings;
@@ -69,9 +68,9 @@ public final class Main
 	private static final String DEV_INFO = "devinfo";
 
 	private static final String[][] cmds = new String[][] {
-		{ DISCOVER, "Discover KNXnet/IP servers", "--search"},
+		{ DISCOVER, "Discover KNXnet/IP servers", "--search" },
 		{ DESCRIPTION, "KNXnet/IP server self-description", "--description" },
-		{ SCAN, "Determine the existing KNX devices on a KNX subnetwork", ""},
+		{ SCAN, "Determine the existing KNX devices on a KNX subnetwork", "" },
 		{ IPCONFIG, "KNXnet/IP device address configuration", "" },
 		{ MONITOR, "Monitor a KNX network", "" },
 		{ COM_READ, "Read a value using KNX process communication", "read" },
@@ -82,10 +81,10 @@ public final class Main
 		{ DEV_INFO, "Read KNX device information", "" },
 	};
 
-	private static final List<Class<? extends Runnable>> tools = Arrays.asList(
-		Discover.class, Discover.class, ScanDevices.class, IPConfig.class, NetworkMonitor.class,
-		ProcComm.class, ProcComm.class, ProcComm.class, Property.class, Property.class,
-		DeviceInfo.class);
+	private static final List<Class<? extends Runnable>> tools = Arrays.asList(Discover.class,
+			Discover.class, ScanDevices.class, IPConfig.class, NetworkMonitor.class,
+			ProcComm.class, ProcComm.class, ProcComm.class, Property.class, Property.class,
+			DeviceInfo.class);
 
 	private static final String sep = System.getProperty("line.separator");
 
@@ -155,14 +154,13 @@ public final class Main
 		}
 	}
 
-	static void parseHost(final String host, final boolean local,
-		final Map<String, Object> options)
+	static InetAddress parseHost(final String host)
 	{
 		try {
-			options.put(local ? "localhost" : "host", InetAddress.getByName(host));
+			return InetAddress.getByName(host);
 		}
 		catch (final UnknownHostException e) {
-			throw new KNXIllegalArgumentException("failed to read host " + host, e);
+			throw new KNXIllegalArgumentException("failed to read IP host " + host, e);
 		}
 	}
 
@@ -204,7 +202,6 @@ public final class Main
 			throw new KNXIllegalArgumentException("use --" + longOpt);
 		return lo || so;
 	}
-
 
 	static final class ShutdownHandler extends Thread
 	{

@@ -400,8 +400,8 @@ public class IPConfig implements Runnable
 			final byte[] data = query(pid);
 			return data == null ? "PID not found" : InetAddress.getByAddress(data).getHostAddress();
 		}
-		catch (final UnknownHostException e) { }
-		catch (final KNXException e) { }
+		catch (final UnknownHostException e) {}
+		catch (final KNXException e) {}
 		return "-";
 	}
 
@@ -453,8 +453,8 @@ public class IPConfig implements Runnable
 	private PropertyAdapter createAdapter() throws KNXException, InterruptedException
 	{
 		// create local and remote socket address for use in adapter
-		final InetSocketAddress local = Main.createLocalSocket((InetAddress) options.get("localhost"),
-				(Integer) options.get("localport"));
+		final InetSocketAddress local = Main.createLocalSocket(
+				(InetAddress) options.get("localhost"), (Integer) options.get("localport"));
 		final InetSocketAddress host = new InetSocketAddress((InetAddress) options.get("host"),
 				((Integer) options.get("port")).intValue());
 		// decide what type of adapter to create
@@ -610,20 +610,20 @@ public class IPConfig implements Runnable
 		sb.append("  --local -l               local device management").append(sep);
 		sb.append("  --remote -r <KNX addr>   remote property service").append(sep);
 		sb.append("  --localhost <id>         local IP/host name").append(sep);
-		sb.append("  --localport <number>     local UDP port (default system assigned)").append(sep);
+		sb.append("  --localport <number>     local UDP port (default system assigned)")
+				.append(sep);
 		sb.append("  --port -p <number>       UDP port on <host> (default ")
 				.append(KNXnetIPConnection.DEFAULT_PORT).append(")").append(sep);
 		sb.append("  --nat -n                 enable Network Address Translation").append(sep);
 		sb.append("  --serial -s              use FT1.2 serial communication").append(sep);
 		sb.append(" remote property service only:").append(sep);
-		sb.append("  --routing                use KNXnet/IP routing (always on port 3671)")
-				.append(sep);
+		sb.append("  --routing                use KNXnet/IP routing (always on port 3671)").append(
+				sep);
 		sb.append("  --medium -m <id>         KNX medium [tp0|tp1|p110|p132|rf] (default tp1)")
 				.append(sep);
 		sb.append("  --connect -c             connection oriented mode").append(sep);
 		sb.append("  --authorize -a <key>     authorize key to access KNX device").append(sep);
-		sb.append(
-				"To change the IP configuration, supply one or more commands:").append(sep);
+		sb.append("To change the IP configuration, supply one or more commands:").append(sep);
 		sb.append("  ip <address>            set the configured fixed IP address").append(sep);
 		sb.append("  subnet <address>        set the configured IP subnet mask").append(sep);
 		sb.append(
@@ -636,8 +636,8 @@ public class IPConfig implements Runnable
 				"  bootp          enable Bootstrap Protocol IP assignment for current "
 						+ "IP address").append(sep);
 		sb.append("  dhcp           enable DHCP IP assignment for current IP address").append(sep);
-		sb.append("  auto           enable automatic IP assignment for current IP address")
-				.append(sep);
+		sb.append("  auto           enable automatic IP assignment for current IP address").append(
+				sep);
 		LogService.logAlways(out, sb.toString());
 	}
 
