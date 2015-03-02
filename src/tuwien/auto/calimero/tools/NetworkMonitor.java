@@ -84,7 +84,7 @@ import tuwien.auto.calimero.log.LogService;
  * </code> (console mode), or the log writer supplied by the user.
  * <p>
  * To use the network monitor, invoke {@link NetworkMonitor#main(String[])}, or create a new
- * instance with {@link NetworkMonitor#NetworkMonitor(String[], LogWriter)}, and invoke
+ * instance with {@link NetworkMonitor#NetworkMonitor(String[])}, and invoke
  * {@link NetworkMonitor#start()} or {@link NetworkMonitor#run()} on that instance. When running
  * this tool from the console, the <code>main</code> method of this class is executed, otherwise use
  * it in the context appropriate to a {@link Runnable}.
@@ -442,13 +442,13 @@ public class NetworkMonitor implements Runnable
 		sb.append("  --version                show tool/library version and exit").append(sep);
 		sb.append("  --verbose -v             enable verbose status output").append(sep);
 		sb.append("  --localhost <id>         local IP/host name").append(sep);
-		sb.append("  --localport <number>     local UDP port (default system " + "assigned)")
+		sb.append("  --localport <number>     local UDP port (default system assigned)")
 				.append(sep);
 		sb.append("  --port -p <number>       UDP port on host (default ")
 				.append(KNXnetIPConnection.DEFAULT_PORT).append(")").append(sep);
 		sb.append("  --nat -n                 enable Network Address Translation").append(sep);
 		sb.append("  --serial -s              use FT1.2 serial communication").append(sep);
-		sb.append("  --medium -m <id>         KNX medium [tp0|tp1|p110|p132|rf] " + "(default tp1)")
+		sb.append("  --medium -m <id>         KNX medium [tp0|tp1|p110|p132|rf] (default tp1)")
 				.append(sep);
 		LogService.logAlways(out, sb.toString());
 	}

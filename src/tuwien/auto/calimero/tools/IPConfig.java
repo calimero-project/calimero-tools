@@ -79,7 +79,7 @@ import tuwien.auto.calimero.mgmt.RemotePropertyServiceAdapter;
  * FT1.2 connection. IPConfig shows the necessary interaction with the core library API for this
  * particular task.<br>
  * To run IPConfig, invoke {@link IPConfig#main(String[])}, or create a new instance using
- * {@link IPConfig#IPConfig(String[], LogWriter)} and invoke {@link #run()} on that instance.<br>
+ * {@link IPConfig#IPConfig(String[])} and invoke {@link #run()} on that instance.<br>
  * All configuration output, as well as occurring problems are written to either
  * <code>System.out</code> (console mode), or the log writer supplied by the user. See the tool
  * options for a list of communication settings.
@@ -618,9 +618,9 @@ public class IPConfig implements Runnable
 		sb.append("  --nat -n                 enable Network Address Translation").append(sep);
 		sb.append("  --serial -s              use FT1.2 serial communication").append(sep);
 		sb.append(" remote property service only:").append(sep);
-		sb.append("  --routing                use KNXnet/IP routing " + "(always on port 3671)")
+		sb.append("  --routing                use KNXnet/IP routing (always on port 3671)")
 				.append(sep);
-		sb.append("  --medium -m <id>         KNX medium [tp0|tp1|p110|p132|rf] " + "(default tp1)")
+		sb.append("  --medium -m <id>         KNX medium [tp0|tp1|p110|p132|rf] (default tp1)")
 				.append(sep);
 		sb.append("  --connect -c             connection oriented mode").append(sep);
 		sb.append("  --authorize -a <key>     authorize key to access KNX device").append(sep);
@@ -638,7 +638,7 @@ public class IPConfig implements Runnable
 				"  bootp          enable Bootstrap Protocol IP assignment for current "
 						+ "IP address").append(sep);
 		sb.append("  dhcp           enable DHCP IP assignment for current IP address").append(sep);
-		sb.append("  auto           enable automatic IP assignment for current " + "IP address")
+		sb.append("  auto           enable automatic IP assignment for current IP address")
 				.append(sep);
 		LogService.logAlways(out, sb.toString());
 	}
