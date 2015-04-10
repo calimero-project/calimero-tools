@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2010, 2014 B. Malinowsky
+    Copyright (c) 2010, 2015 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -38,8 +38,18 @@ package tuwien.auto.calimero.tools;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+
+import tuwien.auto.calimero.exception.KNXIllegalArgumentException;
+import tuwien.auto.calimero.link.medium.KNXMediumSettings;
+import tuwien.auto.calimero.link.medium.PLSettings;
+import tuwien.auto.calimero.link.medium.RFSettings;
+import tuwien.auto.calimero.link.medium.TPSettings;
 
 /**
  * @author B. Malinowsky
@@ -76,6 +86,8 @@ public final class Main
 		Discover.class, Discover.class, ScanDevices.class, IPConfig.class, NetworkMonitor.class,
 		ProcComm.class, ProcComm.class, ProcComm.class, Property.class, Property.class,
 		DeviceInfo.class);
+
+	private static final String sep = System.getProperty("line.separator");
 
 	private Main() {}
 
@@ -119,12 +131,99 @@ public final class Main
 	private static void usage()
 	{
 		final StringBuffer sb = new StringBuffer();
-		final String sep = "\n";
 		sb.append("Supported commands (always safe without further options, use -h for help):")
 				.append(sep);
 		for (int i = 0; i < cmds.length; i++) {
 			sb.append(cmds[i][0]).append(" - ").append(cmds[i][1]).append(sep);
 		}
 		System.out.println(sb);
+	}
+
+	//
+	// Utility methods used by the various tools
+	//
+
+	static InetSocketAddress createLocalSocket(final InetAddress host, final Integer port)
+	{
+		final int p = port != null ? port.intValue() : 0;
+		try {
+			return host != null ? new InetSocketAddress(host, p) : p != 0 ? new InetSocketAddress(
+					InetAddress.getLocalHost(), p) : null;
+		}
+		catch (final UnknownHostException e) {
+			throw new KNXIllegalArgumentException("failed getting local host " + e.getMessage(), e);
+		}
+	}
+
+	static void parseHost(final String host, final boolean local,
+		final Map<String, Object> options)
+	{
+		try {
+			options.put(local ? "localhost" : "host", InetAddress.getByName(host));
+		}
+		catch (final UnknownHostException e) {
+			throw new KNXIllegalArgumentException("failed to read host " + host, e);
+		}
+	}
+
+	/**
+	 * Creates a medium settings type for the supplied medium identifier.
+	 * <p>
+	 *
+	 * @param id a medium identifier from command line option
+	 * @return medium settings object
+	 * @throws KNXIllegalArgumentException on unknown medium identifier
+	 */
+	static KNXMediumSettings getMedium(final String id)
+	{
+		// for now, the local device address is always left 0 in the
+		// created medium setting, since there is no user cmd line option for this
+		// so KNXnet/IP server will supply address
+		if (id.equals("tp0"))
+			return TPSettings.TP0;
+		else if (id.equals("tp1"))
+			return TPSettings.TP1;
+		else if (id.equals("p110"))
+			return new PLSettings(false);
+		else if (id.equals("p132"))
+			return new PLSettings(true);
+		else if (id.equals("rf"))
+			return new RFSettings(null);
+		else
+			throw new KNXIllegalArgumentException("unknown medium");
+	}
+
+	static boolean isOption(final String arg, final String longOpt, final String shortOpt)
+	{
+		final boolean lo = arg.startsWith("--")
+				&& arg.regionMatches(2, longOpt, 0, arg.length() - 2);
+		final boolean so = shortOpt != null && arg.charAt(0) == '-'
+				&& arg.regionMatches(1, shortOpt, 0, arg.length() - 1);
+		// notify about change of prefix for long options
+		if (arg.equals("-" + longOpt))
+			throw new KNXIllegalArgumentException("use --" + longOpt);
+		return lo || so;
+	}
+
+
+	static final class ShutdownHandler extends Thread
+	{
+		private final Thread t = Thread.currentThread();
+
+		ShutdownHandler register()
+		{
+			Runtime.getRuntime().addShutdownHook(this);
+			return this;
+		}
+
+		void unregister()
+		{
+			Runtime.getRuntime().removeShutdownHook(this);
+		}
+
+		public void run()
+		{
+			t.interrupt();
+		}
 	}
 }
