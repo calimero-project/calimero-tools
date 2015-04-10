@@ -60,8 +60,6 @@ import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.KNXNetworkLinkFT12;
 import tuwien.auto.calimero.link.KNXNetworkLinkIP;
 import tuwien.auto.calimero.link.medium.KNXMediumSettings;
-import tuwien.auto.calimero.link.medium.PLSettings;
-import tuwien.auto.calimero.link.medium.RFSettings;
 import tuwien.auto.calimero.link.medium.TPSettings;
 import tuwien.auto.calimero.log.LogService;
 import tuwien.auto.calimero.mgmt.Description;
@@ -455,7 +453,7 @@ public class IPConfig implements Runnable
 	private PropertyAdapter createAdapter() throws KNXException, InterruptedException
 	{
 		// create local and remote socket address for use in adapter
-		final InetSocketAddress local = createLocalSocket((InetAddress) options.get("localhost"),
+		final InetSocketAddress local = Main.createLocalSocket((InetAddress) options.get("localhost"),
 				(Integer) options.get("localport"));
 		final InetSocketAddress host = new InetSocketAddress((InetAddress) options.get("host"),
 				((Integer) options.get("port")).intValue());
@@ -534,40 +532,40 @@ public class IPConfig implements Runnable
 
 		for (final Iterator<String> i = l.iterator(); i.hasNext();) {
 			final String arg = i.next();
-			if (isOption(arg, "help", "h")) {
+			if (Main.isOption(arg, "help", "h")) {
 				options.put("help", null);
 				return;
 			}
-			if (isOption(arg, "version", null)) {
+			if (Main.isOption(arg, "version", null)) {
 				options.put("version", null);
 				return;
 			}
-			if (isOption(arg, "local", "l"))
+			if (Main.isOption(arg, "local", "l"))
 				options.put("localDM", null);
-			else if (isOption(arg, "remote", "r"))
+			else if (Main.isOption(arg, "remote", "r"))
 				try {
 					options.put("remote", new IndividualAddress(i.next()));
 				}
 				catch (final KNXFormatException e) {
 					throw new KNXIllegalArgumentException(e.getMessage(), e);
 				}
-			else if (isOption(arg, "localhost", null))
+			else if (Main.isOption(arg, "localhost", null))
 				parseIP(i.next(), "localhost", options);
-			else if (isOption(arg, "localport", null))
+			else if (Main.isOption(arg, "localport", null))
 				options.put("localport", Integer.decode(i.next()));
-			else if (isOption(arg, "port", "p"))
+			else if (Main.isOption(arg, "port", "p"))
 				options.put("port", Integer.decode(i.next()));
-			else if (isOption(arg, "nat", "n"))
+			else if (Main.isOption(arg, "nat", "n"))
 				options.put("nat", null);
-			else if (isOption(arg, "serial", "s"))
+			else if (Main.isOption(arg, "serial", "s"))
 				options.put("serial", null);
-			else if (isOption(arg, "medium", "m"))
-				options.put("medium", getMedium(i.next()));
-			else if (isOption(arg, "connect", "c"))
+			else if (Main.isOption(arg, "medium", "m"))
+				options.put("medium", Main.getMedium(i.next()));
+			else if (Main.isOption(arg, "connect", "c"))
 				options.put("connect", null);
-			else if (isOption(arg, "authorize", "a"))
+			else if (Main.isOption(arg, "authorize", "a"))
 				options.put("authorize", getAuthorizeKey(i.next()));
-			else if (isOption(arg, "routing", null))
+			else if (Main.isOption(arg, "routing", null))
 				options.put("routing", null);
 			// IP configuration options
 			else if (arg.equalsIgnoreCase("manual"))
@@ -648,25 +646,6 @@ public class IPConfig implements Runnable
 		LogService.logAlways(out, Settings.getLibraryHeader(false));
 	}
 
-	private static KNXMediumSettings getMedium(final String id)
-	{
-		// for now, the local device address is always left 0 in the
-		// created medium setting, since there is no user cmd line option for this
-		// so KNXnet/IP server will supply address
-		if (id.equals("tp0"))
-			return TPSettings.TP0;
-		else if (id.equals("tp1"))
-			return TPSettings.TP1;
-		else if (id.equals("p110"))
-			return new PLSettings(false);
-		else if (id.equals("p132"))
-			return new PLSettings(true);
-		else if (id.equals("rf"))
-			return new RFSettings(null);
-		else
-			throw new KNXIllegalArgumentException("unknown medium");
-	}
-
 	private static byte[] getAuthorizeKey(final String key)
 	{
 		final long value = Long.decode(key).longValue();
@@ -685,29 +664,5 @@ public class IPConfig implements Runnable
 		catch (final UnknownHostException e) {
 			throw new KNXIllegalArgumentException("failed to read IP " + address, e);
 		}
-	}
-
-	private static InetSocketAddress createLocalSocket(final InetAddress host, final Integer port)
-	{
-		final int p = port != null ? port.intValue() : 0;
-		try {
-			return host != null ? new InetSocketAddress(host, p) : p != 0 ? new InetSocketAddress(
-					InetAddress.getLocalHost(), p) : null;
-		}
-		catch (final UnknownHostException e) {
-			throw new KNXIllegalArgumentException("failed to get local host " + e.getMessage(), e);
-		}
-	}
-
-	private static boolean isOption(final String arg, final String longOpt, final String shortOpt)
-	{
-		final boolean lo = arg.startsWith("--")
-				&& arg.regionMatches(2, longOpt, 0, arg.length() - 2);
-		final boolean so = shortOpt != null && arg.charAt(0) == '-'
-				&& arg.regionMatches(1, shortOpt, 0, arg.length() - 1);
-		// notify about change of prefix for long options
-		if (arg.equals("-" + longOpt))
-			throw new KNXIllegalArgumentException("use --" + longOpt);
-		return lo || so;
 	}
 }

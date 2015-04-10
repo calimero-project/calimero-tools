@@ -38,7 +38,6 @@ package tuwien.auto.calimero.tools;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -61,8 +60,6 @@ import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.KNXNetworkLinkFT12;
 import tuwien.auto.calimero.link.KNXNetworkLinkIP;
 import tuwien.auto.calimero.link.medium.KNXMediumSettings;
-import tuwien.auto.calimero.link.medium.PLSettings;
-import tuwien.auto.calimero.link.medium.RFSettings;
 import tuwien.auto.calimero.link.medium.TPSettings;
 import tuwien.auto.calimero.log.LogService;
 import tuwien.auto.calimero.mgmt.Description;
@@ -74,22 +71,19 @@ import tuwien.auto.calimero.mgmt.PropertyClient.PropertyKey;
 import tuwien.auto.calimero.mgmt.RemotePropertyServiceAdapter;
 
 /**
- * A tool for Calimero showing features of the {@link PropertyClient} used for KNX
- * property access.
+ * A tool for Calimero showing features of the {@link PropertyClient} used for KNX property access.
  * <p>
- * Property is a {@link Runnable} tool implementation to set or get a KNX property from an
- * Interface Object Server (IOS), get its KNX property description, or scan the KNX
- * descriptions available. It supports network access using a KNXnet/IP connection or
- * FT1.2 connection. <br>
- * The tool implementation mainly interacts with {@link PropertyClient}, which offers
- * high-level access to KNX property information. It also shows creation of the
- * {@link PropertyAdapter}, necessary for a property client to work. All queried property
- * values, as well as occurring problems are written to <code>System.out</code>.
+ * Property is a {@link Runnable} tool implementation to set or get a KNX property from an Interface
+ * Object Server (IOS), get its KNX property description, or scan the KNX descriptions available. It
+ * supports network access using a KNXnet/IP connection or FT1.2 connection. <br>
+ * The tool implementation mainly interacts with {@link PropertyClient}, which offers high-level
+ * access to KNX property information. It also shows creation of the {@link PropertyAdapter},
+ * necessary for a property client to work. All queried property values, as well as occurring
+ * problems are written to <code>System.out</code>.
  * <p>
- * When starting this tool from the console, the <code>main</code>-method of this class is
- * invoked, otherwise use it in the context appropriate to {@link Runnable}. Take a look
- * at the command line options to configure the tool with the appropriate communication
- * settings.
+ * When starting this tool from the console, the <code>main</code>-method of this class is invoked,
+ * otherwise use it in the context appropriate to {@link Runnable}. Take a look at the command line
+ * options to configure the tool with the appropriate communication settings.
  *
  * @author B. Malinowsky
  */
@@ -133,10 +127,10 @@ public class Property implements Runnable, PropertyAdapterListener
 	/**
 	 * Entry point for running the Property tool from the console.
 	 * <p>
-	 * An IP host or port identifier has to be supplied to specify the endpoint for
-	 * KNX network access.<br>
-	 * To show the usage message of this tool on the console, supply the command line
-	 * option --help (or -h).<br>
+	 * An IP host or port identifier has to be supplied to specify the endpoint for KNX network
+	 * access.<br>
+	 * To show the usage message of this tool on the console, supply the command line option --help
+	 * (or -h).<br>
 	 * Command line options are treated case sensitive. Available options are:
 	 * <ul>
 	 * <li><code>--help -h</code> show help message</li>
@@ -146,8 +140,7 @@ public class Property implements Runnable, PropertyAdapterListener
 	 * <li><code>--remote -r</code> <i>KNX addr</i> &nbsp;remote property service</li>
 	 * <li><code>--definitions -d</code> <i>file</i> &nbsp;use property definition file</li>
 	 * <li><code>--localhost</code> <i>id</i> &nbsp;local IP/host name</li>
-	 * <li><code>--localport</code> <i>number</i> &nbsp;local UDP port (default system
-	 * assigned)</li>
+	 * <li><code>--localport</code> <i>number</i> &nbsp;local UDP port (default system assigned)</li>
 	 * <li><code>--port -p</code> <i>number</i> &nbsp;UDP port on host (default 3671)</li>
 	 * <li><code>--nat -n</code> enable Network Address Translation</li>
 	 * <li><code>--serial -s</code> use FT1.2 serial communication</li>
@@ -159,31 +152,27 @@ public class Property implements Runnable, PropertyAdapterListener
 	 * For remote property service these options are available:
 	 * <ul>
 	 * <li><code>--routing</code> use KNXnet/IP routing</li>
-	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp0|tp1|p110|p132|rf]
-	 * (defaults to tp1)</li>
+	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp0|tp1|p110|p132|rf] (defaults to
+	 * tp1)</li>
 	 * <li><code>--connect -c</code> connection oriented mode</li>
-	 * <li><code>--authorize -a</code> <i>key</i> &nbsp;authorize key to access the KNX
-	 * device</li>
+	 * <li><code>--authorize -a</code> <i>key</i> &nbsp;authorize key to access the KNX device</li>
 	 * </ul>
-	 * Use one of the following commands for property access, with
-	 * <i>object-idx</i> being the interface object index, and <i>pid</i> the KNX property
-	 * identifier:
+	 * Use one of the following commands for property access, with <i>object-idx</i> being the
+	 * interface object index, and <i>pid</i> the KNX property identifier:
 	 * <ul>
-	 * <li><code>get <i>object-idx pid [start-idx elements]</i></code> get the property
-	 * value(s)</li>
-	 * <li><code>set <i>object-idx pid [start-idx] string-value</i></code> set the
-	 * property string-formatted value</li>
+	 * <li><code>get <i>object-idx pid [start-idx elements]</i></code> get the property value(s)</li>
+	 * <li><code>set <i>object-idx pid [start-idx] string-value</i></code> set the property
+	 * string-formatted value</li>
 	 * <li>
-	 * <code>set <i>object-idx pid start-idx elements [\"0x\"|\"0\"|\"b\"]data</i></code>
-	 * set the property data</li>
-	 * <li><code>desc <i>object-idx pid</i></code> get the property description of the
-	 * property ID</li>
-	 * <li><code>desc <i>object-idx "i" prop-idx</i></code> get the property description
-	 * of the property index</li>
-	 * <li><code>scan <i>[object-idx]</i></code> list interface object type descriptions
-	 * (of the indexed interface object)</li>
-	 * <li><code>scan <i>[object-idx]</i> "all"</code> list all property descriptions (of
-	 * the indexed interface object)</li>
+	 * <code>set <i>object-idx pid start-idx elements [\"0x\"|\"0\"|\"b\"]data</i></code> set
+	 * the property data</li>
+	 * <li><code>desc <i>object-idx pid</i></code> get the property description of the property ID</li>
+	 * <li><code>desc <i>object-idx "i" prop-idx</i></code> get the property description of the
+	 * property index</li>
+	 * <li><code>scan <i>[object-idx]</i></code> list interface object type descriptions (of the
+	 * indexed interface object)</li>
+	 * <li><code>scan <i>[object-idx]</i> "all"</code> list all property descriptions (of the
+	 * indexed interface object)</li>
 	 * <li><code>?</code> show command help</li>
 	 * </ul>
 	 *
@@ -315,8 +304,8 @@ public class Property implements Runnable, PropertyAdapterListener
 	 * Called by this tool on completion.
 	 * <p>
 	 *
-	 * @param thrown the thrown exception if operation completed due to a raised
-	 *        exception, <code>null</code> otherwise
+	 * @param thrown the thrown exception if operation completed due to a raised exception,
+	 *        <code>null</code> otherwise
 	 * @param canceled whether the operation got canceled before its planned end
 	 */
 	protected void onCompletion(final Exception thrown, final boolean canceled)
@@ -328,14 +317,13 @@ public class Property implements Runnable, PropertyAdapterListener
 	}
 
 	/**
-	 * Creates the property adapter to be used with the property client depending on the
-	 * supplied user <code>options</code>.
+	 * Creates the property adapter to be used with the property client depending on the supplied
+	 * user <code>options</code>.
 	 * <p>
-	 * There are two types of property adapters. One uses KNXnet/IP local device
-	 * management to access KNX properties in an interface object, the other type uses
-	 * remote property services. The remote adapter needs a KNX network link to access the
-	 * KNX network, the link is also created by this method if this adapter type is
-	 * requested.
+	 * There are two types of property adapters. One uses KNXnet/IP local device management to
+	 * access KNX properties in an interface object, the other type uses remote property services.
+	 * The remote adapter needs a KNX network link to access the KNX network, the link is also
+	 * created by this method if this adapter type is requested.
 	 *
 	 * @return the created adapter
 	 * @throws KNXException on adapter creation problem
@@ -344,8 +332,8 @@ public class Property implements Runnable, PropertyAdapterListener
 	private PropertyAdapter createAdapter() throws KNXException, InterruptedException
 	{
 		// create local and remote socket address for use in adapter
-		final InetSocketAddress local = createLocalSocket((InetAddress) options.get("localhost"),
-				(Integer) options.get("localport"));
+		final InetSocketAddress local = Main.createLocalSocket(
+				(InetAddress) options.get("localhost"), (Integer) options.get("localport"));
 		final InetSocketAddress host = new InetSocketAddress((InetAddress) options.get("host"),
 				((Integer) options.get("port")).intValue());
 		// decide what type of adapter to create
@@ -398,7 +386,7 @@ public class Property implements Runnable, PropertyAdapterListener
 		}
 		else {
 			lnk = new KNXNetworkLinkIP(options.containsKey("routing") ? KNXNetworkLinkIP.ROUTING
-				: KNXNetworkLinkIP.TUNNELING, local, host, options.containsKey("nat"), medium);
+					: KNXNetworkLinkIP.TUNNELING, local, host, options.containsKey("nat"), medium);
 		}
 		final IndividualAddress remote = (IndividualAddress) options.get("remote");
 		// if an authorization key was supplied, the adapter uses
@@ -452,46 +440,46 @@ public class Property implements Runnable, PropertyAdapterListener
 		int i = 0;
 		for (; i < args.length; i++) {
 			final String arg = args[i];
-			if (isOption(arg, "help", "h")) {
+			if (Main.isOption(arg, "help", "h")) {
 				options.put("help", null);
 				return;
 			}
-			if (isOption(arg, "version", null)) {
+			if (Main.isOption(arg, "version", null)) {
 				options.put("version", null);
 				return;
 			}
-			if (isOption(arg, "local", "l"))
+			if (Main.isOption(arg, "local", "l"))
 				options.put("local", null);
-			else if (isOption(arg, "remote", "r"))
+			else if (Main.isOption(arg, "remote", "r"))
 				try {
 					options.put("remote", new IndividualAddress(args[++i]));
 				}
 				catch (final KNXFormatException e) {
 					throw new KNXIllegalArgumentException(e.getMessage(), e);
 				}
-			else if (isOption(arg, "definitions", "d"))
+			else if (Main.isOption(arg, "definitions", "d"))
 				options.put("definitions", args[++i]);
-			else if (isOption(arg, "verbose", "v"))
+			else if (Main.isOption(arg, "verbose", "v"))
 				options.put("verbose", null);
-			else if (isOption(arg, "localhost", null))
-				parseHost(args[++i], true, options);
-			else if (isOption(arg, "localport", null))
+			else if (Main.isOption(arg, "localhost", null))
+				Main.parseHost(args[++i], true, options);
+			else if (Main.isOption(arg, "localport", null))
 				options.put("localport", Integer.decode(args[++i]));
-			else if (isOption(arg, "port", "p"))
+			else if (Main.isOption(arg, "port", "p"))
 				options.put("port", Integer.decode(args[++i]));
-			else if (isOption(arg, "nat", "n"))
+			else if (Main.isOption(arg, "nat", "n"))
 				options.put("nat", null);
-			else if (isOption(arg, "serial", "s"))
+			else if (Main.isOption(arg, "serial", "s"))
 				options.put("serial", null);
-			else if (isOption(arg, "medium", "m"))
-				options.put("medium", getMedium(args[++i]));
-			else if (isOption(arg, "emulatewriteenable", "e"))
+			else if (Main.isOption(arg, "medium", "m"))
+				options.put("medium", Main.getMedium(args[++i]));
+			else if (Main.isOption(arg, "emulatewriteenable", "e"))
 				options.put("emulatewriteenable", null);
-			else if (isOption(arg, "connect", "c"))
+			else if (Main.isOption(arg, "connect", "c"))
 				options.put("connect", null);
-			else if (isOption(arg, "authorize", "a"))
+			else if (Main.isOption(arg, "authorize", "a"))
 				options.put("authorize", getAuthorizeKey(args[++i]));
-			else if (isOption(arg, "routing", null))
+			else if (Main.isOption(arg, "routing", null))
 				options.put("routing", null);
 			else if (arg.equals("get") || arg.equals("set") || arg.equals("desc")
 					|| arg.equals("scan") || arg.equals("?")) {
@@ -507,7 +495,7 @@ public class Property implements Runnable, PropertyAdapterListener
 				// add port number/identifier to serial option
 				options.put("serial", arg);
 			else if (!options.containsKey("host"))
-				parseHost(arg, false, options);
+				Main.parseHost(arg, false, options);
 			else
 				throw new KNXIllegalArgumentException("unknown option " + arg);
 		}
@@ -655,7 +643,7 @@ public class Property implements Runnable, PropertyAdapterListener
 		sb.append("  --localport <number>     local UDP port (default system assigned)")
 				.append(sep);
 		sb.append("  --port -p <number>       UDP port on <host> (default ")
-			.append(KNXnetIPConnection.DEFAULT_PORT).append(")").append(sep);
+				.append(KNXnetIPConnection.DEFAULT_PORT).append(")").append(sep);
 		sb.append("  --nat -n                 enable Network Address Translation").append(sep);
 		sb.append("  --serial -s              use FT1.2 serial communication").append(sep);
 		sb.append(" local device management mode only:").append(sep);
@@ -670,13 +658,13 @@ public class Property implements Runnable, PropertyAdapterListener
 		sb.append("  get <object-idx> <pid> [<start-idx> <elements>]  get the property value(s)")
 				.append(sep);
 		sb.append("  set <i>object-idx pid [start-idx] string-value   "
-						+ "set the property string-formatted value").append(sep);
+				+ "set the property string-formatted value").append(sep);
 		sb.append("  set <object-idx> <pid> <start-idx> <elements> [\"0x\"|\"0\"|\"b\"]<data>    "
-						+ "set the property data").append(sep);
+				+ "set the property data").append(sep);
 		sb.append("  desc <object-idx> <pid>                "
-						+ "get the property description of the property ID").append(sep);
+				+ "get the property description of the property ID").append(sep);
 		sb.append("  desc <object-idx> \"i\" <prop-idx>       "
-						+ "get the property description of the property index").append(sep);
+				+ "get the property description of the property index").append(sep);
 		sb.append("  scan [<object-idx>]"
 				+ "                    list interface object type descriptions").append(sep);
 		sb.append("  scan [<object-idx>] \"all\"              list all property descriptions")
@@ -695,68 +683,13 @@ public class Property implements Runnable, PropertyAdapterListener
 		LogService.logAlways(out, Settings.getLibraryHeader(false));
 	}
 
-	private static KNXMediumSettings getMedium(final String id)
-	{
-		// for now, the local device address is always left 0 in the
-		// created medium setting, since there is no user cmd line option for this
-		// so KNXnet/IP server will supply address
-		if (id.equals("tp0"))
-			return TPSettings.TP0;
-		else if (id.equals("tp1"))
-			return TPSettings.TP1;
-		else if (id.equals("p110"))
-			return new PLSettings(false);
-		else if (id.equals("p132"))
-			return new PLSettings(true);
-		else if (id.equals("rf"))
-			return new RFSettings(null);
-		else
-			throw new KNXIllegalArgumentException("unknown medium");
-	}
-
 	private static byte[] getAuthorizeKey(final String key)
 	{
 		final long value = Long.decode(key).longValue();
 		if (value < 0 || value > 0xFFFFFFFFL)
 			throw new KNXIllegalArgumentException("invalid authorize key");
-		return new byte[] { (byte) (value >> 24), (byte) (value >> 16),
-			(byte) (value >> 8), (byte) value };
-	}
-
-	private static void parseHost(final String host, final boolean local,
-		final Map<String, Object> options)
-	{
-		try {
-			options.put(local ? "localhost" : "host", InetAddress.getByName(host));
-		}
-		catch (final UnknownHostException e) {
-			throw new KNXIllegalArgumentException("failed to read host " + host, e);
-		}
-	}
-
-	private static InetSocketAddress createLocalSocket(final InetAddress host,
-		final Integer port)
-	{
-		final int p = port != null ? port.intValue() : 0;
-		try {
-			return host != null ? new InetSocketAddress(host, p) : p != 0
-				? new InetSocketAddress(InetAddress.getLocalHost(), p) : null;
-		}
-		catch (final UnknownHostException e) {
-			throw new KNXIllegalArgumentException("failed to get local host " + e.getMessage(), e);
-		}
-	}
-
-	private static boolean isOption(final String arg, final String longOpt, final String shortOpt)
-	{
-		final boolean lo = arg.startsWith("--")
-				&& arg.regionMatches(2, longOpt, 0, arg.length() - 2);
-		final boolean so = shortOpt != null && arg.charAt(0) == '-'
-				&& arg.regionMatches(1, shortOpt, 0, arg.length() - 1);
-		// notify about change of prefix for long options
-		if (arg.equals("-" + longOpt))
-			throw new KNXIllegalArgumentException("use --" + longOpt);
-		return lo || so;
+		return new byte[] { (byte) (value >> 24), (byte) (value >> 16), (byte) (value >> 8),
+			(byte) value };
 	}
 
 	private static int toInt(final String number)

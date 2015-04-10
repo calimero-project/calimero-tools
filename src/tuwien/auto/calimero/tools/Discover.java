@@ -40,7 +40,6 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
-import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -58,6 +57,7 @@ import tuwien.auto.calimero.knxnetip.servicetype.DescriptionResponse;
 import tuwien.auto.calimero.knxnetip.servicetype.SearchResponse;
 import tuwien.auto.calimero.knxnetip.util.HPAI;
 import tuwien.auto.calimero.log.LogService;
+import tuwien.auto.calimero.tools.Main.ShutdownHandler;
 
 /**
  * A tool for Calimero showing the KNXnet/IP discovery and self description feature.
@@ -378,34 +378,34 @@ public class Discover implements Runnable
 		int i = 0;
 		for (; i < args.length; i++) {
 			final String arg = args[i];
-			if (isOption(arg, "help", "h")) {
+			if (Main.isOption(arg, "help", "h")) {
 				options.put("help", null);
 				return;
 			}
-			if (isOption(arg, "version", null)) {
+			if (Main.isOption(arg, "version", null)) {
 				options.put("version", null);
 				return;
 			}
 
-			if (isOption(arg, "localport", null))
+			if (Main.isOption(arg, "localport", null))
 				options.put("localport", Integer.decode(args[++i]));
-			else if (isOption(arg, "nat", "n"))
+			else if (Main.isOption(arg, "nat", "n"))
 				options.put("nat", null);
-			else if (isOption(arg, "interface", "i"))
+			else if (Main.isOption(arg, "interface", "i"))
 				options.put("if", getNetworkIF(args[++i]));
-			else if (isOption(arg, "timeout", "t")) {
+			else if (Main.isOption(arg, "timeout", "t")) {
 				final Integer timeout = Integer.valueOf(args[++i]);
 				// a value of 0 means infinite timeout
 				if (timeout.intValue() > 0)
 					options.put("timeout", timeout);
 			}
-			else if (isOption(arg, "search", "s"))
+			else if (Main.isOption(arg, "search", "s"))
 				options.put("search", null);
 			else if (arg.equals("sd"))
 				options.put("searchWithDescription", null);
-			else if (isOption(arg, "description", "d"))
-				parseHost(args[++i], false, options);
-			else if (isOption(arg, "serverport", "p"))
+			else if (Main.isOption(arg, "description", "d"))
+				Main.parseHost(args[++i], false, options);
+			else if (Main.isOption(arg, "serverport", "p"))
 				options.put("serverport", Integer.decode(args[++i]));
 			else
 				throw new KNXIllegalArgumentException("unknown option " + arg);
@@ -466,52 +466,8 @@ public class Discover implements Runnable
 		LogService.logAlways(out, sb.toString());
 	}
 
-	private static void parseHost(final String host, final boolean local,
-		final Map<String, Object> options)
-	{
-		try {
-			options.put(local ? "localhost" : "host", InetAddress.getByName(host));
-		}
-		catch (final UnknownHostException e) {
-			throw new KNXIllegalArgumentException("failed to read host " + host, e);
-		}
-	}
-
-	private static boolean isOption(final String arg, final String longOpt, final String shortOpt)
-	{
-		final boolean lo = arg.startsWith("--")
-				&& arg.regionMatches(2, longOpt, 0, arg.length() - 2);
-		final boolean so = shortOpt != null && arg.charAt(0) == '-'
-				&& arg.regionMatches(1, shortOpt, 0, arg.length() - 1);
-		// notify about change of prefix for long options
-		if (arg.equals("-" + longOpt))
-			throw new KNXIllegalArgumentException("use --" + longOpt);
-		return lo || so;
-	}
-
 	private static void showVersion()
 	{
 		LogService.logAlways(out, Settings.getLibraryHeader(false));
-	}
-
-	private static final class ShutdownHandler extends Thread
-	{
-		private final Thread t = Thread.currentThread();
-
-		ShutdownHandler register()
-		{
-			Runtime.getRuntime().addShutdownHook(this);
-			return this;
-		}
-
-		void unregister()
-		{
-			Runtime.getRuntime().removeShutdownHook(this);
-		}
-
-		public void run()
-		{
-			t.interrupt();
-		}
 	}
 }

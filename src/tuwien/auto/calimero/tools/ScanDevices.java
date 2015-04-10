@@ -38,7 +38,6 @@ package tuwien.auto.calimero.tools;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -55,12 +54,11 @@ import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.KNXNetworkLinkFT12;
 import tuwien.auto.calimero.link.KNXNetworkLinkIP;
 import tuwien.auto.calimero.link.medium.KNXMediumSettings;
-import tuwien.auto.calimero.link.medium.PLSettings;
-import tuwien.auto.calimero.link.medium.RFSettings;
 import tuwien.auto.calimero.link.medium.TPSettings;
 import tuwien.auto.calimero.log.LogService;
 import tuwien.auto.calimero.mgmt.ManagementProcedures;
 import tuwien.auto.calimero.mgmt.ManagementProceduresImpl;
+import tuwien.auto.calimero.tools.Main.ShutdownHandler;
 
 /**
  * A tool to list existing (and responsive) KNX devices on a KNX network, or checking whether a
@@ -191,7 +189,7 @@ public class ScanDevices implements Runnable
 				final int device = Integer.decode(range[2]).intValue();
 				final IndividualAddress addr = new IndividualAddress(area, line, device);
 				if (mp.isAddressOccupied(addr))
-					found = new IndividualAddress[] {addr};
+					found = new IndividualAddress[] { addr };
 			}
 			else {
 				LogService.logAlways(out, "start scan of " + area + "." + line + ".[0..255] ...");
@@ -240,8 +238,8 @@ public class ScanDevices implements Runnable
 			}
 		}
 		// create local and remote socket address for network link
-		final InetSocketAddress local = createLocalSocket((InetAddress) options.get("localhost"),
-				(Integer) options.get("localport"));
+		final InetSocketAddress local = Main.createLocalSocket(
+				(InetAddress) options.get("localhost"), (Integer) options.get("localport"));
 		final InetSocketAddress host = new InetSocketAddress((InetAddress) options.get("host"),
 				((Integer) options.get("port")).intValue());
 		final int mode = options.containsKey("routing") ? KNXNetworkLinkIP.ROUTING
@@ -292,36 +290,36 @@ public class ScanDevices implements Runnable
 		int i = 0;
 		for (; i < args.length; i++) {
 			final String arg = args[i];
-			if (isOption(arg, "help", "h")) {
+			if (Main.isOption(arg, "help", "h")) {
 				options.put("help", null);
 				return;
 			}
-			if (isOption(arg, "version", null)) {
+			if (Main.isOption(arg, "version", null)) {
 				options.put("version", null);
 				return;
 			}
-			if (isOption(arg, "verbose", "v"))
+			if (Main.isOption(arg, "verbose", "v"))
 				options.put("verbose", null);
-			else if (isOption(arg, "localhost", null))
-				parseHost(args[++i], true, options);
-			else if (isOption(arg, "localport", null))
+			else if (Main.isOption(arg, "localhost", null))
+				Main.parseHost(args[++i], true, options);
+			else if (Main.isOption(arg, "localport", null))
 				options.put("localport", Integer.decode(args[++i]));
-			else if (isOption(arg, "port", "p"))
+			else if (Main.isOption(arg, "port", "p"))
 				options.put("port", Integer.decode(args[++i]));
-			else if (isOption(arg, "nat", "n"))
+			else if (Main.isOption(arg, "nat", "n"))
 				options.put("nat", null);
-			else if (isOption(arg, "routing", null))
+			else if (Main.isOption(arg, "routing", null))
 				options.put("routing", null);
-			else if (isOption(arg, "serial", "s"))
+			else if (Main.isOption(arg, "serial", "s"))
 				options.put("serial", null);
-			else if (isOption(arg, "medium", "m"))
-				options.put("medium", getMedium(args[++i]));
+			else if (Main.isOption(arg, "medium", "m"))
+				options.put("medium", Main.getMedium(args[++i]));
 			else if (options.containsKey("serial") && options.get("serial") == null)
 				// add argument as serial port number/identifier to serial option
 				options.put("serial", arg);
 			else if (!options.containsKey("host"))
 				// otherwise add a host key with argument as host
-				parseHost(arg, false, options);
+				Main.parseHost(arg, false, options);
 			else if (!options.containsKey("range"))
 				// otherwise save the range for scanning
 				options.put("range", arg);
@@ -334,18 +332,6 @@ public class ScanDevices implements Runnable
 			throw new KNXIllegalArgumentException("Missing area.line range to scan for devices");
 	}
 
-	private static boolean isOption(final String arg, final String longOpt, final String shortOpt)
-	{
-		final boolean lo = arg.startsWith("--")
-				&& arg.regionMatches(2, longOpt, 0, arg.length() - 2);
-		final boolean so = shortOpt != null && arg.charAt(0) == '-'
-				&& arg.regionMatches(1, shortOpt, 0, arg.length() - 1);
-		// notify about change of prefix for long options
-		if (arg.equals("-" + longOpt))
-			throw new KNXIllegalArgumentException("use --" + longOpt);
-		return lo || so;
-	}
-
 	// a helper in case slf4j simple logger is used
 	private static void setLogVerbosity(final List<String> args)
 	{
@@ -356,25 +342,6 @@ public class ScanDevices implements Runnable
 			System.setProperty(simpleLoggerLogLevel, lvl);
 		}
 		out = LogService.getLogger("calimero.tools");
-	}
-
-	private static KNXMediumSettings getMedium(final String id)
-	{
-		// for now, the local device address is always left 0 in the
-		// created medium setting, since there is no user cmd line option for this
-		// so KNXnet/IP server will supply address
-		if (id.equals("tp0"))
-			return TPSettings.TP0;
-		else if (id.equals("tp1"))
-			return TPSettings.TP1;
-		else if (id.equals("p110"))
-			return new PLSettings(false);
-		else if (id.equals("p132"))
-			return new PLSettings(true);
-		else if (id.equals("rf"))
-			return new RFSettings(null);
-		else
-			throw new KNXIllegalArgumentException("unknown medium");
 	}
 
 	private static void showUsage()
@@ -405,49 +372,5 @@ public class ScanDevices implements Runnable
 	private static void showVersion()
 	{
 		LogService.logAlways(out, Settings.getLibraryHeader(false));
-	}
-
-	private static InetSocketAddress createLocalSocket(final InetAddress host, final Integer port)
-	{
-		final int p = port != null ? port.intValue() : 0;
-		try {
-			return host != null ? new InetSocketAddress(host, p) : p != 0 ? new InetSocketAddress(
-					InetAddress.getLocalHost(), p) : null;
-		}
-		catch (final UnknownHostException e) {
-			throw new KNXIllegalArgumentException("failed to get local host " + e.getMessage(), e);
-		}
-	}
-
-	private static void parseHost(final String host, final boolean local,
-		final Map<String, Object> options)
-	{
-		try {
-			options.put(local ? "localhost" : "host", InetAddress.getByName(host));
-		}
-		catch (final UnknownHostException e) {
-			throw new KNXIllegalArgumentException("failed to read host " + host, e);
-		}
-	}
-
-	private static final class ShutdownHandler extends Thread
-	{
-		private final Thread t = Thread.currentThread();
-
-		ShutdownHandler register()
-		{
-			Runtime.getRuntime().addShutdownHook(this);
-			return this;
-		}
-
-		void unregister()
-		{
-			Runtime.getRuntime().removeShutdownHook(this);
-		}
-
-		public void run()
-		{
-			t.interrupt();
-		}
 	}
 }

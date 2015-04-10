@@ -38,7 +38,6 @@ package tuwien.auto.calimero.tools;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -59,8 +58,6 @@ import tuwien.auto.calimero.link.KNXNetworkMonitorIP;
 import tuwien.auto.calimero.link.LinkListener;
 import tuwien.auto.calimero.link.MonitorFrameEvent;
 import tuwien.auto.calimero.link.medium.KNXMediumSettings;
-import tuwien.auto.calimero.link.medium.PLSettings;
-import tuwien.auto.calimero.link.medium.RFSettings;
 import tuwien.auto.calimero.link.medium.RawFrame;
 import tuwien.auto.calimero.link.medium.RawFrameBase;
 import tuwien.auto.calimero.link.medium.TPSettings;
@@ -342,7 +339,7 @@ public class NetworkMonitor implements Runnable
 			}
 		}
 		// create local and remote socket address for monitor link
-		final InetSocketAddress local = createLocalSocket((InetAddress) options.get("localhost"),
+		final InetSocketAddress local = Main.createLocalSocket((InetAddress) options.get("localhost"),
 				(Integer) options.get("localport"));
 		final InetSocketAddress host = new InetSocketAddress((InetAddress) options.get("host"),
 				((Integer) options.get("port")).intValue());
@@ -375,50 +372,38 @@ public class NetworkMonitor implements Runnable
 		int i = 0;
 		for (; i < args.length; i++) {
 			final String arg = args[i];
-			if (isOption(arg, "help", "h")) {
+			if (Main.isOption(arg, "help", "h")) {
 				options.put("help", null);
 				return;
 			}
-			if (isOption(arg, "version", null)) {
+			if (Main.isOption(arg, "version", null)) {
 				options.put("version", null);
 				return;
 			}
-			if (isOption(arg, "verbose", "v"))
+			if (Main.isOption(arg, "verbose", "v"))
 				options.put("verbose", null);
-			else if (isOption(arg, "localhost", null))
-				parseHost(args[++i], true, options);
-			else if (isOption(arg, "localport", null))
+			else if (Main.isOption(arg, "localhost", null))
+				Main.parseHost(args[++i], true, options);
+			else if (Main.isOption(arg, "localport", null))
 				options.put("localport", Integer.decode(args[++i]));
-			else if (isOption(arg, "port", "p"))
+			else if (Main.isOption(arg, "port", "p"))
 				options.put("port", Integer.decode(args[++i]));
-			else if (isOption(arg, "nat", "n"))
+			else if (Main.isOption(arg, "nat", "n"))
 				options.put("nat", null);
-			else if (isOption(arg, "serial", "s"))
+			else if (Main.isOption(arg, "serial", "s"))
 				options.put("serial", null);
-			else if (isOption(arg, "medium", "m"))
-				options.put("medium", getMedium(args[++i]));
+			else if (Main.isOption(arg, "medium", "m"))
+				options.put("medium", Main.getMedium(args[++i]));
 			else if (options.containsKey("serial"))
 				// add port number/identifier to serial option
 				options.put("serial", arg);
 			else if (!options.containsKey("host"))
-				parseHost(arg, false, options);
+				Main.parseHost(arg, false, options);
 			else
 				throw new KNXIllegalArgumentException("unknown option " + arg);
 		}
 		if (!options.containsKey("host") && !options.containsKey("serial"))
 			throw new KNXIllegalArgumentException("no host or serial port specified");
-	}
-
-	private static boolean isOption(final String arg, final String longOpt, final String shortOpt)
-	{
-		final boolean lo = arg.startsWith("--")
-				&& arg.regionMatches(2, longOpt, 0, arg.length() - 2);
-		final boolean so = shortOpt != null && arg.charAt(0) == '-'
-				&& arg.regionMatches(1, shortOpt, 0, arg.length() - 1);
-		// notify about change of prefix for long options
-		if (arg.equals("-" + longOpt))
-			throw new KNXIllegalArgumentException("use --" + longOpt);
-		return lo || so;
 	}
 
 	// a helper in case slf4j simple logger is used
@@ -456,53 +441,6 @@ public class NetworkMonitor implements Runnable
 	private static void showVersion()
 	{
 		LogService.logAlways(out, Settings.getLibraryHeader(false));
-	}
-
-	/**
-	 * Creates a medium settings type for the supplied medium identifier.
-	 * <p>
-	 *
-	 * @param id a medium identifier from command line option
-	 * @return medium settings object
-	 * @throws KNXIllegalArgumentException on unknown medium identifier
-	 */
-	private static KNXMediumSettings getMedium(final String id)
-	{
-		if (id.equals("tp0"))
-			return TPSettings.TP0;
-		else if (id.equals("tp1"))
-			return TPSettings.TP1;
-		else if (id.equals("p110"))
-			return new PLSettings(false);
-		else if (id.equals("p132"))
-			return new PLSettings(true);
-		else if (id.equals("rf"))
-			return new RFSettings(null);
-		else
-			throw new KNXIllegalArgumentException("unknown medium");
-	}
-
-	private static void parseHost(final String host, final boolean local,
-		final Map<String, Object> options)
-	{
-		try {
-			options.put(local ? "localhost" : "host", InetAddress.getByName(host));
-		}
-		catch (final UnknownHostException e) {
-			throw new KNXIllegalArgumentException("failed to read host " + host, e);
-		}
-	}
-
-	private static InetSocketAddress createLocalSocket(final InetAddress host, final Integer port)
-	{
-		final int p = port != null ? port.intValue() : 0;
-		try {
-			return host != null ? new InetSocketAddress(host, p) : p != 0 ? new InetSocketAddress(
-					InetAddress.getLocalHost(), p) : null;
-		}
-		catch (final UnknownHostException e) {
-			throw new KNXIllegalArgumentException("failed to get local host " + e.getMessage(), e);
-		}
 	}
 
 	private final class ShutdownHandler extends Thread
