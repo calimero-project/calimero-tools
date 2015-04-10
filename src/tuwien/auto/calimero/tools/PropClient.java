@@ -40,7 +40,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.InterruptedIOException;
-import java.util.StringTokenizer;
 
 import tuwien.auto.calimero.exception.KNXIllegalArgumentException;
 import tuwien.auto.calimero.mgmt.PropertyAdapter;
@@ -177,6 +176,7 @@ public class PropClient implements Runnable
 	/* (non-Javadoc)
 	 * @see java.lang.Runnable#run()
 	 */
+	@Override
 	public void run()
 	{
 		property.run();
@@ -199,15 +199,6 @@ public class PropClient implements Runnable
 				wait(200);
 		}
 		final String line = r.readLine();
-		return line != null ? split(line) : null;
-	}
-
-	private static String[] split(final String text)
-	{
-		final StringTokenizer st = new StringTokenizer(text, " \t");
-		final String[] tokens = new String[st.countTokens()];
-		for (int i = 0; i < tokens.length; ++i)
-			tokens[i] = st.nextToken();
-		return tokens;
+		return line != null ? line.split("\\s") : null;
 	}
 }
