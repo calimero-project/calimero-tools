@@ -39,6 +39,7 @@ package tuwien.auto.calimero.tools;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -47,9 +48,11 @@ import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.Settings;
 import tuwien.auto.calimero.dptxlator.DPTXlator;
 import tuwien.auto.calimero.dptxlator.DPTXlatorBoolean;
+import tuwien.auto.calimero.dptxlator.TranslatorTypes;
 import tuwien.auto.calimero.exception.KNXException;
 import tuwien.auto.calimero.exception.KNXFormatException;
 import tuwien.auto.calimero.exception.KNXIllegalArgumentException;
+import tuwien.auto.calimero.exception.KNXTimeoutException;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.KNXNetworkLinkFT12;
@@ -90,13 +93,28 @@ public class DeviceInfo implements Runnable
 	private static final String tool = "DeviceInfo";
 	private static final String sep = System.getProperty("line.separator");
 
+	// Interface Object "Addresstable Object" in interface object server
+	private static final int addresstableObject = 1;
+	// Interface Object "Associationtable Object" in interface object server
+	private static final int assoctableObject = 2;
 	// Interface Object "Application Program Object" in interface object server
-	private static final int applicationProgramObject = 3;
+	private static final int appProgramObject = 3;
+	// Interface Object "Interface Program Object" in interface object server
+	private static final int interfaceProgramObject = 4;
+	// Interface Object "KNXnet/IP Parameter Object" in interface object server
+	private static final int knxnetipObject = 11;
+
 	// property id to distinguish hardware types which are using the same
 	// device descriptor mask version
 	private static final int pidHardwareType = 78;
-	// Interface Object "Device Object" in interface object server
+
+	// Indices of interface objects in interface object server
 	private static final int deviceObjectIdx = 0;
+	private int addresstableObjectIdx = -1;
+	private int assoctableObjectIdx = -1;
+	private int appProgramObjectIdx = -1;
+	private int interfaceProgramObjectIdx = -1;
+	private int knxnetipObjectIdx = -1;
 
 	private static LogService out = LogManager.getManager().getLogService("tools");
 
@@ -203,6 +221,9 @@ public class DeviceInfo implements Runnable
 			mc = new ManagementClientImpl(link);
 			final IndividualAddress device = (IndividualAddress) options.get("device");
 			d = mc.createDestination(device, true);
+			System.out.println("Reading data from device " + device
+					+ ", might take some seconds ...");
+			findInterfaceObjects();
 			final String info = readDeviceInfo();
 			onDeviceInformation(device, info);
 		}
@@ -234,27 +255,58 @@ public class DeviceInfo implements Runnable
 		System.out.println(info);
 	}
 
+	/**
+	 * Called by this tool on completion.
+	 *
+	 * @param thrown the thrown exception if operation completed due to a raised exception,
+	 *        <code>null</code> otherwise
+	 * @param canceled whether the operation got canceled before its planned end
+	 */
+	protected void onCompletion(final Exception thrown, final boolean canceled)
+	{
+		if (canceled)
+			out.info("reading device info canceled");
+		if (thrown != null)
+			out.error("completed", thrown);
+	}
+
+	// Best guess approach, loop and check. We might end up with invalid indices ...
+	private void findInterfaceObjects() throws KNXException, InterruptedException
+	{
+		// XXX this sucks, we always get a KNX timeout as we read past the last interface
+		// object. We would also hit a timeout if a device does not implement all required
+		// objects. I could use the IO property to check what objects are available,
+		// and query the KNXnet/IP parameters object on demand (KNX IP devices are still rare)
+
+		// device object is always 0, we can skip that here
+		try {
+			for (int i = 1; i < 30; ++i) {
+				final int type = toUnsigned(mc.readProperty(d, i, PropertyAccess.PID.OBJECT_TYPE,
+						1, 1));
+				if (type == addresstableObject)
+					addresstableObjectIdx = i;
+				else if (type == assoctableObject)
+					assoctableObjectIdx = i;
+				else if (type == appProgramObject)
+					appProgramObjectIdx = i;
+				else if (type == interfaceProgramObject)
+					interfaceProgramObjectIdx = i;
+				else if (type == knxnetipObject)
+					knxnetipObjectIdx = i;
+			}
+		}
+		catch (final KNXTimeoutException e) {
+			// we're past the last interface object
+		}
+	}
+
+	// read device info similar to ETS
 	private String readDeviceInfo() throws KNXException, InterruptedException
 	{
-		// AN089v03
-		// this sequence creates device info of a device as ETS does
-
+		// order of output: general, application program, PEI program, group communication, KNX IP
 		final StringBuffer info = new StringBuffer();
-		// Physical PEI Type
-		final String physicalPeiType = readUnsignedFormatted(deviceObjectIdx,
-				PropertyAccess.PID.PEI_TYPE);
-		info.append("Physical PEI type ").append(physicalPeiType).append("\n");
 
-		final int appProgamObjectIdx = findAppProgamObjectIdx();
-		// Required PEI Type (Application Program Object)
-		final String requiredPeiType = readUnsignedFormatted(appProgamObjectIdx,
-				PropertyAccess.PID.PEI_TYPE);
-		info.append("Required PEI type ").append(requiredPeiType).append("\n");
-
-		// Manufacturer ID (Device Object)
-		final String manufacturerId = readUnsignedFormatted(deviceObjectIdx,
-				PropertyAccess.PID.MANUFACTURER_ID);
-		info.append("Manufacturer ID ").append(manufacturerId).append("\n");
+		// General information
 
 		// Mask Version, Value of Device Descriptor Type 0
 		byte[] data = mc.readDeviceDesc(d, 0);
@@ -265,13 +317,52 @@ public class DeviceInfo implements Runnable
 			if (maskVersion < 0xff)
 				info.append("00");
 			info.append(Integer.toHexString(maskVersion)).append("\n");
-			info.append("Medium type ").append(toMediumTypeString(maskVersion >> 12 & 0xf))
+			info.append("Medium type: ").append(toMediumTypeString(maskVersion >> 12 & 0xf))
 					.append("\n");
-			info.append("Firmware type ").append(toFirmwareTypeString(maskVersion >> 8 & 0xf))
+			info.append("Firmware type: ").append(toFirmwareTypeString(maskVersion >> 8 & 0xf))
 					.append("\n");
 			info.append("Firmware version ").append(maskVersion >> 4 & 0xf).append("\n");
 			info.append("Subcode/Version ").append(maskVersion & 0xf).append("\n");
 		}
+
+		// Manufacturer ID (Device Object)
+		final String manufacturerId = readUnsignedFormatted(deviceObjectIdx,
+				PropertyAccess.PID.MANUFACTURER_ID);
+		info.append("Manufacturer ID ").append(manufacturerId).append("\n");
+
+		// Order Info
+		final String orderInfo = readUnsignedFormatted(deviceObjectIdx,
+				PropertyAccess.PID.ORDER_INFO);
+		info.append("Order info ").append(orderInfo).append("\n");
+
+		// Serial Number
+		data = read(deviceObjectIdx, PropertyAccess.PID.SERIAL_NUMBER);
+		if (data != null) {
+			final String serialNo = DataUnitBuilder.toHex(data, "");
+			info.append("Serial number 0x").append(serialNo).append("\n");
+		}
+
+		// Physical PEI Type
+		final String physicalPeiType = readUnsignedFormatted(deviceObjectIdx,
+				PropertyAccess.PID.PEI_TYPE);
+		info.append("Physical PEI type ").append(physicalPeiType).append("\n");
+
+		// Required PEI Type (Application Program Object)
+		final String requiredPeiType = readUnsignedFormatted(appProgramObjectIdx,
+				PropertyAccess.PID.PEI_TYPE);
+		info.append("Required PEI type ").append(requiredPeiType).append("\n");
+
+		// Hardware Type
+		final byte[] hwData = read(deviceObjectIdx, pidHardwareType);
+		final String hwType = DataUnitBuilder.toHex(hwData, " ");
+		info.append("Hardware type: ").append(hwType).append("\n");
+		// validity check on mask and hardware type octets
+		// AN059v3, AN089v3
+		if ((maskVersion == 0x25 || maskVersion == 0x0705) && hwData[0] != 0) {
+			info.append("manufacturer-specific device identification of hardware type should "
+					+ "be 0 for this mask!").append("\n");
+		}
+
 		// Programming Mode (memory address 0x60)
 		data = mc.readMemory(d, 0x60, 1);
 		if (data != null) {
@@ -279,52 +370,182 @@ public class DeviceInfo implements Runnable
 			x.setData(data);
 			info.append("Programming mode ").append(x.getValue()).append("\n");
 		}
-		// Run State (Application Program Object)
-		final String runState = readUnsignedFormatted(appProgamObjectIdx,
-				PropertyAccess.PID.RUN_STATE_CONTROL);
-		info.append("Run state ").append(runState).append("\n");
 
 		// Firmware Revision
 		final String firmwareRev = readUnsignedFormatted(deviceObjectIdx,
 				PropertyAccess.PID.FIRMWARE_REVISION);
 		info.append("Firmware revision ").append(firmwareRev).append("\n");
 
-		// Hardware Type
-		final byte[] hwData = read(deviceObjectIdx, pidHardwareType);
-		final String hwType = DataUnitBuilder.toHex(hwData, " ");
-		info.append("Hardware type ").append(hwType).append("\n");
-		// validity check on mask and hardware type octets
-		// AN059v3, AN089v3
-		if ((maskVersion == 0x25 || maskVersion == 0x0705) && hwData[0] != 0) {
-			info.append("manufacturer-specific device identification of hardware type should "
-					+ "be 0 for this mask!").append("\n");
-		}
-		// Serial Number
-		data = read(deviceObjectIdx, PropertyAccess.PID.SERIAL_NUMBER);
-		if (data != null) {
-			final String serialNo = DataUnitBuilder.toHex(data, "");
-			info.append("Serial number 0x").append(serialNo).append("\n");
-		}
-		// Order Info
-		final String orderInfo = readUnsignedFormatted(deviceObjectIdx,
-				PropertyAccess.PID.ORDER_INFO);
-		info.append("Order info ").append(orderInfo).append("\n");
+		// System B has mask version 0x07B0 or 0x17B0 and provides error code property
+		final boolean isSystemB = maskVersion == 0x07B0 || maskVersion == 0x17B0;
 
-		// Application ID (Application Program Object)
-		final String appId = readUnsignedFormatted(appProgamObjectIdx,
-				PropertyAccess.PID.PROGRAM_VERSION);
-		info.append("Application ID ").append(appId).append("\n");
+		// Application Program (Application Program Object)
+		info.append("Application Program\n");
+		readProgram(appProgramObjectIdx, info, isSystemB);
+
+		// PEI Program (Interface Program Object)
+		info.append("PEI Program\n");
+		readProgram(interfaceProgramObjectIdx, info, isSystemB);
+
+		// Group Communication
+		info.append("Group Addresstable ");
+		readLoadState(addresstableObjectIdx, info, isSystemB);
+		info.append("Group Assoc.table ");
+		readLoadState(assoctableObjectIdx, info, isSystemB);
+
+		// if we have a KNX IP device, show KNX IP info
+		final boolean knxip = maskVersion == 0x5705;
+		if (knxip && knxnetipObjectIdx != -1) {
+			info.append('\n');
+			readKnxipInfo(info);
+		}
 		return info.toString();
 	}
 
-	private int findAppProgamObjectIdx() throws KNXException, InterruptedException
+	private void readKnxipInfo(final StringBuffer info) throws KNXException, InterruptedException
 	{
-		for (int i = 1; i < 100; ++i) {
-			final int type = toUnsigned(mc.readProperty(d, i, PropertyAccess.PID.OBJECT_TYPE, 1, 1));
-			if (type == applicationProgramObject)
-				return i;
+		// Device Name (friendly)
+		info.append("Device name: ").append(readFriendlyName()).append('\n');
+		// Device Capabilities Device State
+		byte[] data = read(knxnetipObjectIdx, PropertyAccess.PID.KNXNETIP_DEVICE_CAPABILITIES);
+		info.append("Capabilities:").append(toCapabilitiesString(data)).append('\n');
+		final boolean supportsTunneling = (data[1] & 0x01) == 0x01;
+
+		// MAC Address
+		data = read(knxnetipObjectIdx, PropertyAccess.PID.MAC_ADDRESS);
+		info.append("MAC address: ").append(DataUnitBuilder.toHex(data, " ")).append('\n');
+		// Current IP Assignment
+		data = read(knxnetipObjectIdx, PropertyAccess.PID.CURRENT_IP_ASSIGNMENT_METHOD);
+		info.append("Current IP assignment method: ").append(toIPAssignmentString(data))
+				.append('\n');
+		final int currentIPAssignment = data[0] & 0x0f;
+		// Bits (from LSB): Manual=0, BootP=1, DHCP=2, AutoIP=3
+		final boolean dhcpOrBoot = (data[0] & 0x06) != 0;
+
+		// Read currently set IP parameters
+		// IP Address
+		final byte[] currentIP = read(knxnetipObjectIdx, PropertyAccess.PID.CURRENT_IP_ADDRESS);
+		info.append("\tIP ").append(toIP(currentIP)).append('\n');
+		// Subnet Mask
+		final byte[] currentMask = read(knxnetipObjectIdx, PropertyAccess.PID.CURRENT_SUBNET_MASK);
+		info.append("\tSubnet mask ").append(toIP(currentMask)).append('\n');
+		// Default Gateway
+		final byte[] currentGw = read(knxnetipObjectIdx, PropertyAccess.PID.CURRENT_DEFAULT_GATEWAY);
+		info.append("\tGateway ").append(toIP(currentGw)).append('\n');
+		// DHCP Server (show only if current assignment method is DHCP or BootP)
+		if (dhcpOrBoot) {
+			data = read(knxnetipObjectIdx, PropertyAccess.PID.DHCP_BOOTP_SERVER);
+			info.append("DHCP server ").append(toIP(data)).append('\n');
 		}
-		throw new KNXException("no application program interface object found");
+
+		// IP Assignment Method (shown only if different from current IP assign. method)
+		data = read(knxnetipObjectIdx, PropertyAccess.PID.IP_ASSIGNMENT_METHOD);
+		final int ipAssignment = data[0] & 0x0f;
+		if (ipAssignment != currentIPAssignment)
+			info.append("Configured IP assignment method").append(ipAssignment).append('\n');
+
+		// Read IP parameters for manual assignment
+		// the following info is only shown if manual assignment method is enabled, and parameter
+		// is different from current one
+		final boolean manual = (ipAssignment & 0x01) == 0x01;
+		if (manual) {
+			info.append("Differing manual configuration:\n");
+			// Manual IP Address
+			final byte[] ip = read(knxnetipObjectIdx, PropertyAccess.PID.IP_ADDRESS);
+			if (!Arrays.equals(currentIP, ip))
+				info.append("\tIP ").append(toIP(ip)).append('\n');
+			// Manual Subnet Mask
+			final byte[] mask = read(knxnetipObjectIdx, PropertyAccess.PID.SUBNET_MASK);
+			if (!Arrays.equals(currentMask, mask))
+				info.append("\tSubnet mask ").append(toIP(mask)).append('\n');
+			// Manual Default Gateway
+			final byte[] gw = read(knxnetipObjectIdx, PropertyAccess.PID.DEFAULT_GATEWAY);
+			if (!Arrays.equals(currentGw, gw))
+				info.append("\tDefault gateway ").append(toIP(gw)).append('\n');
+		}
+
+		// Routing Multicast Address
+		data = read(knxnetipObjectIdx, PropertyAccess.PID.ROUTING_MULTICAST_ADDRESS);
+		info.append("Routing multicast ").append(toIP(data)).append('\n');
+		// Multicast TTL
+		final String ttl = readUnsignedFormatted(knxnetipObjectIdx, PropertyAccess.PID.TTL);
+		info.append("TTL ").append(ttl).append('\n');
+		// Messages to Multicast Address
+		final String txIP = readUnsignedFormatted(knxnetipObjectIdx,
+				PropertyAccess.PID.MSG_TRANSMIT_TO_IP);
+		info.append("Messages transmitted to IP: ").append(txIP).append('\n');
+
+		// Additional Ind. Addresses (shown only if tunneling is implemented)
+		if (supportsTunneling) {
+			info.append("Additional individual addresses:");
+			try {
+				final int pid = PropertyAccess.PID.ADDITIONAL_INDIVIDUAL_ADDRESSES;
+				data = mc.readProperty(d, knxnetipObjectIdx, pid, 0, 1);
+				final int elements = toUnsigned(data);
+				info.append(" " + elements).append('\n');
+				for (int i = 0; i < elements; i++) {
+					data = read(knxnetipObjectIdx, pid);
+					info.append('\t').append(new IndividualAddress(data)).append("  ");
+				}
+			}
+			catch (final KNXException e) {
+				out.error("reading additional individual addresses of KNX device");
+			}
+		}
+	}
+
+	private void readProgram(final int objectIdx, final StringBuffer info,
+		final boolean hasErrorCode) throws InterruptedException
+	{
+		// TODO can we show some ID of what program is installed?
+
+		final String typeAndVersion = readUnsignedFormatted(objectIdx,
+				PropertyAccess.PID.PROGRAM_VERSION);
+		info.append("\tProgram version ").append(typeAndVersion).append("\n");
+		info.append('\t');
+		readLoadState(objectIdx, info, hasErrorCode);
+
+		final String rs = getRunState(read(objectIdx, PropertyAccess.PID.RUN_STATE_CONTROL));
+		info.append("\tRun state: ").append(rs).append("\n");
+	}
+
+	private void readLoadState(final int objectIdx, final StringBuffer info,
+		final boolean hasErrorCode) throws InterruptedException
+	{
+		byte[] data = read(objectIdx, PropertyAccess.PID.LOAD_STATE_CONTROL);
+		final String ls = getLoadState(data);
+		info.append("Load state: ").append(ls);
+		// System B contains error code for load state "Error" (optional, but usually yes)
+		if (data[0] == 3 && hasErrorCode) {
+			data = read(objectIdx, PropertyAccess.PID.ERROR_CODE);
+			if (data != null) {
+				try {
+					// enum ErrorClassSystem
+					final DPTXlator t = TranslatorTypes.createTranslator(0, "20.011");
+					t.setData(data);
+					info.append(", error code ").append((int) t.getNumericValue()).append(": ")
+							.append(t.getValue());
+				}
+				catch (final KNXException e) {
+					// no translator
+				}
+			}
+		}
+		info.append("\n");
+	}
+
+	private String readFriendlyName() throws KNXException, InterruptedException
+	{
+		final char[] name = new char[30];
+		int start = 0;
+		while (true) {
+			final byte[] data = mc.readProperty(d, knxnetipObjectIdx,
+					PropertyAccess.PID.FRIENDLY_NAME, start + 1, 10);
+			for (int i = 0; i < 10 && data[i] != 0; ++i, ++start)
+				name[start] = (char) (data[i] & 0xff);
+			if (start >= 30 || data[9] == 0)
+				return new String(name, 0, start);
+		}
 	}
 
 	private byte[] read(final int objectIndex, final int pid) throws InterruptedException
@@ -346,22 +567,6 @@ public class DeviceInfo implements Runnable
 		if (data == null)
 			return "-";
 		return "" + toUnsigned(data);
-	}
-
-	/**
-	 * Called by this tool on completion.
-	 * <p>
-	 *
-	 * @param thrown the thrown exception if operation completed due to a raised exception,
-	 *        <code>null</code> otherwise
-	 * @param canceled whether the operation got canceled before its planned end
-	 */
-	protected void onCompletion(final Exception thrown, final boolean canceled)
-	{
-		if (canceled)
-			out.log(LogLevel.INFO, "reading device info canceled", null);
-		if (thrown != null)
-			out.log(LogLevel.ERROR, "completed", thrown);
 	}
 
 	/**
@@ -546,6 +751,16 @@ public class DeviceInfo implements Runnable
 		return value;
 	}
 
+	private static String toIP(final byte[] data)
+	{
+		try {
+			if (data != null)
+				return InetAddress.getByAddress(data).getHostAddress();
+		}
+		catch (final UnknownHostException e) {}
+		return "n/a";
+	}
+
 	private static String toMediumTypeString(final int type)
 	{
 		switch (type) {
@@ -582,6 +797,82 @@ public class DeviceInfo implements Runnable
 		default:
 			return "Type " + type;
 		}
+	}
+
+	private String getLoadState(final byte[] data)
+	{
+		final int state = data[0] & 0xff;
+		switch (state) {
+		case 0:
+			return "Unloaded";
+		case 1:
+			return "Loaded";
+		case 2:
+			return "Loading";
+		case 3:
+			return "Error (during load process)";
+		case 4:
+			return "Unloading";
+		case 5:
+			return "Load Completing (Intermediate)";
+		default:
+			return "Invalid load status " + state;
+		}
+	}
+
+	private String getRunState(final byte[] data)
+	{
+		final int state = data[0] & 0xff;
+		switch (state) {
+		case 0:
+			return "Halted";
+		case 1:
+			return "Running";
+		case 2:
+			return "Ready";
+		case 3:
+			return "Terminated";
+		case 4:
+			return "Starting";
+		case 5:
+			return "Shutting down";
+		default:
+			return "Invalid run state " + state;
+		}
+	}
+
+	private static String toIPAssignmentString(final byte[] data)
+	{
+		final int bitset = data[0] & 0xff;
+		String s = "";
+		final String div = ", ";
+		if ((bitset & 0x01) != 0)
+			s = "manual";
+		if ((bitset & 0x02) != 0)
+			s += (s.length() == 0 ? "" : div) + "Bootstrap Protocol";
+		if ((bitset & 0x04) != 0)
+			s += (s.length() == 0 ? "" : div) + "DHCP";
+		if ((bitset & 0x08) != 0)
+			s += (s.length() == 0 ? "" : div) + "Auto IP";
+		return s;
+	}
+
+	private static String toCapabilitiesString(final byte[] data)
+	{
+		final StringBuilder sb = new StringBuilder();
+		if ((data[1] & 0x01) == 0x01)
+			sb.append(" Device Management,");
+		if ((data[1] & 0x02) == 0x02)
+			sb.append(" Tunneling,");
+		if ((data[1] & 0x04) == 0x04)
+			sb.append(" Routing,");
+		if ((data[1] & 0x08) == 0x08)
+			sb.append(" Remote Logging,");
+		if ((data[1] & 0x10) == 0x10)
+			sb.append(" Remote Configuration and Diagnosis,");
+		if ((data[1] & 0x20) == 0x20)
+			sb.append(" Object Server,");
+		return sb.length() == 0 ? "" : sb.substring(0, sb.length() - 1);
 	}
 
 	private static final class ShutdownHandler extends Thread
