@@ -204,7 +204,7 @@ public class DeviceInfo implements Runnable
 			final IndividualAddress device = (IndividualAddress) options.get("device");
 			d = mc.createDestination(device, true);
 			final String info = readDeviceInfo();
-			System.out.println(info);
+			onDeviceInformation(device, info);
 		}
 		catch (final KNXException e) {
 			thrown = e;
@@ -221,6 +221,17 @@ public class DeviceInfo implements Runnable
 				link.close();
 			onCompletion(thrown, canceled);
 		}
+	}
+
+	/**
+	 * Invoked on successfully finishing reading the device information of a KNX device.
+	 *
+	 * @param device the KNX device address the information was read from
+	 * @param info device information
+	 */
+	protected void onDeviceInformation(final IndividualAddress device, final String info)
+	{
+		System.out.println(info);
 	}
 
 	private String readDeviceInfo() throws KNXException, InterruptedException
