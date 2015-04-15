@@ -379,7 +379,7 @@ public class ProcComm implements Runnable
 				if (dp != null)
 					s = s + decodesep + asString(asdu, 0, dp.getDPT());
 				else
-					s = s + decodesep + decodeAsduByLength(asdu, e.isOptimizedASDU());
+					s = s + decodesep + decodeAsduByLength(asdu, e.isLengthOptimizedAPDU());
 			}
 			catch (final KNXException ke) {}
 			catch (final KNXIllegalArgumentException iae) {}
