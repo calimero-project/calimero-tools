@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2011, 2014 B. Malinowsky
+    Copyright (c) 2011, 2015 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -88,7 +88,6 @@ import tuwien.auto.calimero.mgmt.PropertyAccess;
 public class DeviceInfo implements Runnable
 {
 	private static final String tool = "DeviceInfo";
-	private static final String version = "1.1";
 	private static final String sep = System.getProperty("line.separator");
 
 	// Interface Object "Application Program Object" in interface object server
@@ -521,8 +520,7 @@ public class DeviceInfo implements Runnable
 
 	private static void showVersion()
 	{
-		out.log(LogLevel.ALWAYS,
-				tool + " version " + version + " using " + Settings.getLibraryHeader(false), null);
+		out.log(LogLevel.ALWAYS, Settings.getLibraryHeader(false), null);
 	}
 
 	private static int toUnsigned(final byte[] data)

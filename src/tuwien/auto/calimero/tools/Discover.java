@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2011 B. Malinowsky
+    Copyright (c) 2006, 2015 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -80,7 +80,6 @@ import tuwien.auto.calimero.log.LogWriter;
 public class Discover implements Runnable
 {
 	private static final String tool = "Discover";
-	private static final String version = "1.1";
 	private static final String sep = System.getProperty("line.separator");
 
 	private static LogService out = LogManager.getManager().getLogService(Discoverer.LOG_SERVICE);
@@ -435,8 +434,7 @@ public class Discover implements Runnable
 
 	private static void showVersion()
 	{
-		out.log(LogLevel.ALWAYS,
-				tool + " version " + version + " using " + Settings.getLibraryHeader(false), null);
+		out.log(LogLevel.ALWAYS, Settings.getLibraryHeader(false), null);
 	}
 
 	private static final class ShutdownHandler extends Thread

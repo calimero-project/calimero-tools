@@ -137,7 +137,6 @@ public class ProcComm implements Runnable
 	// the tool command line arguments and monitor mode input --> unify.
 
 	private static final String tool = "ProcComm";
-	private static final String version = "1.2";
 	private static final String sep = System.getProperty("line.separator");
 	private static final String toolDatapointsFile = "." + tool.toLowerCase() + "_dplist.xml";
 
@@ -734,8 +733,7 @@ public class ProcComm implements Runnable
 
 	private static void showVersion()
 	{
-		out.log(LogLevel.ALWAYS, tool + " version " + version + " using "
-				+ Settings.getLibraryHeader(false), null);
+		out.log(LogLevel.ALWAYS, Settings.getLibraryHeader(false), null);
 	}
 
 	/**
