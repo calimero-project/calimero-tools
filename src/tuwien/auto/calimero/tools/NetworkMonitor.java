@@ -84,13 +84,13 @@ import tuwien.auto.calimero.log.LogWriter;
  * </code> (console mode), or the log writer supplied by the user.
  * <p>
  * To use the network monitor, invoke {@link NetworkMonitor#main(String[])}, or create a new
- * instance with {@link NetworkMonitor#NetworkMonitor(String[], LogWriter)}, and invoke
+ * instance with {@link NetworkMonitor#NetworkMonitor(String[])}, and invoke
  * {@link NetworkMonitor#start()} or {@link NetworkMonitor#run()} on that instance. When running
  * this tool from the console, the <code>main</code> method of this class is executed, otherwise use
  * it in the context appropriate to a {@link Runnable}.
  * <p>
- * To quit a monitor running on a console, use a user interrupt for termination ( <code>^C</code>
- * for example).
+ * To quit a monitor running on a console, use a user interrupt for termination, e.g.,
+ * <code>^C</code>.
  *
  * @author B. Malinowsky
  */

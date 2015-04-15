@@ -81,7 +81,7 @@ import tuwien.auto.calimero.mgmt.RemotePropertyServiceAdapter;
  * FT1.2 connection. IPConfig shows the necessary interaction with the core library API for this
  * particular task.<br>
  * To run IPConfig, invoke {@link IPConfig#main(String[])}, or create a new instance using
- * {@link IPConfig#IPConfig(String[], LogWriter)} and invoke {@link #run()} on that instance.<br>
+ * {@link IPConfig#IPConfig(String[])} and invoke {@link #run()} on that instance.<br>
  * All configuration output, as well as occurring problems are written to either
  * <code>System.out</code> (console mode), or the log writer supplied by the user. See the tool
  * options for a list of communication settings.
