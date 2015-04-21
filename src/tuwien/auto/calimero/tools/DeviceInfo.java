@@ -36,6 +36,7 @@
 
 package tuwien.auto.calimero.tools;
 
+import java.io.ByteArrayOutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -52,7 +53,6 @@ import tuwien.auto.calimero.dptxlator.TranslatorTypes;
 import tuwien.auto.calimero.exception.KNXException;
 import tuwien.auto.calimero.exception.KNXFormatException;
 import tuwien.auto.calimero.exception.KNXIllegalArgumentException;
-import tuwien.auto.calimero.exception.KNXTimeoutException;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.KNXNetworkLinkFT12;
@@ -70,6 +70,7 @@ import tuwien.auto.calimero.mgmt.Destination;
 import tuwien.auto.calimero.mgmt.ManagementClient;
 import tuwien.auto.calimero.mgmt.ManagementClientImpl;
 import tuwien.auto.calimero.mgmt.PropertyAccess;
+import tuwien.auto.calimero.mgmt.PropertyAccess.PID;
 
 /**
  * A tool for Calimero showing device information of a device in a KNX network.
@@ -270,33 +271,29 @@ public class DeviceInfo implements Runnable
 			out.error("completed", thrown);
 	}
 
-	// Best guess approach, loop and check. We might end up with invalid indices ...
 	private void findInterfaceObjects() throws KNXException, InterruptedException
 	{
-		// XXX this sucks, we always get a KNX timeout as we read past the last interface
-		// object. We would also hit a timeout if a device does not implement all required
-		// objects. I could use the IO property to check what objects are available,
-		// and query the KNXnet/IP parameters object on demand (KNX IP devices are still rare)
-
-		// device object is always 0, we can skip that here
-		try {
-			for (int i = 1; i < 30; ++i) {
-				final int type = toUnsigned(mc.readProperty(d, i, PropertyAccess.PID.OBJECT_TYPE,
-						1, 1));
-				if (type == addresstableObject)
-					addresstableObjectIdx = i;
-				else if (type == assoctableObject)
-					assoctableObjectIdx = i;
-				else if (type == appProgramObject)
-					appProgramObjectIdx = i;
-				else if (type == interfaceProgramObject)
-					interfaceProgramObjectIdx = i;
-				else if (type == knxnetipObject)
-					knxnetipObjectIdx = i;
-			}
+		final int objects = readElements(deviceObjectIdx, PropertyAccess.PID.IO_LIST);
+		if (objects == 0) {
+			// device only has device- and cEMI server-object
+//			final int cEmiObjectIdx = 1; // interface object type 8
+			out.warn("Device implements only Device Object and cEMI Object");
+			return;
 		}
-		catch (final KNXTimeoutException e) {
-			// we're past the last interface object
+
+		final byte[] data = read(deviceObjectIdx, PropertyAccess.PID.IO_LIST, 1, objects);
+		for (int i = 0; i < objects; ++i) {
+			final int type = (data[2 * i] & 0xff) << 8 | data[2 * i + 1] & 0xff;
+			if (type == addresstableObject)
+				addresstableObjectIdx = i;
+			else if (type == assoctableObject)
+				assoctableObjectIdx = i;
+			else if (type == appProgramObject)
+				appProgramObjectIdx = i;
+			else if (type == interfaceProgramObject)
+				interfaceProgramObjectIdx = i;
+			else if (type == knxnetipObject)
+				knxnetipObjectIdx = i;
 		}
 	}
 
@@ -326,13 +323,11 @@ public class DeviceInfo implements Runnable
 		}
 
 		// Manufacturer ID (Device Object)
-		final String manufacturerId = readUnsignedFormatted(deviceObjectIdx,
-				PropertyAccess.PID.MANUFACTURER_ID);
+		final String manufacturerId = readUnsignedFormatted(deviceObjectIdx, PID.MANUFACTURER_ID);
 		info.append("Manufacturer ID ").append(manufacturerId).append("\n");
 
 		// Order Info
-		final String orderInfo = readUnsignedFormatted(deviceObjectIdx,
-				PropertyAccess.PID.ORDER_INFO);
+		final String orderInfo = readUnsignedFormatted(deviceObjectIdx, PID.ORDER_INFO);
 		info.append("Order info ").append(orderInfo).append("\n");
 
 		// Serial Number
@@ -343,13 +338,11 @@ public class DeviceInfo implements Runnable
 		}
 
 		// Physical PEI Type
-		final String physicalPeiType = readUnsignedFormatted(deviceObjectIdx,
-				PropertyAccess.PID.PEI_TYPE);
+		final String physicalPeiType = readUnsignedFormatted(deviceObjectIdx, PID.PEI_TYPE);
 		info.append("Physical PEI type ").append(physicalPeiType).append("\n");
 
 		// Required PEI Type (Application Program Object)
-		final String requiredPeiType = readUnsignedFormatted(appProgramObjectIdx,
-				PropertyAccess.PID.PEI_TYPE);
+		final String requiredPeiType = readUnsignedFormatted(appProgramObjectIdx, PID.PEI_TYPE);
 		info.append("Required PEI type ").append(requiredPeiType).append("\n");
 
 		// Hardware Type
@@ -372,8 +365,7 @@ public class DeviceInfo implements Runnable
 		}
 
 		// Firmware Revision
-		final String firmwareRev = readUnsignedFormatted(deviceObjectIdx,
-				PropertyAccess.PID.FIRMWARE_REVISION);
+		final String firmwareRev = readUnsignedFormatted(deviceObjectIdx, PID.FIRMWARE_REVISION);
 		info.append("Firmware revision ").append(firmwareRev).append("\n");
 
 		// System B has mask version 0x07B0 or 0x17B0 and provides error code property
@@ -471,25 +463,18 @@ public class DeviceInfo implements Runnable
 		final String ttl = readUnsignedFormatted(knxnetipObjectIdx, PropertyAccess.PID.TTL);
 		info.append("TTL ").append(ttl).append('\n');
 		// Messages to Multicast Address
-		final String txIP = readUnsignedFormatted(knxnetipObjectIdx,
-				PropertyAccess.PID.MSG_TRANSMIT_TO_IP);
+		final String txIP = readUnsignedFormatted(knxnetipObjectIdx, PID.MSG_TRANSMIT_TO_IP);
 		info.append("Messages transmitted to IP: ").append(txIP).append('\n');
 
 		// Additional Ind. Addresses (shown only if tunneling is implemented)
 		if (supportsTunneling) {
 			info.append("Additional individual addresses:");
-			try {
-				final int pid = PropertyAccess.PID.ADDITIONAL_INDIVIDUAL_ADDRESSES;
-				data = mc.readProperty(d, knxnetipObjectIdx, pid, 0, 1);
-				final int elements = toUnsigned(data);
-				info.append(" " + elements).append('\n');
-				for (int i = 0; i < elements; i++) {
-					data = read(knxnetipObjectIdx, pid);
-					info.append('\t').append(new IndividualAddress(data)).append("  ");
-				}
-			}
-			catch (final KNXException e) {
-				out.error("reading additional individual addresses of KNX device");
+			final int pid = PID.ADDITIONAL_INDIVIDUAL_ADDRESSES;
+			final int elements = readElements(knxnetipObjectIdx, pid);
+			info.append(" " + elements).append('\n');
+			for (int i = 0; i < elements; i++) {
+				data = read(knxnetipObjectIdx, pid);
+				info.append('\t').append(new IndividualAddress(data)).append("  ");
 			}
 		}
 	}
@@ -499,8 +484,7 @@ public class DeviceInfo implements Runnable
 	{
 		// TODO can we show some ID of what program is installed?
 
-		final String typeAndVersion = readUnsignedFormatted(objectIdx,
-				PropertyAccess.PID.PROGRAM_VERSION);
+		final String typeAndVersion = readUnsignedFormatted(objectIdx, PID.PROGRAM_VERSION);
 		info.append("\tProgram version ").append(typeAndVersion).append("\n");
 		info.append('\t');
 		readLoadState(objectIdx, info, hasErrorCode);
@@ -540,7 +524,7 @@ public class DeviceInfo implements Runnable
 		int start = 0;
 		while (true) {
 			final byte[] data = mc.readProperty(d, knxnetipObjectIdx,
-					PropertyAccess.PID.FRIENDLY_NAME, start + 1, 10);
+					PID.FRIENDLY_NAME, start + 1, 10);
 			for (int i = 0; i < 10 && data[i] != 0; ++i, ++start)
 				name[start] = (char) (data[i] & 0xff);
 			if (start >= 30 || data[9] == 0)
@@ -548,14 +532,32 @@ public class DeviceInfo implements Runnable
 		}
 	}
 
+	private int readElements(final int objectIndex, final int pid) throws InterruptedException
+	{
+		final byte[] elems = read(objectIndex, pid, 0, 1);
+		return elems == null ? 0 : toUnsigned(elems);
+	}
+
 	private byte[] read(final int objectIndex, final int pid) throws InterruptedException
 	{
+		return read(objectIndex, pid, 1, 1);
+	}
+
+	private byte[] read(final int objectIndex, final int pid, final int start, final int elements)
+		throws InterruptedException
+	{
 		try {
-			return mc.readProperty(d, objectIndex, pid, 1, 1);
+			// since we don't know the max. allowed APDU length, play it safe
+			final ByteArrayOutputStream res = new ByteArrayOutputStream();
+			for (int i = start; i < start + elements; i++) {
+				final byte[] data = mc.readProperty(d, objectIndex, pid, i, 1);
+				res.write(data, 0, data.length);
+			}
+			return res.toByteArray();
 		}
 		catch (final KNXException e) {
-			out.log(LogLevel.WARN, "object index " + objectIndex + " property " + pid
-					+ " error, " + e.getMessage(), null);
+			out.log(LogLevel.WARN, "object index " + objectIndex + " property " + pid + " error, "
+					+ e.getMessage(), null);
 		}
 		return null;
 	}
