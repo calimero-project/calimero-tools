@@ -36,11 +36,13 @@
 
 package tuwien.auto.calimero.tools;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -53,9 +55,14 @@ import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.Settings;
 import tuwien.auto.calimero.datapoint.Datapoint;
+import tuwien.auto.calimero.datapoint.DatapointMap;
+import tuwien.auto.calimero.datapoint.DatapointModel;
 import tuwien.auto.calimero.datapoint.StateDP;
 import tuwien.auto.calimero.dptxlator.DPTXlator;
 import tuwien.auto.calimero.dptxlator.TranslatorTypes;
+import tuwien.auto.calimero.exception.KNXException;
+import tuwien.auto.calimero.exception.KNXFormatException;
+import tuwien.auto.calimero.exception.KNXIllegalArgumentException;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.KNXNetworkLinkFT12;
@@ -68,37 +75,63 @@ import tuwien.auto.calimero.process.ProcessCommunicator;
 import tuwien.auto.calimero.process.ProcessCommunicatorImpl;
 import tuwien.auto.calimero.process.ProcessEvent;
 import tuwien.auto.calimero.process.ProcessListener;
+import tuwien.auto.calimero.process.ProcessListenerEx;
 
 /**
  * A tool for Calimero 2 providing basic process communication.
  * <p>
- * ProcComm is a {@link Runnable} tool implementation allowing a user to read or write datapoint
- * values in a KNX network. It supports KNX network access using a KNXnet/IP, USB, or FT1.2
- * connection.
+ * ProcComm is a {@link Runnable} tool implementation allowing a user to read or write
+ * datapoint values in a KNX network. It supports KNX network access using a KNXnet/IP
+ * connection or an FT1.2 connection.
+ * <p>
+ * <i>Monitor mode</i>:<br>
+ * When in monitor mode, process communication lists group write, read, and read response commands
+ * issued on the KNX network. Datapoint values in monitored group commands are decoded for
+ * appropriate KNX datapoint types (DPT). In addition, a user can issue read and write commands on
+ * the terminal. Commands have the the following syntax: <code>cmd DP [DPT] [value]</code>, with
+ * <code>cmd = ("r"|"read") | ("w"|"write")</code>. For example, <code>r 1/0/3</code> will read the
+ * current value of datapoint <code>1/0/3</code>. The command <code>w 1/0/3 1.002 true</code> will
+ * write the boolean value <code>true</code> for datapoint <code>1/0/3</code>.<br>
+ * Issuing a read or write command and specifying a datapoint type will override the default
+ * datapoint type translation behavior of this tool. For example, <code>r 1/0/3 1.005</code> will
+ * decode subsequent values of that datapoint using the DPT 1.005 "Alarm" and its value
+ * representations "alarm" and "no alarm". A subsequent write can then simply issue
+ * <code>w 1/0/3 alarm</code>.<br>
+ * When the tool exits, information about any datapoint that was monitored is stored in a file on
+ * disk in the current working directory (if file creation is permitted). That file is named
+ * something like ".proccomm_dplist.xml" (hidden file on Unix-based systems). It allows the tool to
+ * remember user-specific settings of datapoint types between tool invocations, important for the
+ * appropriate decoding of datapoint values. The file uses the layout of {@link DatapointMap}, and
+ * can be edited or used at any other place Calimero expects a {@link DatapointModel}. Note that any
+ * actual datapoint <i>values</i> are not stored in that file.
  * <p>
  * The tool implementation shows the necessary interaction with the Calimero library API for this
  * particular task. The main part of this tool implementation uses the library's
- * {@link ProcessCommunicator}, which offers high level access for reading and writing process
+ * {@link ProcessCommunicator}, which offers high-level access for reading and writing process
  * values. It also shows creation of a {@link KNXNetworkLink}, which is supplied to the process
- * communicator, serving as the link to the KNX network.
+ * communicator, serving as the link to the KNX network. For monitoring, the tool uses
+ * {@link Datapoint} and {@link DatapointModel} to persist datapoints between tool invocations.
  * <p>
- * When running this tool from the console to read or write one value, the <code>main</code> -method
- * of this class is invoked, otherwise use this class in the context appropriate to a
- * {@link Runnable} or use start and {@link #quit()}. <br>
- * In console mode, the values read from datapoints, as well as occurring problems are written to
+ * When running this tool from the terminal, method <code>main</code> of this class is invoked;
+ * otherwise, use this class in the context appropriate to a {@link Runnable}, or use
+ * {@link #start(ProcessListener)} and {@link #quit()}.<br>
+ * In console mode, datapoint values as well as occurring problems are written to
  * <code>System.out</code>.
  * <p>
- * Note that by default the communication will use common settings, if not specified otherwise using
- * command line options. Since these settings might be system dependent (for example the local host)
- * and not always predictable, a user may want to specify particular settings using the available
- * options.
+ * Note that communication will use default settings if not specified otherwise using command line
+ * options. Since these settings might be system dependent (for example, the local host) and not
+ * always predictable, a user may want to specify particular settings using the available options.
  *
  * @author B. Malinowsky
  */
 public class ProcComm implements Runnable
 {
+	// XXX The expected sequence for read/write commands on the terminal differs between
+	// the tool command line arguments and monitor mode input --> unify.
+
 	private static final String tool = "ProcComm";
 	private static final String sep = System.getProperty("line.separator");
+	private static final String toolDatapointsFile = "." + tool.toLowerCase() + "_dplist.xml";
 
 	private static Logger out;
 
@@ -109,6 +142,8 @@ public class ProcComm implements Runnable
 
 	// specifies parameters to use for the network link and process communication
 	private final Map<String, Object> options = new HashMap<>();
+	// contains the datapoints for which translation information is known in monitor mode
+	private final DatapointModel datapoints = new DatapointMap();
 
 	/**
 	 * Creates a new ProcComm instance using the supplied options.
@@ -161,9 +196,11 @@ public class ProcComm implements Runnable
 	 * value format</li>
 	 * <li><code>write</code> <i>DPT &nbsp;value &nbsp;KNX-address</i> &nbsp;write to group address,
 	 * using DPT value format</li>
-	 * <li><code>monitor</code> enter group monitoring, can also be used together with the
-	 * <code>read</code> or <code>write</code> command</li>
+	 * <li><code>monitor</code> enter group monitoring</li>
 	 * </ul>
+	 * In monitor mode, read/write commands can be issued on the terminal using
+	 * <code>cmd DP [DPT] [value]</code>, with <code>cmd = ("r"|"read") | ("w"|"write")</code>.
+	 * <p>
 	 * For the more common datapoint types (DPTs) the following name aliases can be used instead of
 	 * the general DPT number string:
 	 * <ul>
@@ -202,15 +239,15 @@ public class ProcComm implements Runnable
 		boolean canceled = false;
 		try {
 			start(null);
-			readWrite();
-			if (options.containsKey("monitor")) {
-				synchronized (this) {
-					while (true)
-						wait();
-				}
-			}
+			if (options.containsKey("monitor"))
+				runMonitorLoop();
+			else
+				readWrite();
 		}
 		catch (final KNXException e) {
+			thrown = e;
+		}
+		catch (final IOException e) {
 			thrown = e;
 		}
 		catch (final InterruptedException e) {
@@ -261,13 +298,15 @@ public class ProcComm implements Runnable
 			pc.addProcessListener(l);
 
 		// this is the listener if group monitoring is requested
-		final ProcessListener monitor = new ProcessListener() {
-			public void groupReadRequest(final ProcessEvent e) { onGroupEvent(e); }
-			public void groupReadResponse(final ProcessEvent e) { onGroupEvent(e); }
-			public void groupWrite(final ProcessEvent e) { onGroupEvent(e); }
-			public void detached(final DetachEvent e) {}
-		};
-		pc.addProcessListener(monitor);
+		if (options.containsKey("monitor")) {
+			final ProcessListener monitor = new ProcessListenerEx() {
+				public void groupWrite(final ProcessEvent e) { onGroupEvent(e); }
+				public void groupReadResponse(final ProcessEvent e) { onGroupEvent(e); }
+				public void groupReadRequest(final ProcessEvent e) { onGroupEvent(e); }
+				public void detached(final DetachEvent e) {}
+			};
+			pc.addProcessListener(monitor);
+		}
 
 		// user might specify a response timeout for KNX message
 		// answers from the KNX network
@@ -285,6 +324,7 @@ public class ProcComm implements Runnable
 		if (pc != null) {
 			final KNXNetworkLink lnk = pc.detach();
 			lnk.close();
+			saveDatapoints();
 		}
 	}
 
@@ -300,13 +340,19 @@ public class ProcComm implements Runnable
 		String s = e.getSourceAddr() + "->" + e.getDestination() + " "
 				+ DataUnitBuilder.decodeAPCI(e.getServiceCode()) + " "
 				+ DataUnitBuilder.toHex(asdu, " ");
-		final GroupAddress dst = (GroupAddress) options.get("dst");
-		try {
-			if (e.getDestination().equals(dst) && asdu.length > 0)
-				s = s + " (" + asString(asdu, 0, getDPT()) + ")";
+		if (asdu.length > 0) {
+			final Datapoint dp = datapoints.get(e.getDestination());
+			try {
+				final String decodesep = ": ";
+				if (dp != null)
+					s = s + decodesep + asString(asdu, 0, dp.getDPT());
+				else
+					s = s + decodesep + decodeAsduByLength(asdu, e.isLengthOptimizedAPDU());
+			}
+			catch (final KNXException ke) {}
+			catch (final KNXIllegalArgumentException iae) {}
+			catch (final RuntimeException rte) {}
 		}
-		catch (final KNXException ke) {}
-		catch (final KNXIllegalArgumentException iae) {}
 		LogService.logAlways(out, s);
 	}
 
@@ -391,41 +437,142 @@ public class ProcComm implements Runnable
 	private String getDPT()
 	{
 		final String dpt = (String) options.get("dpt");
-		if ("switch".equals(dpt))
+		return fromDptName(dpt);
+	}
+
+	private static String fromDptName(final String id)
+	{
+		if ("switch".equals(id))
 			return "1.001";
-		if ("bool".equals(dpt))
+		if ("bool".equals(id))
 			return "1.002";
-		if ("string".equals(dpt))
+		if ("string".equals(id))
 			return "16.001";
-		if ("float".equals(dpt))
+		if ("float".equals(id))
 			return "9.002";
-		if ("float2".equals(dpt))
+		if ("float2".equals(id))
 			return "9.002";
-		if ("float4".equals(dpt))
+		if ("float4".equals(id))
 			return "14.005";
-		if ("ucount".equals(dpt))
+		if ("ucount".equals(id))
 			return "5.010";
-		if ("int".equals(dpt))
+		if ("int".equals(id))
 			return "13.001";
-		if ("angle".equals(dpt))
+		if ("angle".equals(id))
 			return "5.003";
-		return dpt;
+		return id;
 	}
 
 	private void readWrite() throws KNXException, InterruptedException
 	{
+		final boolean write = options.containsKey("write");
+		if (!write && !options.containsKey("read"))
+			return;
 		final GroupAddress main = (GroupAddress) options.get("dst");
 		// encapsulate information into a datapoint
 		// this is a convenient way to let the process communicator
 		// handle the DPT stuff, so an already formatted string will be returned
-		final Datapoint dp = new StateDP(main, "", 0, getDPT());
-		if (options.containsKey("read"))
+		readWrite(new StateDP(main, "", 0, getDPT()), write, (String) options.get("value"));
+	}
+
+	private void readWrite(final Datapoint dp, final boolean write, final String value)
+		throws KNXException, InterruptedException
+	{
+		if (!write)
 			LogService.logAlways(out, "read value: " + pc.read(dp));
-		if (options.containsKey("write")) {
+		else {
 			// note, a write to a non existing datapoint might finish successfully,
 			// too.. no check for existence or read back of a written value is done
 			pc.write(dp, (String) options.get("value"));
 			LogService.logAlways(out, "write successful");
+		}
+	}
+
+	// shows one DPT of each matching main type based on the length of the supplied ASDU
+	private String decodeAsduByLength(final byte[] asdu, final boolean optimized)
+		throws KNXFormatException
+	{
+		final StringBuffer sb = new StringBuffer();
+		final List typesBySize = TranslatorTypes.getMainTypesBySize(optimized ? 0 : asdu.length);
+		for (final Iterator i = typesBySize.iterator(); i.hasNext();) {
+			final MainType main = (MainType) i.next();
+			try {
+				final String dptid = (String) main.getSubTypes().keySet().iterator().next();
+				final DPTXlator t = TranslatorTypes.createTranslator(main.getMainNumber(), dptid);
+				t.setData(asdu);
+				sb.append(t.getValue()).append(" [").append(dptid).append("]")
+						.append(i.hasNext() ? ", " : "");
+			}
+			catch (final KNXException ignore) {}
+		}
+		return sb.toString();
+	}
+
+	private void runMonitorLoop() throws IOException, KNXException, InterruptedException
+	{
+		try {
+			final XMLReader r = XMLFactory.getInstance().createXMLReader(toolDatapointsFile);
+			datapoints.load(r);
+			r.close();
+		}
+		catch (final KNXMLException e) {
+			out.trace("no monitor datapoint information loaded, " + e.getMessage());
+		}
+		final BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+		while (true) {
+			while (!in.ready())
+				Thread.sleep(250);
+			final String line = in.readLine();
+			final String[] s = line.trim().split(" +");
+			if (s.length == 1 && "exit".equalsIgnoreCase(s[0]))
+				return;
+			if (s.length > 1) {
+				// expected order: <cmd> <addr> [<dpt>] [<value>]
+				// cmd = ("r"|"read") | ("w"|"write")
+				final String cmd = s[0];
+				final String addr = s[1];
+
+				final boolean read = cmd.equals("read") || cmd.equals("r");
+				final boolean write = cmd.equals("write") || cmd.equals("w");
+				if (read || write) {
+					final boolean withDpt = read && s.length == 3 || write && s.length >= 4;
+					try {
+						final GroupAddress ga = new GroupAddress(addr);
+						final Datapoint dp = new StateDP(ga, "tmp", 0, withDpt ? fromDptName(s[2])
+								: null);
+						if (withDpt) {
+							datapoints.remove(dp);
+							datapoints.add(dp);
+						}
+						// NYI write > 4 substrings (value string with space inside)
+						readWrite(dp, write, write ? s[s.length - 1] : null);
+					}
+					catch (final KNXException e) {
+						out.log(LogLevel.ERROR, "[" + line + "]", e);
+					}
+					catch (final RuntimeException e) {
+						out.log(LogLevel.ERROR, "[" + line + "]", e);
+					}
+				}
+			}
+		}
+	}
+
+	private void saveDatapoints()
+	{
+		if (!options.containsKey("monitor"))
+			return;
+		try {
+			final XMLWriter w = XMLFactory.getInstance().createXMLWriter(toolDatapointsFile);
+			try {
+				datapoints.save(w);
+			}
+			finally {
+				w.close();
+			}
+		}
+		catch (final KNXMLException e) {
+			out.warn("on saving monitor datapoint information to " + toolDatapointsFile, e);
 		}
 	}
 

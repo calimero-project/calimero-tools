@@ -74,7 +74,7 @@ public final class Main
 		{ IPCONFIG, "KNXnet/IP device address configuration", "" },
 		{ MONITOR, "Monitor a KNX network", "" },
 		{ COM_READ, "Read a value using KNX process communication", "read" },
-		{ COM_WRITE, "Write a value using KNX process communication", "wite" },
+		{ COM_WRITE, "Write a value using KNX process communication", "write" },
 		{ COM_GROUPMON, "Start group monitoring KNX process communication", "monitor" },
 		{ GET_PROPERTY, "Read a KNX property", "" },
 		{ SET_PROPERTY, "Write a KNX property", "" },

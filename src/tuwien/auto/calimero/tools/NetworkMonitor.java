@@ -87,8 +87,8 @@ import tuwien.auto.calimero.log.LogService;
  * this tool from the console, the <code>main</code> method of this class is executed, otherwise use
  * it in the context appropriate to a {@link Runnable}.
  * <p>
- * To quit a monitor running on a console, use a user interrupt for termination ( <code>^C</code>
- * for example).
+ * To quit a monitor running on a console, use a user interrupt for termination, e.g.,
+ * <code>^C</code>.
  *
  * @author B. Malinowsky
  */
