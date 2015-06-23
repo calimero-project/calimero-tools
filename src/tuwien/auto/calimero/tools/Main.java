@@ -44,7 +44,7 @@ import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.List;
 
-import tuwien.auto.calimero.exception.KNXIllegalArgumentException;
+import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.link.medium.KNXMediumSettings;
 import tuwien.auto.calimero.link.medium.PLSettings;
 import tuwien.auto.calimero.link.medium.RFSettings;

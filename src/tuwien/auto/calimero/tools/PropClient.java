@@ -41,7 +41,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.InterruptedIOException;
 
-import tuwien.auto.calimero.exception.KNXIllegalArgumentException;
+import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.log.LogService;
 import tuwien.auto.calimero.mgmt.PropertyAdapter;
 import tuwien.auto.calimero.mgmt.PropertyClient;
