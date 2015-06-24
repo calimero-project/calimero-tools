@@ -46,6 +46,7 @@ import tuwien.auto.calimero.CloseEvent;
 import tuwien.auto.calimero.DataUnitBuilder;
 import tuwien.auto.calimero.FrameEvent;
 import tuwien.auto.calimero.Settings;
+import tuwien.auto.calimero.cemi.CEMIBusMon;
 import tuwien.auto.calimero.exception.KNXException;
 import tuwien.auto.calimero.exception.KNXIllegalArgumentException;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
@@ -104,11 +105,15 @@ public class NetworkMonitor implements Runnable
 	private final Map options = new HashMap();
 	private KNXNetworkMonitor m;
 
-	private final LinkListener l = new LinkListener()
-	{
+	private final LinkListener l = new LinkListener() {
 		public void indication(final FrameEvent e)
 		{
-			NetworkMonitor.this.onIndication(e);
+			try {
+				NetworkMonitor.this.onIndication(e);
+			}
+			catch (final RuntimeException rte) {
+				out.warn("on indication", rte);
+			}
 		}
 
 		public void linkClosed(final CloseEvent e)
@@ -154,6 +159,7 @@ public class NetworkMonitor implements Runnable
 	 * <li><code>-help -h</code> show help message</li>
 	 * <li><code>-version</code> show tool/library version and exit</li>
 	 * <li><code>-verbose -v</code> enable verbose status output</li>
+	 * <li><code>-compact -c</code> show incoming busmonitor indications in compact format
 	 * <li><code>-localhost</code> <i>id</i> &nbsp;local IP/host name</li>
 	 * <li><code>-localport</code> <i>number</i> &nbsp;local UDP port (default system assigned)</li>
 	 * <li><code>-port -p</code> <i>number</i> &nbsp;UDP port on host (default 3671)</li>
@@ -293,16 +299,27 @@ public class NetworkMonitor implements Runnable
 	protected void onIndication(final FrameEvent e)
 	{
 		final StringBuffer sb = new StringBuffer();
-		sb.append(e.getFrame().toString());
+		final CEMIBusMon frame = (CEMIBusMon) e.getFrame();
+		final boolean compact = options.containsKey("compact");
+		if (compact) {
+//			sb.append(frame.getTimestamp());
+			sb.append("Seq ").append(frame.getSequenceNumber());
+		}
+		else
+			sb.append(frame);
+
 		// since we specified decoding of raw frames during monitor initialization,
 		// we can get the decoded raw frame here
 		// but note, that on decoding error null is returned
 		final RawFrame raw = ((MonitorFrameEvent) e).getRawFrame();
 		if (raw != null) {
-			sb.append(": ").append(raw.toString());
+			sb.append(compact ? " " : " = ");
+			sb.append(raw.toString());
 			if (raw instanceof RawFrameBase) {
 				final RawFrameBase f = (RawFrameBase) raw;
 				sb.append(": ").append(DataUnitBuilder.decode(f.getTPDU(), f.getDestination()));
+				sb.append(" ").append(
+						DataUnitBuilder.toHex(DataUnitBuilder.extractASDU(f.getTPDU()), " "));
 			}
 		}
 		out.log(LogLevel.ALWAYS, sb.toString(), null);
@@ -335,26 +352,26 @@ public class NetworkMonitor implements Runnable
 	 */
 	private KNXNetworkMonitor createMonitor() throws KNXException, InterruptedException
 	{
+		final String host = (String) options.get("host");
 		final KNXMediumSettings medium = (KNXMediumSettings) options.get("medium");
 		if (options.containsKey("serial")) {
 			// create FT1.2 monitor link
-			final String p = (String) options.get("serial");
 			try {
-				return new KNXNetworkMonitorFT12(Integer.parseInt(p), medium);
+				return new KNXNetworkMonitorFT12(Integer.parseInt(host), medium);
 			}
 			catch (final NumberFormatException e) {
-				return new KNXNetworkMonitorFT12(p, medium);
+				return new KNXNetworkMonitorFT12(host, medium);
 			}
 		}
 		// create local and remote socket address for monitor link
 		final InetSocketAddress local = createLocalSocket((InetAddress) options.get("localhost"),
 				(Integer) options.get("localport"));
-		final InetSocketAddress host = new InetSocketAddress((InetAddress) options.get("host"),
+		final InetSocketAddress remote = new InetSocketAddress(host,
 				((Integer) options.get("port")).intValue());
 		// create the monitor link, based on the KNXnet/IP protocol
 		// specify whether network address translation shall be used,
 		// and tell the physical medium of the KNX network
-		return new KNXNetworkMonitorIP(local, host, options.containsKey("nat"), medium);
+		return new KNXNetworkMonitorIP(local, remote, options.containsKey("nat"), medium);
 	}
 
 	/**
@@ -390,6 +407,8 @@ public class NetworkMonitor implements Runnable
 			}
 			if (isOption(arg, "-verbose", "-v"))
 				options.put("verbose", null);
+			else if (isOption(arg, "-compact", "c"))
+				options.put("compact", null);
 			else if (isOption(arg, "-localhost", null))
 				parseHost(args[++i], true, options);
 			else if (isOption(arg, "-localport", null))
@@ -402,16 +421,13 @@ public class NetworkMonitor implements Runnable
 				options.put("serial", null);
 			else if (isOption(arg, "-medium", "-m"))
 				options.put("medium", getMedium(args[++i]));
-			else if (options.containsKey("serial"))
-				// add port number/identifier to serial option
-				options.put("serial", arg);
 			else if (!options.containsKey("host"))
-				parseHost(arg, false, options);
+				options.put("host", arg);
 			else
 				throw new KNXIllegalArgumentException("unknown option " + arg);
 		}
-		if (!options.containsKey("host") && !options.containsKey("serial"))
-			throw new KNXIllegalArgumentException("no host or serial port specified");
+		if (!options.containsKey("host"))
+			throw new KNXIllegalArgumentException("specify either IP host, serial port, or device");
 	}
 
 	private static boolean isOption(final String arg, final String longOpt, final String shortOpt)
@@ -498,7 +514,10 @@ public class NetworkMonitor implements Runnable
 
 		private void unregister()
 		{
-			Runtime.getRuntime().removeShutdownHook(this);
+			try {
+				Runtime.getRuntime().removeShutdownHook(this);
+			}
+			catch (final IllegalStateException expected) {}
 		}
 
 		public void run()

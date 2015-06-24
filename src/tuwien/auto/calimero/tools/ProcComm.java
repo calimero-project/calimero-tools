@@ -155,12 +155,13 @@ public class ProcComm implements Runnable
 
 	//private final LogWriter w;
 
+	private volatile boolean closed;
+
 	/**
 	 * Creates a new ProcComm instance using the supplied options.
 	 * <p>
-	 * Mandatory arguments are an IP host or a FT1.2 port identifier, depending on the
-	 * type of connection to the KNX network. See {@link #main(String[])} for the list of
-	 * options.
+	 * Mandatory arguments are an IP host or a FT1.2 port identifier, depending on the type of
+	 * connection to the KNX network. See {@link #main(String[])} for the list of options.
 	 *
 	 * @param args list with options
 	 * @throws KNXIllegalArgumentException
@@ -336,7 +337,7 @@ public class ProcComm implements Runnable
 				public void groupWrite(final ProcessEvent e) { onGroupEvent(e); }
 				public void groupReadResponse(final ProcessEvent e) { onGroupEvent(e); }
 				public void groupReadRequest(final ProcessEvent e) { onGroupEvent(e); }
-				public void detached(final DetachEvent e) {}
+				public void detached(final DetachEvent e) { closed = true; }
 			};
 			pc.addProcessListener(monitor);
 		}
@@ -354,9 +355,11 @@ public class ProcComm implements Runnable
 	 */
 	public void quit()
 	{
+		closed = true;
 		if (pc != null) {
 			final KNXNetworkLink lnk = pc.detach();
-			lnk.close();
+			if (lnk != null)
+				lnk.close();
 			saveDatapoints();
 		}
 	}
@@ -393,8 +396,8 @@ public class ProcComm implements Runnable
 	 * Called by this tool on completion.
 	 * <p>
 	 *
-	 * @param thrown the thrown exception if operation completed due to a raised
-	 *        exception, <code>null</code> otherwise
+	 * @param thrown the thrown exception if operation completed due to a raised exception,
+	 *        <code>null</code> otherwise
 	 * @param canceled whether the operation got canceled before its planned end
 	 */
 	protected void onCompletion(final Exception thrown, final boolean canceled)
@@ -448,7 +451,7 @@ public class ProcComm implements Runnable
 		// create local and remote socket address for network link
 		final InetSocketAddress local = createLocalSocket((InetAddress) options.get("localhost"),
 				(Integer) options.get("localport"));
-		final InetSocketAddress remote = new InetSocketAddress((InetAddress) options.get("host"),
+		final InetSocketAddress remote = new InetSocketAddress(host,
 				((Integer) options.get("port")).intValue());
 		final int mode = options.containsKey("routing") ? KNXNetworkLinkIP.ROUTING
 				: KNXNetworkLinkIP.TUNNELING;
@@ -555,8 +558,10 @@ public class ProcComm implements Runnable
 		}
 		final BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 		while (true) {
-			while (!in.ready())
+			while (!in.ready() && !closed)
 				Thread.sleep(250);
+			if (closed)
+				break;
 			final String line = in.readLine();
 			final String[] s = line.trim().split(" +");
 			if (s.length == 1 && "exit".equalsIgnoreCase(s[0]))
@@ -808,7 +813,10 @@ public class ProcComm implements Runnable
 
 		void unregister()
 		{
-			Runtime.getRuntime().removeShutdownHook(this);
+			try {
+				Runtime.getRuntime().removeShutdownHook(this);
+			}
+			catch (final IllegalStateException expected) {}
 		}
 
 		public void run()
