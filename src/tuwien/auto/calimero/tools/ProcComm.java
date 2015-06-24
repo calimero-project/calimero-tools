@@ -46,6 +46,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 
@@ -447,8 +448,14 @@ public class ProcComm implements Runnable
 			return "1.001";
 		if ("bool".equals(id))
 			return "1.002";
+		if ("dimmer".equals(id))
+			return "3.007";
+		if ("blinds".equals(id))
+			return "3.008";
 		if ("string".equals(id))
 			return "16.001";
+		if ("temp".equals(id))
+			return "9.001";
 		if ("float".equals(id))
 			return "9.002";
 		if ("float2".equals(id))
@@ -538,16 +545,19 @@ public class ProcComm implements Runnable
 				final boolean write = cmd.equals("write") || cmd.equals("w");
 				if (read || write) {
 					final boolean withDpt = read && s.length == 3 || write && s.length >= 4;
+					StateDP dp;
 					try {
 						final GroupAddress ga = new GroupAddress(addr);
-						final StateDP dp = new StateDP(ga, "tmp", 0, withDpt ? fromDptName(s[2])
+						dp = new StateDP(ga, "tmp", 0, withDpt ? fromDptName(s[2])
 								: null);
-						if (withDpt) {
+						if (withDpt && !s[2].equals("-")) {
 							datapoints.remove(dp);
 							datapoints.add(dp);
 						}
-						// NYI write > 4 substrings (value string with space inside)
-						readWrite(dp, write, write ? s[s.length - 1] : null);
+						dp = datapoints.contains(ga) ? datapoints.get(ga) : dp;
+						readWrite(dp, write, write ? Arrays.asList(s)
+								.subList(withDpt ? 3 : 2, s.length)
+								.stream().collect(Collectors.joining(" ")) : null);
 					}
 					catch (final KNXException e) {
 						out.error("[{}] {}", line, e.toString());
