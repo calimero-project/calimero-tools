@@ -42,6 +42,7 @@ import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -424,8 +425,7 @@ public class ProcComm implements Runnable
 	}
 
 	/**
-	 * Creates the KNX network link to access the network specified in
-	 * <code>options</code>.
+	 * Creates the KNX network link to access the network specified in <code>options</code>.
 	 * <p>
 	 *
 	 * @return the KNX network link
@@ -434,30 +434,30 @@ public class ProcComm implements Runnable
 	 */
 	private KNXNetworkLink createLink() throws KNXException, InterruptedException
 	{
+		final String host = (String) options.get("host");
 		final KNXMediumSettings medium = (KNXMediumSettings) options.get("medium");
 		if (options.containsKey("serial")) {
 			// create FT1.2 network link
-			final String p = (String) options.get("serial");
 			try {
-				return new KNXNetworkLinkFT12(Integer.parseInt(p), medium);
+				return new KNXNetworkLinkFT12(Integer.parseInt(host), medium);
 			}
 			catch (final NumberFormatException e) {
-				return new KNXNetworkLinkFT12(p, medium);
+				return new KNXNetworkLinkFT12(host, medium);
 			}
 		}
 		// create local and remote socket address for network link
 		final InetSocketAddress local = createLocalSocket((InetAddress) options.get("localhost"),
 				(Integer) options.get("localport"));
-		final InetSocketAddress host = new InetSocketAddress((InetAddress) options.get("host"),
+		final InetSocketAddress remote = new InetSocketAddress((InetAddress) options.get("host"),
 				((Integer) options.get("port")).intValue());
 		final int mode = options.containsKey("routing") ? KNXNetworkLinkIP.ROUTING
 				: KNXNetworkLinkIP.TUNNELING;
-		return new KNXNetworkLinkIP(mode, local, host, options.containsKey("nat"), medium);
+		return new KNXNetworkLinkIP(mode, local, remote, options.containsKey("nat"), medium);
 	}
 
 	/**
-	 * Gets the datapoint type identifier from the <code>options</code>, and maps alias
-	 * names of common datapoint types to its datapoint type ID.
+	 * Gets the datapoint type identifier from the <code>options</code>, and maps alias names of
+	 * common datapoint types to its datapoint type ID.
 	 * <p>
 	 * The option map must contain a "dpt" key with value.
 	 *
@@ -475,8 +475,14 @@ public class ProcComm implements Runnable
 			return "1.001";
 		if ("bool".equals(id))
 			return "1.002";
+		if ("dimmer".equals(id))
+			return "3.007";
+		if ("blinds".equals(id))
+			return "3.008";
 		if ("string".equals(id))
 			return "16.001";
+		if ("temp".equals(id))
+			return "9.001";
 		if ("float".equals(id))
 			return "9.002";
 		if ("float2".equals(id))
@@ -567,14 +573,23 @@ public class ProcComm implements Runnable
 					final boolean withDpt = read && s.length == 3 || write && s.length >= 4;
 					try {
 						final GroupAddress ga = new GroupAddress(addr);
-						final Datapoint dp = new StateDP(ga, "tmp", 0, withDpt ? fromDptName(s[2])
-								: null);
-						if (withDpt) {
+						StateDP dp = new StateDP(ga, "tmp", 0, withDpt ? fromDptName(s[2]) : null);
+						if (withDpt && !s[2].equals("-")) {
 							datapoints.remove(dp);
 							datapoints.add(dp);
 						}
-						// NYI write > 4 substrings (value string with space inside)
-						readWrite(dp, write, write ? s[s.length - 1] : null);
+						dp = (StateDP) (datapoints.contains(ga) ? datapoints.get(ga) : dp);
+						if (write) {
+							final List l = Arrays.asList(s).subList(withDpt ? 3 : 2, s.length);
+							final StringBuffer sb = new StringBuffer();
+							for (final Iterator i = l.iterator(); i.hasNext();) {
+								sb.append((String) i.next());
+								sb.append(" ");
+							}
+							readWrite(dp, write, sb.toString());
+						}
+						else
+							readWrite(dp, write, null);
 					}
 					catch (final KNXException e) {
 						out.log(LogLevel.ERROR, "[" + line + "]", e);
@@ -606,13 +621,13 @@ public class ProcComm implements Runnable
 	}
 
 	/**
-	 * Reads all options in the specified array, and puts relevant options into the
-	 * supplied options map.
+	 * Reads all options in the specified array, and puts relevant options into the supplied options
+	 * map.
 	 * <p>
-	 * On options not relevant for doing process communication (like <code>help</code>),
-	 * this method will take appropriate action (like showing usage information). On
-	 * occurrence of such an option, other options will be ignored. On unknown options, a
-	 * KNXIllegalArgumentException is thrown.
+	 * On options not relevant for doing process communication (like <code>help</code>), this method
+	 * will take appropriate action (like showing usage information). On occurrence of such an
+	 * option, other options will be ignored. On unknown options, a KNXIllegalArgumentException is
+	 * thrown.
 	 *
 	 * @param args array with command line options
 	 */
@@ -638,7 +653,7 @@ public class ProcComm implements Runnable
 			}
 			else if (isOption(arg, "-verbose", "-v"))
 				options.put("verbose", null);
-			else if (isOption(arg, "read", null)) {
+			else if (arg.equals("read")) {
 				if (i + 2 >= args.length)
 					break;
 				options.put("read", null);
@@ -650,7 +665,7 @@ public class ProcComm implements Runnable
 					throw new KNXIllegalArgumentException("read DPT: " + e.getMessage(), e);
 				}
 			}
-			else if (isOption(arg, "write", null)) {
+			else if (arg.equals("write")) {
 				if (i + 3 >= args.length)
 					break;
 				options.put("write", null);
@@ -663,7 +678,7 @@ public class ProcComm implements Runnable
 					throw new KNXIllegalArgumentException("write DPT: " + e.getMessage(), e);
 				}
 			}
-			else if (isOption(arg, "monitor", null))
+			else if (arg.equals("monitor"))
 				options.put("monitor", null);
 			else if (isOption(arg, "-localhost", null))
 				parseHost(args[++i], true, options);
@@ -681,11 +696,8 @@ public class ProcComm implements Runnable
 				options.put("timeout", Integer.decode(args[++i]));
 			else if (isOption(arg, "-routing", null))
 				options.put("routing", null);
-			else if (options.containsKey("serial"))
-				// add port number/identifier to serial option
-				options.put("serial", arg);
 			else if (!options.containsKey("host"))
-				parseHost(arg, false, options);
+				options.put("host", arg);
 			else
 				throw new KNXIllegalArgumentException("unknown option " + arg);
 		}
@@ -719,7 +731,7 @@ public class ProcComm implements Runnable
 		sb.append("  read <DPT> <KNX address>           read from group address").append(sep);
 		sb.append("  write <DPT> <value> <KNX address>  write to group address").append(sep);
 		sb.append("  monitor                 enter group monitoring, can also be").append(sep)
-		  	.append("                          used together with read or write ").append(sep);
+				.append("                          used together with read or write ").append(sep);
 		sb.append("Additionally recognized name aliases for DPT numbers:").append(sep);
 		sb.append("  switch (1.001), bool (1.002), string (16.001), float/float2 (9.002)")
 				.append(sep)
