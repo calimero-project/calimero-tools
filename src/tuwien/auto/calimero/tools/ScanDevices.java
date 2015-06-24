@@ -157,6 +157,7 @@ public class ScanDevices implements Runnable
 		}
 	}
 
+	@Override
 	public void run()
 	{
 		Exception thrown = null;

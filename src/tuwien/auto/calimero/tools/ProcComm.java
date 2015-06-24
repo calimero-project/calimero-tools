@@ -43,6 +43,8 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -60,9 +62,7 @@ import tuwien.auto.calimero.datapoint.DatapointModel;
 import tuwien.auto.calimero.datapoint.StateDP;
 import tuwien.auto.calimero.dptxlator.DPTXlator;
 import tuwien.auto.calimero.dptxlator.TranslatorTypes;
-import tuwien.auto.calimero.exception.KNXException;
-import tuwien.auto.calimero.exception.KNXFormatException;
-import tuwien.auto.calimero.exception.KNXIllegalArgumentException;
+import tuwien.auto.calimero.dptxlator.TranslatorTypes.MainType;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.KNXNetworkLinkFT12;
@@ -75,7 +75,10 @@ import tuwien.auto.calimero.process.ProcessCommunicator;
 import tuwien.auto.calimero.process.ProcessCommunicatorImpl;
 import tuwien.auto.calimero.process.ProcessEvent;
 import tuwien.auto.calimero.process.ProcessListener;
-import tuwien.auto.calimero.process.ProcessListenerEx;
+import tuwien.auto.calimero.xml.KNXMLException;
+import tuwien.auto.calimero.xml.XMLFactory;
+import tuwien.auto.calimero.xml.XMLReader;
+import tuwien.auto.calimero.xml.XMLWriter;
 
 /**
  * A tool for Calimero 2 providing basic process communication.
@@ -143,7 +146,7 @@ public class ProcComm implements Runnable
 	// specifies parameters to use for the network link and process communication
 	private final Map<String, Object> options = new HashMap<>();
 	// contains the datapoints for which translation information is known in monitor mode
-	private final DatapointModel datapoints = new DatapointMap();
+	private final DatapointModel<StateDP> datapoints = new DatapointMap<>();
 
 	/**
 	 * Creates a new ProcComm instance using the supplied options.
@@ -230,9 +233,7 @@ public class ProcComm implements Runnable
 		}
 	}
 
-	/* (non-Javadoc)
-	 * @see java.lang.Runnable#run()
-	 */
+	@Override
 	public void run()
 	{
 		Exception thrown = null;
@@ -299,7 +300,7 @@ public class ProcComm implements Runnable
 
 		// this is the listener if group monitoring is requested
 		if (options.containsKey("monitor")) {
-			final ProcessListener monitor = new ProcessListenerEx() {
+			final ProcessListener monitor = new ProcessListener() {
 				public void groupWrite(final ProcessEvent e) { onGroupEvent(e); }
 				public void groupReadResponse(final ProcessEvent e) { onGroupEvent(e); }
 				public void groupReadRequest(final ProcessEvent e) { onGroupEvent(e); }
@@ -483,7 +484,7 @@ public class ProcComm implements Runnable
 		else {
 			// note, a write to a non existing datapoint might finish successfully,
 			// too.. no check for existence or read back of a written value is done
-			pc.write(dp, (String) options.get("value"));
+			pc.write(dp, value);
 			LogService.logAlways(out, "write successful");
 		}
 	}
@@ -493,11 +494,12 @@ public class ProcComm implements Runnable
 		throws KNXFormatException
 	{
 		final StringBuffer sb = new StringBuffer();
-		final List typesBySize = TranslatorTypes.getMainTypesBySize(optimized ? 0 : asdu.length);
-		for (final Iterator i = typesBySize.iterator(); i.hasNext();) {
-			final MainType main = (MainType) i.next();
+		final List<MainType> typesBySize = TranslatorTypes.getMainTypesBySize(optimized ? 0
+				: asdu.length);
+		for (final Iterator<MainType> i = typesBySize.iterator(); i.hasNext();) {
+			final MainType main = i.next();
 			try {
-				final String dptid = (String) main.getSubTypes().keySet().iterator().next();
+				final String dptid = main.getSubTypes().keySet().iterator().next();
 				final DPTXlator t = TranslatorTypes.createTranslator(main.getMainNumber(), dptid);
 				t.setData(asdu);
 				sb.append(t.getValue()).append(" [").append(dptid).append("]")
@@ -538,7 +540,7 @@ public class ProcComm implements Runnable
 					final boolean withDpt = read && s.length == 3 || write && s.length >= 4;
 					try {
 						final GroupAddress ga = new GroupAddress(addr);
-						final Datapoint dp = new StateDP(ga, "tmp", 0, withDpt ? fromDptName(s[2])
+						final StateDP dp = new StateDP(ga, "tmp", 0, withDpt ? fromDptName(s[2])
 								: null);
 						if (withDpt) {
 							datapoints.remove(dp);
@@ -548,10 +550,10 @@ public class ProcComm implements Runnable
 						readWrite(dp, write, write ? s[s.length - 1] : null);
 					}
 					catch (final KNXException e) {
-						out.log(LogLevel.ERROR, "[" + line + "]", e);
+						out.error("[{}] {}", line, e.toString());
 					}
 					catch (final RuntimeException e) {
-						out.log(LogLevel.ERROR, "[" + line + "]", e);
+						out.error("[{}] {}", line, e.toString());
 					}
 				}
 			}

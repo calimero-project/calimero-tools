@@ -102,7 +102,6 @@ public class Property implements Runnable, PropertyAdapterListener
 
 	private PropertyClient pc;
 	private KNXNetworkLink lnk;
-	private UsbConnection usb;
 	private Map<PropertyKey, PropertyClient.Property> definitions;
 
 	private final Thread interruptOnClose;
@@ -256,8 +255,6 @@ public class Property implements Runnable, PropertyAdapterListener
 				pc.close();
 			if (lnk != null)
 				lnk.close();
-			if (usb != null)
-				usb.close();
 			onCompletion(thrown, canceled);
 		}
 	}
@@ -374,7 +371,7 @@ public class Property implements Runnable, PropertyAdapterListener
 	private PropertyAdapter createUsbAdapter(final String device) throws KNXException,
 		InterruptedException
 	{
-		usb = new UsbConnection(device);
+		final UsbConnection usb = new UsbConnection(device);
 		return new LocalDeviceManagementUsb(usb, this, options.containsKey("emulatewriteenable"));
 	}
 
@@ -433,9 +430,10 @@ public class Property implements Runnable, PropertyAdapterListener
 				d.getPID());
 		if (p == null)
 			p = getPropertyDef(PropertyKey.GLOBAL_OBJTYPE, d.getPID());
-		if (p != null)
-			buf.append(" (" + p.getName() + ")");
-
+		if (p != null) {
+			buf.append(" ").append(p.getName());
+			buf.append(" (").append(p.getPIDName()).append(")");
+		}
 		final String pdtDef = p != null ? Integer.toString(p.getPDT()) : "-";
 		buf.append(", PDT " + (d.getPDT() == -1 ? pdtDef : Integer.toString(d.getPDT())));
 		buf.append(", curr. elems " + d.getCurrentElements());

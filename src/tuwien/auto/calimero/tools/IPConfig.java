@@ -184,9 +184,7 @@ public class IPConfig implements Runnable
 		}
 	}
 
-	/* (non-Javadoc)
-	 * @see java.lang.Runnable#run()
-	 */
+	@Override
 	public void run()
 	{
 		Exception thrown = null;

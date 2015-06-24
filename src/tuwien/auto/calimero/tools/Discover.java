@@ -115,8 +115,8 @@ public class Discover implements Runnable
 		final Integer lp = ((Integer) options.get("localport"));
 		// if a network interface was specified, use an assigned IP for local host
 		final NetworkInterface nif = (NetworkInterface) options.get("if");
-		final InetAddress local = (InetAddress) (nif != null ? nif.getInetAddresses().nextElement()
-				: null);
+		final InetAddress local = nif != null ? nif.getInetAddresses().nextElement()
+				: null;
 		d = new Discoverer(local, lp != null ? lp.intValue() : 0, options.containsKey("nat"), true);
 	}
 
@@ -159,9 +159,7 @@ public class Discover implements Runnable
 		}
 	}
 
-	/* (non-Javadoc)
-	 * @see java.lang.Runnable#run()
-	 */
+	@Override
 	public void run()
 	{
 		Exception thrown = null;
