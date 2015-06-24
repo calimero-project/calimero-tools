@@ -41,6 +41,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -149,6 +150,8 @@ public class ProcComm implements Runnable
 	// contains the datapoints for which translation information is known in monitor mode
 	private final DatapointModel<StateDP> datapoints = new DatapointMap<>();
 
+	private volatile boolean closed;
+
 	/**
 	 * Creates a new ProcComm instance using the supplied options.
 	 * <p>
@@ -246,18 +249,12 @@ public class ProcComm implements Runnable
 			else
 				readWrite();
 		}
-		catch (final KNXException e) {
-			thrown = e;
-		}
-		catch (final IOException e) {
+		catch (final KNXException | IOException | RuntimeException e) {
 			thrown = e;
 		}
 		catch (final InterruptedException e) {
 			canceled = true;
 			Thread.currentThread().interrupt();
-		}
-		catch (final RuntimeException e) {
-			thrown = e;
 		}
 		finally {
 			quit();
@@ -305,7 +302,7 @@ public class ProcComm implements Runnable
 				public void groupWrite(final ProcessEvent e) { onGroupEvent(e); }
 				public void groupReadResponse(final ProcessEvent e) { onGroupEvent(e); }
 				public void groupReadRequest(final ProcessEvent e) { onGroupEvent(e); }
-				public void detached(final DetachEvent e) {}
+				public void detached(final DetachEvent e) { closed = true; }
 			};
 			pc.addProcessListener(monitor);
 		}
@@ -323,9 +320,11 @@ public class ProcComm implements Runnable
 	 */
 	public void quit()
 	{
+		closed = true;
 		if (pc != null) {
 			final KNXNetworkLink lnk = pc.detach();
-			lnk.close();
+			if (lnk != null)
+				lnk.close();
 			saveDatapoints();
 		}
 	}
@@ -355,7 +354,7 @@ public class ProcComm implements Runnable
 			catch (final KNXIllegalArgumentException iae) {}
 			catch (final RuntimeException rte) {}
 		}
-		LogService.logAlways(out, s);
+		System.out.println(LocalTime.now() + " " + s);
 	}
 
 	/**
@@ -529,8 +528,10 @@ public class ProcComm implements Runnable
 		}
 		final BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 		while (true) {
-			while (!in.ready())
+			while (!in.ready() && !closed)
 				Thread.sleep(250);
+			if (closed)
+				break;
 			final String line = in.readLine();
 			final String[] s = line.trim().split(" +");
 			if (s.length == 1 && "exit".equalsIgnoreCase(s[0]))
@@ -559,10 +560,7 @@ public class ProcComm implements Runnable
 								.subList(withDpt ? 3 : 2, s.length)
 								.stream().collect(Collectors.joining(" ")) : null);
 					}
-					catch (final KNXException e) {
-						out.error("[{}] {}", line, e.toString());
-					}
-					catch (final RuntimeException e) {
+					catch (final KNXException | RuntimeException e) {
 						out.error("[{}] {}", line, e.toString());
 					}
 				}
@@ -687,7 +685,7 @@ public class ProcComm implements Runnable
 		// TODO problem: this overrules the log level from a simplelogger.properties file!!
 		final String simpleLoggerLogLevel = "org.slf4j.simpleLogger.defaultLogLevel";
 		if (!System.getProperties().containsKey(simpleLoggerLogLevel)) {
-			final String lvl = args.contains("-v") || args.contains("--verbose") ? "trace" : "info";
+			final String lvl = args.contains("-v") || args.contains("--verbose") ? "debug" : "info";
 			System.setProperty(simpleLoggerLogLevel, lvl);
 		}
 		out = LogService.getLogger("calimero.tools");
@@ -744,7 +742,10 @@ public class ProcComm implements Runnable
 
 		void unregister()
 		{
-			Runtime.getRuntime().removeShutdownHook(this);
+			try {
+				Runtime.getRuntime().removeShutdownHook(this);
+			}
+			catch (final IllegalStateException expected) {}
 		}
 
 		public void run()

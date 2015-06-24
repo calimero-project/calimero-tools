@@ -415,7 +415,7 @@ public class NetworkMonitor implements Runnable
 		// TODO problem: this overrules the log level from a simplelogger.properties file!!
 		final String simpleLoggerLogLevel = "org.slf4j.simpleLogger.defaultLogLevel";
 		if (!System.getProperties().containsKey(simpleLoggerLogLevel)) {
-			final String lvl = args.contains("-v") || args.contains("--verbose") ? "trace" : "warn";
+			final String lvl = args.contains("-v") || args.contains("--verbose") ? "trace" : "info";
 			System.setProperty(simpleLoggerLogLevel, lvl);
 		}
 		out = LogService.getLogger("calimero.tools");
