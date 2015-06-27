@@ -41,6 +41,7 @@
 				<includes>
 					<include>properties.xml</include>
 					<include>simplelogger.properties</include>
+					<include>javax.usb.properties</include>					
 				</includes>
 			</resource>
 		</resources>
