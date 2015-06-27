@@ -38,6 +38,7 @@ package tuwien.auto.calimero.tools;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -51,6 +52,7 @@ import tuwien.auto.calimero.FrameEvent;
 import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.Settings;
+import tuwien.auto.calimero.cemi.CEMIBusMon;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.link.KNXNetworkMonitor;
 import tuwien.auto.calimero.link.KNXNetworkMonitorFT12;
@@ -105,7 +107,12 @@ public class NetworkMonitor implements Runnable
 	private final LinkListener l = new LinkListener() {
 		public void indication(final FrameEvent e)
 		{
-			NetworkMonitor.this.onIndication(e);
+			try {
+				NetworkMonitor.this.onIndication(e);
+			}
+			catch (final RuntimeException rte) {
+				out.warn("on indication", rte);
+			}
 		}
 
 		public void linkClosed(final CloseEvent e)
@@ -151,6 +158,7 @@ public class NetworkMonitor implements Runnable
 	 * <li><code>--help -h</code> show help message</li>
 	 * <li><code>--version</code> show tool/library version and exit</li>
 	 * <li><code>--verbose -v</code> enable verbose status output</li>
+	 * <li><code>--compact -c</code> show incoming busmonitor indications in compact format
 	 * <li><code>--localhost</code> <i>id</i> &nbsp;local IP/host name</li>
 	 * <li><code>--localport</code> <i>number</i> &nbsp;local UDP port (default system assigned)</li>
 	 * <li><code>--port -p</code> <i>number</i> &nbsp;UDP port on host (default 3671)</li>
@@ -213,10 +221,7 @@ public class NetworkMonitor implements Runnable
 			canceled = true;
 			Thread.currentThread().interrupt();
 		}
-		catch (final KNXException e) {
-			thrown = e;
-		}
-		catch (final RuntimeException e) {
+		catch (final KNXException | RuntimeException e) {
 			thrown = e;
 		}
 		finally {
@@ -236,7 +241,7 @@ public class NetworkMonitor implements Runnable
 	public void start() throws KNXException, InterruptedException
 	{
 		if (options.isEmpty()) {
-			LogService.logAlways(out, " - Monitor a KNX network");
+			LogService.logAlways(out, tool + " - Monitor a KNX network");
 			showVersion();
 			LogService.logAlways(out, "Type --help for help message");
 			return;
@@ -251,8 +256,6 @@ public class NetworkMonitor implements Runnable
 		}
 
 		m = createMonitor();
-		// ??? add the log writer for monitor log events
-		//LogManager.getManager().addWriter(m.getName(), w);
 
 		// on console we want to have all possible information, so enable
 		// decoding of a received raw frame by the monitor link
@@ -284,19 +287,30 @@ public class NetworkMonitor implements Runnable
 	protected void onIndication(final FrameEvent e)
 	{
 		final StringBuffer sb = new StringBuffer();
-		sb.append(e.getFrame().toString());
+		final CEMIBusMon frame = (CEMIBusMon) e.getFrame();
+		final boolean compact = options.containsKey("compact");
+		if (compact) {
+//			sb.append(frame.getTimestamp());
+			sb.append("Seq ").append(frame.getSequenceNumber());
+		}
+		else
+			sb.append(frame);
+
 		// since we specified decoding of raw frames during monitor initialization,
 		// we can get the decoded raw frame here
 		// but note, that on decoding error null is returned
 		final RawFrame raw = ((MonitorFrameEvent) e).getRawFrame();
 		if (raw != null) {
-			sb.append(": ").append(raw.toString());
+			sb.append(compact ? " " : " = ");
+			sb.append(raw.toString());
 			if (raw instanceof RawFrameBase) {
 				final RawFrameBase f = (RawFrameBase) raw;
 				sb.append(": ").append(DataUnitBuilder.decode(f.getTPDU(), f.getDestination()));
+				sb.append(" ").append(
+						DataUnitBuilder.toHex(DataUnitBuilder.extractASDU(f.getTPDU()), " "));
 			}
 		}
-		LogService.logAlways(out, sb.toString());
+		System.out.println(LocalTime.now() + " " + sb.toString());
 	}
 
 	/**
@@ -385,6 +399,8 @@ public class NetworkMonitor implements Runnable
 			}
 			if (Main.isOption(arg, "verbose", "v"))
 				options.put("verbose", null);
+			else if (Main.isOption(arg, "compact", "c"))
+				options.put("compact", null);
 			else if (Main.isOption(arg, "localhost", null))
 				options.put("localhost", Main.parseHost(args[++i]));
 			else if (Main.isOption(arg, "localport", null))
@@ -415,7 +431,7 @@ public class NetworkMonitor implements Runnable
 		// TODO problem: this overrules the log level from a simplelogger.properties file!!
 		final String simpleLoggerLogLevel = "org.slf4j.simpleLogger.defaultLogLevel";
 		if (!System.getProperties().containsKey(simpleLoggerLogLevel)) {
-			final String lvl = args.contains("-v") || args.contains("--verbose") ? "trace" : "info";
+			final String lvl = args.contains("-v") || args.contains("--verbose") ? "debug" : "info";
 			System.setProperty(simpleLoggerLogLevel, lvl);
 		}
 		out = LogService.getLogger("calimero.tools");
@@ -457,7 +473,10 @@ public class NetworkMonitor implements Runnable
 
 		private void unregister()
 		{
-			Runtime.getRuntime().removeShutdownHook(this);
+			try {
+				Runtime.getRuntime().removeShutdownHook(this);
+			}
+			catch (final IllegalStateException expected) {}
 		}
 
 		public void run()
