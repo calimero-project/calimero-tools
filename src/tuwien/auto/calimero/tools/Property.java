@@ -156,7 +156,7 @@ public class Property implements Runnable, PropertyAdapterListener
 	 * For remote property service these options are available:
 	 * <ul>
 	 * <li><code>--routing</code> use KNXnet/IP routing</li>
-	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp0|tp1|p110|p132|rf] (defaults to
+	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to
 	 * tp1)</li>
 	 * <li><code>--connect -c</code> connection oriented mode</li>
 	 * <li><code>--authorize -a</code> <i>key</i> &nbsp;authorize key to access the KNX device</li>
@@ -672,7 +672,7 @@ public class Property implements Runnable, PropertyAdapterListener
 		sb.append("  --emulatewriteenable -e  check write-enable of a property").append(sep);
 		sb.append(" remote property service mode only:").append(sep);
 		sb.append("  --routing                use KNXnet/IP routing").append(sep);
-		sb.append("  --medium -m <id>         KNX medium [tp0|tp1|p110|p132|rf] (default tp1)")
+		sb.append("  --medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)")
 				.append(sep);
 		sb.append("  --connect -c             connection oriented mode").append(sep);
 		sb.append("  --authorize -a <key>     authorize key to access KNX device").append(sep);

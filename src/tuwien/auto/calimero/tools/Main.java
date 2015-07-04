@@ -177,9 +177,7 @@ public final class Main
 		// for now, the local device address is always left 0 in the
 		// created medium setting, since there is no user cmd line option for this
 		// so KNXnet/IP server will supply address
-		if (id.equals("tp0"))
-			return TPSettings.TP0;
-		else if (id.equals("tp1"))
+		if (id.equals("tp1"))
 			return TPSettings.TP1;
 		else if (id.equals("p110"))
 			return new PLSettings(false);
