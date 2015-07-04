@@ -53,7 +53,7 @@ import tuwien.auto.calimero.link.medium.TPSettings;
 /**
  * @author B. Malinowsky
  */
-public final class Main
+final class Main
 {
 	private static final String DISCOVER = "discover";
 	private static final String DESCRIPTION = "describe";

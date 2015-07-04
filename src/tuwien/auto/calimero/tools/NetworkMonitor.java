@@ -266,7 +266,6 @@ public class NetworkMonitor implements Runnable
 
 	/**
 	 * Quits a running network monitor, otherwise returns immediately.
-	 * <p>
 	 */
 	public void quit()
 	{

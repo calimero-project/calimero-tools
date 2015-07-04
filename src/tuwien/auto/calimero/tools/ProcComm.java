@@ -159,7 +159,7 @@ public class ProcComm implements Runnable
 	 * connection to the KNX network. See {@link #main(String[])} for the list of options.
 	 *
 	 * @param args list with options
-	 * @throws KNXIllegalArgumentException
+	 * @throws KNXIllegalArgumentException on unknown/invalid options
 	 */
 	public ProcComm(final String[] args)
 	{

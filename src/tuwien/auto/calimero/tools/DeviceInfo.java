@@ -739,11 +739,11 @@ public class DeviceInfo implements Runnable
 		case 0:
 			return "Twisted Pair 1";
 		case 1:
-			return "Powerline 110";
+			return "Power-line 110";
 		case 2:
 			return "Radio Frequency";
 		case 4:
-			return "Powerline 132";
+			return "Power-line 132";
 		default:
 			return "Type " + type;
 		}
