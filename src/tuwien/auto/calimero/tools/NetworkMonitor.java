@@ -159,7 +159,7 @@ public class NetworkMonitor implements Runnable
 	 * <li><code>-port -p</code> <i>number</i> &nbsp;UDP port on host (default 3671)</li>
 	 * <li><code>-nat -n</code> enable Network Address Translation</li>
 	 * <li><code>-serial -s</code> use FT1.2 serial communication</li>
-	 * <li><code>-medium -m</code> <i>id</i> &nbsp;KNX medium [tp0|tp1|p110|p132|rf] (defaults to
+	 * <li><code>-medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to
 	 * tp1)</li>
 	 * </ul>
 	 *
@@ -428,13 +428,13 @@ public class NetworkMonitor implements Runnable
 		sb.append("  -version                show tool/library version and exit").append(sep);
 		sb.append("  -verbose -v             enable verbose status output").append(sep);
 		sb.append("  -localhost <id>         local IP/host name").append(sep);
-		sb.append("  -localport <number>     local UDP port (default system " + "assigned)")
+		sb.append("  -localport <number>     local UDP port (default system assigned)")
 				.append(sep);
 		sb.append("  -port -p <number>       UDP port on host (default ")
 				.append(KNXnetIPConnection.DEFAULT_PORT).append(")").append(sep);
 		sb.append("  -nat -n                 enable Network Address Translation").append(sep);
 		sb.append("  -serial -s              use FT1.2 serial communication").append(sep);
-		sb.append("  -medium -m <id>         KNX medium [tp0|tp1|p110|p132|rf] " + "(default tp1)")
+		sb.append("  -medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)")
 				.append(sep);
 		out.log(LogLevel.ALWAYS, sb.toString(), null);
 	}
@@ -454,12 +454,10 @@ public class NetworkMonitor implements Runnable
 	 */
 	private static KNXMediumSettings getMedium(final String id)
 	{
-		if (id.equals("tp0"))
-			return TPSettings.TP0;
-		else if (id.equals("tp1"))
+		if (id.equals("tp1"))
 			return TPSettings.TP1;
 		else if (id.equals("p110"))
-			return new PLSettings(false);
+			return new PLSettings();
 		else if (id.equals("p132"))
 			return new PLSettings(true);
 		else if (id.equals("rf"))

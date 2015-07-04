@@ -213,7 +213,7 @@ public class ProcComm implements Runnable
 	 * <li><code>-nat -n</code> enable Network Address Translation</li>
 	 * <li><code>-routing</code> use KNXnet/IP routing</li>
 	 * <li><code>-serial -s</code> use FT1.2 serial communication</li>
-	 * <li><code>-medium -m</code> <i>id</i> &nbsp;KNX medium [tp0|tp1|p110|p132|rf] (defaults to
+	 * <li><code>-medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to
 	 * tp1)</li>
 	 * </ul>
 	 * Available commands for process communication:
@@ -713,7 +713,7 @@ public class ProcComm implements Runnable
 		sb.append("  -routing                use KNX net/IP routing " + "(always on port 3671)")
 				.append(sep);
 		sb.append("  -serial -s              use FT1.2 serial communication").append(sep);
-		sb.append("  -medium -m <id>         KNX medium [tp0|tp1|p110|p132|rf] " + "(default tp1)")
+		sb.append("  -medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)")
 				.append(sep);
 		sb.append("Available commands for process communication:").append(sep);
 		sb.append("  read <DPT> <KNX address>           read from group address").append(sep);
@@ -746,12 +746,10 @@ public class ProcComm implements Runnable
 	 */
 	private static KNXMediumSettings getMedium(final String id)
 	{
-		if (id.equals("tp0"))
-			return TPSettings.TP0;
 		if (id.equals("tp1"))
 			return TPSettings.TP1;
 		if (id.equals("p110"))
-			return new PLSettings(false);
+			return new PLSettings();
 		if (id.equals("p132"))
 			return new PLSettings(true);
 		if (id.equals("rf"))

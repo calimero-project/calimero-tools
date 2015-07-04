@@ -168,7 +168,7 @@ public class DeviceInfo implements Runnable
 	 * <li><code>-nat -n</code> enable Network Address Translation</li>
 	 * <li><code>-serial -s</code> use FT1.2 serial communication</li>
 	 * <li><code>-routing</code> use KNXnet/IP routing</li>
-	 * <li><code>-medium -m</code> <i>id</i> &nbsp;KNX medium [tp0|tp1|p110|p132|rf] (defaults to
+	 * <li><code>-medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to
 	 * tp1)</li>
 	 * </ul>
 	 *
@@ -695,9 +695,7 @@ public class DeviceInfo implements Runnable
 		// for now, the local device address is always left 0 in the
 		// created medium setting, since there is no user cmd line option for this
 		// so KNXnet/IP server will supply address
-		if (id.equals("tp0"))
-			return TPSettings.TP0;
-		else if (id.equals("tp1"))
+		if (id.equals("tp1"))
 			return TPSettings.TP1;
 		else if (id.equals("p110"))
 			return new PLSettings(false);
@@ -727,11 +725,10 @@ public class DeviceInfo implements Runnable
 		sb.append(" -localport <number>     local UDP port (default system assigned)").append(sep);
 		sb.append(" -port -p <number>       UDP port on <host> (default ")
 				.append(KNXnetIPConnection.DEFAULT_PORT).append(")").append(sep);
-		// sb.append(" -host <id>              remote IP/host name").append(sep);
 		sb.append(" -nat -n                 enable Network Address Translation").append(sep);
 		sb.append(" -serial -s              use FT1.2 serial communication").append(sep);
 		sb.append(" -routing                use KNXnet/IP routing").append(sep);
-		sb.append(" -medium -m <id>         KNX medium [tp0|tp1|p110|p132|rf] " + "(default tp1)")
+		sb.append(" -medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)")
 				.append(sep);
 		out.log(LogLevel.ALWAYS, sb.toString(), null);
 	}
@@ -772,8 +769,6 @@ public class DeviceInfo implements Runnable
 			return "Powerline 110";
 		case 2:
 			return "Radio Frequency";
-		case 3:
-			return "Twisted Pair 0";
 		case 4:
 			return "Powerline 132";
 		default:
