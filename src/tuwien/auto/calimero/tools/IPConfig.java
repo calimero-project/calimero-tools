@@ -191,7 +191,7 @@ public class IPConfig implements Runnable
 		boolean canceled = false;
 		try {
 			if (options.isEmpty()) {
-				LogService.logAlways(out, " - KNXnet/IP address configuration");
+				LogService.logAlways(out, tool + " - KNXnet/IP address configuration");
 				showVersion();
 				LogService.logAlways(out, "Type --help for help message");
 				return;
@@ -601,8 +601,8 @@ public class IPConfig implements Runnable
 	private static void showUsage()
 	{
 		final StringBuffer sb = new StringBuffer();
-		sb.append("usage: ").append(tool).append(" [options] <host|port>").append(sep);
-		sb.append("options:").append(sep);
+		sb.append("Usage: ").append(tool).append(" [options] <host|port>").append(sep);
+		sb.append("Options:").append(sep);
 		sb.append("  --help -h                show this help message and exit").append(sep);
 		sb.append("  --version                show tool/library version and exit").append(sep);
 		sb.append("  --local -l               local device management").append(sep);
@@ -614,7 +614,7 @@ public class IPConfig implements Runnable
 				.append(KNXnetIPConnection.DEFAULT_PORT).append(")").append(sep);
 		sb.append("  --nat -n                 enable Network Address Translation").append(sep);
 		sb.append("  --serial -s              use FT1.2 serial communication").append(sep);
-		sb.append(" remote property service only:").append(sep);
+		sb.append("Options for remote property service only:").append(sep);
 		sb.append("  --routing                use KNXnet/IP routing (always on port 3671)").append(
 				sep);
 		sb.append("  --medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)")

@@ -708,9 +708,9 @@ public class DeviceInfo implements Runnable
 	private static void showUsage()
 	{
 		final StringBuffer sb = new StringBuffer();
-		sb.append("usage: ").append(tool).append(" [options] <host|port> <KNX device address>")
+		sb.append("Usage: ").append(tool).append(" [options] <host|port> <KNX device address>")
 				.append(sep);
-		sb.append("options:").append(sep);
+		sb.append("Options:").append(sep);
 		sb.append(" --help -h                show this help message").append(sep);
 		sb.append(" --version                show tool/library version and exit").append(sep);
 		sb.append(" --verbose -v             enable verbose status output").append(sep);

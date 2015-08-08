@@ -168,7 +168,8 @@ public class ScanDevices implements Runnable
 			// TODO onCompletion prints '0 network devices found' on showing help etc., either
 			// suppress that or move the following out of the try (skipping onCompletion altogether)
 			if (options.isEmpty()) {
-				LogService.logAlways(out, " - Determine existing KNX devices on a KNX subnetwork");
+				LogService.logAlways(out, tool
+						+ " - Determine existing KNX devices on a KNX subnetwork");
 				showVersion();
 				LogService.logAlways(out, "Type --help for help message");
 				return;
@@ -351,9 +352,9 @@ public class ScanDevices implements Runnable
 	{
 		final StringBuffer sb = new StringBuffer();
 		// ??? accept several line requests
-		sb.append("usage: ").append(tool).append(" [options] <host|port> <area.line[.device]>")
+		sb.append("Usage: ").append(tool).append(" [options] <host|port> <area.line[.device]>")
 				.append(sep);
-		sb.append("options:").append(sep);
+		sb.append("Options:").append(sep);
 		sb.append(" --help -h                show this help message").append(sep);
 		sb.append(" --version                show tool/library version and exit").append(sep);
 		sb.append(" --verbose -v             enable verbose status output").append(sep);
@@ -367,9 +368,9 @@ public class ScanDevices implements Runnable
 		sb.append(" --routing                use KNXnet/IP routing").append(sep);
 		sb.append(" --medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)")
 				.append(sep);
-		sb.append("The area and line are given as numbers in the range [0..0x0F], e.g., 3.1")
+		sb.append("The area and line are given as numbers in the range [0..15], e.g., 3.1")
 				.append(sep);
-		sb.append("The (optional) device address part is in the range [0..0x0FF]").append(sep);
+		sb.append("The (optional) device address part is in the range [0..255]").append(sep);
 		LogService.logAlways(out, sb.toString());
 	}
 

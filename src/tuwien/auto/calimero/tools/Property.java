@@ -201,7 +201,7 @@ public class Property implements Runnable, PropertyAdapterListener
 	{
 		// ??? as with the other tools, maybe put this into the try block to also call onCompletion
 		if (options.isEmpty()) {
-			LogService.logAlways(out, " - Access KNX properties");
+			LogService.logAlways(out, tool + " - Access KNX properties");
 			showVersion();
 			LogService.logAlways(out, "Type --help for help message");
 			return;
@@ -421,18 +421,23 @@ public class Property implements Runnable, PropertyAdapterListener
 	private void printDescription(final Description d)
 	{
 		final StringBuffer buf = new StringBuffer();
-		buf.append(d.getPropIndex());
-		buf.append(" OT " + d.getObjectType());
-		buf.append(", OI " + d.getObjectIndex());
-		buf.append(", PID " + d.getPID());
+		buf.append(alignRight(d.getPropIndex()));
+		buf.append(" OT ").append(alignRight(d.getObjectType()));
+		buf.append(", OI ").append(d.getObjectIndex());
+		buf.append(", PID ").append(alignRight(d.getPID()));
 
 		tuwien.auto.calimero.mgmt.PropertyClient.Property p = getPropertyDef(d.getObjectType(),
 				d.getPID());
 		if (p == null)
 			p = getPropertyDef(PropertyKey.GLOBAL_OBJTYPE, d.getPID());
 		if (p != null) {
-			buf.append(" ").append(p.getName());
-			buf.append(" (").append(p.getPIDName()).append(")");
+			buf.append(" ");
+			buf.append(p.getName());
+			while (buf.length() < 55)
+				buf.append(' ');
+			buf.append(" (");
+			buf.append(p.getPIDName());
+			buf.append(")");
 		}
 		final String pdtDef = p != null ? Integer.toString(p.getPDT()) : "-";
 		buf.append(", PDT " + (d.getPDT() == -1 ? pdtDef : Integer.toString(d.getPDT())));
@@ -441,6 +446,11 @@ public class Property implements Runnable, PropertyAdapterListener
 		buf.append(", r/w access " + d.getReadLevel() + "/" + d.getWriteLevel());
 		buf.append(d.isWriteEnabled() ? ", w.enabled" : ", r.only");
 		System.out.println(buf.toString());
+	}
+
+	private static String alignRight(final int value)
+	{
+		return value < 10 ? " " + value : "" + value;
 	}
 
 	private tuwien.auto.calimero.mgmt.PropertyClient.Property getPropertyDef(final int objType,
@@ -569,7 +579,7 @@ public class Property implements Runnable, PropertyAdapterListener
 			printDescription(pc.getDescription(toInt(args[1]), toInt(args[2])));
 		else if (args.length == 4 && args[2].equals("i"))
 			printDescription(pc.getDescriptionByIndex(toInt(args[1]), toInt(args[3])));
-		if (args.length == 2 && args[1].equals("?"))
+		else if (args.length == 2 && args[1].equals("?"))
 			printHelp("desc object-idx pid" + sep + "desc object-idx \"i\" prop-idx");
 		else
 			out.info("sorry, wrong number of arguments");
@@ -615,6 +625,7 @@ public class Property implements Runnable, PropertyAdapterListener
 		else
 			out.info("sorry, wrong number of arguments");
 
+		System.out.println("Object Type (OT), Object Index (OI), Property ID (PID)");
 		for (final Iterator<Description> i = l.iterator(); i.hasNext();) {
 			final Description d = i.next();
 			printDescription(d);
@@ -652,8 +663,8 @@ public class Property implements Runnable, PropertyAdapterListener
 	private static void showUsage()
 	{
 		final StringBuffer sb = new StringBuffer();
-		sb.append("usage: ").append(tool).append(" [options] <host|port>").append(sep);
-		sb.append("options:").append(sep);
+		sb.append("Usage: ").append(tool).append(" [options] <host|port> <command>").append(sep);
+		sb.append("Options:").append(sep);
 		sb.append("  --help -h                show this help message").append(sep);
 		sb.append("  --version                show tool/library version and exit").append(sep);
 		sb.append("  --verbose -v             enable verbose status output").append(sep);
@@ -668,15 +679,15 @@ public class Property implements Runnable, PropertyAdapterListener
 		sb.append("  --nat -n                 enable Network Address Translation").append(sep);
 		sb.append("  --serial -s              use FT1.2 serial communication").append(sep);
 		sb.append("  --usb -u                 use KNX USB communication").append(sep);
-		sb.append(" local device management mode only:").append(sep);
+		sb.append("Options for local device management mode only:").append(sep);
 		sb.append("  --emulatewriteenable -e  check write-enable of a property").append(sep);
-		sb.append(" remote property service mode only:").append(sep);
+		sb.append("Options for remote property service mode only:").append(sep);
 		sb.append("  --routing                use KNXnet/IP routing").append(sep);
 		sb.append("  --medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)")
 				.append(sep);
 		sb.append("  --connect -c             connection oriented mode").append(sep);
 		sb.append("  --authorize -a <key>     authorize key to access KNX device").append(sep);
-		sb.append(" tool commands:").append(sep);
+		sb.append("Available commands:").append(sep);
 		sb.append("  get <object-idx> <pid> [<start-idx> <elements>]  get the property value(s)")
 				.append(sep);
 		sb.append("  set <i>object-idx pid [start-idx] string-value   "
