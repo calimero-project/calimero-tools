@@ -249,6 +249,8 @@ public class ProcComm implements Runnable
 		boolean canceled = false;
 		try {
 			start(null);
+			if (options.containsKey("help") || options.containsKey("version"))
+				return;
 			if (options.containsKey("monitor"))
 				runMonitorLoop();
 			else
