@@ -271,11 +271,8 @@ public class ScanDevices implements Runnable
 		if (thrown != null)
 			out.error("completed", thrown);
 
-		LogService.logAlways(out, "found " + devices.length + " network devices");
-		for (int i = 0; i < devices.length; i++) {
-			final IndividualAddress a = devices[i];
-			LogService.logAlways(out, a.toString());
-		}
+		System.out.println("found " + devices.length + " network devices");
+		Arrays.stream(devices).forEach(System.out::println);
 	}
 
 	/**

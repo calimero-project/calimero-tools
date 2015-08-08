@@ -493,12 +493,12 @@ public class ProcComm implements Runnable
 		throws KNXException, InterruptedException
 	{
 		if (!write)
-			LogService.logAlways(out, "read value: " + pc.read(dp));
+			System.out.println("read value: " + pc.read(dp));
 		else {
 			// note, a write to a non existing datapoint might finish successfully,
 			// too.. no check for existence or read back of a written value is done
 			pc.write(dp, value);
-			LogService.logAlways(out, "write successful");
+			System.out.println("write to " + dp.getMainAddress() + " successful");
 		}
 	}
 

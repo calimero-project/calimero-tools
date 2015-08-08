@@ -268,7 +268,7 @@ public class IPConfig implements Runnable
 			final String[] s = config.get(i);
 			sb.append(s[1]).append(padding.substring(s[1].length()) + s[2]).append(sep);
 		}
-		LogService.logAlways(out, sb.toString());
+		System.out.println(sb.toString());
 	}
 
 	/**
@@ -387,7 +387,7 @@ public class IPConfig implements Runnable
 			return pc.getProperty(objIndex, pid, 1, 1);
 		}
 		catch (final KNXRemoteException e) {
-			out.error("getting property with ID " + pid + " failed", e);
+			out.error("getting property with ID " + pid + " failed: {}", e.getMessage());
 			return null;
 		}
 	}

@@ -440,7 +440,7 @@ public class Property implements Runnable, PropertyAdapterListener
 		buf.append(", max. " + d.getMaxElements());
 		buf.append(", r/w access " + d.getReadLevel() + "/" + d.getWriteLevel());
 		buf.append(d.isWriteEnabled() ? ", w.enabled" : ", r.only");
-		LogService.logAlways(out, buf.toString());
+		System.out.println(buf.toString());
 	}
 
 	private tuwien.auto.calimero.mgmt.PropertyClient.Property getPropertyDef(final int objType,
