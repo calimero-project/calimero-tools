@@ -83,38 +83,39 @@ import tuwien.auto.calimero.xml.XMLReader;
 import tuwien.auto.calimero.xml.XMLWriter;
 
 /**
- * A tool for Calimero 2 providing basic process communication.
+ * A tool for Calimero 2 providing KNX process communication.
  * <p>
- * ProcComm is a {@link Runnable} tool implementation allowing a user to read or write
- * datapoint values in a KNX network. It supports KNX network access using a KNXnet/IP
- * connection or an FT1.2 connection.
+ * ProcComm is a {@link Runnable} tool implementation allowing a user to read or write datapoint
+ * values in a KNX network. It supports KNX network access using a KNXnet/IP, USB, or FT1.2
+ * connection.
  * <p>
- * <i>Monitor mode</i>:<br>
- * When in monitor mode, process communication lists group write, read, and read response commands
- * issued on the KNX network. Datapoint values in monitored group commands are decoded for
+ * <i>Group monitor mode</i>:<br>
+ * When in group monitor mode, process communication lists group write, read, and read response
+ * commands issued on the KNX network. Datapoint values in monitored group commands are decoded for
  * appropriate KNX datapoint types (DPT). In addition, a user can issue read and write commands on
- * the terminal. Commands have the the following syntax: <code>cmd DP [DPT] [value]</code>, with
- * <code>cmd = ("r"|"read") | ("w"|"write")</code>. For example, <code>r 1/0/3</code> will read the
- * current value of datapoint <code>1/0/3</code>. The command <code>w 1/0/3 1.002 true</code> will
- * write the boolean value <code>true</code> for datapoint <code>1/0/3</code>.<br>
- * Issuing a read or write command and specifying a datapoint type will override the default
- * datapoint type translation behavior of this tool. For example, <code>r 1/0/3 1.005</code> will
- * decode subsequent values of that datapoint using the DPT 1.005 "Alarm" and its value
- * representations "alarm" and "no alarm". A subsequent write can then simply issue
- * <code>w 1/0/3 alarm</code>.<br>
- * When the tool exits, information about any datapoint that was monitored is stored in a file on
- * disk in the current working directory (if file creation is permitted). That file is named
- * something like ".proccomm_dplist.xml" (hidden file on Unix-based systems). It allows the tool to
- * remember user-specific settings of datapoint types between tool invocations, important for the
- * appropriate decoding of datapoint values. The file uses the layout of {@link DatapointMap}, and
- * can be edited or used at any other place Calimero expects a {@link DatapointModel}. Note that any
- * actual datapoint <i>values</i> are not stored in that file.
+ * the terminal. Commands have the the following syntax: <code>cmd datapoint [DPT] [value]</code>,
+ * with <code>cmd = ("r"|"read") | ("w"|"write")</code>. For example, <code>r 1/0/3</code> will read
+ * the current value of datapoint <code>1/0/3</code>. The command <code>w 1/0/3 1.002 true</code>
+ * will write the boolean value <code>true</code> for datapoint <code>1/0/3</code>.<br>
+ * By default, this tool will show the decoded value of any matching datapoint type for received
+ * datapoint data. Issuing a read or write command and specifying a datapoint type (DPT) will
+ * override the default datapoint type translation behavior of this tool. For example,
+ * <code>read 1/0/3 1.005</code> will decode subsequent values of that datapoint using the DPT 1.005
+ * "Alarm" and its value representations "alarm" and "no alarm". A subsequent write can then simply
+ * issue <code>w 1/0/3 alarm</code>, setting datapoint 1/0/3 to "alarm" state.<br>
+ * When the tool exits, type information about any datapoint that was monitored is stored in a file
+ * on disk in the current working directory (if file creation/modification is permitted). That file
+ * is named something like ".proccomm_dplist.xml" (hidden file on Unix-based systems). It allows the
+ * tool to remember user-specific settings of datapoint types between tool invocations, important
+ * for the appropriate decoding of datapoint values. The file uses the layout of
+ * {@link DatapointMap}, and can be edited or used at any other place Calimero expects a
+ * {@link DatapointModel}. Note that any actual datapoint <i>values</i> are not stored in that file.
  * <p>
- * The tool implementation shows the necessary interaction with the Calimero library API for this
- * particular task. The main part of this tool implementation uses the library's
+ * The tool implementation shows the necessary interaction with the Calimero-core library API for
+ * the described tasks. The main part of the implementation is based on the library's
  * {@link ProcessCommunicator}, which offers high-level access for reading and writing process
  * values. It also shows creation of a {@link KNXNetworkLink}, which is supplied to the process
- * communicator, serving as the link to the KNX network. For monitoring, the tool uses
+ * communicator, and serves as the link to the KNX network. For group monitoring, the tool uses
  * {@link Datapoint} and {@link DatapointModel} to persist datapoints between tool invocations.
  * <p>
  * When running this tool from the terminal, method <code>main</code> of this class is invoked;
@@ -194,8 +195,7 @@ public class ProcComm implements Runnable
 	 * <li><code>--routing</code> use KNXnet/IP routing</li>
 	 * <li><code>--serial -s</code> use FT1.2 serial communication</li>
 	 * <li><code>--usb -u</code> use KNX USB communication</li>
-	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to
-	 * tp1)</li>
+	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to tp1)</li>
 	 * </ul>
 	 * Available commands for process communication:
 	 * <ul>
@@ -211,14 +211,19 @@ public class ProcComm implements Runnable
 	 * For the more common datapoint types (DPTs) the following name aliases can be used instead of
 	 * the general DPT number string:
 	 * <ul>
-	 * <li><code>switch</code> for DPT 1.001</li>
-	 * <li><code>bool</code> for DPT 1.002</li>
-	 * <li><code>string</code> for DPT 16.001</li>
+	 * <li><code>switch</code> for DPT 1.001, with values <code>off</code>, <code>on</code></li>
+	 * <li><code>bool</code> for DPT 1.002, with values <code>false</code>, <code>true</code></li>
+	 * <li><code>dimmer</code> for DPT 3.007, with values <code>decrease 0..7</code>,
+	 * <code>increase 0..7</code></li>
+	 * <li><code>blinds</code> for DPT 3.008, with values <code>up 0..7</code>,
+	 * <code>down 0..7</code></li>
+	 * <li><code>angle</code> for DPT 5.003, with values <code>0..360</code></li>
+	 * <li><code>ucount</code> for DPT 5.010, with values <code>0..255</code></li>
+	 * <li><code>temp</code> for DPT 9.001, with values <code>-273..+670760</code></li>
 	 * <li><code>float</code> or <code>float2</code> for DPT 9.002</li>
 	 * <li><code>float4</code> for DPT 14.005</li>
-	 * <li><code>ucount</code> for DPT 5.010</li>
 	 * <li><code>int</code> for DPT 13.001</li>
-	 * <li><code>angle</code> for DPT 5.003</li>
+	 * <li><code>string</code> for DPT 16.001</li>
 	 * </ul>
 	 *
 	 * @param args command line options for process communication
@@ -716,10 +721,14 @@ public class ProcComm implements Runnable
 		sb.append("  write <DPT> <value> <KNX address>  write to group address").append(sep);
 		sb.append("  monitor                 enter group monitoring, can also be").append(sep)
 				.append("                          used together with read or write ").append(sep);
-		sb.append("Additionally recognized name aliases for DPT numbers:").append(sep);
-		sb.append("  switch (1.001), bool (1.002), string (16.001), float/float2 (9.002)")
+		sb.append("Name aliases for common DPT numbers:").append(sep);
+		sb.append("  switch (1.001) {off, on}, bool (1.002) {false, true}")
 				.append(sep)
-				.append("  float4 (14.005), ucount (5.010), int (13.001), angle (5.003)");
+				.append("  dimmer (3.007) {decrease 0..7, increase 0..7}, "
+						+ "blinds (3.008) {up 0..7, down 0..7}").append(sep)
+				.append("  angle (5.003) {0..360}, ucount (5.010) {0..255}").append(sep)
+				.append("  temp (9.001) {-273..+670760}, float/float2 (9.002)").append(sep)
+				.append("  int (13.001), float4 (14.005), string (16.001)");
 		LogService.logAlways(out, sb.toString());
 	}
 
