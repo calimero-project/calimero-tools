@@ -45,6 +45,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import tuwien.auto.calimero.DataUnitBuilder;
+import tuwien.auto.calimero.DeviceDescriptor;
+import tuwien.auto.calimero.DeviceDescriptor.DD0;
 import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.Settings;
 import tuwien.auto.calimero.dptxlator.DPTXlator;
@@ -110,7 +112,7 @@ public class DeviceInfo implements Runnable
 	private static final int pidHardwareType = 78;
 
 	// Indices of interface objects in interface object server
-	private static final int deviceObjectIdx = 0;
+	private int deviceObjectIdx = -1;
 	private int addresstableObjectIdx = -1;
 	private int assoctableObjectIdx = -1;
 	private int appProgramObjectIdx = -1;
@@ -273,6 +275,10 @@ public class DeviceInfo implements Runnable
 
 	private void findInterfaceObjects() throws KNXException, InterruptedException
 	{
+		// check if there are any interface object at all, i.e., the Device Object
+		if (readElements(0, PID.OBJECT_TYPE) == 0)
+			return;
+		deviceObjectIdx = 0;
 		final int objects = readElements(deviceObjectIdx, PropertyAccess.PID.IO_LIST);
 		if (objects == 0) {
 			// device only has device- and cEMI server-object
@@ -309,51 +315,57 @@ public class DeviceInfo implements Runnable
 		byte[] data = mc.readDeviceDesc(d, 0);
 		int maskVersion = 0;
 		if (data != null) {
-			info.append("Mask version 0x");
-			maskVersion = toUnsigned(data);
-			if (maskVersion < 0xff)
-				info.append("00");
-			info.append(Integer.toHexString(maskVersion)).append("\n");
-			info.append("Medium type: ").append(toMediumTypeString(maskVersion >> 12 & 0xf))
+			final DD0 dd = DeviceDescriptor.DD0.fromType0(data);
+			maskVersion = dd.getMaskVersion();
+			info.append("Mask version ").append(dd).append("\n");
+			info.append("Medium type: ").append(toMediumTypeString(dd.getMediumType()))
 					.append("\n");
-			info.append("Firmware type: ").append(toFirmwareTypeString(maskVersion >> 8 & 0xf))
+			info.append("Firmware type: ").append(toFirmwareTypeString(dd.getFirmwareType()))
 					.append("\n");
-			info.append("Firmware version ").append(maskVersion >> 4 & 0xf).append("\n");
-			info.append("Subcode/Version ").append(maskVersion & 0xf).append("\n");
+			info.append("Firmware version ").append(dd.getFirmwareVersion()).append("\n");
+			info.append("Subcode/Version ").append(dd.getSubcode()).append("\n");
 		}
 
-		// Manufacturer ID (Device Object)
-		final String manufacturerId = readUnsignedFormatted(deviceObjectIdx, PID.MANUFACTURER_ID);
-		info.append("Manufacturer ID ").append(manufacturerId).append("\n");
+		if (deviceObjectIdx != -1) {
+			// Manufacturer ID (Device Object)
+			final String manufacturerId = readUnsignedFormatted(deviceObjectIdx,
+					PID.MANUFACTURER_ID);
+			info.append("Manufacturer ID ").append(manufacturerId).append("\n");
 
-		// Order Info
-		final String orderInfo = readUnsignedFormatted(deviceObjectIdx, PID.ORDER_INFO);
-		info.append("Order info ").append(orderInfo).append("\n");
+			// Order Info
+			final String orderInfo = readUnsignedFormatted(deviceObjectIdx, PID.ORDER_INFO);
+			info.append("Order info ").append(orderInfo).append("\n");
 
-		// Serial Number
-		data = read(deviceObjectIdx, PropertyAccess.PID.SERIAL_NUMBER);
-		if (data != null) {
-			final String serialNo = DataUnitBuilder.toHex(data, "");
-			info.append("Serial number 0x").append(serialNo).append("\n");
+			// Serial Number
+			data = read(deviceObjectIdx, PropertyAccess.PID.SERIAL_NUMBER);
+			if (data != null) {
+				final String serialNo = DataUnitBuilder.toHex(data, "");
+				info.append("Serial number 0x").append(serialNo).append("\n");
+			}
+
+			// Physical PEI Type
+			final String physicalPeiType = readUnsignedFormatted(deviceObjectIdx, PID.PEI_TYPE);
+			info.append("Physical PEI type ").append(physicalPeiType).append("\n");
 		}
-
-		// Physical PEI Type
-		final String physicalPeiType = readUnsignedFormatted(deviceObjectIdx, PID.PEI_TYPE);
-		info.append("Physical PEI type ").append(physicalPeiType).append("\n");
 
 		// Required PEI Type (Application Program Object)
-		final String requiredPeiType = readUnsignedFormatted(appProgramObjectIdx, PID.PEI_TYPE);
+
+		String requiredPeiType = "-";
+		if (appProgramObjectIdx != -1)
+			requiredPeiType = readUnsignedFormatted(appProgramObjectIdx, PID.PEI_TYPE);
 		info.append("Required PEI type ").append(requiredPeiType).append("\n");
 
-		// Hardware Type
-		final byte[] hwData = read(deviceObjectIdx, pidHardwareType);
-		final String hwType = DataUnitBuilder.toHex(hwData, " ");
-		info.append("Hardware type: ").append(hwType).append("\n");
-		// validity check on mask and hardware type octets
-		// AN059v3, AN089v3
-		if ((maskVersion == 0x25 || maskVersion == 0x0705) && hwData[0] != 0) {
-			info.append("manufacturer-specific device identification of hardware type should "
-					+ "be 0 for this mask!").append("\n");
+		if (deviceObjectIdx != -1) {
+			// Hardware Type
+			final byte[] hwData = read(deviceObjectIdx, pidHardwareType);
+			final String hwType = hwData == null ? "-" : DataUnitBuilder.toHex(hwData, " ");
+			info.append("Hardware type: ").append(hwType).append("\n");
+			// validity check on mask and hardware type octets
+			// AN059v3, AN089v3
+			if ((maskVersion == 0x25 || maskVersion == 0x0705) && hwData[0] != 0) {
+				info.append("manufacturer-specific device identification of hardware type "
+						+ "should be 0 for this mask!").append("\n");
+			}
 		}
 
 		// Programming Mode (memory address 0x60)
@@ -364,9 +376,11 @@ public class DeviceInfo implements Runnable
 			info.append("Programming mode ").append(x.getValue()).append("\n");
 		}
 
-		// Firmware Revision
-		final String firmwareRev = readUnsignedFormatted(deviceObjectIdx, PID.FIRMWARE_REVISION);
-		info.append("Firmware revision ").append(firmwareRev).append("\n");
+		if (deviceObjectIdx != -1) {
+			// Firmware Revision
+			final String firmwareRev = readUnsignedFormatted(deviceObjectIdx, PID.FIRMWARE_REVISION);
+			info.append("Firmware revision ").append(firmwareRev).append("\n");
+		}
 
 		// System B has mask version 0x07B0 or 0x17B0 and provides error code property
 		final boolean isSystemB = maskVersion == 0x07B0 || maskVersion == 0x17B0;
@@ -482,6 +496,10 @@ public class DeviceInfo implements Runnable
 	private void readProgram(final int objectIdx, final StringBuffer info,
 		final boolean hasErrorCode) throws InterruptedException
 	{
+		if (objectIdx == -1) {
+			info.append("\tn/a\n");
+			return;
+		}
 		// TODO can we show some ID of what program is installed?
 
 		final String typeAndVersion = readUnsignedFormatted(objectIdx, PID.PROGRAM_VERSION);
@@ -496,6 +514,10 @@ public class DeviceInfo implements Runnable
 	private void readLoadState(final int objectIdx, final StringBuffer info,
 		final boolean hasErrorCode) throws InterruptedException
 	{
+		if (objectIdx == -1) {
+			info.append("n/a\n");
+			return;
+		}
 		byte[] data = read(objectIdx, PropertyAccess.PID.LOAD_STATE_CONTROL);
 		final String ls = getLoadState(data);
 		info.append("Load state: ").append(ls);
@@ -523,8 +545,8 @@ public class DeviceInfo implements Runnable
 		final char[] name = new char[30];
 		int start = 0;
 		while (true) {
-			final byte[] data = mc.readProperty(d, knxnetipObjectIdx,
-					PID.FRIENDLY_NAME, start + 1, 10);
+			final byte[] data = mc.readProperty(d, knxnetipObjectIdx, PID.FRIENDLY_NAME, start + 1,
+					10);
 			for (int i = 0; i < 10 && data[i] != 0; ++i, ++start)
 				name[start] = (char) (data[i] & 0xff);
 			if (start >= 30 || data[9] == 0)
@@ -581,25 +603,25 @@ public class DeviceInfo implements Runnable
 	 */
 	private KNXNetworkLink createLink() throws KNXException, InterruptedException
 	{
+		final String host = (String) options.get("host");
 		final KNXMediumSettings medium = (KNXMediumSettings) options.get("medium");
 		if (options.containsKey("serial")) {
 			// create FT1.2 network link
-			final String p = (String) options.get("serial");
 			try {
-				return new KNXNetworkLinkFT12(Integer.parseInt(p), medium);
+				return new KNXNetworkLinkFT12(Integer.parseInt(host), medium);
 			}
 			catch (final NumberFormatException e) {
-				return new KNXNetworkLinkFT12(p, medium);
+				return new KNXNetworkLinkFT12(host, medium);
 			}
 		}
 		// create local and remote socket address for network link
 		final InetSocketAddress local = createLocalSocket((InetAddress) options.get("localhost"),
 				(Integer) options.get("localport"));
-		final InetSocketAddress host = new InetSocketAddress((InetAddress) options.get("host"),
+		final InetSocketAddress remote = new InetSocketAddress(host,
 				((Integer) options.get("port")).intValue());
 		final int mode = options.containsKey("routing") ? KNXNetworkLinkIP.ROUTING
 				: KNXNetworkLinkIP.TUNNELING;
-		return new KNXNetworkLinkIP(mode, local, host, options.containsKey("nat"), medium);
+		return new KNXNetworkLinkIP(mode, local, remote, options.containsKey("nat"), medium);
 	}
 
 	/**
@@ -645,12 +667,10 @@ public class DeviceInfo implements Runnable
 				options.put("serial", null);
 			else if (isOption(arg, "-medium", "-m"))
 				options.put("medium", getMedium(args[++i]));
-			else if (options.containsKey("serial") && options.get("serial") == null)
-				// add argument as serial port number/identifier to serial option
-				options.put("serial", arg);
+
 			else if (!options.containsKey("host"))
 				// otherwise add a host key with argument as host
-				parseHost(arg, false, options);
+				options.put("host", arg);
 			else if (!options.containsKey("device"))
 				// otherwise create the KNX device address from the argument
 				try {
@@ -662,8 +682,9 @@ public class DeviceInfo implements Runnable
 			else
 				throw new KNXIllegalArgumentException("unknown option " + arg);
 		}
-		if (options.containsKey("host") == options.containsKey("serial"))
-			throw new KNXIllegalArgumentException("specify either IP host or serial port");
+
+		if (!options.containsKey("host"))
+			throw new KNXIllegalArgumentException("specify either IP host, serial port, or device");
 		if (!options.containsKey("device"))
 			throw new KNXIllegalArgumentException("KNX device individual address missing");
 	}
@@ -766,11 +787,11 @@ public class DeviceInfo implements Runnable
 		case 0:
 			return "Twisted Pair 1";
 		case 1:
-			return "Powerline 110";
+			return "Power-line 110";
 		case 2:
 			return "Radio Frequency";
 		case 4:
-			return "Powerline 132";
+			return "Power-line 132";
 		default:
 			return "Type " + type;
 		}
