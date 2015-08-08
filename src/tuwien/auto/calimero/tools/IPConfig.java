@@ -201,9 +201,9 @@ public class IPConfig implements Runnable
 		boolean canceled = false;
 		try {
 			if (options.isEmpty()) {
-				out.log(LogLevel.ALWAYS, "A tool for KNXnet/IP address configuration", null);
+				out.log(LogLevel.ALWAYS, tool + " - KNXnet/IP address configuration", null);
 				showVersion();
-				out.log(LogLevel.ALWAYS, "type -help for help message", null);
+				out.log(LogLevel.ALWAYS, "Type -help for help message", null);
 				return;
 			}
 			if (options.containsKey("help")) {

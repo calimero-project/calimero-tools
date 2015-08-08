@@ -174,7 +174,8 @@ public class ScanDevices implements Runnable
 			// TODO onCompletion prints '0 network devices found' on showing help etc., either
 			// suppress that or move the following out of the try (skipping onCompletion altogether)
 			if (options.isEmpty()) {
-				out.log(LogLevel.ALWAYS, "A tool for scanning KNX devices in the network", null);
+				out.log(LogLevel.ALWAYS, tool
+						+ " - Determine existing KNX devices in a KNX subnetwork", null);
 				showVersion();
 				out.log(LogLevel.ALWAYS, "type -help for help message", null);
 				return;
@@ -241,25 +242,25 @@ public class ScanDevices implements Runnable
 	 */
 	private KNXNetworkLink createLink() throws KNXException, InterruptedException
 	{
+		final String host = (String) options.get("host");
 		final KNXMediumSettings medium = (KNXMediumSettings) options.get("medium");
 		if (options.containsKey("serial")) {
 			// create FT1.2 network link
-			final String p = (String) options.get("serial");
 			try {
-				return new KNXNetworkLinkFT12(Integer.parseInt(p), medium);
+				return new KNXNetworkLinkFT12(Integer.parseInt(host), medium);
 			}
 			catch (final NumberFormatException e) {
-				return new KNXNetworkLinkFT12(p, medium);
+				return new KNXNetworkLinkFT12(host, medium);
 			}
 		}
 		// create local and remote socket address for network link
-		final InetSocketAddress local = createLocalSocket((InetAddress) options.get("localhost"),
-				(Integer) options.get("localport"));
-		final InetSocketAddress host = new InetSocketAddress((InetAddress) options.get("host"),
+		final InetSocketAddress local = createLocalSocket(
+				(InetAddress) options.get("localhost"), (Integer) options.get("localport"));
+		final InetSocketAddress remote = new InetSocketAddress(host,
 				((Integer) options.get("port")).intValue());
 		final int mode = options.containsKey("routing") ? KNXNetworkLinkIP.ROUTING
 				: KNXNetworkLinkIP.TUNNELING;
-		return new KNXNetworkLinkIP(mode, local, host, options.containsKey("nat"), medium);
+		return new KNXNetworkLinkIP(mode, local, remote, options.containsKey("nat"), medium);
 	}
 
 	/**
@@ -329,20 +330,17 @@ public class ScanDevices implements Runnable
 				options.put("serial", null);
 			else if (isOption(arg, "-medium", "-m"))
 				options.put("medium", getMedium(args[++i]));
-			else if (options.containsKey("serial") && options.get("serial") == null)
-				// add argument as serial port number/identifier to serial option
-				options.put("serial", arg);
 			else if (!options.containsKey("host"))
 				// otherwise add a host key with argument as host
-				parseHost(arg, false, options);
+				options.put("host", arg);
 			else if (!options.containsKey("range"))
 				// otherwise save the range for scanning
 				options.put("range", arg);
 			else
 				throw new KNXIllegalArgumentException("unknown option " + arg);
 		}
-		if (options.containsKey("host") == options.containsKey("serial"))
-			throw new KNXIllegalArgumentException("specify either IP host or serial port");
+		if (!options.containsKey("host"))
+			throw new KNXIllegalArgumentException("specify either IP host, serial port, or device");
 		if (!options.containsKey("range"))
 			throw new KNXIllegalArgumentException("Missing area.line range to scan for devices");
 	}
@@ -373,9 +371,9 @@ public class ScanDevices implements Runnable
 	{
 		final StringBuffer sb = new StringBuffer();
 		// ??? accept several line requests
-		sb.append("usage: ").append(tool).append(" [options] <host|port> <area.line[.device]>")
+		sb.append("Usage: ").append(tool).append(" [options] <host|port> <area.line[.device]>")
 				.append(sep);
-		sb.append("options:").append(sep);
+		sb.append("Options:").append(sep);
 		sb.append(" -help -h                show this help message").append(sep);
 		sb.append(" -version                show tool/library version and exit").append(sep);
 		sb.append(" -verbose -v             enable verbose status output").append(sep);
@@ -388,9 +386,9 @@ public class ScanDevices implements Runnable
 		sb.append(" -routing                use KNXnet/IP routing").append(sep);
 		sb.append(" -medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)")
 				.append(sep);
-		sb.append("The area and line are given as numbers in the range [0..0x0F], e.g., 3.1")
+		sb.append("The area and line are given as numbers in the range [0..15], e.g., 3.1")
 				.append(sep);
-		sb.append("The (optional) device address part is in the range [0..0x0FF]").append(sep);
+		sb.append("The (optional) device address part is in the range [0..255]").append(sep);
 		out.log(LogLevel.ALWAYS, sb.toString(), null);
 	}
 

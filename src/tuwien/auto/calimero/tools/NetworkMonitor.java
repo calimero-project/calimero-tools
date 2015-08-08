@@ -251,9 +251,10 @@ public class NetworkMonitor implements Runnable
 	public void start() throws KNXException, InterruptedException
 	{
 		if (options.isEmpty()) {
-			out.log(LogLevel.ALWAYS, "A tool for monitoring a KNX network", null);
+			out.log(LogLevel.ALWAYS, tool + " - Monitor a KNX network (passive busmonitor mode)",
+					null);
 			showVersion();
-			out.log(LogLevel.ALWAYS, "type -help for help message", null);
+			out.log(LogLevel.ALWAYS, "Type -help for help message", null);
 			return;
 		}
 		if (options.containsKey("help")) {
@@ -278,7 +279,6 @@ public class NetworkMonitor implements Runnable
 
 	/**
 	 * Quits a running network monitor, otherwise returns immediately.
-	 * <p>
 	 */
 	public void quit()
 	{
@@ -438,8 +438,8 @@ public class NetworkMonitor implements Runnable
 	private static void showUsage()
 	{
 		final StringBuffer sb = new StringBuffer();
-		sb.append("usage: ").append(tool).append(" [options] <host|port>").append(sep);
-		sb.append("options:").append(sep);
+		sb.append("Usage: ").append(tool).append(" [options] <host|port>").append(sep);
+		sb.append("Options:").append(sep);
 		sb.append("  -help -h                show this help message").append(sep);
 		sb.append("  -version                show tool/library version and exit").append(sep);
 		sb.append("  -verbose -v             enable verbose status output").append(sep);

@@ -135,21 +135,20 @@ public class Property implements Runnable, PropertyAdapterListener
 	/**
 	 * Entry point for running the Property tool from the console.
 	 * <p>
-	 * An IP host or port identifier has to be supplied to specify the endpoint for the
-	 * KNX network access.<br>
-	 * To show the usage message of this tool on the console, supply the command line
-	 * option -help (or -h).<br>
+	 * An IP host or port identifier has to be supplied to specify the endpoint for the KNX network
+	 * access.<br>
+	 * To show the usage message of this tool on the console, supply the command line option -help
+	 * (or -h).<br>
 	 * Command line options are treated case sensitive. Available options are:
 	 * <ul>
 	 * <li><code>-help -h</code> show help message</li>
 	 * <li><code>-version</code> show tool/library version and exit</li>
 	 * <li><code>-verbose -v</code> enable verbose status output</li>
-	 * <li><code>-local -l</code> local device management</li>
+	 * <li><code>-local -l</code> local device management (default)</li>
 	 * <li><code>-remote -r</code> <i>KNX addr</i> &nbsp;remote property service</li>
 	 * <li><code>-definitions -d</code> <i>file</i> &nbsp;use property definition file</li>
 	 * <li><code>-localhost</code> <i>id</i> &nbsp;local IP/host name</li>
-	 * <li><code>-localport</code> <i>number</i> &nbsp;local UDP port (default system
-	 * assigned)</li>
+	 * <li><code>-localport</code> <i>number</i> &nbsp;local UDP port (default system assigned)</li>
 	 * <li><code>-port -p</code> <i>number</i> &nbsp;UDP port on host (default 3671)</li>
 	 * <li><code>-nat -n</code> enable Network Address Translation</li>
 	 * <li><code>-serial -s</code> use FT1.2 serial communication</li>
@@ -161,31 +160,28 @@ public class Property implements Runnable, PropertyAdapterListener
 	 * For remote property service these options are available:
 	 * <ul>
 	 * <li><code>-routing</code> use KNXnet/IP routing</li>
-	 * <li><code>-medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf]
-	 * (defaults to tp1)</li>
+	 * <li><code>-medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to tp1)
+	 * </li>
 	 * <li><code>-connect -c</code> connection oriented mode</li>
-	 * <li><code>-authorize -a</code> <i>key</i> &nbsp;authorize key to access the KNX
-	 * device</li>
+	 * <li><code>-authorize -a</code> <i>key</i> &nbsp;authorize key to access the KNX device</li>
 	 * </ul>
-	 * Use one of the following options to specify the actual property command, with
-	 * <i>object-idx</i> being the interface object index, and <i>pid</i> the KNX property
-	 * identifier:
+	 * Use one of the following commands for property access, with <i>object-idx</i> being the
+	 * interface object index, and <i>pid</i> the KNX property identifier:
 	 * <ul>
-	 * <li><code>get <i>object-idx pid [start-idx elements]</i></code> get the property
-	 * value(s)</li>
-	 * <li><code>set <i>object-idx pid [start-idx] string-value</i></code> set the
-	 * property string-formatted value</li>
-	 * <li>
-	 * <code>set <i>object-idx pid start-idx elements [\"0x\"|\"0\"|\"b\"]data</i></code>
-	 * set the property data</li>
-	 * <li><code>desc <i>object-idx pid</i></code> get the property description of the
-	 * property ID</li>
-	 * <li><code>desc <i>object-idx "i" prop-idx</i></code> get the property description
-	 * of the property index</li>
-	 * <li><code>scan <i>[object-idx]</i></code> list interface object type descriptions
-	 * (of the indexed interface object)</li>
-	 * <li><code>scan <i>[object-idx]</i> "all"</code> list all property descriptions (of
-	 * the indexed interface object)</li>
+	 * <li><code>get <i>object-idx pid [start-idx elements]</i></code> get the property value(s)
+	 * </li>
+	 * <li><code>set <i>object-idx pid [start-idx] string-value</i></code> set the property
+	 * string-formatted value</li>
+	 * <li><code>set <i>object-idx pid start-idx elements [\"0x\"|\"0\"|\"b\"]data</i></code> set
+	 * the property data</li>
+	 * <li><code>desc <i>object-idx pid</i></code> get the property description of the property ID
+	 * </li>
+	 * <li><code>desc <i>object-idx "i" prop-idx</i></code> get the property description of the
+	 * property index</li>
+	 * <li><code>scan <i>[object-idx]</i></code> list interface object type descriptions (of the
+	 * indexed interface object)</li>
+	 * <li><code>scan <i>[object-idx]</i> "all"</code> list all property descriptions (of the
+	 * indexed interface object)</li>
 	 * <li><code>?</code> show command help</li>
 	 * </ul>
 	 *
@@ -216,9 +212,9 @@ public class Property implements Runnable, PropertyAdapterListener
 	{
 		// ??? as with the other tools, maybe put this into the try block to also call onCompletion
 		if (options.isEmpty()) {
-			out.log(LogLevel.ALWAYS, "A tool for KNX property access", null);
+			out.log(LogLevel.ALWAYS, tool + " - Access KNX properties", null);
 			showVersion();
-			out.log(LogLevel.ALWAYS, "type -help for help message", null);
+			out.log(LogLevel.ALWAYS, "Type -help for help message", null);
 			return;
 		}
 		if (options.containsKey("help")) {
@@ -323,8 +319,8 @@ public class Property implements Runnable, PropertyAdapterListener
 	 * Called by this tool on completion.
 	 * <p>
 	 *
-	 * @param thrown the thrown exception if operation completed due to a raised
-	 *        exception, <code>null</code> otherwise
+	 * @param thrown the thrown exception if operation completed due to a raised exception,
+	 *        <code>null</code> otherwise
 	 * @param canceled whether the operation got canceled before its planned end
 	 */
 	protected void onCompletion(final Exception thrown, final boolean canceled)
@@ -336,14 +332,14 @@ public class Property implements Runnable, PropertyAdapterListener
 	}
 
 	/**
-	 * Creates the property adapter to be used with the property client depending on the
-	 * supplied user <code>options</code>.
+	 * Creates the property adapter to be used with the property client depending on the supplied
+	 * user <code>options</code>.
 	 * <p>
-	 * There are two types of property adapters. One uses KNXnet/IP local device
-	 * management to access KNX properties in an interface object, the other type uses
-	 * remote property services. The remote adapter needs a KNX network link to access the
-	 * KNX network, the link is also created by this method if this adapter type is
-	 * requested.
+	 * There are two types of property adapters. One is for local device management to access KNX
+	 * properties of the connected interface, specifically, KNXnet/IP and KNX USB devices. The other
+	 * type uses remote property services to access KNX properties of a KNX device over the KNX bus.
+	 * If a remote property service adapter is requested, the required KNX network link to access
+	 * the KNX network is automatically created.
 	 *
 	 * @return the created adapter
 	 * @throws KNXException on adapter creation problem
@@ -351,38 +347,33 @@ public class Property implements Runnable, PropertyAdapterListener
 	 */
 	private PropertyAdapter createAdapter() throws KNXException, InterruptedException
 	{
-		// create local and remote socket address for use in adapter
-		final InetSocketAddress local = createLocalSocket((InetAddress) options.get("localhost"),
-				(Integer) options.get("localport"));
-		final InetSocketAddress host = new InetSocketAddress((InetAddress) options.get("host"),
-				((Integer) options.get("port")).intValue());
+		final String host = (String) options.get("host");
 		// decide what type of adapter to create
 		if (options.containsKey("local"))
-			return createLocalDMAdapter(local, host);
-		return createRemoteAdapter(local, host);
+			return createLocalDMAdapter(host);
+		return createRemoteAdapter(host);
 	}
 
 	/**
-	 * Creates a local device management adapter.
-	 * <p>
+	 * Creates a KNXnet/IP local device management adapter.
 	 *
-	 * @param local local socket address
-	 * @param host remote socket address of host
+	 * @param host remote host
 	 * @return local device management adapter
 	 * @throws KNXException on adapter creation problem
 	 * @throws InterruptedException on interrupted thread
 	 */
-	private PropertyAdapter createLocalDMAdapter(final InetSocketAddress local,
-		final InetSocketAddress host) throws KNXException, InterruptedException
+	private PropertyAdapter createLocalDMAdapter(final String host)
+		throws KNXException, InterruptedException
 	{
-		return new LocalDeviceMgmtAdapter(local, host, options.containsKey("nat"), this,
-				options.containsKey("emulatewriteenable"));
+		final InetSocketAddress local = createLocalSocket((InetAddress) options.get("localhost"),
+				(Integer) options.get("localport"));
+		return new LocalDeviceMgmtAdapter(local,
+				new InetSocketAddress(host, ((Integer) options.get("port")).intValue()),
+				options.containsKey("nat"), this, options.containsKey("emulatewriteenable"));
 	}
 
 	/**
-	 * Creates a remote property service adapter for one device in the KNX network.
-	 * <p>
-	 * The adapter uses a KNX network link for access, also is created by this method.
+	 * Creates the KNX network link and for one device in the KNX network.
 	 *
 	 * @param local local socket address
 	 * @param host remote socket address of host
@@ -390,23 +381,26 @@ public class Property implements Runnable, PropertyAdapterListener
 	 * @throws KNXException on adapter creation problem
 	 * @throws InterruptedException on interrupted thread
 	 */
-	private PropertyAdapter createRemoteAdapter(final InetSocketAddress local,
-		final InetSocketAddress host) throws KNXException, InterruptedException
+	private PropertyAdapter createRemoteAdapter(final String host) throws KNXException,
+		InterruptedException
 	{
 		final KNXMediumSettings medium = (KNXMediumSettings) options.get("medium");
 		if (options.containsKey("serial")) {
 			// create FT1.2 network link
-			final String p = (String) options.get("serial");
 			try {
-				lnk = new KNXNetworkLinkFT12(Integer.parseInt(p), medium);
+				lnk = new KNXNetworkLinkFT12(Integer.parseInt(host), medium);
 			}
 			catch (final NumberFormatException e) {
-				lnk = new KNXNetworkLinkFT12(p, medium);
+				lnk = new KNXNetworkLinkFT12(host, medium);
 			}
 		}
 		else {
+			final InetSocketAddress local = createLocalSocket(
+					(InetAddress) options.get("localhost"), (Integer) options.get("localport"));
+			final InetSocketAddress sa = new InetSocketAddress(host,
+					((Integer) options.get("port")).intValue());
 			lnk = new KNXNetworkLinkIP(options.containsKey("routing") ? KNXNetworkLinkIP.ROUTING
-				: KNXNetworkLinkIP.TUNNELING, local, host, options.containsKey("nat"), medium);
+					: KNXNetworkLinkIP.TUNNELING, local, sa, options.containsKey("nat"), medium);
 		}
 		final IndividualAddress remote = (IndividualAddress) options.get("remote");
 		// if an authorization key was supplied, the adapter uses
@@ -420,25 +414,36 @@ public class Property implements Runnable, PropertyAdapterListener
 	private void printDescription(final Description d)
 	{
 		final StringBuffer buf = new StringBuffer();
-		buf.append(d.getPropIndex());
-		buf.append(" OT " + d.getObjectType());
-		buf.append(", OI " + d.getObjectIndex());
-		buf.append(", PID " + d.getPID());
+		buf.append(alignRight(d.getPropIndex()));
+		buf.append(" OT ").append(alignRight(d.getObjectType()));
+		buf.append(", OI ").append(d.getObjectIndex());
+		buf.append(", PID ").append(alignRight(d.getPID()));
 
 		tuwien.auto.calimero.mgmt.PropertyClient.Property p = getPropertyDef(d.getObjectType(),
 				d.getPID());
 		if (p == null)
 			p = getPropertyDef(PropertyKey.GLOBAL_OBJTYPE, d.getPID());
-		if (p != null)
-			buf.append(" (" + p.getName() + ")");
-
+		if (p != null) {
+			buf.append(" ");
+			buf.append(p.getName());
+			while (buf.length() < 55)
+				buf.append(' ');
+			buf.append(" (");
+			buf.append(p.getPIDName());
+			buf.append(")");
+		}
 		final String pdtDef = p != null ? Integer.toString(p.getPDT()) : "-";
 		buf.append(", PDT " + (d.getPDT() == -1 ? pdtDef : Integer.toString(d.getPDT())));
 		buf.append(", curr. elems " + d.getCurrentElements());
 		buf.append(", max. " + d.getMaxElements());
 		buf.append(", r/w access " + d.getReadLevel() + "/" + d.getWriteLevel());
 		buf.append(d.isWriteEnabled() ? ", w.enabled" : ", r.only");
-		out.log(LogLevel.ALWAYS, buf.toString(), null);
+		System.out.println(buf.toString());
+	}
+
+	private static String alignRight(final int value)
+	{
+		return value < 10 ? " " + value : "" + value;
 	}
 
 	private tuwien.auto.calimero.mgmt.PropertyClient.Property getPropertyDef(final int objType,
@@ -502,26 +507,25 @@ public class Property implements Runnable, PropertyAdapterListener
 				options.put("authorize", getAuthorizeKey(args[++i]));
 			else if (isOption(arg, "-routing", null))
 				options.put("routing", null);
-			else if (isOption(arg, "get", null) || isOption(arg, "set", null)
-					|| isOption(arg, "desc", null) || isOption(arg, "scan", null)
-					|| isOption(arg, "?", null)) {
+			else if (arg.equals("get") || arg.equals("set") || arg.equals("desc")
+					|| arg.equals("scan") || arg.equals("?")) {
 				final String[] command = (String[]) Arrays.asList(args).subList(i, args.length)
 						.toArray(new String[0]);
 				options.put("command", command);
+				// XXX the break enforces that the actual command is last, necessary to allow the
+				// variable command argument list. This won't permit invocation from
+				// class Main with single get/set commands, as those are required last in sequence
 				break;
 			}
-			else if (options.containsKey("serial"))
-				// add port number/identifier to serial option
-				options.put("serial", arg);
 			else if (!options.containsKey("host"))
-				parseHost(arg, false, options);
+				options.put("host", arg);
 			else
 				throw new KNXIllegalArgumentException("unknown option " + arg);
 		}
-		if (!options.containsKey("local") && !options.containsKey("remote"))
-			throw new KNXIllegalArgumentException("no connection category specified");
-		if (!options.containsKey("host") && !options.containsKey("serial"))
-			throw new KNXIllegalArgumentException("no host or serial port specified");
+		if (!options.containsKey("remote"))
+			options.put("local", null);
+		if (!options.containsKey("host"))
+			throw new KNXIllegalArgumentException("no communication device/host specified");
 		if (options.containsKey("serial") && !options.containsKey("remote"))
 			throw new KNXIllegalArgumentException("-remote option is mandatory with -serial");
 	}
@@ -572,7 +576,7 @@ public class Property implements Runnable, PropertyAdapterListener
 			printDescription(pc.getDescription(toInt(args[1]), toInt(args[2])));
 		else if (args.length == 4 && args[2].equals("i"))
 			printDescription(pc.getDescriptionByIndex(toInt(args[1]), toInt(args[3])));
-		if (args.length == 2 && args[1].equals("?"))
+		else if (args.length == 2 && args[1].equals("?"))
 			printHelp("desc object-idx pid" + sep + "desc object-idx \"i\" prop-idx");
 		else
 			out.log(LogLevel.INFO, "sorry, wrong number of arguments", null);
@@ -643,8 +647,8 @@ public class Property implements Runnable, PropertyAdapterListener
 	private static void showUsage()
 	{
 		final StringBuffer sb = new StringBuffer();
-		sb.append("usage: ").append(tool).append(" [options] <host|port>").append(sep);
-		sb.append("options:").append(sep);
+		sb.append("Usage: ").append(tool).append(" [options] <host|port> <command>").append(sep);
+		sb.append("Options:").append(sep);
 		sb.append("  -help -h                show this help message").append(sep);
 		sb.append("  -version                show tool/library version and exit").append(sep);
 		sb.append("  -verbose -v             enable verbose status output").append(sep);
@@ -657,27 +661,27 @@ public class Property implements Runnable, PropertyAdapterListener
 				.append(KNXnetIPConnection.DEFAULT_PORT).append(")").append(sep);
 		sb.append("  -nat -n                 enable Network Address Translation").append(sep);
 		sb.append("  -serial -s              use FT1.2 serial communication").append(sep);
-		sb.append(" local device management mode only:").append(sep);
+		sb.append("Options for local device management mode only:").append(sep);
 		sb.append("  -emulatewriteenable -e  check write-enable of a property").append(sep);
-		sb.append(" remote property service mode only:").append(sep);
+		sb.append("Options for remote property service mode only:").append(sep);
 		sb.append("  -routing                use KNXnet/IP routing").append(sep);
 		sb.append("  -medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)")
 				.append(sep);
 		sb.append("  -connect -c             connection oriented mode").append(sep);
 		sb.append("  -authorize -a <key>     authorize key to access KNX device").append(sep);
-		sb.append(" tool commands:").append(sep);
+		sb.append("Available commands:").append(sep);
 		sb.append("  get <object-idx> <pid> [<start-idx> <elements>]  get the property value(s)")
 				.append(sep);
 		sb.append("  set <i>object-idx pid [start-idx] string-value   "
-						+ "set the property string-formatted value").append(sep);
+				+ "set the property string-formatted value").append(sep);
 		sb.append("  set <object-idx> <pid> <start-idx> <elements> [\"0x\"|\"0\"|\"b\"]<data>    "
-						+ "set the property data").append(sep);
+				+ "set the property data").append(sep);
 		sb.append("  desc <object-idx> <pid>                "
-						+ "get the property description of the property ID").append(sep);
+				+ "get the property description of the property ID").append(sep);
 		sb.append("  desc <object-idx> \"i\" <prop-idx>       "
-						+ "get the property description of the property index").append(sep);
-		sb.append("  scan [<object-idx>]                    list interface object type descriptions")
-				.append(sep);
+				+ "get the property description of the property index").append(sep);
+		sb.append("  scan [<object-idx>]"
+				+ "                    list interface object type descriptions").append(sep);
 		sb.append("  scan [<object-idx>] \"all\"              list all property descriptions")
 				.append(sep);
 		sb.append("  ?                                      show command help").append(sep);

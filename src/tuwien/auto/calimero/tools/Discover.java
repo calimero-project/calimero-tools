@@ -171,7 +171,7 @@ public class Discover implements Runnable
 		boolean canceled = false;
 		try {
 			if (options.isEmpty()) {
-				out.log(LogLevel.ALWAYS, "A tool for KNXnet/IP router discovery "
+				out.log(LogLevel.ALWAYS, tool + " - KNXnet/IP server discovery "
 						+ "& self description", null);
 				showVersion();
 				out.log(LogLevel.ALWAYS, "type -help for help message", null);
@@ -400,8 +400,8 @@ public class Discover implements Runnable
 	private static void showUsage()
 	{
 		final StringBuffer sb = new StringBuffer();
-		sb.append("usage: ").append(tool).append(" [options]").append(sep);
-		sb.append("options:").append(sep);
+		sb.append("Usage: ").append(tool).append(" [options]").append(sep);
+		sb.append("Options:").append(sep);
 		sb.append(" -help -h                show this help message").append(sep);
 		sb.append(" -version                show tool/library version and exit").append(sep);
 		sb.append(" -localport <number>     local UDP port (default system assigned)").append(sep);
