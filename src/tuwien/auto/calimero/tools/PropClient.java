@@ -71,7 +71,7 @@ public class PropClient implements Runnable
 			super(args);
 		}
 
-		protected void runCommand(final String[] cmd)
+		protected void runCommand(final String[] cmd) throws InterruptedException
 		{
 			// ignore any command supplied on command line
 			options.remove("command");

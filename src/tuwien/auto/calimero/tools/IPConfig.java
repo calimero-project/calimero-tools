@@ -287,7 +287,7 @@ public class IPConfig implements Runnable
 			out.error("completed", thrown);
 	}
 
-	private void setIPAssignment() throws KNXException
+	private void setIPAssignment() throws KNXException, InterruptedException
 	{
 		int assignment = 0;
 		if (options.containsKey("manual"))
@@ -303,7 +303,7 @@ public class IPConfig implements Runnable
 					new byte[] { (byte) assignment });
 	}
 
-	private void setIP(final int pid, final String key)
+	private void setIP(final int pid, final String key) throws InterruptedException
 	{
 		if (options.containsKey(key))
 			try {
@@ -314,7 +314,7 @@ public class IPConfig implements Runnable
 			}
 	}
 
-	private void readConfig() throws KNXException
+	private void readConfig() throws KNXException, InterruptedException
 	{
 		final List<String[]> config = new ArrayList<>();
 		int pid = PropertyAccess.PID.KNX_INDIVIDUAL_ADDRESS;
@@ -357,6 +357,7 @@ public class IPConfig implements Runnable
 	}
 
 	private void addIP(final List<String[]> config, final int pid, final String name)
+		throws InterruptedException
 	{
 		add(config, pid, name, queryIP(pid));
 	}
@@ -367,7 +368,7 @@ public class IPConfig implements Runnable
 		config.add(new String[] { Integer.toString(pid), name, value });
 	}
 
-	private String queryFriendlyName() throws KNXException
+	private String queryFriendlyName() throws KNXException, InterruptedException
 	{
 		final char[] name = new char[30];
 		int start = 0;
@@ -381,7 +382,7 @@ public class IPConfig implements Runnable
 		}
 	}
 
-	private byte[] query(final int pid) throws KNXException
+	private byte[] query(final int pid) throws KNXException, InterruptedException
 	{
 		try {
 			return pc.getProperty(objIndex, pid, 1, 1);
@@ -392,7 +393,7 @@ public class IPConfig implements Runnable
 		}
 	}
 
-	private String queryIP(final int pid)
+	private String queryIP(final int pid) throws InterruptedException
 	{
 		try {
 			final byte[] data = query(pid);

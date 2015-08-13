@@ -273,11 +273,11 @@ public class Property implements Runnable, PropertyAdapterListener
 
 	/**
 	 * Runs a single command.
-	 * <p>
 	 *
 	 * @param cmd the command to execute together with its parameters
+	 * @throws InterruptedException on thread interrupt
 	 */
-	protected void runCommand(final String[] cmd)
+	protected void runCommand(final String[] cmd) throws InterruptedException
 	{
 		if (cmd == null)
 			return;
@@ -542,7 +542,7 @@ public class Property implements Runnable, PropertyAdapterListener
 	// utility methods
 	//
 
-	private void getProperty(final String[] args) throws KNXException
+	private void getProperty(final String[] args) throws KNXException, InterruptedException
 	{
 		String s = "sorry, wrong number of arguments";
 		if (args.length == 2 && args[1].equals("?"))
@@ -573,7 +573,7 @@ public class Property implements Runnable, PropertyAdapterListener
 		LogService.logAlways(out, s);
 	}
 
-	private void getDescription(final String[] args) throws KNXException
+	private void getDescription(final String[] args) throws KNXException, InterruptedException
 	{
 		if (args.length == 3)
 			printDescription(pc.getDescription(toInt(args[1]), toInt(args[2])));
@@ -585,7 +585,7 @@ public class Property implements Runnable, PropertyAdapterListener
 			out.info("sorry, wrong number of arguments");
 	}
 
-	private void setProperty(final String[] args) throws KNXException
+	private void setProperty(final String[] args) throws KNXException, InterruptedException
 	{
 		if (args.length < 4 || args.length > 6) {
 			out.info("sorry, wrong number of arguments");
@@ -606,7 +606,7 @@ public class Property implements Runnable, PropertyAdapterListener
 			pc.setProperty(oi, pid, toInt(args[3]), toInt(args[4]), toByteArray(args[5]));
 	}
 
-	private void scanProperties(final String[] args) throws KNXException
+	private void scanProperties(final String[] args) throws KNXException, InterruptedException
 	{
 		final int cnt = args.length;
 		List<Description> l = Collections.emptyList();
