@@ -519,7 +519,7 @@ public class DeviceInfo implements Runnable
 		final String ls = getLoadState(data);
 		info.append("Load state: ").append(ls);
 		// System B contains error code for load state "Error" (optional, but usually yes)
-		if (data[0] == 3 && hasErrorCode) {
+		if (data != null && data[0] == 3 && hasErrorCode) {
 			data = read(objectIdx, PropertyAccess.PID.ERROR_CODE);
 			if (data != null) {
 				try {
@@ -792,6 +792,8 @@ public class DeviceInfo implements Runnable
 
 	private String getLoadState(final byte[] data)
 	{
+		if (data == null || data.length < 1)
+			return "n/a";
 		final int state = data[0] & 0xff;
 		switch (state) {
 		case 0:
@@ -813,6 +815,8 @@ public class DeviceInfo implements Runnable
 
 	private String getRunState(final byte[] data)
 	{
+		if (data == null || data.length < 1)
+			return "n/a";
 		final int state = data[0] & 0xff;
 		switch (state) {
 		case 0:
