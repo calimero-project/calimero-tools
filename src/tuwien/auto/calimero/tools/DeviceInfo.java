@@ -118,7 +118,7 @@ public class DeviceInfo implements Runnable
 	private int interfaceProgramObjectIdx = -1;
 	private int knxnetipObjectIdx = -1;
 
-	private static Logger out;
+	private static Logger out = LogService.getLogger("calimero.tools");
 
 	private ManagementClient mc;
 	private Destination d;

@@ -99,7 +99,7 @@ public class NetworkMonitor implements Runnable
 	private static final String tool = "NetworkMonitor";
 	private static final String sep = System.getProperty("line.separator");
 
-	private static Logger out;
+	private static Logger out = LogService.getLogger("calimero.tools");
 
 	private final Map<String, Object> options = new HashMap<>();
 	private KNXNetworkMonitor m;
