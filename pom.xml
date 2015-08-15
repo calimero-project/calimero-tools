@@ -28,23 +28,6 @@
 	</developers>
 
 	<build>
-		<resources>
-			<resource>
-				<directory>${basedir}</directory>
-				<targetPath>META-INF</targetPath>
-				<includes>
-					<include>LICENSE.txt</include>
-				</includes>
-			</resource>
-			<resource>
-				<directory>resources</directory>
-				<includes>
-					<include>properties.xml</include>
-					<include>simplelogger.properties</include>
-					<include>javax.usb.properties</include>
-				</includes>
-			</resource>
-		</resources>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -77,25 +60,6 @@
 				<configuration>
 					<additionalparam>-Xdoclint</additionalparam>
 				</configuration>
-			</plugin>
-			<plugin>
-				<artifactId>maven-source-plugin</artifactId>
-				<version>2.3</version>
-				<configuration>
-					<archive>
-						<manifestEntries>
-							<Built-By>calimero-project</Built-By>
-						</manifestEntries>
-					</archive>
-				</configuration>
-				<executions>
-					<execution>
-						<id>attach-sources</id>
-						<goals>
-							<goal>jar</goal>
-						</goals>
-					</execution>
-				</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
