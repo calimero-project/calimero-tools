@@ -44,6 +44,8 @@ import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.List;
 
+import tuwien.auto.calimero.IndividualAddress;
+import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.link.medium.KNXMediumSettings;
 import tuwien.auto.calimero.link.medium.PLSettings;
@@ -187,6 +189,16 @@ final class Main
 			return new RFSettings(null);
 		else
 			throw new KNXIllegalArgumentException("unknown medium");
+	}
+
+	static IndividualAddress getAddress(final String address)
+	{
+		try {
+			return new IndividualAddress(address);
+		}
+		catch (final KNXFormatException e) {
+			throw new KNXIllegalArgumentException("KNX device address", e);
+		}
 	}
 
 	static boolean isOption(final String arg, final String longOpt, final String shortOpt)

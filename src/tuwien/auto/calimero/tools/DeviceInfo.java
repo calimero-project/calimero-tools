@@ -41,6 +41,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -62,6 +63,7 @@ import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.KNXNetworkLinkFT12;
 import tuwien.auto.calimero.link.KNXNetworkLinkIP;
+import tuwien.auto.calimero.link.KNXNetworkLinkTpuart;
 import tuwien.auto.calimero.link.KNXNetworkLinkUsb;
 import tuwien.auto.calimero.link.medium.KNXMediumSettings;
 import tuwien.auto.calimero.link.medium.TPSettings;
@@ -79,9 +81,10 @@ import tuwien.auto.calimero.tools.Main.ShutdownHandler;
  * DeviceInfo is a {@link Runnable} tool implementation allowing a user to read information about a
  * KNX device.<br>
  * <br>
- * This tool supports KNX network access using a KNXnet/IP, USB, or FT1.2 connection. It uses the
- * {@link ManagementClient} functionality of the library to read KNX device description, properties,
- * and memory locations. It collects and shows device information similar to the ETS.
+ * This tool supports KNX network access using a KNXnet/IP, KNX IP, USB, FT1.2, or TP-UART
+ * connection. It uses the {@link ManagementClient} functionality of the library to read KNX device
+ * description, properties, and memory locations. It collects and shows device information similar
+ * to the ETS.
  * <p>
  * When running this tool from the console, the <code>main</code>- method of this class is invoked,
  * otherwise use this class in the context appropriate to a {@link Runnable}.<br>
@@ -164,14 +167,23 @@ public class DeviceInfo implements Runnable
 	 * <li><code>--version</code> show tool/library version and exit</li>
 	 * <li><code>--verbose -v</code> enable verbose status output</li>
 	 * <li><code>--localhost</code> <i>id</i> &nbsp;local IP/host name</li>
-	 * <li><code>--localport</code> <i>number</i> &nbsp;local UDP port (default system assigned)</li>
+	 * <li><code>--localport</code> <i>number</i> &nbsp;local UDP port (default system assigned)
+	 * </li>
 	 * <li><code>--port -p</code> <i>number</i> &nbsp;UDP port on host (default 3671)</li>
 	 * <li><code>--nat -n</code> enable Network Address Translation</li>
 	 * <li><code>--serial -s</code> use FT1.2 serial communication</li>
 	 * <li><code>--usb -u</code> use KNX USB communication</li>
 	 * <li><code>--routing</code> use KNXnet/IP routing</li>
-	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to tp1)</li>
+	 * <li><code>--tpuart</code> use TP-UART communication</li>
+	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to tp1)
+	 * </li>
+	 * <li><code>--knx-address -k</code> <i>KNX address</i> &nbsp;KNX device address of local
+	 * endpoint</li>
 	 * </ul>
+	 * The <code>--knx-address</code> option is only necessary if an access protocol is selected that
+	 * directly communicates with the KNX network, i.e., KNX IP or TP-UART. The selected KNX
+	 * individual address shall be unique in a network, and the subnetwork address (area and line)
+	 * should be set to match the network configuration.
 	 *
 	 * @param args command line options for running the device info tool
 	 */
@@ -191,9 +203,6 @@ public class DeviceInfo implements Runnable
 		}
 	}
 
-	/* (non-Javadoc)
-	 * @see java.lang.Runnable#run()
-	 */
 	@Override
 	public void run()
 	{
@@ -615,6 +624,12 @@ public class DeviceInfo implements Runnable
 			// create USB network link
 			return new KNXNetworkLinkUsb(host, medium);
 		}
+		if (options.containsKey("tpuart")) {
+			// create TP-UART link
+			final IndividualAddress device = (IndividualAddress) options.get("knx-address");
+			medium.setDeviceAddress(device);
+			return new KNXNetworkLinkTpuart(host, medium, Collections.emptyList());
+		}
 		// create local and remote socket address for network link
 		final InetSocketAddress local = Main.createLocalSocket(
 				(InetAddress) options.get("localhost"), (Integer) options.get("localport"));
@@ -640,6 +655,8 @@ public class DeviceInfo implements Runnable
 		// add defaults
 		options.put("port", new Integer(KNXnetIPConnection.DEFAULT_PORT));
 		options.put("medium", TPSettings.TP1);
+		// default subnetwork address for TP1 and unregistered device
+		options.put("knx-address", new IndividualAddress(0, 0x02, 0xff));
 
 		int i = 0;
 		for (; i < args.length; i++) {
@@ -668,8 +685,12 @@ public class DeviceInfo implements Runnable
 				options.put("serial", null);
 			else if (Main.isOption(arg, "usb", "u"))
 				options.put("usb", null);
+			else if (Main.isOption(arg, "tpuart", null))
+				options.put("tpuart", null);
 			else if (Main.isOption(arg, "medium", "m"))
 				options.put("medium", Main.getMedium(args[++i]));
+			else if (Main.isOption(arg, "knx-address", "k"))
+				options.put("knx-address", Main.getAddress(args[++i]));
 			else if (!options.containsKey("host"))
 				// otherwise add a host key with argument as host
 				options.put("host", arg);
@@ -721,6 +742,7 @@ public class DeviceInfo implements Runnable
 		sb.append(" --nat -n                 enable Network Address Translation").append(sep);
 		sb.append(" --serial -s              use FT1.2 serial communication").append(sep);
 		sb.append(" --usb -u                 use KNX USB communication").append(sep);
+		sb.append(" --tpuart                 use TP-UART communication").append(sep);
 		sb.append(" --routing                use KNXnet/IP routing").append(sep);
 		sb.append(" --medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)").append(
 				sep);

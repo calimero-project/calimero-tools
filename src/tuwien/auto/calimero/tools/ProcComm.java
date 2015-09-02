@@ -43,6 +43,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.time.LocalTime;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -69,6 +70,7 @@ import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.KNXNetworkLinkFT12;
 import tuwien.auto.calimero.link.KNXNetworkLinkIP;
+import tuwien.auto.calimero.link.KNXNetworkLinkTpuart;
 import tuwien.auto.calimero.link.KNXNetworkLinkUsb;
 import tuwien.auto.calimero.link.medium.KNXMediumSettings;
 import tuwien.auto.calimero.link.medium.TPSettings;
@@ -78,16 +80,17 @@ import tuwien.auto.calimero.process.ProcessCommunicatorImpl;
 import tuwien.auto.calimero.process.ProcessEvent;
 import tuwien.auto.calimero.process.ProcessListener;
 import tuwien.auto.calimero.xml.KNXMLException;
-import tuwien.auto.calimero.xml.XMLFactory;
-import tuwien.auto.calimero.xml.XMLReader;
-import tuwien.auto.calimero.xml.XMLWriter;
+import tuwien.auto.calimero.xml.XmlInputFactory;
+import tuwien.auto.calimero.xml.XmlOutputFactory;
+import tuwien.auto.calimero.xml.XmlReader;
+import tuwien.auto.calimero.xml.XmlWriter;
 
 /**
  * A tool for Calimero 2 providing KNX process communication.
  * <p>
  * ProcComm is a {@link Runnable} tool implementation allowing a user to read or write datapoint
- * values in a KNX network. It supports KNX network access using a KNXnet/IP, USB, or FT1.2
- * connection.
+ * values in a KNX network. It supports KNX network access using a KNXnet/IP, KNX IP, USB, FT1.2, or
+ * TP-UART connection.
  * <p>
  * <i>Group monitor mode</i>:<br>
  * When in group monitor mode, process communication lists group write, read, and read response
@@ -189,13 +192,16 @@ public class ProcComm implements Runnable
 	 * <li><code>--version</code> show tool/library version and exit</li>
 	 * <li><code>--verbose -v</code> enable verbose status output</li>
 	 * <li><code>--localhost</code> <i>id</i> &nbsp;local IP/host name</li>
-	 * <li><code>--localport</code> <i>number</i> &nbsp;local UDP port (default system assigned)</li>
+	 * <li><code>--localport</code> <i>number</i> &nbsp;local UDP port (default system assigned)
+	 * </li>
 	 * <li><code>--port -p</code> <i>number</i> &nbsp;UDP port on host (default 3671)</li>
 	 * <li><code>--nat -n</code> enable Network Address Translation</li>
 	 * <li><code>--routing</code> use KNXnet/IP routing</li>
 	 * <li><code>--serial -s</code> use FT1.2 serial communication</li>
 	 * <li><code>--usb -u</code> use KNX USB communication</li>
-	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to tp1)</li>
+	 * <li><code>--tpuart</code> use TP-UART communication</li>
+	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to tp1)
+	 * </li>
 	 * </ul>
 	 * Available commands for process communication:
 	 * <ul>
@@ -424,6 +430,10 @@ public class ProcComm implements Runnable
 			// create USB network link
 			return new KNXNetworkLinkUsb(host, medium);
 		}
+		if (options.containsKey("tpuart")) {
+			// create TP-UART link
+			return new KNXNetworkLinkTpuart(host, medium, Collections.emptyList());
+		}
 		// create local and remote socket address for network link
 		final InetSocketAddress local = Main.createLocalSocket(
 				(InetAddress) options.get("localhost"), (Integer) options.get("localport"));
@@ -525,10 +535,9 @@ public class ProcComm implements Runnable
 
 	private void runMonitorLoop() throws IOException, KNXException, InterruptedException
 	{
-		try {
-			final XMLReader r = XMLFactory.getInstance().createXMLReader(toolDatapointsFile);
+		try (final XmlReader r = XmlInputFactory.newInstance()
+				.createXMLReader(toolDatapointsFile)) {
 			datapoints.load(r);
-			r.close();
 		}
 		catch (final KNXMLException e) {
 			out.trace("no monitor datapoint information loaded, " + e.getMessage());
@@ -579,14 +588,9 @@ public class ProcComm implements Runnable
 	{
 		if (!options.containsKey("monitor"))
 			return;
-		try {
-			final XMLWriter w = XMLFactory.getInstance().createXMLWriter(toolDatapointsFile);
-			try {
-				datapoints.save(w);
-			}
-			finally {
-				w.close();
-			}
+		try (final XmlWriter w = XmlOutputFactory.newInstance()
+				.createXMLWriter(toolDatapointsFile)) {
+			datapoints.save(w);
 		}
 		catch (final KNXMLException e) {
 			out.warn("on saving monitor datapoint information to " + toolDatapointsFile, e);
@@ -665,6 +669,8 @@ public class ProcComm implements Runnable
 				options.put("serial", null);
 			else if (Main.isOption(arg, "usb", "u"))
 				options.put("usb", null);
+			else if (Main.isOption(arg, "tpuart", null))
+				options.put("tpuart", null);
 			else if (Main.isOption(arg, "medium", "m"))
 				options.put("medium", Main.getMedium(args[++i]));
 			else if (Main.isOption(arg, "timeout", "t"))
@@ -716,6 +722,7 @@ public class ProcComm implements Runnable
 				.append(sep);
 		sb.append("  --serial -s              use FT1.2 serial communication").append(sep);
 		sb.append("  --usb -u                 use KNX USB communication").append(sep);
+		sb.append("  --tpuart                 use TP-UART communication").append(sep);
 		sb.append("  --medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)")
 				.append(sep);
 		sb.append("Available commands for process communication:").append(sep);
