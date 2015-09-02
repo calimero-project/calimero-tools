@@ -43,6 +43,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -66,6 +67,7 @@ import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.KNXNetworkLinkFT12;
 import tuwien.auto.calimero.link.KNXNetworkLinkIP;
+import tuwien.auto.calimero.link.KNXNetworkLinkTpuart;
 import tuwien.auto.calimero.link.medium.KNXMediumSettings;
 import tuwien.auto.calimero.link.medium.PLSettings;
 import tuwien.auto.calimero.link.medium.RFSettings;
@@ -88,9 +90,9 @@ import tuwien.auto.calimero.xml.XMLWriter;
 /**
  * A tool for Calimero 2 providing KNX process communication.
  * <p>
- * ProcComm is a {@link Runnable} tool implementation allowing a user to read or write
- * datapoint values in a KNX network. It supports KNX network access using a KNXnet/IP
- * connection or an FT1.2 connection.
+ * ProcComm is a {@link Runnable} tool implementation allowing a user to read or write datapoint
+ * values in a KNX network. It supports KNX network access using a KNXnet/IP, KNX IP, FT1.2, or
+ * TP-UART connection.
  * <p>
  * <i>Group monitor mode</i>:<br>
  * When in group monitor mode, process communication lists group write, read, and read response
@@ -216,6 +218,7 @@ public class ProcComm implements Runnable
 	 * <li><code>-nat -n</code> enable Network Address Translation</li>
 	 * <li><code>-routing</code> use KNXnet/IP routing</li>
 	 * <li><code>-serial -s</code> use FT1.2 serial communication</li>
+	 * <li><code>-tpuart</code> use TP-UART communication</li>
 	 * <li><code>-medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to
 	 * tp1)</li>
 	 * </ul>
@@ -455,6 +458,10 @@ public class ProcComm implements Runnable
 			catch (final NumberFormatException e) {
 				return new KNXNetworkLinkFT12(host, medium);
 			}
+		}
+		if (options.containsKey("tpuart")) {
+			// create TP-UART link
+			return new KNXNetworkLinkTpuart(host, medium, Collections.emptyList());
 		}
 		// create local and remote socket address for network link
 		final InetSocketAddress local = createLocalSocket((InetAddress) options.get("localhost"),
@@ -703,6 +710,8 @@ public class ProcComm implements Runnable
 				options.put("nat", null);
 			else if (isOption(arg, "-serial", "-s"))
 				options.put("serial", null);
+			else if (isOption(arg, "-tpuart", null))
+				options.put("tpuart", null);
 			else if (isOption(arg, "-medium", "-m"))
 				options.put("medium", getMedium(args[++i]));
 			else if (isOption(arg, "-timeout", "-t"))
@@ -714,9 +723,9 @@ public class ProcComm implements Runnable
 			else
 				throw new KNXIllegalArgumentException("unknown option " + arg);
 		}
-		if (options.containsKey("host") == options.containsKey("serial"))
-			throw new KNXIllegalArgumentException("no host or serial port specified");
-
+		if (!options.containsKey("host")
+				|| (options.containsKey("serial") && options.containsKey("tpuart")))
+			throw new KNXIllegalArgumentException("specify either IP host, serial port, or device");
 		if ((options.containsKey("monitor") ? 1 : 0) + (options.containsKey("read") ? 1 : 0)
 				+ (options.containsKey("write") ? 1 : 0) != 1)
 			throw new KNXIllegalArgumentException("specify either read, write, or group monitoring");
@@ -738,6 +747,7 @@ public class ProcComm implements Runnable
 		sb.append("  -routing                use KNX net/IP routing (always on port 3671)")
 				.append(sep);
 		sb.append("  -serial -s              use FT1.2 serial communication").append(sep);
+		sb.append("  -tpuart                 use TP-UART communication").append(sep);
 		sb.append("  -medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)")
 				.append(sep);
 		sb.append("Available commands for process communication:").append(sep);

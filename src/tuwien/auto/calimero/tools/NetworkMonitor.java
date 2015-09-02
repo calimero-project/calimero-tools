@@ -55,6 +55,7 @@ import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.link.KNXNetworkMonitor;
 import tuwien.auto.calimero.link.KNXNetworkMonitorFT12;
 import tuwien.auto.calimero.link.KNXNetworkMonitorIP;
+import tuwien.auto.calimero.link.KNXNetworkMonitorTpuart;
 import tuwien.auto.calimero.link.LinkListener;
 import tuwien.auto.calimero.link.MonitorFrameEvent;
 import tuwien.auto.calimero.link.medium.KNXMediumSettings;
@@ -73,9 +74,9 @@ import tuwien.auto.calimero.log.LogWriter;
  * A tool for Calimero allowing monitoring of KNX network messages.
  * <p>
  * NetworkMonitor is a {@link Runnable} tool implementation allowing a user to track KNX network
- * messages in a KNX network. It provides monitoring access using a KNXnet/IP connection or FT1.2
- * connection. NetworkMonitor shows the necessary interaction with the core library API for this
- * particular task.<br>
+ * messages in a KNX network. It provides monitoring access using a KNXnet/IP, KNX IP, FT1.2, or
+ * TP-UART connection. NetworkMonitor shows the necessary interaction with the core library API for
+ * this particular task.<br>
  * Note that by default the network monitor will run with default settings, if not specified
  * otherwise using command line options. Since these settings might be system dependent (for example
  * the local host) and not always predictable, a user may want to specify particular settings using
@@ -167,6 +168,7 @@ public class NetworkMonitor implements Runnable
 	 * <li><code>-port -p</code> <i>number</i> &nbsp;UDP port on host (default 3671)</li>
 	 * <li><code>-nat -n</code> enable Network Address Translation</li>
 	 * <li><code>-serial -s</code> use FT1.2 serial communication</li>
+	 * <li><code>-tpuart</code> use TP-UART communication</li>
 	 * <li><code>-medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to
 	 * tp1)</li>
 	 * </ul>
@@ -364,6 +366,10 @@ public class NetworkMonitor implements Runnable
 				return new KNXNetworkMonitorFT12(host, medium);
 			}
 		}
+		if (options.containsKey("tpuart")) {
+			// create TP-UART busmonitor
+			return new KNXNetworkMonitorTpuart(host, true);
+		}
 		// create local and remote socket address for monitor link
 		final InetSocketAddress local = createLocalSocket((InetAddress) options.get("localhost"),
 				(Integer) options.get("localport"));
@@ -420,6 +426,8 @@ public class NetworkMonitor implements Runnable
 				options.put("nat", null);
 			else if (isOption(arg, "-serial", "-s"))
 				options.put("serial", null);
+			else if (isOption(arg, "-tpuart", null))
+				options.put("tpuart", null);
 			else if (isOption(arg, "-medium", "-m"))
 				options.put("medium", getMedium(args[++i]));
 			else if (!options.containsKey("host"))
@@ -451,6 +459,7 @@ public class NetworkMonitor implements Runnable
 				.append(KNXnetIPConnection.DEFAULT_PORT).append(")").append(sep);
 		sb.append("  -nat -n                 enable Network Address Translation").append(sep);
 		sb.append("  -serial -s              use FT1.2 serial communication").append(sep);
+		sb.append("  -tpuart                 use TP-UART communication").append(sep);
 		sb.append("  -medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)")
 				.append(sep);
 		out.log(LogLevel.ALWAYS, sb.toString(), null);

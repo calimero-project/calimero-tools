@@ -58,6 +58,7 @@ import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.KNXNetworkLinkFT12;
 import tuwien.auto.calimero.link.KNXNetworkLinkIP;
+import tuwien.auto.calimero.link.KNXNetworkLinkTpuart;
 import tuwien.auto.calimero.link.medium.KNXMediumSettings;
 import tuwien.auto.calimero.link.medium.PLSettings;
 import tuwien.auto.calimero.link.medium.RFSettings;
@@ -79,19 +80,17 @@ import tuwien.auto.calimero.mgmt.RemotePropertyServiceAdapter;
  * A tool for Calimero showing features of the {@link PropertyClient} used for KNX
  * property access.
  * <p>
- * Property is a {@link Runnable} tool implementation to set or get a KNX property from an
- * Interface Object Server (IOS), get its KNX property description, or scan the KNX
- * descriptions available. It supports network access using a KNXnet/IP connection or
- * FT1.2 connection. <br>
- * The tool implementation mainly interacts with {@link PropertyClient}, which offers
- * high-level access to KNX property information. It also shows creation of the
- * {@link PropertyAdapter}, necessary for a property client to work. All queried property
- * values, as well as occurring problems are written to <code>System.out</code>.
+ * Property is a {@link Runnable} tool implementation to set or get a KNX property from an Interface
+ * Object Server (IOS), get its KNX property description, or scan the KNX descriptions available. It
+ * supports network access using a KNXnet/IP, KNX IP, FT1.2, or TP-UART connection.<br>
+ * The tool implementation mainly interacts with {@link PropertyClient}, which offers high-level
+ * access to KNX property information. It also shows creation of the {@link PropertyAdapter},
+ * necessary for a property client to work. All queried property values, as well as occurring
+ * problems are written to <code>System.out</code>.
  * <p>
- * When starting this tool from the console, the <code>main</code>-method of this class is
- * invoked, otherwise use it in the context appropriate to {@link Runnable}. Take a look
- * at the command line options to configure the tool with the appropriate communication
- * settings.
+ * When starting this tool from the console, the <code>main</code>-method of this class is invoked,
+ * otherwise use it in the context appropriate to {@link Runnable}. Take a look at the command line
+ * options to configure the tool with the appropriate communication settings.
  *
  * @author B. Malinowsky
  */
@@ -135,8 +134,8 @@ public class Property implements Runnable, PropertyAdapterListener
 	/**
 	 * Entry point for running the Property tool from the console.
 	 * <p>
-	 * An IP host or port identifier has to be supplied to specify the endpoint for the KNX network
-	 * access.<br>
+	 * A communication device, host, or port identifier has to be supplied to specify the endpoint
+	 * for KNX network access.<br>
 	 * To show the usage message of this tool on the console, supply the command line option -help
 	 * (or -h).<br>
 	 * Command line options are treated case sensitive. Available options are:
@@ -152,6 +151,7 @@ public class Property implements Runnable, PropertyAdapterListener
 	 * <li><code>-port -p</code> <i>number</i> &nbsp;UDP port on host (default 3671)</li>
 	 * <li><code>-nat -n</code> enable Network Address Translation</li>
 	 * <li><code>-serial -s</code> use FT1.2 serial communication</li>
+	 * <li><code>-tpuart</code> use TP-UART communication</li>
 	 * </ul>
 	 * For local device management these options are available:
 	 * <ul>
@@ -162,6 +162,8 @@ public class Property implements Runnable, PropertyAdapterListener
 	 * <li><code>-routing</code> use KNXnet/IP routing</li>
 	 * <li><code>-medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to tp1)
 	 * </li>
+	 * <li><code>-knx-address -k</code> <i>KNX address</i> &nbsp;KNX device address of local
+	 * endpoint</li>
 	 * <li><code>-connect -c</code> connection oriented mode</li>
 	 * <li><code>-authorize -a</code> <i>key</i> &nbsp;authorize key to access the KNX device</li>
 	 * </ul>
@@ -184,6 +186,10 @@ public class Property implements Runnable, PropertyAdapterListener
 	 * indexed interface object)</li>
 	 * <li><code>?</code> show command help</li>
 	 * </ul>
+	 * The <code>-knx-address</code> option is only necessary if an access protocol is selected
+	 * that directly communicates with the KNX network, i.e., KNX IP or TP-UART. The selected KNX
+	 * individual address shall be unique in a network, and the subnetwork address (area and line)
+	 * should be set to match the network configuration.
 	 *
 	 * @param args command line options for the property tool
 	 */
@@ -284,7 +290,6 @@ public class Property implements Runnable, PropertyAdapterListener
 
 	/**
 	 * Runs a single command.
-	 * <p>
 	 *
 	 * @param cmd the command to execute together with its parameters
 	 */
@@ -336,7 +341,7 @@ public class Property implements Runnable, PropertyAdapterListener
 	 * user <code>options</code>.
 	 * <p>
 	 * There are two types of property adapters. One is for local device management to access KNX
-	 * properties of the connected interface, specifically, KNXnet/IP and KNX USB devices. The other
+	 * properties of the connected interface, specifically, KNXnet/IP. The other
 	 * type uses remote property services to access KNX properties of a KNX device over the KNX bus.
 	 * If a remote property service adapter is requested, the required KNX network link to access
 	 * the KNX network is automatically created.
@@ -373,10 +378,9 @@ public class Property implements Runnable, PropertyAdapterListener
 	}
 
 	/**
-	 * Creates the KNX network link and for one device in the KNX network.
+	 * Creates the KNX network link and remote property service adapter for one device in the KNX network.
 	 *
-	 * @param local local socket address
-	 * @param host remote socket address of host
+	 * @param host remote host
 	 * @return remote property service adapter
 	 * @throws KNXException on adapter creation problem
 	 * @throws InterruptedException on interrupted thread
@@ -393,6 +397,12 @@ public class Property implements Runnable, PropertyAdapterListener
 			catch (final NumberFormatException e) {
 				lnk = new KNXNetworkLinkFT12(host, medium);
 			}
+		}
+		else if (options.containsKey("tpuart")) {
+			// create TP-UART link
+			final IndividualAddress device = (IndividualAddress) options.get("knx-address");
+			medium.setDeviceAddress(device);
+			lnk = new KNXNetworkLinkTpuart(host, medium, Collections.emptyList());
 		}
 		else {
 			final InetSocketAddress local = createLocalSocket(
@@ -462,6 +472,8 @@ public class Property implements Runnable, PropertyAdapterListener
 		// add defaults
 		options.put("port", new Integer(KNXnetIPConnection.DEFAULT_PORT));
 		options.put("medium", TPSettings.TP1);
+		// default subnetwork address for TP1 and unregistered device
+		options.put("knx-address", new IndividualAddress(0, 0x02, 0xff));
 
 		int i = 0;
 		for (; i < args.length; i++) {
@@ -497,6 +509,8 @@ public class Property implements Runnable, PropertyAdapterListener
 				options.put("nat", null);
 			else if (isOption(arg, "-serial", "-s"))
 				options.put("serial", null);
+			else if (isOption(arg, "-tpuart", null))
+				options.put("tpuart", null);
 			else if (isOption(arg, "-medium", "-m"))
 				options.put("medium", getMedium(args[++i]));
 			else if (isOption(arg, "-emulatewriteenable", "-e"))
@@ -661,6 +675,7 @@ public class Property implements Runnable, PropertyAdapterListener
 				.append(KNXnetIPConnection.DEFAULT_PORT).append(")").append(sep);
 		sb.append("  -nat -n                 enable Network Address Translation").append(sep);
 		sb.append("  -serial -s              use FT1.2 serial communication").append(sep);
+		sb.append("  -tpuart                 use TP-UART communication").append(sep);
 		sb.append("Options for local device management mode only:").append(sep);
 		sb.append("  -emulatewriteenable -e  check write-enable of a property").append(sep);
 		sb.append("Options for remote property service mode only:").append(sep);

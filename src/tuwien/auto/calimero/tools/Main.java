@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2010, 2014 B. Malinowsky
+    Copyright (c) 2010, 2015 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -41,10 +41,14 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
+import tuwien.auto.calimero.IndividualAddress;
+import tuwien.auto.calimero.exception.KNXFormatException;
+import tuwien.auto.calimero.exception.KNXIllegalArgumentException;
+
 /**
  * @author B. Malinowsky
  */
-public final class Main
+final class Main
 {
 	private static final String DISCOVER = "discover";
 	private static final String DESCRIPTION = "describe";
@@ -131,5 +135,19 @@ public final class Main
 			sb.append(cmds[i][0]).append(" - ").append(cmds[i][1]).append(sep);
 		}
 		System.out.println(sb);
+	}
+
+	//
+	// Utility methods used by the various tools
+	//
+
+	static IndividualAddress getAddress(final String address)
+	{
+		try {
+			return new IndividualAddress(address);
+		}
+		catch (final KNXFormatException e) {
+			throw new KNXIllegalArgumentException("KNX device address", e);
+		}
 	}
 }
