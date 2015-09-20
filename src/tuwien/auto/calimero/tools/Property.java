@@ -42,7 +42,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -71,8 +70,10 @@ import tuwien.auto.calimero.mgmt.PropertyAdapter;
 import tuwien.auto.calimero.mgmt.PropertyAdapterListener;
 import tuwien.auto.calimero.mgmt.PropertyClient;
 import tuwien.auto.calimero.mgmt.PropertyClient.PropertyKey;
+import tuwien.auto.calimero.mgmt.PropertyClient.XmlPropertyDefinitions;
 import tuwien.auto.calimero.mgmt.RemotePropertyServiceAdapter;
 import tuwien.auto.calimero.serial.usb.UsbConnection;
+import tuwien.auto.calimero.xml.KNXMLException;
 
 /**
  * A tool for Calimero showing features of the {@link PropertyClient} used for KNX property access.
@@ -229,9 +230,9 @@ public class Property implements Runnable, PropertyAdapterListener
 		Collection<PropertyClient.Property> defs = null;
 		if (options.containsKey("definitions")) {
 			try {
-				defs = PropertyClient.loadDefinitions((String) options.get("definitions"), null);
+				defs = new XmlPropertyDefinitions().load((String) options.get("definitions"));
 			}
-			catch (final KNXException e) {
+			catch (final KNXMLException e) {
 				out.error("loading definitions from " + options.get("definitions") + " failed", e);
 			}
 		}
@@ -312,6 +313,53 @@ public class Property implements Runnable, PropertyAdapterListener
 		catch (final NumberFormatException e) {
 			out.error("invalid number (" + e.getMessage() + ")");
 		}
+	}
+
+	/**
+	 * Invoked on receiving a property description.
+	 *
+	 * @param d the KNX property description
+	 */
+	protected void onDescription(final Description d)
+	{
+		final StringBuffer buf = new StringBuffer();
+		buf.append(alignRight(d.getPropIndex()));
+		buf.append(" OT ").append(alignRight(d.getObjectType()));
+		buf.append(", OI ").append(alignRight(d.getObjectIndex()));
+		buf.append(", PID ").append(alignRight(d.getPID()));
+
+		tuwien.auto.calimero.mgmt.PropertyClient.Property p = getPropertyDef(d.getObjectType(),
+				d.getPID());
+		if (p == null)
+			p = getPropertyDef(PropertyKey.GLOBAL_OBJTYPE, d.getPID());
+		if (p != null) {
+			buf.append(" ");
+			buf.append(p.getName());
+			while (buf.length() < 55)
+				buf.append(' ');
+			buf.append(" (");
+			buf.append(p.getPIDName());
+			buf.append(")");
+		}
+		final String pdtDef = p != null ? Integer.toString(p.getPDT()) : "-";
+		buf.append(", PDT " + (d.getPDT() == -1 ? pdtDef : Integer.toString(d.getPDT())));
+		buf.append(", curr. elems " + d.getCurrentElements());
+		buf.append(", max. " + d.getMaxElements());
+		buf.append(", r/w access " + d.getReadLevel() + "/" + d.getWriteLevel());
+		buf.append(d.isWriteEnabled() ? ", w.enabled" : ", r.only");
+		System.out.println(buf.toString());
+	}
+
+	/**
+	 * Invoked on receiving a property value.
+	 *
+	 * @param idx the object index
+	 * @param pid the property ID
+	 * @param value the property values
+	 */
+	protected void onPropertyValue(final int idx, final int pid, final String value)
+	{
+		System.out.println(value);
 	}
 
 	/**
@@ -434,36 +482,6 @@ public class Property implements Runnable, PropertyAdapterListener
 		return new RemotePropertyServiceAdapter(lnk, remote, this, options.containsKey("connect"));
 	}
 
-	private void printDescription(final Description d)
-	{
-		final StringBuffer buf = new StringBuffer();
-		buf.append(alignRight(d.getPropIndex()));
-		buf.append(" OT ").append(alignRight(d.getObjectType()));
-		buf.append(", OI ").append(d.getObjectIndex());
-		buf.append(", PID ").append(alignRight(d.getPID()));
-
-		tuwien.auto.calimero.mgmt.PropertyClient.Property p = getPropertyDef(d.getObjectType(),
-				d.getPID());
-		if (p == null)
-			p = getPropertyDef(PropertyKey.GLOBAL_OBJTYPE, d.getPID());
-		if (p != null) {
-			buf.append(" ");
-			buf.append(p.getName());
-			while (buf.length() < 55)
-				buf.append(' ');
-			buf.append(" (");
-			buf.append(p.getPIDName());
-			buf.append(")");
-		}
-		final String pdtDef = p != null ? Integer.toString(p.getPDT()) : "-";
-		buf.append(", PDT " + (d.getPDT() == -1 ? pdtDef : Integer.toString(d.getPDT())));
-		buf.append(", curr. elems " + d.getCurrentElements());
-		buf.append(", max. " + d.getMaxElements());
-		buf.append(", r/w access " + d.getReadLevel() + "/" + d.getWriteLevel());
-		buf.append(d.isWriteEnabled() ? ", w.enabled" : ", r.only");
-		System.out.println(buf.toString());
-	}
-
 	private static String alignRight(final int value)
 	{
 		return value < 10 ? " " + value : "" + value;
@@ -561,18 +579,19 @@ public class Property implements Runnable, PropertyAdapterListener
 
 	private void getProperty(final String[] args) throws KNXException, InterruptedException
 	{
-		String s = "sorry, wrong number of arguments";
 		if (args.length == 2 && args[1].equals("?"))
-			s = "get object-idx pid [start-idx elements]";
+			LogService.logAlways(out, "get object-idx pid [start-idx elements]");
 		else if (args.length == 3 || args.length == 5) {
 			final int oi = toInt(args[1]);
 			final int pid = toInt(args[2]);
+			String s;
 			try {
 				if (args.length == 3)
 					s = pc.getProperty(oi, pid);
 				else
 					s = Arrays.asList(pc.getPropertyTranslated(oi, pid, toInt(args[3]),
 							toInt(args[4])).getAllValues()).toString();
+				onPropertyValue(oi, pid, s);
 			}
 			catch (final KNXException e) {
 				if (args.length == 3)
@@ -582,20 +601,23 @@ public class Property implements Runnable, PropertyAdapterListener
 					final String hex = DataUnitBuilder.toHex(
 							pc.getProperty(oi, pid, toInt(args[3]), elems), "");
 					final int chars = hex.length() / elems;
+					s = "";
 					for (int i = 0; i < elems; ++i)
 						s += "0x" + hex.substring(i * chars, (i + 1) * chars) + " ";
 				}
+				onPropertyValue(oi, pid, s);
 			}
 		}
-		LogService.logAlways(out, s);
+		else
+			LogService.logAlways(out, "sorry, wrong number of arguments");
 	}
 
 	private void getDescription(final String[] args) throws KNXException, InterruptedException
 	{
 		if (args.length == 3)
-			printDescription(pc.getDescription(toInt(args[1]), toInt(args[2])));
+			onDescription(pc.getDescription(toInt(args[1]), toInt(args[2])));
 		else if (args.length == 4 && args[2].equals("i"))
-			printDescription(pc.getDescriptionByIndex(toInt(args[1]), toInt(args[3])));
+			onDescription(pc.getDescriptionByIndex(toInt(args[1]), toInt(args[3])));
 		else if (args.length == 2 && args[1].equals("?"))
 			printHelp("desc object-idx pid" + sep + "desc object-idx \"i\" prop-idx");
 		else
@@ -625,28 +647,22 @@ public class Property implements Runnable, PropertyAdapterListener
 
 	private void scanProperties(final String[] args) throws KNXException, InterruptedException
 	{
+		System.out.println("Object Type (OT), Object Index (OI), Property ID (PID)");
 		final int cnt = args.length;
-		List<Description> l = Collections.emptyList();
 		if (cnt == 1)
-			l = pc.scanProperties(false);
+			pc.scanProperties(false, this::onDescription);
 		else if (cnt == 2) {
 			if (args[1].equals("all"))
-				l = pc.scanProperties(true);
+				pc.scanProperties(true, this::onDescription);
 			else if (args[1].equals("?"))
 				printHelp("scan [object-idx] [\"all\" for all object properties]");
 			else
-				l = pc.scanProperties(toInt(args[1]), false);
+				pc.scanProperties(toInt(args[1]), false, this::onDescription);
 		}
 		else if (cnt == 3 && args[2].equals("all"))
-			l = pc.scanProperties(toInt(args[1]), true);
+			pc.scanProperties(toInt(args[1]), true, this::onDescription);
 		else
 			out.info("sorry, wrong number of arguments");
-
-		System.out.println("Object Type (OT), Object Index (OI), Property ID (PID)");
-		for (final Iterator<Description> i = l.iterator(); i.hasNext();) {
-			final Description d = i.next();
-			printDescription(d);
-		}
 	}
 
 	private void showCommandList(final String[] args)
