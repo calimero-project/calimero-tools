@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.KNXException;
@@ -91,7 +92,7 @@ public class ScanDevices implements Runnable
 	private static final String sep = System.getProperty("line.separator");
 
 	// TODO for use as runnable, we should get rid of the static tool logger
-	private static Logger out;
+	private static Logger out = LoggerFactory.getLogger("calimero.tools");
 
 	private final Map<String, Object> options = new HashMap<>();
 

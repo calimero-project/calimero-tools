@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import tuwien.auto.calimero.CloseEvent;
 import tuwien.auto.calimero.DataUnitBuilder;
@@ -95,7 +96,7 @@ public class Property implements Runnable, PropertyAdapterListener
 	private static final String tool = "Property";
 	private static final String sep = System.getProperty("line.separator");
 
-	static Logger out;
+	static Logger out = LoggerFactory.getLogger("calimero.tools");
 
 	/** Contains tool options after parsing command line. */
 	protected final Map<String, Object> options = new HashMap<>();
