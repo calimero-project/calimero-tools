@@ -141,7 +141,7 @@ public class IPConfig implements Runnable
 	 * <ul>
 	 * <li><code>--help -h</code> show help message</li>
 	 * <li><code>--version</code> show tool/library version and exit</li>
-	 * <li><code>--local -l</code> local device management</li>
+	 * <li><code>--local -l</code> local device management (default)</li>
 	 * <li><code>--remote -r</code> <i>KNX addr</i> &nbsp;remote property service</li>
 	 * <li><code>--localhost</code> <i>id</i> &nbsp;local IP/host name</li>
 	 * <li><code>--localport</code> <i>number</i> &nbsp;local UDP port (default system assigned)
@@ -611,6 +611,9 @@ public class IPConfig implements Runnable
 			else
 				throw new KNXIllegalArgumentException("unknown option \"" + arg + "\"");
 		}
+		if (!options.containsKey("remote"))
+			options.put("localDM", null);
+
 		if (!options.containsKey("localDM") && !options.containsKey("remote"))
 			throw new KNXIllegalArgumentException("no connection category specified");
 		if (!options.containsKey("host") && !options.containsKey("serial"))
@@ -626,7 +629,7 @@ public class IPConfig implements Runnable
 		sb.append("Options:").append(sep);
 		sb.append("  --help -h                show this help message and exit").append(sep);
 		sb.append("  --version                show tool/library version and exit").append(sep);
-		sb.append("  --local -l               local device management").append(sep);
+		sb.append("  --local -l               local device management (default)").append(sep);
 		sb.append("  --remote -r <KNX addr>   remote property service").append(sep);
 		sb.append("  --localhost <id>         local IP/host name").append(sep);
 		sb.append("  --localport <number>     local UDP port (default system assigned)")
