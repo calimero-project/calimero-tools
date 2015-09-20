@@ -64,7 +64,6 @@ import tuwien.auto.calimero.link.KNXNetworkLinkUsb;
 import tuwien.auto.calimero.link.medium.KNXMediumSettings;
 import tuwien.auto.calimero.link.medium.TPSettings;
 import tuwien.auto.calimero.log.LogService;
-import tuwien.auto.calimero.mgmt.Description;
 import tuwien.auto.calimero.mgmt.LocalDeviceMgmtAdapter;
 import tuwien.auto.calimero.mgmt.PropertyAccess;
 import tuwien.auto.calimero.mgmt.PropertyAdapter;
@@ -224,15 +223,10 @@ public class IPConfig implements Runnable
 			// LogManager.getManager().addWriter("PC " + adapter.getName(), w);
 
 			// get object type with KNXnet/IP parameters
-			final List<Description> l = pc.scanProperties(false);
-
-			for (final Iterator<Description> i = l.iterator(); i.hasNext();) {
-				final Description d = i.next();
-				if (d.getObjectType() == IPObjType) {
+			pc.scanProperties(false, d -> {
+				if (d.getObjectType() == IPObjType)
 					objIndex = d.getObjectIndex();
-					break;
-				}
-			}
+			});
 			if (objIndex == -1) {
 				out.error(PropertyClient.getObjectTypeName(IPObjType) + " not found");
 				return;
