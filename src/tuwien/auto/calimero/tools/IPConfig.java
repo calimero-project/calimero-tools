@@ -344,32 +344,32 @@ public class IPConfig implements Runnable
 		pid = PropertyAccess.PID.IP_CAPABILITIES;
 		data = query(pid);
 		if (data != null)
-			add(config, pid, "supported IP assignment methods",
+			add(config, pid, "Supported IP assignment methods",
 					getIPAssignment(new byte[] { (byte) (data[0] << 1 | 0x01) }));
 
 		pid = PropertyAccess.PID.IP_ASSIGNMENT_METHOD;
 		data = query(pid);
 		if (data != null)
-			add(config, pid, "enabled IP assignment methods", getIPAssignment(data));
+			add(config, pid, "Enabled IP assignment methods", getIPAssignment(data));
 
 		pid = PropertyAccess.PID.CURRENT_IP_ASSIGNMENT_METHOD;
 		data = query(pid);
 		if (data != null)
-			add(config, pid, "current IP assignment method", getIPAssignment(data));
+			add(config, pid, "Current IP assignment method", getIPAssignment(data));
 
 		pid = PropertyAccess.PID.KNXNETIP_ROUTING_CAPABILITIES;
 		data = query(pid);
 		if (data != null)
-			add(config, pid, "routing capabilities", getRoutingCaps(data));
+			add(config, pid, "Routing capabilities", getRoutingCaps(data));
 
-		addIP(config, PropertyAccess.PID.IP_ADDRESS, "IP address configured");
-		addIP(config, PropertyAccess.PID.CURRENT_IP_ADDRESS, "IP address current");
-		addIP(config, PropertyAccess.PID.SUBNET_MASK, "subnet mask configured");
-		addIP(config, PropertyAccess.PID.CURRENT_SUBNET_MASK, "subnet mask  current");
-		addIP(config, PropertyAccess.PID.DEFAULT_GATEWAY, "default gateway configured");
-		addIP(config, PropertyAccess.PID.CURRENT_DEFAULT_GATEWAY, "default gateway current");
+		addIP(config, PropertyAccess.PID.IP_ADDRESS, "Configured IP address");
+		addIP(config, PropertyAccess.PID.SUBNET_MASK, "Configured subnet mask");
+		addIP(config, PropertyAccess.PID.CURRENT_IP_ADDRESS, "Current IP address");
+		addIP(config, PropertyAccess.PID.CURRENT_SUBNET_MASK, "Current subnet mask");
+		addIP(config, PropertyAccess.PID.DEFAULT_GATEWAY, "Configured default gateway");
+		addIP(config, PropertyAccess.PID.CURRENT_DEFAULT_GATEWAY, "Current default gateway");
 		addIP(config, PropertyAccess.PID.DHCP_BOOTP_SERVER, "DHCP/BootP server");
-		addIP(config, PropertyAccess.PID.ROUTING_MULTICAST_ADDRESS, "routing multicast");
+		addIP(config, PropertyAccess.PID.ROUTING_MULTICAST_ADDRESS, "Routing multicast");
 
 		onConfigurationReceived(config);
 	}
@@ -472,7 +472,7 @@ public class IPConfig implements Runnable
 				(InetAddress) options.get("localhost"), (Integer) options.get("localport"));
 		// decide what type of adapter to create
 		if (options.containsKey("localDM")) {
-			final InetSocketAddress host = new InetSocketAddress((InetAddress) options.get("host"),
+			final InetSocketAddress host = new InetSocketAddress((String) options.get("host"),
 					((Integer) options.get("port")).intValue());
 			return createLocalDMAdapter(local, host);
 		}
