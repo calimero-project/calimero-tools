@@ -104,7 +104,7 @@ public class Property implements Runnable, PropertyAdapterListener
 	/** Contains tool options after parsing command line. */
 	protected final Map options = new HashMap();
 
-	private PropertyClient pc;
+	protected PropertyClient pc;
 	private KNXNetworkLink lnk;
 	private Map definitions;
 
