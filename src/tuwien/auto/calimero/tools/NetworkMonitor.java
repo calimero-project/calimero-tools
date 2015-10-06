@@ -39,6 +39,8 @@ package tuwien.auto.calimero.tools;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.text.DateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -302,7 +304,6 @@ public class NetworkMonitor implements Runnable
 		final CEMIBusMon frame = (CEMIBusMon) e.getFrame();
 		final boolean compact = options.containsKey("compact");
 		if (compact) {
-//			sb.append(frame.getTimestamp());
 			sb.append("Seq ").append(frame.getSequenceNumber());
 		}
 		else
@@ -322,7 +323,7 @@ public class NetworkMonitor implements Runnable
 						DataUnitBuilder.toHex(DataUnitBuilder.extractASDU(f.getTPDU()), " "));
 			}
 		}
-		out.log(LogLevel.ALWAYS, sb.toString(), null);
+		System.out.println(DateFormat.getTimeInstance().format(new Date()) + " " + sb);
 	}
 
 	/**
@@ -407,7 +408,7 @@ public class NetworkMonitor implements Runnable
 			}
 			if (isOption(arg, "-verbose", "-v"))
 				options.put("verbose", null);
-			else if (isOption(arg, "-compact", "c"))
+			else if (isOption(arg, "-compact", "-c"))
 				options.put("compact", null);
 			else if (isOption(arg, "-localhost", null))
 				parseHost(args[++i], true, options);
