@@ -256,7 +256,7 @@ public class ProcComm implements Runnable
 	public static void main(final String[] args)
 	{
 		try {
-			final LogWriter w = LogStreamWriter.newUnformatted(LogLevel.INFO, System.out, true,
+			final LogWriter w = LogStreamWriter.newUnformatted(LogLevel.TRACE, System.out, true,
 					false);
 			LogManager.getManager().addWriter("", w);
 			final ProcComm pc = new ProcComm(args, null);
