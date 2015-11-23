@@ -38,6 +38,7 @@ package tuwien.auto.calimero.tools;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -69,7 +70,7 @@ import tuwien.auto.calimero.tools.Main.ShutdownHandler;
  * specific KNX individual address is currently assigned to a KNX device.
  * <p>
  * ScanDevices is a {@link Runnable} tool implementation allowing a user to scan for KNX devices in
- * a KNX network. It provides a list of the assigned KNX device addresses in the scanned
+ * a KNX network. It provides a list of existing KNX devices in the scanned
  * <code>area.line</code> of the network.<br>
  * Alternatively, ScanDevices allows to check whether a specific KNX individual address is currently
  * assigned to a device, i.e, occupied in the KNX network.<br>
@@ -202,15 +203,19 @@ public class ScanDevices implements Runnable
 			if (range.length == 3) {
 				final int device = Integer.decode(range[2]).intValue();
 				final IndividualAddress addr = new IndividualAddress(area, line, device);
-				if (mp.isAddressOccupied(addr))
+				if (mp.isAddressOccupied(addr)) {
 					found = new IndividualAddress[] { addr };
+					onDeviceFound(addr);
+				}
 			}
 			else {
 				LogService.logAlways(out, "start scan of " + area + "." + line + ".[0..255] ...");
 				// this call is interruptible (via exception), in which case we won't get any
 				// result, even though some devices might have answered already
 				// ??? think whether to refactor scanning into interruptible with partial result set
-				found = mp.scanNetworkDevices(area, line);
+				final List<IndividualAddress> devices = new ArrayList<>();
+				mp.scanNetworkDevices(area, line, (d) -> { devices.add(d); onDeviceFound(d); });
+				found = devices.toArray(found);
 			}
 		}
 		catch (final KNXException e) {
@@ -272,6 +277,16 @@ public class ScanDevices implements Runnable
 	}
 
 	/**
+	 * Called on receiving a device response during the scan.
+	 *
+	 * @param device device address of the responding device
+	 */
+	protected void onDeviceFound(final IndividualAddress device)
+	{
+		System.out.println(device);
+	}
+
+	/**
 	 * Called by this tool on completion.
 	 * <p>
 	 *
@@ -289,7 +304,6 @@ public class ScanDevices implements Runnable
 			out.error("completed", thrown);
 
 		System.out.println("found " + devices.length + " network devices");
-		Arrays.stream(devices).forEach(System.out::println);
 	}
 
 	/**
