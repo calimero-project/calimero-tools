@@ -182,9 +182,7 @@ final class Main
 		if (id.equals("tp1"))
 			return TPSettings.TP1;
 		else if (id.equals("p110"))
-			return new PLSettings(false);
-		else if (id.equals("p132"))
-			return new PLSettings(true);
+			return new PLSettings();
 		else if (id.equals("rf"))
 			return new RFSettings(null);
 		else
