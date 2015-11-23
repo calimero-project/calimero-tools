@@ -242,6 +242,8 @@ public class ProcComm implements Runnable
 	 * <code>increase 0..7</code></li>
 	 * <li><code>blinds</code> for DPT 3.008, with values <code>up 0..7</code>,
 	 * <code>down 0..7</code></li>
+	 * <li><code>percent</code> for DPT 5.001, with values <code>0..100</code></li>
+	 * <li><code>%</code> for DPT 5.001, with values <code>0..100</code></li>
 	 * <li><code>angle</code> for DPT 5.003, with values <code>0..360</code></li>
 	 * <li><code>ucount</code> for DPT 5.010, with values <code>0..255</code></li>
 	 * <li><code>temp</code> for DPT 9.001, with values <code>-273..+670760</code></li>
@@ -513,6 +515,10 @@ public class ProcComm implements Runnable
 			return "13.001";
 		if ("angle".equals(id))
 			return "5.003";
+		if ("percent".equals(id))
+			return "5.001";
+		if ("%".equals(id))
+			return "5.001";
 		return id;
 	}
 
@@ -760,6 +766,7 @@ public class ProcComm implements Runnable
 				.append(sep)
 				.append("  dimmer (3.007) {decrease 0..7, increase 0..7}, "
 						+ "blinds (3.008) {up 0..7, down 0..7}").append(sep)
+				.append("  percent (5.001) {1..100}, % (5.001) {1..100}").append(sep)
 				.append("  angle (5.003) {0..360}, ucount (5.010) {0..255}").append(sep)
 				.append("  temp (9.001) {-273..+670760}, float/float2 (9.002)").append(sep)
 				.append("  int (13.001), float4 (14.005), string (16.001)");
