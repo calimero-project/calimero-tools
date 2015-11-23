@@ -297,6 +297,8 @@ public class DeviceInfo implements Runnable
 		}
 
 		final byte[] data = read(deviceObjectIdx, PropertyAccess.PID.IO_LIST, 1, objects);
+		if (data == null)
+			return;
 		for (int i = 0; i < objects; ++i) {
 			final int type = (data[2 * i] & 0xff) << 8 | data[2 * i + 1] & 0xff;
 			if (type == addresstableObject)
@@ -378,7 +380,13 @@ public class DeviceInfo implements Runnable
 		}
 
 		// Programming Mode (memory address 0x60)
-		data = mc.readMemory(d, 0x60, 1);
+		try {
+			data = null;
+			data = mc.readMemory(d, 0x60, 1);
+		}
+		catch (final KNXException e) {
+			out.error("reading memory location 0x60", e);
+		}
 		if (data != null) {
 			final DPTXlator x = new DPTXlatorBoolean(DPTXlatorBoolean.DPT_SWITCH);
 			x.setData(data);
