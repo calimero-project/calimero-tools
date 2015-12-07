@@ -463,7 +463,7 @@ public class IPConfig implements Runnable
 	 *
 	 * @return the created adapter
 	 * @throws KNXException on adapter creation problem
-	 * @throws InterruptedException
+	 * @throws InterruptedException on interrupted thread
 	 */
 	private PropertyAdapter createAdapter() throws KNXException, InterruptedException
 	{
