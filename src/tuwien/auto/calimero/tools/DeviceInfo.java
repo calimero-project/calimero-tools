@@ -51,7 +51,9 @@ import org.slf4j.Logger;
 import tuwien.auto.calimero.DataUnitBuilder;
 import tuwien.auto.calimero.DeviceDescriptor;
 import tuwien.auto.calimero.DeviceDescriptor.DD0;
+import tuwien.auto.calimero.GroupAddress;
 import tuwien.auto.calimero.IndividualAddress;
+import tuwien.auto.calimero.KNXAddress;
 import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
@@ -232,7 +234,6 @@ public class DeviceInfo implements Runnable
 			d = mc.createDestination(device, true);
 			System.out.println("Reading data from device " + device
 					+ ", might take some seconds ...");
-			findInterfaceObjects();
 			final String info = readDeviceInfo();
 			onDeviceInformation(device, info);
 		}
@@ -322,8 +323,8 @@ public class DeviceInfo implements Runnable
 		// Mask Version, Value of Device Descriptor Type 0
 		byte[] data = mc.readDeviceDesc(d, 0);
 		int maskVersion = 0;
+		final DD0 dd = DeviceDescriptor.DD0.fromType0(data);
 		if (data != null) {
-			final DD0 dd = DeviceDescriptor.DD0.fromType0(data);
 			maskVersion = dd.getMaskVersion();
 			info.append("Mask version ").append(dd).append("\n");
 			info.append("Medium type: ").append(toMediumTypeString(dd.getMediumType()))
@@ -333,6 +334,16 @@ public class DeviceInfo implements Runnable
 			info.append("Firmware version ").append(dd.getFirmwareVersion()).append("\n");
 			info.append("Subcode/Version ").append(dd.getSubcode()).append("\n");
 		}
+
+		// check for PL110 BCU1
+		if (dd == DD0.TYPE_1013)
+			readPL110Bcu1(info);
+		else if (dd == DD0.TYPE_0010 || dd == DD0.TYPE_0011 || dd == DD0.TYPE_0012)
+			;
+		else if (dd == DD0.TYPE_0020 || dd == DD0.TYPE_0021)
+			;
+		else
+			findInterfaceObjects();
 
 		if (deviceObjectIdx != -1) {
 			// Manufacturer ID (Device Object)
@@ -361,7 +372,7 @@ public class DeviceInfo implements Runnable
 		String requiredPeiType = "-";
 		if (appProgramObjectIdx != -1)
 			requiredPeiType = readUnsignedFormatted(appProgramObjectIdx, PID.PEI_TYPE);
-		info.append("Required PEI type ").append(requiredPeiType).append("\n");
+		info.append("Application PEI type ").append(requiredPeiType).append("\n");
 
 		if (deviceObjectIdx != -1) {
 			// Hardware Type
@@ -408,11 +419,14 @@ public class DeviceInfo implements Runnable
 		readProgram(interfaceProgramObjectIdx, info, isSystemB);
 
 		// Group Communication
-		info.append("Group Addresstable ");
-		readLoadState(addresstableObjectIdx, info, isSystemB);
-		info.append("Group Assoc.table ");
-		readLoadState(assoctableObjectIdx, info, isSystemB);
-
+		if (addresstableObjectIdx != -1) {
+			info.append("Group Addresstable ");
+			readLoadState(addresstableObjectIdx, info, isSystemB);
+		}
+		if (assoctableObjectIdx != -1) {
+			info.append("Group Assoc.table ");
+			readLoadState(assoctableObjectIdx, info, isSystemB);
+		}
 		// if we have a KNX IP device, show KNX IP info
 		final boolean knxip = maskVersion == 0x5705;
 		if (knxip && knxnetipObjectIdx != -1) {
@@ -420,6 +434,51 @@ public class DeviceInfo implements Runnable
 			readKnxipInfo(info);
 		}
 		return info.toString();
+	}
+
+	private void readPL110Bcu1(final StringBuffer info) throws InterruptedException
+	{
+		final int addrDoA = 0x0102; // length 2
+		final int addrManufact = 0x0104;
+		final int addrDevType = 0x0105; // length 2
+		final int addrVersion = 0x0107;
+		final int addrPeiType = 0x0109;
+		final int addrRunError = 0x010d;
+		final int addrGroupObjTablePtr = 0x0112;
+		final int addrProgramPtr = 0x0114;
+		final int addrGroupAddrTable = 0x0116; // max. length 233
+
+		readMem(addrDoA, 2, info, "DoA ", true);
+		final int mfId = readMem(addrManufact, 1, info, "KNX manufacturer ID ", false);
+		if (mfId > -1)
+			info.append("    Manufacturer ").append(manufacturer.get(mfId)).append("\n");
+
+		/*final int devtype = */readMem(addrDevType, 2, info, "Device type number ", true);
+		final int version = readMem(addrVersion, 1, info, "SW version ", true);
+		info.append("    Main ").append(version >> 4).append(", sub ").append(version & 0xf).append("\n");
+		final int peitype = readMem(addrPeiType, 1, info, "Hardware PEI type ", false);
+		info.append("    " + toPeiTypeString(peitype)).append("\n");
+		final int runerror = readMem(addrRunError, 1, info, "Run error 0x", true);
+		info.append("    " + decodeRunError(runerror)).append("\n");
+		// realization type 1
+		readMem(addrGroupObjTablePtr, 1, info, "Location of group object table 0x", true);
+		// realization type 1
+		final int entries = readMem(addrGroupAddrTable, 1, info, "Group address table entries ", false);
+		int startAddr = addrGroupAddrTable + 1;
+		final KNXAddress device = new IndividualAddress(readMem(startAddr, 2) & 0x7fff);
+		info.append("Device address ").append(device).append("\nGroup addresses:");
+		for (int i = 1; i < entries; i++) {
+			startAddr += 2;
+			final int raw = readMem(startAddr, 2);
+			final KNXAddress group = new GroupAddress(raw & 0x7fff);
+			info.append(" ").append(group);
+			// are we the group responder
+			if ((raw & 0x8000) == 0x8000)
+				info.append("(R)");
+		}
+		info.append("\n");
+		final int progptr = readMem(addrProgramPtr, 1, info, "Location of user program 0x100 + 0x", true);
+		final int userprog = 0x100 + progptr;
 	}
 
 	private void readKnxipInfo(final StringBuffer info) throws KNXException, InterruptedException
@@ -605,6 +664,26 @@ public class DeviceInfo implements Runnable
 		if (data == null)
 			return "-";
 		return "" + toUnsigned(data);
+	}
+
+	private int readMem(final int startAddr, final int bytes, final StringBuffer buf, final String prefix,
+		final boolean hex) throws InterruptedException
+	{
+		final int v = readMem(startAddr, bytes);
+		if (v != -1)
+			buf.append(prefix).append(hex ? Integer.toHexString(v) : v).append("\n");
+		return v;
+	}
+
+	// pre: 3 bytes max
+	private int readMem(final int startAddr, final int bytes) throws InterruptedException
+	{
+		try {
+			return toUnsigned(mc.readMemory(d, startAddr, bytes));
+		}
+		catch (final KNXException e) {
+			return -1;
+		}
 	}
 
 	/**
@@ -820,7 +899,52 @@ public class DeviceInfo implements Runnable
 		}
 	}
 
-	private String getLoadState(final byte[] data)
+	private static String toPeiTypeString(final int peitype)
+	{
+		final String[] desc = new String[] {
+			"No adapter", // 0
+			"Illegal adapter",
+			"4 inputs, 1 output (LED)",
+			"Reserved",
+			"2 inputs / 2 outputs, 1 output (LED)",
+			"Reserved", // 5
+			"3 inputs / 1 output, 1 output (LED)",
+			"Reserved",
+			"5 inputs",
+			"Reserved",
+			"FT1.2 protocol", // (default) type 10 is defined twice
+			// "Loadable serial protocol", // 10 (alternative)
+			"Reserved",
+			"Serial sync message protocol",
+			"Reserved",
+			"Serial sync data block protocol",
+			"Reserved", // 15
+			"Serial async message protocol",
+			"Programmable I/O",
+			"Reserved",
+			"4 outputs, 1 output (LED)",
+			"Download", // 20
+		};
+		return desc[peitype];
+	}
+
+	private static String decodeRunError(final int runError)
+	{
+		final String[] flags = new String[] {"SYS0_ERR: buffer error", "SYS1_ERR: system state parity error",
+			"EEPROM corrupted", "Stack overflow", "OBJ_ERR: group object/assoc. table error",
+			"SYS2_ERR: transceiver error", "SYS3_ERR: confirm error"};
+		final int bits = ~runError & 0xff;
+		if (bits == 0)
+			return "OK";
+		final StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < flags.length; i++) {
+			if ((bits & (1 << i)) != 0)
+				sb.append(flags[i]);
+		}
+		return sb.toString();
+	}
+
+	private static String getLoadState(final byte[] data)
 	{
 		if (data == null || data.length < 1)
 			return "n/a";
@@ -843,7 +967,7 @@ public class DeviceInfo implements Runnable
 		}
 	}
 
-	private String getRunState(final byte[] data)
+	private static String getRunState(final byte[] data)
 	{
 		if (data == null || data.length < 1)
 			return "n/a";
@@ -898,5 +1022,311 @@ public class DeviceInfo implements Runnable
 		if ((data[1] & 0x20) == 0x20)
 			sb.append(" Object Server,");
 		return sb.length() == 0 ? "" : sb.substring(0, sb.length() - 1);
+	}
+
+	// KNX manufacturer IDs as of 2015
+	private static final Map<Integer, String> manufacturer = new HashMap<>();
+	static {
+		manufacturer.put(Integer.valueOf(1), "Siemens");
+		manufacturer.put(Integer.valueOf(2), "ABB");
+		manufacturer.put(Integer.valueOf(4), "Albrecht Jung");
+		manufacturer.put(Integer.valueOf(5), "Bticino");
+		manufacturer.put(Integer.valueOf(6), "Berker");
+		manufacturer.put(Integer.valueOf(7), "Busch-Jaeger Elektro");
+		manufacturer.put(Integer.valueOf(8), "GIRA Giersiepen");
+		manufacturer.put(Integer.valueOf(9), "Hager Electro");
+		manufacturer.put(Integer.valueOf(10), "INSTA ELEKTRO");
+		manufacturer.put(Integer.valueOf(11), "LEGRAND Appareillage électrique");
+		manufacturer.put(Integer.valueOf(12), "Merten");
+		manufacturer.put(Integer.valueOf(14), "ABB SpA – SACE Division");
+		manufacturer.put(Integer.valueOf(22), "Siedle & Söhne");
+		manufacturer.put(Integer.valueOf(24), "Eberle");
+		manufacturer.put(Integer.valueOf(25), "GEWISS");
+		manufacturer.put(Integer.valueOf(27), "Albert Ackermann");
+		manufacturer.put(Integer.valueOf(28), "Schupa GmbH");
+		manufacturer.put(Integer.valueOf(29), "ABB SCHWEIZ");
+		manufacturer.put(Integer.valueOf(30), "Feller");
+		manufacturer.put(Integer.valueOf(32), "DEHN & SÖHNE");
+		manufacturer.put(Integer.valueOf(33), "CRABTREE");
+		manufacturer.put(Integer.valueOf(36), "Paul Hochköpper");
+		manufacturer.put(Integer.valueOf(37), "Altenburger Electronic");
+		manufacturer.put(Integer.valueOf(41), "Grässlin");
+		manufacturer.put(Integer.valueOf(42), "Simon");
+		manufacturer.put(Integer.valueOf(44), "VIMAR");
+		manufacturer.put(Integer.valueOf(45), "Moeller Gebäudeautomation KG");
+		manufacturer.put(Integer.valueOf(46), "Eltako");
+		manufacturer.put(Integer.valueOf(49), "Bosch-Siemens Haushaltsgeräte");
+		manufacturer.put(Integer.valueOf(52), "RITTO GmbH&Co.KG");
+		manufacturer.put(Integer.valueOf(53), "Power Controls");
+		manufacturer.put(Integer.valueOf(55), "ZUMTOBEL");
+		manufacturer.put(Integer.valueOf(57), "Phoenix Contact");
+		manufacturer.put(Integer.valueOf(61), "WAGO Kontakttechnik");
+		manufacturer.put(Integer.valueOf(66), "Wieland Electric");
+		manufacturer.put(Integer.valueOf(67), "Hermann Kleinhuis");
+		manufacturer.put(Integer.valueOf(69), "Stiebel Eltron");
+		manufacturer.put(Integer.valueOf(71), "Tehalit");
+		manufacturer.put(Integer.valueOf(72), "Theben AG");
+		manufacturer.put(Integer.valueOf(73), "Wilhelm Rutenbeck");
+		manufacturer.put(Integer.valueOf(75), "Winkhaus");
+		manufacturer.put(Integer.valueOf(76), "Robert Bosch");
+		manufacturer.put(Integer.valueOf(78), "Somfy");
+		manufacturer.put(Integer.valueOf(80), "Woertz");
+		manufacturer.put(Integer.valueOf(81), "Viessmann Werke");
+		manufacturer.put(Integer.valueOf(82), "Theodor HEIMEIER Metallwerk");
+		manufacturer.put(Integer.valueOf(83), "Joh. Vaillant");
+		manufacturer.put(Integer.valueOf(85), "AMP Deutschland");
+		manufacturer.put(Integer.valueOf(89), "Bosch Thermotechnik GmbH");
+		manufacturer.put(Integer.valueOf(90), "SEF - ECOTEC");
+		manufacturer.put(Integer.valueOf(92), "DORMA GmbH + Co. KG");
+		manufacturer.put(Integer.valueOf(93), "WindowMaster A/S");
+		manufacturer.put(Integer.valueOf(94), "Walther Werke");
+		manufacturer.put(Integer.valueOf(95), "ORAS");
+		manufacturer.put(Integer.valueOf(97), "Dätwyler");
+		manufacturer.put(Integer.valueOf(98), "Electrak");
+		manufacturer.put(Integer.valueOf(99), "Techem");
+		manufacturer.put(Integer.valueOf(100), "Schneider Electric Industries SAS");
+		manufacturer.put(Integer.valueOf(101), "WHD Wilhelm Huber + Söhne");
+		manufacturer.put(Integer.valueOf(102), "Bischoff Elektronik");
+		manufacturer.put(Integer.valueOf(104), "JEPAZ");
+		manufacturer.put(Integer.valueOf(105), "RTS Automation");
+		manufacturer.put(Integer.valueOf(106), "EIBMARKT GmbH");
+		manufacturer.put(Integer.valueOf(107), "WAREMA electronic GmbH");
+		manufacturer.put(Integer.valueOf(108), "Eelectron");
+		manufacturer.put(Integer.valueOf(109), "Belden Wire & Cable B.V.");
+		manufacturer.put(Integer.valueOf(110), "Becker-Antriebe GmbH");
+		manufacturer.put(Integer.valueOf(111), "J.Stehle+Söhne GmbH");
+		manufacturer.put(Integer.valueOf(112), "AGFEO");
+		manufacturer.put(Integer.valueOf(113), "Zennio");
+		manufacturer.put(Integer.valueOf(114), "TAPKO Technologies");
+		manufacturer.put(Integer.valueOf(115), "HDL");
+		manufacturer.put(Integer.valueOf(116), "Uponor");
+		manufacturer.put(Integer.valueOf(117), "se Lightmanagement AG");
+		manufacturer.put(Integer.valueOf(118), "Arcus-eds");
+		manufacturer.put(Integer.valueOf(119), "Intesis");
+		manufacturer.put(Integer.valueOf(120), "Herholdt Controls srl");
+		manufacturer.put(Integer.valueOf(121), "Zublin AG");
+		manufacturer.put(Integer.valueOf(122), "Durable Technologies");
+		manufacturer.put(Integer.valueOf(123), "Innoteam");
+		manufacturer.put(Integer.valueOf(124), "ise GmbH");
+		manufacturer.put(Integer.valueOf(125), "TEAM FOR TRONICS");
+		manufacturer.put(Integer.valueOf(126), "CIAT");
+		manufacturer.put(Integer.valueOf(127), "Remeha BV");
+		manufacturer.put(Integer.valueOf(128), "ESYLUX");
+		manufacturer.put(Integer.valueOf(129), "BASALTE");
+		manufacturer.put(Integer.valueOf(130), "Vestamatic");
+		manufacturer.put(Integer.valueOf(131), "MDT technologies");
+		manufacturer.put(Integer.valueOf(132), "Warendorfer Küchen GmbH");
+		manufacturer.put(Integer.valueOf(133), "Video-Star");
+		manufacturer.put(Integer.valueOf(134), "Sitek");
+		manufacturer.put(Integer.valueOf(135), "CONTROLtronic");
+		manufacturer.put(Integer.valueOf(136), "function Technology");
+		manufacturer.put(Integer.valueOf(137), "AMX");
+		manufacturer.put(Integer.valueOf(138), "ELDAT");
+		manufacturer.put(Integer.valueOf(139), "VIKO");
+		manufacturer.put(Integer.valueOf(140), "Pulse Technologies");
+		manufacturer.put(Integer.valueOf(141), "Crestron");
+		manufacturer.put(Integer.valueOf(142), "STEINEL professional");
+		manufacturer.put(Integer.valueOf(143), "BILTON LED Lighting");
+		manufacturer.put(Integer.valueOf(144), "denro AG");
+		manufacturer.put(Integer.valueOf(145), "GePro");
+		manufacturer.put(Integer.valueOf(146), "preussen automation");
+		manufacturer.put(Integer.valueOf(147), "Zoppas Industries");
+		manufacturer.put(Integer.valueOf(148), "MACTECH");
+		manufacturer.put(Integer.valueOf(149), "TECHNO-TREND");
+		manufacturer.put(Integer.valueOf(150), "FS Cables");
+		manufacturer.put(Integer.valueOf(151), "Delta Dore");
+		manufacturer.put(Integer.valueOf(152), "Eissound");
+		manufacturer.put(Integer.valueOf(153), "Cisco");
+		manufacturer.put(Integer.valueOf(154), "Dinuy");
+		manufacturer.put(Integer.valueOf(155), "iKNiX");
+		manufacturer.put(Integer.valueOf(156), "Rademacher Geräte-Elektronik GmbH & Co. KG");
+		manufacturer.put(Integer.valueOf(157), "EGi Electroacustica General Iberica");
+		manufacturer.put(Integer.valueOf(158), "Ingenium");
+		manufacturer.put(Integer.valueOf(159), "ElabNET");
+		manufacturer.put(Integer.valueOf(160), "Blumotix");
+		manufacturer.put(Integer.valueOf(161), "Hunter Douglas");
+		manufacturer.put(Integer.valueOf(162), "APRICUM");
+		manufacturer.put(Integer.valueOf(163), "TIANSU Automation");
+		manufacturer.put(Integer.valueOf(164), "Bubendorff");
+		manufacturer.put(Integer.valueOf(165), "MBS GmbH");
+		manufacturer.put(Integer.valueOf(166), "Enertex Bayern GmbH");
+		manufacturer.put(Integer.valueOf(167), "BMS");
+		manufacturer.put(Integer.valueOf(168), "Sinapsi");
+		manufacturer.put(Integer.valueOf(169), "Embedded Systems SIA");
+		manufacturer.put(Integer.valueOf(170), "KNX1");
+		manufacturer.put(Integer.valueOf(171), "Tokka");
+		manufacturer.put(Integer.valueOf(172), "NanoSense");
+		manufacturer.put(Integer.valueOf(173), "PEAR Automation GmbH");
+		manufacturer.put(Integer.valueOf(174), "DGA");
+		manufacturer.put(Integer.valueOf(175), "Lutron");
+		manufacturer.put(Integer.valueOf(176), "AIRZONE – ALTRA");
+		manufacturer.put(Integer.valueOf(177), "Lithoss Design Switches");
+		manufacturer.put(Integer.valueOf(178), "3ATEL");
+		manufacturer.put(Integer.valueOf(179), "Philips Controls");
+		manufacturer.put(Integer.valueOf(180), "VELUX A/S");
+		manufacturer.put(Integer.valueOf(181), "LOYTEC");
+		manufacturer.put(Integer.valueOf(182), "SBS S.p.A.");
+		manufacturer.put(Integer.valueOf(183), "SIRLAN Technologies");
+		manufacturer.put(Integer.valueOf(184), "Bleu Comm' Azur");
+		manufacturer.put(Integer.valueOf(185), "IT GmbH");
+		manufacturer.put(Integer.valueOf(186), "RENSON");
+		manufacturer.put(Integer.valueOf(187), "HEP Group");
+		manufacturer.put(Integer.valueOf(188), "Balmart");
+		manufacturer.put(Integer.valueOf(189), "GFS GmbH");
+		manufacturer.put(Integer.valueOf(190), "Schenker Storen AG");
+		manufacturer.put(Integer.valueOf(191), "Algodue Elettronica S.r.L.");
+		manufacturer.put(Integer.valueOf(192), "Newron System");
+		manufacturer.put(Integer.valueOf(193), "maintronic");
+		manufacturer.put(Integer.valueOf(194), "Vantage");
+		manufacturer.put(Integer.valueOf(195), "Foresis");
+		manufacturer.put(Integer.valueOf(196), "Research & Production Association SEM");
+		manufacturer.put(Integer.valueOf(197), "Weinzierl Engineering GmbH");
+		manufacturer.put(Integer.valueOf(198), "Möhlenhoff Wärmetechnik GmbH");
+		manufacturer.put(Integer.valueOf(199), "PKC-GROUP Oyj");
+		manufacturer.put(Integer.valueOf(200), "B.E.G.");
+		manufacturer.put(Integer.valueOf(201), "Elsner Elektronik GmbH");
+		manufacturer.put(Integer.valueOf(202), "Siemens Building Technologies (HK/China) Ltd.");
+		manufacturer.put(Integer.valueOf(204), "Eutrac");
+		manufacturer.put(Integer.valueOf(205), "Gustav Hensel GmbH & Co. KG");
+		manufacturer.put(Integer.valueOf(206), "GARO AB");
+		manufacturer.put(Integer.valueOf(207), "Waldmann Lichttechnik");
+		manufacturer.put(Integer.valueOf(208), "SCHÜCO");
+		manufacturer.put(Integer.valueOf(209), "EMU");
+		manufacturer.put(Integer.valueOf(210), "JNet Systems AG");
+		manufacturer.put(Integer.valueOf(214), "O.Y.L. Electronics");
+		manufacturer.put(Integer.valueOf(215), "Galax System");
+		manufacturer.put(Integer.valueOf(216), "Disch");
+		manufacturer.put(Integer.valueOf(217), "Aucoteam");
+		manufacturer.put(Integer.valueOf(218), "Luxmate Controls");
+		manufacturer.put(Integer.valueOf(219), "Danfoss");
+		manufacturer.put(Integer.valueOf(220), "AST GmbH");
+		manufacturer.put(Integer.valueOf(222), "WILA Leuchten");
+		manufacturer.put(Integer.valueOf(223), "b+b Automations- und Steuerungstechnik");
+		manufacturer.put(Integer.valueOf(225), "Lingg & Janke");
+		manufacturer.put(Integer.valueOf(227), "Sauter");
+		manufacturer.put(Integer.valueOf(228), "SIMU");
+		manufacturer.put(Integer.valueOf(232), "Theben HTS AG");
+		manufacturer.put(Integer.valueOf(233), "Amann GmbH");
+		manufacturer.put(Integer.valueOf(234), "BERG Energiekontrollsysteme GmbH");
+		manufacturer.put(Integer.valueOf(235), "Hüppe Form Sonnenschutzsysteme GmbH");
+		manufacturer.put(Integer.valueOf(237), "Oventrop KG");
+		manufacturer.put(Integer.valueOf(238), "Griesser AG");
+		manufacturer.put(Integer.valueOf(239), "IPAS GmbH");
+		manufacturer.put(Integer.valueOf(240), "elero GmbH");
+		manufacturer.put(Integer.valueOf(241), "Ardan Production and Industrial Controls Ltd.");
+		manufacturer.put(Integer.valueOf(242), "Metec Meßtechnik GmbH");
+		manufacturer.put(Integer.valueOf(244), "ELKA-Elektronik GmbH");
+		manufacturer.put(Integer.valueOf(245), "ELEKTROANLAGEN D. NAGEL");
+		manufacturer.put(Integer.valueOf(246), "Tridonic Bauelemente GmbH");
+		manufacturer.put(Integer.valueOf(248), "Stengler Gesellschaft");
+		manufacturer.put(Integer.valueOf(249), "Schneider Electric (MG)");
+		manufacturer.put(Integer.valueOf(250), "KNX Association");
+		manufacturer.put(Integer.valueOf(251), "VIVO");
+		manufacturer.put(Integer.valueOf(252), "Hugo Müller GmbH & Co KG");
+		manufacturer.put(Integer.valueOf(253), "Siemens HVAC");
+		manufacturer.put(Integer.valueOf(254), "APT");
+		manufacturer.put(Integer.valueOf(256), "HighDom");
+		manufacturer.put(Integer.valueOf(257), "Top Services");
+		manufacturer.put(Integer.valueOf(258), "ambiHome");
+		manufacturer.put(Integer.valueOf(259), "DATEC electronic AG");
+		manufacturer.put(Integer.valueOf(260), "ABUS Security-Center");
+		manufacturer.put(Integer.valueOf(261), "Lite-Puter");
+		manufacturer.put(Integer.valueOf(262), "Tantron Electronic");
+		manufacturer.put(Integer.valueOf(263), "Yönnet");
+		manufacturer.put(Integer.valueOf(264), "DKX Tech");
+		manufacturer.put(Integer.valueOf(265), "Viatron");
+		manufacturer.put(Integer.valueOf(266), "Nautibus");
+		manufacturer.put(Integer.valueOf(268), "Longchuang");
+		manufacturer.put(Integer.valueOf(269), "Air-On AG");
+		manufacturer.put(Integer.valueOf(270), "ib-company GmbH");
+		manufacturer.put(Integer.valueOf(271), "SATION");
+		manufacturer.put(Integer.valueOf(272), "Agentilo GmbH");
+		manufacturer.put(Integer.valueOf(273), "Makel Elektrik");
+		manufacturer.put(Integer.valueOf(274), "Helios Ventilatoren");
+		manufacturer.put(Integer.valueOf(275), "Otto Solutions Pte Ltd");
+		manufacturer.put(Integer.valueOf(276), "Airmaster");
+		manufacturer.put(Integer.valueOf(277), "HEINEMANN GmbH");
+		manufacturer.put(Integer.valueOf(278), "LDS");
+		manufacturer.put(Integer.valueOf(279), "ASIN");
+		manufacturer.put(Integer.valueOf(280), "Bridges");
+		manufacturer.put(Integer.valueOf(281), "ARBONIA");
+		manufacturer.put(Integer.valueOf(282), "KERMI");
+		manufacturer.put(Integer.valueOf(283), "PROLUX");
+		manufacturer.put(Integer.valueOf(284), "ClicHome");
+		manufacturer.put(Integer.valueOf(285), "COMMAX");
+		manufacturer.put(Integer.valueOf(286), "EAE");
+		manufacturer.put(Integer.valueOf(287), "Tense");
+		manufacturer.put(Integer.valueOf(288), "Seyoung Electronics");
+		manufacturer.put(Integer.valueOf(289), "Lifedomus");
+		manufacturer.put(Integer.valueOf(290), "EUROtronic Technology GmbH");
+		manufacturer.put(Integer.valueOf(291), "tci");
+		manufacturer.put(Integer.valueOf(292), "Rishun Electronic");
+		manufacturer.put(Integer.valueOf(293), "Zipato");
+		manufacturer.put(Integer.valueOf(294), "cm-security GmbH & Co KG");
+		manufacturer.put(Integer.valueOf(295), "Qing Cables");
+		manufacturer.put(Integer.valueOf(296), "LABIO");
+		manufacturer.put(Integer.valueOf(297), "Coster Tecnologie Elettroniche S.p.A.");
+		manufacturer.put(Integer.valueOf(298), "E.G.E");
+		manufacturer.put(Integer.valueOf(299), "NETxAutomation");
+		manufacturer.put(Integer.valueOf(300), "tecalor");
+		manufacturer.put(Integer.valueOf(301), "Urmet Electronics (Huizhou) Ltd.");
+		manufacturer.put(Integer.valueOf(302), "Peiying Building Control");
+		manufacturer.put(Integer.valueOf(303), "BPT S.p.A. a Socio Unico");
+		manufacturer.put(Integer.valueOf(304), "Kanontec - KanonBUS");
+		manufacturer.put(Integer.valueOf(305), "ISER Tech");
+		manufacturer.put(Integer.valueOf(306), "Fineline");
+		manufacturer.put(Integer.valueOf(307), "CP Electronics Ltd");
+		manufacturer.put(Integer.valueOf(308), "Servodan A/S");
+		manufacturer.put(Integer.valueOf(309), "Simon");
+		manufacturer.put(Integer.valueOf(310), "GM modular pvt. Ltd.");
+		manufacturer.put(Integer.valueOf(311), "FU CHENG Intelligence");
+		manufacturer.put(Integer.valueOf(312), "NexKon");
+		manufacturer.put(Integer.valueOf(313), "FEEL s.r.l");
+		manufacturer.put(Integer.valueOf(314), "Not Assigned");
+		manufacturer.put(Integer.valueOf(315), "Shenzhen Fanhai Sanjiang Electronics Co., Ltd.");
+		manufacturer.put(Integer.valueOf(316), "Jiuzhou Greeble");
+		manufacturer.put(Integer.valueOf(317), "Aumüller Aumatic GmbH");
+		manufacturer.put(Integer.valueOf(318), "Etman Electric");
+		manufacturer.put(Integer.valueOf(319), "EMT Controls");
+		manufacturer.put(Integer.valueOf(320), "ZidaTech AG");
+		manufacturer.put(Integer.valueOf(321), "IDGS bvba");
+		manufacturer.put(Integer.valueOf(322), "dakanimo");
+		manufacturer.put(Integer.valueOf(323), "Trebor Automation AB");
+		manufacturer.put(Integer.valueOf(324), "Satel sp. z o.o.");
+		manufacturer.put(Integer.valueOf(325), "Russound, Inc.");
+		manufacturer.put(Integer.valueOf(326), "Midea Heating & Ventilating Equipment CO LTD");
+		manufacturer.put(Integer.valueOf(327), "Consorzio Terranuova");
+		manufacturer.put(Integer.valueOf(328), "Wolf Heiztechnik GmbH");
+		manufacturer.put(Integer.valueOf(329), "SONTEC");
+		manufacturer.put(Integer.valueOf(330), "Belcom Cables Ltd.");
+		manufacturer.put(Integer.valueOf(331), "Guangzhou SeaWin Electrical Technologies Co., Ltd.");
+		manufacturer.put(Integer.valueOf(332), "Acrel");
+		manufacturer.put(Integer.valueOf(333), "Franke Aquarotter GmbH");
+		manufacturer.put(Integer.valueOf(334), "Orion Systems");
+		manufacturer.put(Integer.valueOf(335), "Schrack Technik GmbH");
+		manufacturer.put(Integer.valueOf(336), "INSPRID");
+		manufacturer.put(Integer.valueOf(337), "Sunricher");
+		manufacturer.put(Integer.valueOf(338), "Menred automation system(shanghai) Co.,Ltd.");
+		manufacturer.put(Integer.valueOf(339), "Aurex");
+		manufacturer.put(Integer.valueOf(340), "Josef Barthelme GmbH & Co. KG");
+		manufacturer.put(Integer.valueOf(341), "Architecture Numerique");
+		manufacturer.put(Integer.valueOf(342), "UP GROUP");
+		manufacturer.put(Integer.valueOf(343), "Teknos-Avinno");
+		manufacturer.put(Integer.valueOf(344), "Ningbo Dooya Mechanic & Electronic Technology");
+		manufacturer.put(Integer.valueOf(345), "Thermokon Sensortechnik GmbH");
+		manufacturer.put(Integer.valueOf(346), "BELIMO Automation AG");
+		manufacturer.put(Integer.valueOf(347), "Zehnder Group International AG");
+		manufacturer.put(Integer.valueOf(348), "sks Kinkel Elektronik");
+		manufacturer.put(Integer.valueOf(349), "ECE Wurmitzer GmbH");
+		manufacturer.put(Integer.valueOf(350), "LARS");
+		manufacturer.put(Integer.valueOf(351), "URC");
+		manufacturer.put(Integer.valueOf(352), "LightControl");
+		manufacturer.put(Integer.valueOf(353), "ShenZhen YM");
+		manufacturer.put(Integer.valueOf(354), "MEAN WELL Enterprises Co. Ltd.");
+		manufacturer.put(Integer.valueOf(355), "OSix");
+		manufacturer.put(Integer.valueOf(356), "AYPRO Technology");
+		manufacturer.put(Integer.valueOf(357), "Hefei Ecolite Software");
+		manufacturer.put(Integer.valueOf(358), "Enno");
+		manufacturer.put(Integer.valueOf(359), "Ohosure");
 	}
 }
