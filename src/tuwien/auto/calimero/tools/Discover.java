@@ -276,7 +276,7 @@ public class Discover implements Runnable
 	 * <p>
 	 *
 	 * @throws KNXException on problem during discovery
-	 * @throws InterruptedException
+	 * @throws InterruptedException on interrupted thread
 	 */
 	private void search() throws KNXException, InterruptedException
 	{

@@ -187,7 +187,7 @@ public class PropClient implements Runnable
 	 * @param r input reader
 	 * @return array with command and command arguments
 	 * @throws IOException on I/O error
-	 * @throws InterruptedException
+	 * @throws InterruptedException on interrupted thread
 	 */
 	private String[] readLine(final BufferedReader r) throws IOException, InterruptedException
 	{
