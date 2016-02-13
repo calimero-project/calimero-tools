@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2010, 2015 B. Malinowsky
+    Copyright (c) 2010, 2016 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -212,9 +212,9 @@ public class Property implements Runnable, PropertyAdapterListener
 	{
 		// ??? as with the other tools, maybe put this into the try block to also call onCompletion
 		if (options.isEmpty()) {
-			LogService.logAlways(out, tool + " - Access KNX properties");
+			out(tool + " - Access KNX properties");
 			showVersion();
-			LogService.logAlways(out, "Type --help for help message");
+			out("Type --help for help message");
 			return;
 		}
 		if (options.containsKey("help")) {
@@ -277,7 +277,7 @@ public class Property implements Runnable, PropertyAdapterListener
 	@Override
 	public void adapterClosed(final CloseEvent e)
 	{
-		out.info("connection closed (" + e.getReason() + ")");
+		out("connection closed (" + e.getReason() + ")");
 		if (e.getInitiator() != CloseEvent.USER_REQUEST)
 			interruptOnClose.interrupt();
 	}
@@ -305,7 +305,7 @@ public class Property implements Runnable, PropertyAdapterListener
 			else if ("?".equals(what))
 				showCommandList(cmd);
 			else
-				out.info("unknown command, type ? for help");
+				out("unknown command, type ? for help");
 		}
 		catch (final KNXException e) {
 			out.error(e.getMessage());
@@ -373,7 +373,7 @@ public class Property implements Runnable, PropertyAdapterListener
 	protected void onCompletion(final Exception thrown, final boolean canceled)
 	{
 		if (canceled)
-			out.info("reading property canceled");
+			out("reading property canceled");
 		if (thrown != null)
 			out.error("on completion", thrown);
 	}
@@ -580,7 +580,7 @@ public class Property implements Runnable, PropertyAdapterListener
 	private void getProperty(final String[] args) throws KNXException, InterruptedException
 	{
 		if (args.length == 2 && args[1].equals("?"))
-			LogService.logAlways(out, "get object-idx pid [start-idx elements]");
+			out("get object-idx pid [start-idx elements]");
 		else if (args.length == 3 || args.length == 5) {
 			final int oi = toInt(args[1]);
 			final int pid = toInt(args[2]);
@@ -609,7 +609,7 @@ public class Property implements Runnable, PropertyAdapterListener
 			}
 		}
 		else
-			LogService.logAlways(out, "sorry, wrong number of arguments");
+			out("sorry, wrong number of arguments");
 	}
 
 	private void getDescription(final String[] args) throws KNXException, InterruptedException
@@ -621,13 +621,13 @@ public class Property implements Runnable, PropertyAdapterListener
 		else if (args.length == 2 && args[1].equals("?"))
 			printHelp("desc object-idx pid" + sep + "desc object-idx \"i\" prop-idx");
 		else
-			out.info("sorry, wrong number of arguments");
+			out("sorry, wrong number of arguments");
 	}
 
 	private void setProperty(final String[] args) throws KNXException, InterruptedException
 	{
 		if (args.length < 4 || args.length > 6) {
-			out.info("sorry, wrong number of arguments");
+			out("sorry, wrong number of arguments");
 			return;
 		}
 		if (args.length == 2 && args[1].equals("?"))
@@ -662,7 +662,7 @@ public class Property implements Runnable, PropertyAdapterListener
 		else if (cnt == 3 && args[2].equals("all"))
 			pc.scanProperties(toInt(args[1]), true, this::onDescription);
 		else
-			out.info("sorry, wrong number of arguments");
+			out("sorry, wrong number of arguments");
 	}
 
 	private void showCommandList(final String[] args)
@@ -672,13 +672,13 @@ public class Property implements Runnable, PropertyAdapterListener
 		buf.append("get  - read property value(s)" + sep);
 		buf.append("set  - write property value(s)" + sep);
 		buf.append("desc - read one property description" + sep);
-		buf.append("scan - read property descriptions" + sep);
-		out.info(buf.toString());
+		buf.append("scan - read property descriptions");
+		out(buf.toString());
 	}
 
 	private void printHelp(final String help)
 	{
-		out.info(help);
+		out(help);
 	}
 
 	// a helper in case slf4j simple logger is used
@@ -738,7 +738,7 @@ public class Property implements Runnable, PropertyAdapterListener
 				.append(sep);
 		sb.append("  ?                                      show command help").append(sep);
 
-		LogService.logAlways(out, sb.toString());
+		out(sb.toString());
 	}
 
 	//
@@ -747,7 +747,7 @@ public class Property implements Runnable, PropertyAdapterListener
 
 	private static void showVersion()
 	{
-		LogService.logAlways(out, Settings.getLibraryHeader(false));
+		out(Settings.getLibraryHeader(false));
 	}
 
 	private static byte[] getAuthorizeKey(final String key)
@@ -788,5 +788,10 @@ public class Property implements Runnable, PropertyAdapterListener
 		for (; i-- > 0; l /= 0x100)
 			d[i] = (byte) (l & 0xff);
 		return d;
+	}
+
+	static void out(final String s)
+	{
+		System.out.println(s);
 	}
 }

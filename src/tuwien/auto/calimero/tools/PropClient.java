@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2015 B. Malinowsky
+    Copyright (c) 2006, 2016 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -66,7 +66,7 @@ public class PropClient implements Runnable
 {
 	class PropertyEx extends tuwien.auto.calimero.tools.Property
 	{
-		public PropertyEx(final String[] args)
+		PropertyEx(final String[] args)
 		{
 			super(args);
 		}
@@ -75,10 +75,9 @@ public class PropClient implements Runnable
 		{
 			// ignore any command supplied on command line
 			options.remove("command");
-			System.out.println("exit - close connection and exit");
-			System.out.println();
 			// show some command info
 			super.runCommand(new String[] { "?" });
+			out("exit - close connection and exit");
 			runReaderLoop(PropClient.this);
 		}
 
