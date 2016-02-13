@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2011, 2015 B. Malinowsky
+    Copyright (c) 2011, 2016 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -97,6 +97,71 @@ import tuwien.auto.calimero.tools.Main.ShutdownHandler;
  */
 public class DeviceInfo implements Runnable
 {
+	/** Device parameter that can be queried by a client. */
+	public interface Parameter {
+
+		/**
+		 * Name of parameter.
+		 *
+		 * @return unique parameter name
+		 */
+		String name();
+	}
+
+	/**
+	 * Common device info parameters.
+	 */
+	@SuppressWarnings("checkstyle:javadocvariable")
+	public enum CommonParameter implements Parameter {
+		DeviceDescriptor,
+		KnxMedium,
+		FirmwareType,
+		FirmwareVersion,
+		SerialNumber,
+		DomainAddress,
+		Manufacturer,
+		DeviceTypeNumber,
+		SoftwareVersion,
+		HardwarePeiType,
+		ActualPeiType,
+		ApplicationPeiType,
+		RunError,
+		ProgrammingMode,
+		SystemState,
+		RoutingCount,
+		GroupAddrTableEntries,
+		DeviceAddress,
+		GroupAddresses,
+		ProgramVersion,
+		LoadStateControl,
+		RunStateControl,
+		OrderInfo,
+	}
+
+	/**
+	 * KNX IP device parameters.
+	 */
+	@SuppressWarnings("checkstyle:javadocvariable")
+	public enum KnxipParameter implements Parameter {
+		DeviceName,
+		Capabilities,
+		MacAddress,
+		IPAddress,
+		SubnetMask,
+		DefaultGateway,
+		CurrentIPAddress,
+		CurrentSubnetMask,
+		CurrentDefaultGateway,
+		IPAssignment,
+		ConfiguredIPAssignment,
+		DhcpServer,
+		CurrentIPAssignment,
+		RoutingMulticast,
+		TimeToLive,
+		TransmitToIP,
+		AdditionalIndividualAddresses
+	}
+
 	private static final String tool = "DeviceInfo";
 	private static final String sep = System.getProperty("line.separator");
 
@@ -226,9 +291,7 @@ public class DeviceInfo implements Runnable
 
 		Exception thrown = null;
 		boolean canceled = false;
-		KNXNetworkLink link = null;
-		try {
-			link = createLink();
+		try (KNXNetworkLink link = createLink()) {
 			mc = new ManagementClientImpl(link);
 			final IndividualAddress device = (IndividualAddress) options.get("device");
 			d = mc.createDestination(device, true);
@@ -237,10 +300,7 @@ public class DeviceInfo implements Runnable
 			final String info = readDeviceInfo();
 			onDeviceInformation(device, info);
 		}
-		catch (final KNXException e) {
-			thrown = e;
-		}
-		catch (final RuntimeException e) {
+		catch (final KNXException | RuntimeException e) {
 			thrown = e;
 		}
 		catch (final InterruptedException e) {
@@ -248,8 +308,6 @@ public class DeviceInfo implements Runnable
 			Thread.currentThread().interrupt();
 		}
 		finally {
-			if (link != null)
-				link.close();
 			onCompletion(thrown, canceled);
 		}
 	}
