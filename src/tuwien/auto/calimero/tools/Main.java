@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2010, 2015 B. Malinowsky
+    Copyright (c) 2010, 2016 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -60,6 +60,7 @@ final class Main
 	private static final String COM_GROUPMON = "groupmon";
 	private static final String GET_PROPERTY = "get";
 	private static final String SET_PROPERTY = "set";
+	private static final String PROPERTIES = "properties";
 	private static final String DEV_INFO = "devinfo";
 
 	private static final String[][] cmds = new String[][] {
@@ -67,18 +68,19 @@ final class Main
 		{ DESCRIPTION, "KNXnet/IP server self-description", "-description" },
 		{ SCAN, "Determine the existing KNX devices on a KNX subnetwork", ""},
 		{ IPCONFIG, "KNXnet/IP device address configuration", "" },
-		{ MONITOR, "Monitor a KNX network", "" },
+		{ MONITOR, "Open bus-monitor for KNX network", "" },
 		{ COM_READ, "Read a value using KNX process communication", "read" },
 		{ COM_WRITE, "Write a value using KNX process communication", "write" },
-		{ COM_GROUPMON, "Start group monitoring KNX process communication", "monitor" },
+		{ COM_GROUPMON, "Open group-monitor for KNX process communication", "monitor" },
 		{ GET_PROPERTY, "Read a KNX property", "" },
 		{ SET_PROPERTY, "Write a KNX property", "" },
+		{ PROPERTIES, "Open KNX property client", "" },
 		{ DEV_INFO, "Read KNX device information", "" },
 	};
 
 	private static final Class[] tools = new Class[] {
 		Discover.class, Discover.class, ScanDevices.class, IPConfig.class, NetworkMonitor.class,
-		ProcComm.class, ProcComm.class, ProcComm.class, Property.class, Property.class,
+		ProcComm.class, ProcComm.class, ProcComm.class, Property.class, Property.class, PropClient.class,
 		DeviceInfo.class
 	};
 
