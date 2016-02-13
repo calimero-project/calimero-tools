@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2015 B. Malinowsky
+    Copyright (c) 2006, 2016 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -452,6 +452,7 @@ public class NetworkMonitor implements Runnable
 		sb.append("  -help -h                show this help message").append(sep);
 		sb.append("  -version                show tool/library version and exit").append(sep);
 		sb.append("  -verbose -v             enable verbose status output").append(sep);
+		sb.append("  -compact -c             show incoming busmonitor indications in compact format").append(sep);
 		sb.append("  -localhost <id>         local IP/host name").append(sep);
 		sb.append("  -localport <number>     local UDP port (default system assigned)")
 				.append(sep);
