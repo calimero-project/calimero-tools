@@ -169,7 +169,7 @@ public class NetworkMonitor implements Runnable
 	 * <li><code>-nat -n</code> enable Network Address Translation</li>
 	 * <li><code>-serial -s</code> use FT1.2 serial communication</li>
 	 * <li><code>-tpuart</code> use TP-UART communication</li>
-	 * <li><code>-medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to
+	 * <li><code>-medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|rf] (defaults to
 	 * tp1)</li>
 	 * </ul>
 	 *
@@ -461,7 +461,7 @@ public class NetworkMonitor implements Runnable
 		sb.append("  -nat -n                 enable Network Address Translation").append(sep);
 		sb.append("  -serial -s              use FT1.2 serial communication").append(sep);
 		sb.append("  -tpuart                 use TP-UART communication").append(sep);
-		sb.append("  -medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)")
+		sb.append("  -medium -m <id>         KNX medium [tp1|p110|rf] (default tp1)")
 				.append(sep);
 		out.log(LogLevel.ALWAYS, sb.toString(), null);
 	}
@@ -485,8 +485,6 @@ public class NetworkMonitor implements Runnable
 			return TPSettings.TP1;
 		else if (id.equals("p110"))
 			return new PLSettings();
-		else if (id.equals("p132"))
-			return new PLSettings(true);
 		else if (id.equals("rf"))
 			return new RFSettings(null);
 		else

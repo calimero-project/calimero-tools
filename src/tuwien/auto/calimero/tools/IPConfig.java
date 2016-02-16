@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2015 B. Malinowsky
+    Copyright (c) 2006, 2016 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -157,7 +157,7 @@ public class IPConfig implements Runnable
 	 * For remote property service these options are available:
 	 * <ul>
 	 * <li><code>-routing</code> use KNXnet/IP routing</li>
-	 * <li><code>-medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to
+	 * <li><code>-medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|rf] (defaults to
 	 * tp1)</li>
 	 * <li><code>-knx-address -k</code> <i>KNX address</i> &nbsp;KNX device address of local
 	 * endpoint</li>
@@ -647,7 +647,7 @@ public class IPConfig implements Runnable
 		sb.append("  -tpuart                 use TP-UART communication").append(sep);
 		sb.append("  -routing                use KNXnet/IP routing (always on port 3671)")
 				.append(sep);
-		sb.append("  -medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)")
+		sb.append("  -medium -m <id>         KNX medium [tp1|p110|rf] (default tp1)")
 				.append(sep);
 		sb.append("  -connect -c             connection oriented mode").append(sep);
 		sb.append("  -authorize -a <key>     authorize key to access KNX device").append(sep);
@@ -683,8 +683,6 @@ public class IPConfig implements Runnable
 			return TPSettings.TP1;
 		else if (id.equals("p110"))
 			return new PLSettings();
-		else if (id.equals("p132"))
-			return new PLSettings(true);
 		else if (id.equals("rf"))
 			return new RFSettings(null);
 		else

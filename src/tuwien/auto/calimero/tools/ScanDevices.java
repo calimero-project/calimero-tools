@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2013, 2015 B. Malinowsky
+    Copyright (c) 2013, 2016 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -122,7 +122,7 @@ public class ScanDevices implements Runnable
 	 * <li><code>-serial -s</code> use FT1.2 serial communication</li>
 	 * <li><code>-tpuart</code> use TP-UART communication</li>
 	 * <li><code>-routing</code> use KNXnet/IP routing</li>
-	 * <li><code>-medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to
+	 * <li><code>-medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|rf] (defaults to
 	 * tp1)</li>
 	 * <li><code>-knx-address -k</code> <i>KNX address</i> &nbsp;KNX device address of local
 	 * endpoint</li>
@@ -380,8 +380,6 @@ public class ScanDevices implements Runnable
 			return TPSettings.TP1;
 		else if (id.equals("p110"))
 			return new PLSettings();
-		else if (id.equals("p132"))
-			return new PLSettings(true);
 		else if (id.equals("rf"))
 			return new RFSettings(null);
 		else
@@ -406,7 +404,7 @@ public class ScanDevices implements Runnable
 		sb.append(" -serial -s              use FT1.2 serial communication").append(sep);
 		sb.append(" -tpuart                 use TP-UART communication").append(sep);
 		sb.append(" -routing                use KNXnet/IP routing").append(sep);
-		sb.append(" -medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)")
+		sb.append(" -medium -m <id>         KNX medium [tp1|p110|rf] (default tp1)")
 				.append(sep);
 		sb.append("The area and line are given as numbers in the range [0..15], e.g., 3.1")
 				.append(sep);

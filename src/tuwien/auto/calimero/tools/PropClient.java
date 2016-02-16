@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2015 B. Malinowsky
+    Copyright (c) 2006, 2016 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -166,7 +166,7 @@ public class PropClient implements Runnable
 	 * For remote property service these options are available:
 	 * <ul>
 	 * <li><code>-routing</code> use KNXnet/IP routing</li>
-	 * <li><code>-medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf]
+	 * <li><code>-medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|rf]
 	 * (defaults to tp1)</li>
 	 * <li><code>-connect -c</code> connection oriented mode</li>
 	 * <li><code>-authorize -a</code> <i>key</i> &nbsp;authorize key to access KNX device</li>
