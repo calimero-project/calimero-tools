@@ -96,7 +96,8 @@ final class Main
 	 */
 	public static void main(final String[] args)
 	{
-		if (args.length == 0) {
+		final boolean help = args.length == 1 && (args[0].equals("-help") || args[0].equals("-h"));
+		if (args.length == 0 || help) {
 			usage();
 			return;
 		}
@@ -107,10 +108,14 @@ final class Main
 					final Method m = tools[i].getMethod("main", new Class[] { String[].class });
 					args[0] = cmds[i][2];
 					final List toolArgs = new ArrayList();
-					for (int j = 0; j < args.length; j++) {
-						final String s = args[j];
-						if (s.length() > 0)
-							toolArgs.add(s);
+					if (args[1].equals("-help") || args[1].equals("-h"))
+						toolArgs.add("-h");
+					else {
+						for (int j = 0; j < args.length; j++) {
+							final String s = args[j];
+							if (s.length() > 0)
+								toolArgs.add(s);
+						}
 					}
 					m.invoke(null, new Object[] {toolArgs.toArray(new String[toolArgs.size()])});
 				}
