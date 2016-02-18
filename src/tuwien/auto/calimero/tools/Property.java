@@ -687,7 +687,7 @@ public class Property implements Runnable, PropertyAdapterListener
 		sb.append("Available commands:").append(sep);
 		sb.append("  get <object-idx> <pid> [<start-idx> <elements>]  get the property value(s)")
 				.append(sep);
-		sb.append("  set <i>object-idx pid [start-idx] string-value   "
+		sb.append("  set <object-idx> pid [start-idx] string-value   "
 				+ "set the property string-formatted value").append(sep);
 		sb.append("  set <object-idx> <pid> <start-idx> <elements> [\"0x\"|\"0\"|\"b\"]<data>    "
 				+ "set the property data").append(sep);

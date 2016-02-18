@@ -759,8 +759,7 @@ public class ProcComm implements Runnable
 		sb.append("Available commands for process communication:").append(sep);
 		sb.append("  read <DPT> <KNX address>           read from group address").append(sep);
 		sb.append("  write <DPT> <value> <KNX address>  write to group address").append(sep);
-		sb.append("  monitor                 enter group monitoring, can also be").append(sep)
-				.append("                          used together with read or write ").append(sep);
+		sb.append("  monitor                 enter group monitoring").append(sep);
 		sb.append("Name aliases for common DPT numbers:").append(sep);
 		sb.append("  switch (1.001) {off, on}, bool (1.002) {false, true}")
 				.append(sep)
