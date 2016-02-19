@@ -38,6 +38,7 @@ package tuwien.auto.calimero.tools;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -102,6 +103,7 @@ public class Property implements Runnable, PropertyAdapterListener
 	/** Contains tool options after parsing command line. */
 	protected final Map<String, Object> options = new HashMap<>();
 
+	/** The used property client. */
 	protected PropertyClient pc;
 	private KNXNetworkLink lnk;
 	private Map<PropertyKey, PropertyClient.Property> definitions;
@@ -550,16 +552,21 @@ public class Property implements Runnable, PropertyAdapterListener
 				options.put("authorize", getAuthorizeKey(args[++i]));
 			else if (Main.isOption(arg, "routing", null))
 				options.put("routing", null);
-			else if (arg.equals("get") || arg.equals("set") || arg.equals("desc")
-					|| arg.equals("scan") || arg.equals("?")) {
-				final String[] command = Arrays.asList(args).subList(i, args.length)
-						.toArray(new String[0]);
-				options.put("command", command);
-				// XXX the break enforces that the actual command is last, necessary to allow the
-				// variable command argument list. This won't permit invocation from
-				// class Main with single get/set commands, as those are required last in sequence
-				break;
+			else if (arg.equals("get") || arg.equals("set") || arg.equals("desc") || arg.equals("scan")) {
+				final List<String> cmd = new ArrayList<>();
+				cmd.add(arg);
+				while (addOptionIfInteger(cmd, args, i + 1))
+					++i;
+				if (arg.equals("desc") && i + 1 < args.length && args[i + 1].equals("i")) {
+					cmd.add(args[++i]);
+					cmd.add(args[++i]);
+				}
+				if (arg.equals("scan") && i + 1 < args.length && args[i + 1].equals("all"))
+					cmd.add(args[++i]);
+				options.put("command", cmd.toArray(new String[0]));
 			}
+			else if (arg.equals("?"))
+				options.put("command", new String[] { "?" });
 			else if (!options.containsKey("host"))
 				options.put("host", arg);
 			else
@@ -576,6 +583,17 @@ public class Property implements Runnable, PropertyAdapterListener
 	//
 	// utility methods
 	//
+
+	private static boolean addOptionIfInteger(final List<String> cmd, final String[] args, final int index)
+	{
+		if (index < args.length) try {
+			final String arg = args[index];
+			Integer.decode(arg);
+			return cmd.add(arg);
+		}
+		catch (final NumberFormatException expected) {}
+		return false;
+	}
 
 	private void getProperty(final String[] args) throws KNXException, InterruptedException
 	{
