@@ -305,7 +305,7 @@ public class Property implements Runnable, PropertyAdapterListener
 			else if ("desc".equals(what))
 				getDescription(cmd);
 			else if ("?".equals(what))
-				showCommandList(cmd);
+				showCommandList();
 			else
 				out("unknown command, type ? for help");
 		}
@@ -683,7 +683,7 @@ public class Property implements Runnable, PropertyAdapterListener
 			out("sorry, wrong number of arguments");
 	}
 
-	private void showCommandList(final String[] args)
+	private void showCommandList()
 	{
 		final StringBuffer buf = new StringBuffer();
 		buf.append("commands: get | set | desc | scan (append ? for help)" + sep);
@@ -742,8 +742,8 @@ public class Property implements Runnable, PropertyAdapterListener
 		sb.append("Available commands:").append(sep);
 		sb.append("  get <object-idx> <pid> [<start-idx> <elements>]  get the property value(s)")
 				.append(sep);
-		sb.append("  set <object-idx> pid [start-idx] string-value   "
-				+ "set the property string-formatted value").append(sep);
+		sb.append("  set <object-idx> <pid> [start-idx] <string-value>   "
+				+ "set the formatted property value (according to PDT)").append(sep);
 		sb.append("  set <object-idx> <pid> <start-idx> <elements> [\"0x\"|\"0\"|\"b\"]<data>    "
 				+ "set the property data").append(sep);
 		sb.append("  desc <object-idx> <pid>                "
