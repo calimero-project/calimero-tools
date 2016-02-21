@@ -51,37 +51,58 @@ Output
 	18:26:02:755 INFO Calimero 2 version 2.3-dev
 	18:26:02:755 INFO Type --help for help message
 
-or, relying on the Java Manifest information, show all available tools
+or, relying on the Maven POM information, show all supported commands
 
-	mvn exec:java -Dexec.mainClass=tuwien.auto.calimero.tools.Main
+	mvn exec:java
 	
-Run with option `--help` to show the help message for usage
+Run a command with option `--help` to show the help message for usage
+
+	mvn exec:java -Dexec.args="groupmon --help"
+
+The equivalent of the above command using explicit invocation would be
 
 	mvn exec:java -Dexec.mainClass=tuwien.auto.calimero.tools.ProcComm -Dexec.args="--help"
 
-
-Discover KNXnet/IP devices
+**Discover KNXnet/IP devices**
 
 ~~~ sh
-# Variant which executes the jar relying on the Java MANIFEST 
-$ mvn exec:java -Dexec.mainClass=tuwien.auto.calimero.tools.Main -Dexec.args=discover
+# Variant which executes the `discover` command 
+$ mvn exec:java -Dexec.args=discover
 
 # Variant which specifically refers to the tool class
 $ mvn exec:java -Dexec.mainClass=tuwien.auto.calimero.tools.Discover -Dexec.args=--search
 ~~~
 
+**Process Communication**
 
-Start process communication for group monitoring (command `monitor`), accessing a KNX power-line network (`--medium p110` or `-m p110`) using a USB interface with name `busch-jaeger` (or any other KNX vendor or product name, e.g., `siemens`).
+Start process communication for group monitoring (command `groupmon`), accessing a KNX power-line network (`--medium p110` or `-m p110`) using a USB interface with name `busch-jaeger` (or any other KNX vendor or product name, e.g., `siemens`).
 
-	mvn exec:java -Dexec.mainClass=tuwien.auto.calimero.tools.ProcComm -Dexec.args="-v --usb busch-jaeger -m p110 monitor"
+	mvn exec:java -Dexec.args="groupmon -v --usb busch-jaeger -m p110"
 	
 The option `-v` sets logging to `--verbose`. With USB, you can also specify the USB interface using the vendor and product ID as `VendorID:ProductID`. If you don't know any identification yet, run the tool using a bogus ID and debug settings to print the available USB interfaces. 
 	
 Start process communication for group monitoring, accessing a RF network using a Weinzierl USB interface. Adjust the slf4 [Simple Logger](http://www.slf4j.org/api/org/slf4j/impl/SimpleLogger.html) logging level for `debug` output using `-Dorg.slf4j.simpleLogger.defaultLogLevel=debug`:
 
-	mvn exec:java -Dexec.mainClass=tuwien.auto.calimero.tools.ProcComm -Dexec.args="--usb weinzierl -m rf monitor" -Dorg.slf4j.simpleLogger.defaultLogLevel=debug
+	mvn exec:java -Dexec.args="groupmon --usb weinzierl -m rf" -Dorg.slf4j.simpleLogger.defaultLogLevel=debug
 
-	
+**Local Device Management**
+
+Open a client for _local_ device management of your KNXnet/IP server with control endpoint `192.168.10.10`
+
+	mvn exec:java -Dexec.args="properties 192.168.10.10 -d resources/properties.xml"
+
+**Remote Device Management**
+
+Remote property services (this example only works if the KNX device implements _Interface Objects_): open a client to a 
+remote (`-r`) KNX device with the device address `1.1.5`, via KNXnet/IP tunneling to a KNXnet/IP server with control 
+endpoint `192.168.10.10`
+
+	mvn exec:java -Dexec.args="properties 192.168.10.10 -r 1.1.5 -d resources/properties.xml"
+
+Once you enter the CLI of the property client, execute, e.g., `scan all` to scan all KNX properties of that device.
+
+
+
 ### Using Java
 
 Replace the version in the examples (2.3-SNAPSHOT) with the exact version you are running. Make sure all dependencies are available, either by relying on the Calimero Tools MANIFEST file or the [Java class path](https://docs.oracle.com/javase/8/docs/technotes/tools/windows/classpath.html) settings (using the `-classpath` option or the [CLASSPATH](https://docs.oracle.com/javase/tutorial/essential/environment/paths.html) environment variable). The simplest way is to have all required `.jar` files in the same directory.
@@ -90,9 +111,13 @@ For an overview of tools, run
 
 	java -jar calimero-tools-2.3-SNAPSHOT.jar
 
+**Discover KNXnet/IP devices**
+
 Discover KNXnet/IP servers, with Network Address Translation (NAT) enabled:
 
 	java -jar calimero-tools-2.3-SNAPSHOT.jar discover -s --nat
+
+**Process Communication**
 
 Read a KNX datapoint value (switch button on/off) from a group address (`1/2/1`) using the FT1.2 protocol over the serial port `/dev/ttyS01`
 
@@ -100,8 +125,9 @@ Read a KNX datapoint value (switch button on/off) from a group address (`1/2/1`)
 
 Start process communication group monitoring for a TP1 KNX network (the default) using KNXnet/IP routing (`--routing`) in the multicast group `224.0.23.12`, and a specific local host address (`--localhost`, useful in multihoming to specify the outgoing network interface)
 
-	java -jar calimero-tools-2.3-SNAPSHOT.jar groupmon --localhost 192.168.10.14 224.0.23.12 --routing
+	java -jar calimero-tools-2.3-SNAPSHOT.jar groupmon --routing --localhost 192.168.10.14 224.0.23.12
 
+**Busmonitor**
 
 Start a KNX busmonitor on a KNX TP1 (Twisted Pair) network, using a compact (`-c` or `--compact`) busmonitor indication output format
 
@@ -118,9 +144,11 @@ Calimero busmonitor output in compact mode looks like
 02:22:10.744 Seq 5 ACK
 ~~~
 
-Read device information of KNX device `1.1.4` (**Prerequisite**: device implements Interface Objects!) in a TP1 network (default medium) using the KNXnet/IP server `192.168.10.12`
+**Device Information**
 
-	java -cp "calimero-tools-2.3-SNAPSHOT.jar" tuwien.auto.calimero.tools.DeviceInfo 192.168.10.12 1.1.4
+Read device information of KNX device `1.1.4` in a TP1 network (default medium) using the KNXnet/IP server `192.168.10.12`
+
+	java -cp "calimero-tools-2.3-SNAPSHOT.jar" devinfo 192.168.10.12 1.1.4
 
 
 Logging
@@ -131,6 +159,7 @@ Calimero Tools use the [Simple Logging Facade for Java (slf4j)](http://www.slf4j
 Extending Tools
 ---------------
 
+All tools implement the interface `Runnable` and can be extended.
 Override the method that provides the result and customize behavior. For example, with KNXnet/IP discovery
 
 ```
