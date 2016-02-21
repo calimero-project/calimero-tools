@@ -108,7 +108,8 @@ final class Main
 					final Method m = tools[i].getMethod("main", new Class[] { String[].class });
 					args[0] = cmds[i][2];
 					final List toolArgs = new ArrayList();
-					if (args[1].equals("-help") || args[1].equals("-h"))
+					// check if there is a second argument requesting help
+					if (args.length > 1 && (args[1].equals("-help") || args[1].equals("-h")))
 						toolArgs.add("-h");
 					else {
 						for (int j = 0; j < args.length; j++) {
