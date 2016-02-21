@@ -86,7 +86,7 @@ import tuwien.auto.calimero.xml.XmlReader;
 import tuwien.auto.calimero.xml.XmlWriter;
 
 /**
- * A tool for Calimero 2 providing KNX process communication.
+ * A tool for Calimero providing KNX process communication.
  * <p>
  * ProcComm is a {@link Runnable} tool implementation allowing a user to read or write datapoint
  * values in a KNX network. It supports KNX network access using a KNXnet/IP, KNX IP, USB, FT1.2, or
