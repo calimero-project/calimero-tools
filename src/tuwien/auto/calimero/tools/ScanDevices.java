@@ -91,7 +91,6 @@ public class ScanDevices implements Runnable
 	private static final String tool = "ScanDevices";
 	private static final String sep = System.getProperty("line.separator");
 
-	// TODO for use as runnable, we should get rid of the static tool logger
 	private static LogService out = LogManager.getManager().getLogService("tools");
 	// terminal writer
 	private static LogWriter w;
@@ -183,8 +182,7 @@ public class ScanDevices implements Runnable
 			// TODO onCompletion prints '0 network devices found' on showing help etc., either
 			// suppress that or move the following out of the try (skipping onCompletion altogether)
 			if (options.isEmpty()) {
-				out.log(LogLevel.ALWAYS, tool
-						+ " - Determine existing KNX devices in a KNX subnetwork", null);
+				out.log(LogLevel.ALWAYS, tool + " - Determine existing KNX devices in a KNX subnetwork", null);
 				showVersion();
 				out.log(LogLevel.ALWAYS, "type -help for help message", null);
 				return;
@@ -201,8 +199,7 @@ public class ScanDevices implements Runnable
 			link = createLink();
 			final ManagementProcedures mp = new ManagementProceduresImpl(link);
 			if (w != null && options.containsKey("verbose")) {
-				// XXX replace with instance specific name, and preferably access writers via out
-				LogManager.getManager().addWriter(link.getName(), w);
+				LogManager.getManager().addWriter("calimero.link." + link.getName(), w);
 				LogManager.getManager().addWriter("MgmtProc", w);
 			}
 
@@ -216,11 +213,9 @@ public class ScanDevices implements Runnable
 					found = new IndividualAddress[] {addr};
 			}
 			else {
-				out.log(LogLevel.ALWAYS, "start scan of " + area + "." + line + ".[0..255] ...",
-						null);
+				out.log(LogLevel.ALWAYS, "start scan of " + area + "." + line + ".[0..255] ...", null);
 				// this call is interruptible (via exception), in which case we won't get any
 				// result, even though some devices might have answered already
-				// ??? think whether to refactor scanning into interruptible with partial result set
 				found = mp.scanNetworkDevices(area, line);
 			}
 		}
