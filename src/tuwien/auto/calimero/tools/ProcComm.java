@@ -156,7 +156,7 @@ public class ProcComm implements Runnable
 	// contains the datapoints for which translation information is known in monitor mode
 	private final DatapointModel datapoints = new DatapointMap();
 
-	//private final LogWriter w;
+	private final LogWriter userLogger;
 
 	private volatile boolean closed;
 
@@ -187,7 +187,7 @@ public class ProcComm implements Runnable
 	 */
 	protected ProcComm(final String[] args, final LogWriter w)
 	{
-		//this.w = w;
+		userLogger = w;
 		try {
 			parseOptions(args);
 		}
@@ -258,8 +258,7 @@ public class ProcComm implements Runnable
 	public static void main(final String[] args)
 	{
 		try {
-			final LogWriter w = LogStreamWriter.newUnformatted(LogLevel.TRACE, System.out, true,
-					false);
+			final LogWriter w = LogStreamWriter.newUnformatted(LogLevel.TRACE, System.out, true, false);
 			LogManager.getManager().addWriter("", w);
 			final ProcComm pc = new ProcComm(args, null);
 			// adjust log level, if specified
@@ -343,6 +342,10 @@ public class ProcComm implements Runnable
 		pc = new ProcessCommunicatorImpl(lnk);
 		if (l != null)
 			pc.addProcessListener(l);
+		if (userLogger != null) {
+			LogManager.getManager().addWriter("calimero.link." + lnk.getName(), userLogger);
+			LogManager.getManager().addWriter("process " + lnk.getName(), userLogger);
+		}
 
 		// this is the listener if group monitoring is requested
 		if (options.containsKey("monitor")) {
