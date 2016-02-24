@@ -322,6 +322,28 @@ public class Property implements Runnable, PropertyAdapterListener
 	}
 
 	/**
+	 * Invoked on receiving a description response.
+	 *
+	 * @param d the description
+	 */
+	protected void onDescription(final Description d)
+	{
+		printDescription(d);
+	}
+
+	/**
+	 * Invoked on receiving a property value.
+	 *
+	 * @param idx the object index
+	 * @param pid the property ID
+	 * @param value the property values
+	 */
+	protected void onPropertyValue(final int idx, final int pid, final String value)
+	{
+		System.out.println(value);
+	}
+
+	/**
 	 * Called by this tool on completion.
 	 * <p>
 	 *
@@ -572,18 +594,19 @@ public class Property implements Runnable, PropertyAdapterListener
 
 	private void getProperty(final String[] args) throws KNXException
 	{
-		String s = "sorry, wrong number of arguments";
 		if (args.length == 2 && args[1].equals("?"))
-			s = "get object-idx pid [start-idx elements]";
+			out.log(LogLevel.ALWAYS, "get object-idx pid [start-idx elements]", null);
 		else if (args.length == 3 || args.length == 5) {
 			final int oi = toInt(args[1]);
 			final int pid = toInt(args[2]);
+			String s;
 			try {
 				if (args.length == 3)
 					s = pc.getProperty(oi, pid);
 				else
 					s = Arrays.asList(pc.getPropertyTranslated(oi, pid, toInt(args[3]),
 							toInt(args[4])).getAllValues()).toString();
+				onPropertyValue(oi, pid, s);
 			}
 			catch (final KNXException e) {
 				if (args.length == 3)
@@ -593,20 +616,23 @@ public class Property implements Runnable, PropertyAdapterListener
 					final String hex = DataUnitBuilder.toHex(
 							pc.getProperty(oi, pid, toInt(args[3]), elems), "");
 					final int chars = hex.length() / elems;
+					s = "";
 					for (int i = 0; i < elems; ++i)
 						s += "0x" + hex.substring(i * chars, (i + 1) * chars) + " ";
 				}
+				onPropertyValue(oi, pid, s);
 			}
 		}
-		out.log(LogLevel.ALWAYS, s, null);
+		else
+			out.log(LogLevel.ALWAYS, "sorry, wrong number of arguments", null);
 	}
 
 	private void getDescription(final String[] args) throws KNXException
 	{
 		if (args.length == 3)
-			printDescription(pc.getDescription(toInt(args[1]), toInt(args[2])));
+			onDescription(pc.getDescription(toInt(args[1]), toInt(args[2])));
 		else if (args.length == 4 && args[2].equals("i"))
-			printDescription(pc.getDescriptionByIndex(toInt(args[1]), toInt(args[3])));
+			onDescription(pc.getDescriptionByIndex(toInt(args[1]), toInt(args[3])));
 		else if (args.length == 2 && args[1].equals("?"))
 			printHelp("desc object-idx pid" + sep + "desc object-idx \"i\" prop-idx");
 		else
@@ -655,7 +681,7 @@ public class Property implements Runnable, PropertyAdapterListener
 
 		for (final Iterator i = l.iterator(); i.hasNext();) {
 			final Description d = (Description) i.next();
-			printDescription(d);
+			onDescription(d);
 		}
 	}
 
