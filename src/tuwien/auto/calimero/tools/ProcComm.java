@@ -615,7 +615,7 @@ public class ProcComm implements Runnable
 								sb.append((String) i.next());
 								sb.append(" ");
 							}
-							readWrite(dp, write, sb.toString());
+							readWrite(dp, write, sb.toString().trim());
 						}
 						else
 							readWrite(dp, write, null);
