@@ -79,8 +79,8 @@ final class Main
 		{ COM_READ, "Read a value using KNX process communication", "read" },
 		{ COM_WRITE, "Write a value using KNX process communication", "write" },
 		{ COM_GROUPMON, "Open group-monitor for KNX process communication", "monitor" },
-		{ GET_PROPERTY, "Read a KNX property", "" },
-		{ SET_PROPERTY, "Write a KNX property", "" },
+		{ GET_PROPERTY, "Read a KNX property", "get" },
+		{ SET_PROPERTY, "Write a KNX property", "set" },
 		{ PROPERTIES, "Open KNX property client", "" },
 		{ DEV_INFO, "Read KNX device information", "" },
 	};
