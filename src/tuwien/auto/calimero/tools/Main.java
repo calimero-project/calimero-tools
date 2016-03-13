@@ -104,7 +104,8 @@ final class Main
 	 */
 	public static void main(final String[] args)
 	{
-		if (args.length == 0) {
+		final boolean help = args.length == 1 && (args[0].equals("-help") || args[0].equals("-h"));
+		if (args.length == 0 || help) {
 			usage();
 			return;
 		}
@@ -113,9 +114,13 @@ final class Main
 			if (cmds[i][0].equals(cmd)) {
 				try {
 					final Method m = tools.get(i).getMethod("main", String[].class);
-					args[0] = cmds[i][2];
-					final String[] toolargs = args[0].isEmpty() ? Arrays.copyOfRange(args, 1,
-							args.length) : args;
+					final String[] toolargs;
+					if (args.length > 1 && (args[1].equals("-help") || args[1].equals("-h")))
+						toolargs = new String[] { "-h" };
+					else {
+						args[0] = cmds[i][2];
+						toolargs = args[0].isEmpty() ? Arrays.copyOfRange(args, 1, args.length) : args;
+					}
 					m.invoke(null, new Object[] { toolargs });
 				}
 				catch (final InvocationTargetException e) {
