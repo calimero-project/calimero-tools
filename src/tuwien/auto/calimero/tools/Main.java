@@ -85,10 +85,9 @@ final class Main
 		{ DEV_INFO, "Read KNX device information", "" },
 	};
 
-	private static final List<Class<? extends Runnable>> tools = Arrays.asList(Discover.class,
-			Discover.class, ScanDevices.class, IPConfig.class, NetworkMonitor.class,
-			ProcComm.class, ProcComm.class, ProcComm.class, Property.class, Property.class, PropClient.class,
-			DeviceInfo.class);
+	private static final List<Class<? extends Runnable>> tools = Arrays.asList(Discover.class, Discover.class,
+			ScanDevices.class, IPConfig.class, NetworkMonitor.class, ProcComm.class, ProcComm.class, ProcComm.class,
+			Property.class, Property.class, PropClient.class, DeviceInfo.class);
 
 	private static final String sep = System.getProperty("line.separator");
 
@@ -99,8 +98,7 @@ final class Main
 	 * <p>
 	 * This is useful to start the tools from within a .jar file.
 	 *
-	 * @param args the first argument being the tool to invoke, followed by the command line options
-	 *        of that tool
+	 * @param args the first argument being the tool to invoke, followed by the command line options of that tool
 	 */
 	public static void main(final String[] args)
 	{
@@ -139,8 +137,7 @@ final class Main
 	private static void usage()
 	{
 		final StringBuffer sb = new StringBuffer();
-		sb.append("Supported commands (always safe without further options, use -h for help):")
-				.append(sep);
+		sb.append("Supported commands (always safe without further options, use -h for help):").append(sep);
 		for (int i = 0; i < cmds.length; i++) {
 			sb.append(cmds[i][0]).append(" - ").append(cmds[i][1]).append(sep);
 		}
@@ -155,8 +152,8 @@ final class Main
 	{
 		final int p = port != null ? port.intValue() : 0;
 		try {
-			return host != null ? new InetSocketAddress(host, p) : p != 0 ? new InetSocketAddress(
-					InetAddress.getLocalHost(), p) : null;
+			return host != null ? new InetSocketAddress(host, p)
+					: p != 0 ? new InetSocketAddress(InetAddress.getLocalHost(), p) : null;
 		}
 		catch (final UnknownHostException e) {
 			throw new KNXIllegalArgumentException("failed getting local host " + e.getMessage(), e);
@@ -208,8 +205,7 @@ final class Main
 
 	static boolean isOption(final String arg, final String longOpt, final String shortOpt)
 	{
-		final boolean lo = arg.startsWith("--")
-				&& arg.regionMatches(2, longOpt, 0, arg.length() - 2);
+		final boolean lo = arg.startsWith("--") && arg.regionMatches(2, longOpt, 0, arg.length() - 2);
 		final boolean so = shortOpt != null && arg.startsWith("-")
 				&& arg.regionMatches(1, shortOpt, 0, arg.length() - 1);
 		// notify about change of prefix for long options
