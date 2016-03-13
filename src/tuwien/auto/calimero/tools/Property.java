@@ -240,7 +240,7 @@ public class Property implements Runnable, PropertyAdapterListener
 		}
 
 		Exception thrown = null;
-		boolean canceled = true;
+		boolean canceled = false;
 		try {
 			// create a property adapter and supply it to a new property client
 			pc = new PropertyClient(createAdapter());
