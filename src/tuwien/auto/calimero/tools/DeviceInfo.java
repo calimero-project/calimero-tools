@@ -45,6 +45,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.slf4j.Logger;
 
@@ -162,6 +163,37 @@ public class DeviceInfo implements Runnable
 		AdditionalIndividualAddresses
 	}
 
+	/**
+	 * Result container of reading the device information.
+	 */
+	public static final class Result
+	{
+		private final Map<Parameter, String> formatted = new HashMap<>();
+		private final Map<Parameter, Long> raw = new HashMap<>();
+
+		/**
+		 * Returns the formatted value of the requested device information parameter.
+		 *
+		 * @param p parameter indicating the requested device information
+		 * @return value formatted as String
+		 */
+		public String formatted(final Parameter p)
+		{
+			return formatted.get(p);
+		}
+
+		/**
+		 * Returns the raw value of the requested device information parameter, if available.
+		 *
+		 * @param p parameter indicating the requested device information
+		 * @return raw value for parameter
+		 */
+		public Optional<Long> raw(final Parameter p)
+		{
+			return Optional.ofNullable(raw.get(p));
+		}
+	}
+
 	private static final String tool = "DeviceInfo";
 	private static final String sep = System.getProperty("line.separator");
 
@@ -194,11 +226,14 @@ public class DeviceInfo implements Runnable
 	private Destination d;
 
 	private final Map<String, Object> options = new HashMap<>();
+	private Result result;
+	// TODO currently some raw values are not set, but this dummy is used
+	private static final long dummy = -1;
 
 	/**
 	 * Creates a new DeviceInfo instance using the supplied options.
 	 * <p>
-	 * Mandatory arguments are an IP host/address or a FT1.2 port identifier, depending on the type
+	 * Mandatory arguments are the connection options depending on the type
 	 * of connection to the KNX network, and the KNX device individual address ("area.line.device").
 	 * See {@link #main(String[])} for the list of options.
 	 *
@@ -295,10 +330,10 @@ public class DeviceInfo implements Runnable
 			mc = new ManagementClientImpl(link);
 			final IndividualAddress device = (IndividualAddress) options.get("device");
 			d = mc.createDestination(device, true);
-			System.out.println("Reading data from device " + device
-					+ ", might take some seconds ...");
-			final String info = readDeviceInfo();
-			onDeviceInformation(device, info);
+			out.info("Reading data from device {}, might take some seconds ...", device);
+			result = new Result();
+			readDeviceInfo();
+			onDeviceInformation(device, result);
 		}
 		catch (final KNXException | RuntimeException e) {
 			thrown = e;
@@ -315,12 +350,15 @@ public class DeviceInfo implements Runnable
 	/**
 	 * Invoked on successfully finishing reading the device information of a KNX device.
 	 *
-	 * @param device the KNX device address the information was read from
-	 * @param info device information
+	 * @param device KNX device address
+	 * @param info holds the result of reading KNX device information; depending on the device, not all available
+	 *        parameters might be set
 	 */
-	protected void onDeviceInformation(final IndividualAddress device, final String info)
+	// TODO provide onDeviceInformation on receiving individual parameters
+	protected void onDeviceInformation(final IndividualAddress device, final Result info)
 	{
-		System.out.println(info);
+		out(CommonParameter.values());
+		out(KnxipParameter.values());
 	}
 
 	/**
@@ -336,6 +374,17 @@ public class DeviceInfo implements Runnable
 			out.info("reading device info canceled");
 		if (thrown != null)
 			out.error("completed", thrown);
+	}
+
+	private void out(final Parameter[] values)
+	{
+		final boolean verbose = options.containsKey("verbose");
+		for (final Parameter p : values) {
+			// create human readable name from parameter by inserting some spaces
+			final String name = p.name().replaceAll("([A-Z])", " $1").replace("I P", "IP").trim();
+			final String raw = result.raw(p).map((v) -> v.toString()).orElse("n/a");
+			System.out.println(name + " = " + result.formatted(p) + (verbose ? "\t [raw=" + raw + "]" : ""));
+		}
 	}
 
 	private void findInterfaceObjects() throws KNXException, InterruptedException
@@ -371,27 +420,13 @@ public class DeviceInfo implements Runnable
 	}
 
 	// read device info similar to ETS
-	private String readDeviceInfo() throws KNXException, InterruptedException
+	private void readDeviceInfo() throws KNXException, InterruptedException
 	{
 		// order of output: general, application program, PEI program, group communication, KNX IP
-		final StringBuffer info = new StringBuffer();
+		final StringBuilder info = new StringBuilder();
 
 		// General information
-
-		// Mask Version, Value of Device Descriptor Type 0
-		byte[] data = mc.readDeviceDesc(d, 0);
-		int maskVersion = 0;
-		final DD0 dd = DeviceDescriptor.DD0.fromType0(data);
-		if (data != null) {
-			maskVersion = dd.getMaskVersion();
-			info.append("Mask version ").append(dd).append("\n");
-			info.append("Medium type: ").append(toMediumTypeString(dd.getMediumType()))
-					.append("\n");
-			info.append("Firmware type: ").append(toFirmwareTypeString(dd.getFirmwareType()))
-					.append("\n");
-			info.append("Firmware version ").append(dd.getFirmwareVersion()).append("\n");
-			info.append("Subcode/Version ").append(dd.getSubcode()).append("\n");
-		}
+		final DD0 dd = readDeviceDescriptor(info);
 
 		// check for PL110 BCU1
 		if (dd == DD0.TYPE_1013)
@@ -403,10 +438,12 @@ public class DeviceInfo implements Runnable
 		else
 			findInterfaceObjects();
 
+		readActualPeiType();
+
+		byte[] data = null;
 		if (deviceObjectIdx != -1) {
 			// Manufacturer ID (Device Object)
-			final String manufacturerId = readUnsignedFormatted(deviceObjectIdx,
-					PID.MANUFACTURER_ID);
+			final String manufacturerId = readUnsignedFormatted(deviceObjectIdx, PID.MANUFACTURER_ID);
 			info.append("Manufacturer ID ").append(manufacturerId).append("\n");
 
 			// Order Info
@@ -432,6 +469,7 @@ public class DeviceInfo implements Runnable
 			requiredPeiType = readUnsignedFormatted(appProgramObjectIdx, PID.PEI_TYPE);
 		info.append("Application PEI type ").append(requiredPeiType).append("\n");
 
+		final int maskVersion = dd.getMaskVersion();
 		if (deviceObjectIdx != -1) {
 			// Hardware Type
 			final byte[] hwData = read(deviceObjectIdx, pidHardwareType);
@@ -440,8 +478,8 @@ public class DeviceInfo implements Runnable
 			// validity check on mask and hardware type octets
 			// AN059v3, AN089v3
 			if ((maskVersion == 0x25 || maskVersion == 0x0705) && hwData[0] != 0) {
-				info.append("manufacturer-specific device identification of hardware type "
-						+ "should be 0 for this mask!").append("\n");
+				info.append("manufacturer-specific device identification of hardware type should be 0 for this mask!")
+						.append("\n");
 			}
 		}
 
@@ -456,7 +494,7 @@ public class DeviceInfo implements Runnable
 		if (data != null) {
 			final DPTXlator x = new DPTXlatorBoolean(DPTXlatorBoolean.DPT_SWITCH);
 			x.setData(data);
-			info.append("Programming mode ").append(x.getValue()).append("\n");
+			putResult(CommonParameter.ProgrammingMode, x.getValue(), (long) x.getNumericValue());
 		}
 
 		if (deviceObjectIdx != -1) {
@@ -469,11 +507,11 @@ public class DeviceInfo implements Runnable
 		final boolean isSystemB = maskVersion == 0x07B0 || maskVersion == 0x17B0;
 
 		// Application Program (Application Program Object)
-		info.append("Application Program\n");
+//		info.append("Application Program\n");
 		readProgram(appProgramObjectIdx, info, isSystemB);
 
 		// PEI Program (Interface Program Object)
-		info.append("PEI Program\n");
+//		info.append("PEI Program\n");
 		readProgram(interfaceProgramObjectIdx, info, isSystemB);
 
 		// Group Communication
@@ -491,10 +529,78 @@ public class DeviceInfo implements Runnable
 			info.append('\n');
 			readKnxipInfo(info);
 		}
-		return info.toString();
 	}
 
-	private void readPL110Bcu1(final StringBuffer info) throws InterruptedException
+	private DD0 readDeviceDescriptor(final StringBuilder info) throws KNXException, InterruptedException
+	{
+		// Mask Version, Value of Device Descriptor Type 0
+		final byte[] data = mc.readDeviceDesc(d, 0);
+		final DD0 dd = DeviceDescriptor.DD0.fromType0(data);
+		if (data != null) {
+			putResult(CommonParameter.DeviceDescriptor, dd.toString(), dd.getMaskVersion());
+			putResult(CommonParameter.KnxMedium, toMediumTypeString(dd.getMediumType()), dd.getMediumType());
+			putResult(CommonParameter.FirmwareType, toFirmwareTypeString(dd.getFirmwareType()), dd.getFirmwareType());
+			putResult(CommonParameter.FirmwareVersion, "" + dd.getFirmwareVersion(), dd.getFirmwareVersion());
+//			info.append("Subcode/Version ").append(dd.getSubcode()).append("\n");
+			// TODO we skip Subcode/Version now
+//			putResult(, "" + dd.getSubcode(), dd.getSubcode());
+		}
+		return dd;
+	}
+
+	// verbose info what the BCU is currently doing
+	private void readSystemState() throws InterruptedException
+	{
+		int state = readMem(0x60, 1);
+		// Bit 7 is parity (even parity)
+		state &= 0x7f;
+
+		final String[] mode = new String[] { "Programming mode", "Normal operation", // else busmonitor mode
+			"Transport layer", "Application layer", "Serial PEI interface (msg protocol)", "User program",
+			"Programming mode (ind. address)" // else normal operation
+		};
+
+		final StringBuilder sb = new StringBuilder();
+		for (int bit = 0; bit < 7; bit++)
+			if ((state & (1 << bit)) != 0)
+				sb.append(mode[bit]).append(", ");
+		putResult(CommonParameter.SystemState, sb.toString(), state);
+
+		// reading back legal values, although there is no 1:1 mapping
+//		String layer = null;
+//		if (state == 0x90)
+//			layer = "Busmonitor";
+//		else if (state == 0x12)
+//			layer = "Link layer";
+//		else if (state == 0x96)
+//			layer = "Transport layer";
+//		else if (state == 0x1E)
+//			layer = "Application layer";
+//		else if (state == 0xC0)
+//			layer = "Reset";
+//		if (layer != null)
+//			putResult(Parameter.SystemState, layer, state);
+	}
+
+	private void readActualPeiType() throws InterruptedException
+	{
+		try {
+			final int v = mc.readADC(d, 4, 1);
+			final int peitype = (10 * v + 60) / 128;
+			putResult(CommonParameter.ActualPeiType, toPeiTypeString(peitype), peitype);
+		}
+		catch (final KNXException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private void putResult(final Parameter p, final String formatted, final long raw)
+	{
+		result.formatted.put(p, formatted);
+		result.raw.put(p, raw);
+	}
+
+	private void readPL110Bcu1(final StringBuilder info) throws InterruptedException
 	{
 		final int addrDoA = 0x0102; // length 2
 		final int addrManufact = 0x0104;
@@ -502,59 +608,66 @@ public class DeviceInfo implements Runnable
 		final int addrVersion = 0x0107;
 		final int addrPeiType = 0x0109;
 		final int addrRunError = 0x010d;
+		final int addrRoutingCnt = 0x010e;
 		final int addrGroupObjTablePtr = 0x0112;
 		final int addrProgramPtr = 0x0114;
 		final int addrGroupAddrTable = 0x0116; // max. length 233
 
-		readMem(addrDoA, 2, info, "DoA ", true);
-		final int mfId = readMem(addrManufact, 1, info, "KNX manufacturer ID ", false);
+		readMem(addrDoA, 2, "DoA ", true, CommonParameter.DomainAddress);
+		final int mfId = readMem(addrManufact, 1, "KNX manufacturer ID ", false, CommonParameter.Manufacturer);
 		if (mfId > -1)
-			info.append("    Manufacturer ").append(manufacturer.get(mfId)).append("\n");
+			putResult(CommonParameter.Manufacturer, manufacturer.get(mfId), mfId);
 
-		/*final int devtype = */readMem(addrDevType, 2, info, "Device type number ", true);
-		final int version = readMem(addrVersion, 1, info, "SW version ", true);
-		info.append("    Main ").append(version >> 4).append(", sub ").append(version & 0xf).append("\n");
-		final int peitype = readMem(addrPeiType, 1, info, "Hardware PEI type ", false);
-		info.append("    " + toPeiTypeString(peitype)).append("\n");
-		final int runerror = readMem(addrRunError, 1, info, "Run error 0x", true);
-		info.append("    " + decodeRunError(runerror)).append("\n");
+		readMem(addrDevType, 2, "Device type number ", true, CommonParameter.DeviceTypeNumber);
+		final int version = readMem(addrVersion, 1, "SW version ", true, CommonParameter.SoftwareVersion);
+		putResult(CommonParameter.SoftwareVersion, (version >> 4) + "." + (version & 0xf), version);
+
+		final int peitype = readMem(addrPeiType, 1, "Hardware PEI type ", false, CommonParameter.HardwarePeiType);
+		putResult(CommonParameter.HardwarePeiType, toPeiTypeString(peitype), peitype);
+		final int runerror = readMem(addrRunError, 1, "Run error 0x", true, CommonParameter.RunError);
+		putResult(CommonParameter.RunError, decodeRunError(runerror), runerror);
+
+		readSystemState();
+		final int rcnt = (readMem(addrRoutingCnt, 1, "Routing count ", false, CommonParameter.RoutingCount) >> 4) & 0x7;
+		putResult(CommonParameter.RoutingCount, "" + rcnt, rcnt);
 		// realization type 1
 		readMem(addrGroupObjTablePtr, 1, info, "Location of group object table 0x", true);
 		// realization type 1
-		final int entries = readMem(addrGroupAddrTable, 1, info, "Group address table entries ", false);
+		final int entries = readMem(addrGroupAddrTable, 1, "Group address table entries ", false,
+				CommonParameter.GroupAddrTableEntries);
 		int startAddr = addrGroupAddrTable + 1;
 		final KNXAddress device = new IndividualAddress(readMem(startAddr, 2) & 0x7fff);
-		info.append("Device address ").append(device).append("\nGroup addresses:");
+		result.formatted.put(CommonParameter.DeviceAddress, device.toString());
+		final StringBuilder sb = new StringBuilder();
 		for (int i = 1; i < entries; i++) {
 			startAddr += 2;
 			final int raw = readMem(startAddr, 2);
 			final KNXAddress group = new GroupAddress(raw & 0x7fff);
-			info.append(" ").append(group);
+			sb.append(" ").append(group);
 			// are we the group responder
 			if ((raw & 0x8000) == 0x8000)
-				info.append("(R)");
+				sb.append("(R)");
 		}
-		info.append("\n");
+		result.formatted.put(CommonParameter.GroupAddresses, sb.toString());
 		final int progptr = readMem(addrProgramPtr, 1, info, "Location of user program 0x100 + 0x", true);
 		final int userprog = 0x100 + progptr;
 	}
 
-	private void readKnxipInfo(final StringBuffer info) throws KNXException, InterruptedException
+	private void readKnxipInfo(final StringBuilder info) throws KNXException, InterruptedException
 	{
 		// Device Name (friendly)
-		info.append("Device name: ").append(readFriendlyName()).append('\n');
+		putResult(KnxipParameter.DeviceName, readFriendlyName(), dummy);
 		// Device Capabilities Device State
 		byte[] data = read(knxnetipObjectIdx, PropertyAccess.PID.KNXNETIP_DEVICE_CAPABILITIES);
-		info.append("Capabilities:").append(toCapabilitiesString(data)).append('\n');
+		putResult(KnxipParameter.Capabilities, toCapabilitiesString(data), toUnsigned(data));
 		final boolean supportsTunneling = (data[1] & 0x01) == 0x01;
 
 		// MAC Address
 		data = read(knxnetipObjectIdx, PropertyAccess.PID.MAC_ADDRESS);
-		info.append("MAC address: ").append(DataUnitBuilder.toHex(data, " ")).append('\n');
+		putResult(KnxipParameter.MacAddress, DataUnitBuilder.toHex(data, " "), dummy);
 		// Current IP Assignment
 		data = read(knxnetipObjectIdx, PropertyAccess.PID.CURRENT_IP_ASSIGNMENT_METHOD);
-		info.append("Current IP assignment method: ").append(toIPAssignmentString(data))
-				.append('\n');
+		putResult(KnxipParameter.CurrentIPAssignment, toIPAssignmentString(data), toUnsigned(data));
 		final int currentIPAssignment = data[0] & 0x0f;
 		// Bits (from LSB): Manual=0, BootP=1, DHCP=2, AutoIP=3
 		final boolean dhcpOrBoot = (data[0] & 0x06) != 0;
@@ -562,96 +675,90 @@ public class DeviceInfo implements Runnable
 		// Read currently set IP parameters
 		// IP Address
 		final byte[] currentIP = read(knxnetipObjectIdx, PropertyAccess.PID.CURRENT_IP_ADDRESS);
-		info.append("\tIP ").append(toIP(currentIP)).append('\n');
+		putResult(KnxipParameter.CurrentIPAddress, toIP(currentIP), toUnsigned(currentIP));
 		// Subnet Mask
 		final byte[] currentMask = read(knxnetipObjectIdx, PropertyAccess.PID.CURRENT_SUBNET_MASK);
-		info.append("\tSubnet mask ").append(toIP(currentMask)).append('\n');
+		putResult(KnxipParameter.CurrentSubnetMask, toIP(currentMask), toUnsigned(currentMask));
 		// Default Gateway
 		final byte[] currentGw = read(knxnetipObjectIdx, PropertyAccess.PID.CURRENT_DEFAULT_GATEWAY);
-		info.append("\tGateway ").append(toIP(currentGw)).append('\n');
+		putResult(KnxipParameter.CurrentDefaultGateway, toIP(currentGw), toUnsigned(currentGw));
 		// DHCP Server (show only if current assignment method is DHCP or BootP)
 		if (dhcpOrBoot) {
 			data = read(knxnetipObjectIdx, PropertyAccess.PID.DHCP_BOOTP_SERVER);
 			info.append("DHCP server ").append(toIP(data)).append('\n');
+			putResult(KnxipParameter.DhcpServer, toIP(data), toUnsigned(data));
 		}
 
 		// IP Assignment Method (shown only if different from current IP assign. method)
 		data = read(knxnetipObjectIdx, PropertyAccess.PID.IP_ASSIGNMENT_METHOD);
 		final int ipAssignment = data[0] & 0x0f;
-		if (ipAssignment != currentIPAssignment)
+		if (ipAssignment != currentIPAssignment) {
 			info.append("Configured IP assignment method").append(ipAssignment).append('\n');
-
+			putResult(KnxipParameter.ConfiguredIPAssignment, "" + ipAssignment, ipAssignment);
+		}
 		// Read IP parameters for manual assignment
 		// the following info is only shown if manual assignment method is enabled, and parameter
 		// is different from current one
 		final boolean manual = (ipAssignment & 0x01) == 0x01;
 		if (manual) {
-			info.append("Differing manual configuration:\n");
+//			info.append("Differing manual configuration:\n");
 			// Manual IP Address
 			final byte[] ip = read(knxnetipObjectIdx, PropertyAccess.PID.IP_ADDRESS);
 			if (!Arrays.equals(currentIP, ip))
-				info.append("\tIP ").append(toIP(ip)).append('\n');
+				putResult(KnxipParameter.IPAddress, toIP(ip), toUnsigned(ip));
 			// Manual Subnet Mask
 			final byte[] mask = read(knxnetipObjectIdx, PropertyAccess.PID.SUBNET_MASK);
 			if (!Arrays.equals(currentMask, mask))
-				info.append("\tSubnet mask ").append(toIP(mask)).append('\n');
+				putResult(KnxipParameter.SubnetMask, toIP(mask), toUnsigned(mask));
 			// Manual Default Gateway
 			final byte[] gw = read(knxnetipObjectIdx, PropertyAccess.PID.DEFAULT_GATEWAY);
 			if (!Arrays.equals(currentGw, gw))
-				info.append("\tDefault gateway ").append(toIP(gw)).append('\n');
+				putResult(KnxipParameter.DefaultGateway, toIP(gw), toUnsigned(gw));
 		}
 
 		// Routing Multicast Address
 		data = read(knxnetipObjectIdx, PropertyAccess.PID.ROUTING_MULTICAST_ADDRESS);
-		info.append("Routing multicast ").append(toIP(data)).append('\n');
+		putResult(KnxipParameter.RoutingMulticast, toIP(data), toUnsigned(data));
 		// Multicast TTL
-		final String ttl = readUnsignedFormatted(knxnetipObjectIdx, PropertyAccess.PID.TTL);
-		info.append("TTL ").append(ttl).append('\n');
+		readUnsigned(knxnetipObjectIdx, PropertyAccess.PID.TTL, false, KnxipParameter.TimeToLive);
 		// Messages to Multicast Address
-		final String txIP = readUnsignedFormatted(knxnetipObjectIdx, PID.MSG_TRANSMIT_TO_IP);
-		info.append("Messages transmitted to IP: ").append(txIP).append('\n');
+		readUnsigned(knxnetipObjectIdx, PID.MSG_TRANSMIT_TO_IP, false, KnxipParameter.TransmitToIP);
 
 		// Additional Ind. Addresses (shown only if tunneling is implemented)
 		if (supportsTunneling) {
-			info.append("Additional individual addresses:");
 			final int pid = PID.ADDITIONAL_INDIVIDUAL_ADDRESSES;
 			final int elements = readElements(knxnetipObjectIdx, pid);
-			info.append(" " + elements).append('\n');
+			final StringBuilder sb = new StringBuilder();
 			for (int i = 0; i < elements; i++) {
 				data = read(knxnetipObjectIdx, pid);
-				info.append('\t').append(new IndividualAddress(data)).append("  ");
+				sb.append(new IndividualAddress(data)).append(" ");
 			}
+			putResult(KnxipParameter.AdditionalIndividualAddresses, sb.toString(), dummy);
 		}
 	}
 
-	private void readProgram(final int objectIdx, final StringBuffer info,
+	private void readProgram(final int objectIdx, final StringBuilder info,
 		final boolean hasErrorCode) throws InterruptedException
 	{
-		if (objectIdx == -1) {
-			info.append("\tn/a\n");
+		if (objectIdx == -1)
 			return;
-		}
-		// TODO can we show some ID of what program is installed?
 
-		final String typeAndVersion = readUnsignedFormatted(objectIdx, PID.PROGRAM_VERSION);
-		info.append("\tProgram version ").append(typeAndVersion).append("\n");
-		info.append('\t');
+		// TODO can we show some ID of what program is installed?
+		readUnsigned(objectIdx, PID.PROGRAM_VERSION, true, CommonParameter.ProgramVersion);
 		readLoadState(objectIdx, info, hasErrorCode);
 
-		final String rs = getRunState(read(objectIdx, PropertyAccess.PID.RUN_STATE_CONTROL));
-		info.append("\tRun state: ").append(rs).append("\n");
+		final byte[] data = read(objectIdx, PropertyAccess.PID.RUN_STATE_CONTROL);
+		putResult(CommonParameter.RunStateControl, getRunState(data), toUnsigned(data));
 	}
 
-	private void readLoadState(final int objectIdx, final StringBuffer info,
+	private void readLoadState(final int objectIdx, final StringBuilder info,
 		final boolean hasErrorCode) throws InterruptedException
 	{
-		if (objectIdx == -1) {
-			info.append("n/a\n");
+		if (objectIdx == -1)
 			return;
-		}
 		byte[] data = read(objectIdx, PropertyAccess.PID.LOAD_STATE_CONTROL);
 		final String ls = getLoadState(data);
-		info.append("Load state: ").append(ls);
+		putResult(CommonParameter.LoadStateControl, ls, toUnsigned(data));
 		// System B contains error code for load state "Error" (optional, but usually yes)
 		if (data != null && data[0] == 3 && hasErrorCode) {
 			data = read(objectIdx, PropertyAccess.PID.ERROR_CODE);
@@ -660,7 +767,7 @@ public class DeviceInfo implements Runnable
 					// enum ErrorClassSystem
 					final DPTXlator t = TranslatorTypes.createTranslator(0, "20.011");
 					t.setData(data);
-					info.append(", error code ").append((int) t.getNumericValue()).append(": ")
+					info.append("Load state error code ").append((int) t.getNumericValue()).append(": ")
 							.append(t.getValue());
 				}
 				catch (final KNXException e) {
@@ -668,7 +775,6 @@ public class DeviceInfo implements Runnable
 				}
 			}
 		}
-		info.append("\n");
 	}
 
 	private String readFriendlyName() throws KNXException, InterruptedException
@@ -688,7 +794,7 @@ public class DeviceInfo implements Runnable
 	private int readElements(final int objectIndex, final int pid) throws InterruptedException
 	{
 		final byte[] elems = read(objectIndex, pid, 0, 1);
-		return elems == null ? 0 : toUnsigned(elems);
+		return elems == null ? 0 : (int) toUnsigned(elems);
 	}
 
 	private byte[] read(final int objectIndex, final int pid) throws InterruptedException
@@ -715,6 +821,19 @@ public class DeviceInfo implements Runnable
 		return null;
 	}
 
+	private void readUnsigned(final int objectIndex, final int pid, final boolean hex, final Parameter p)
+		throws InterruptedException
+	{
+		final byte[] data = read(objectIndex, pid);
+		if (data == null)
+			result.formatted.put(p, "-");
+		else {
+			final long v = toUnsigned(data);
+			result.formatted.put(p, hex ? Long.toHexString(v) : Long.toString(v));
+			result.raw.put(p, v);
+		}
+	}
+
 	private String readUnsignedFormatted(final int objectIndex, final int pid)
 		throws InterruptedException
 	{
@@ -724,12 +843,19 @@ public class DeviceInfo implements Runnable
 		return "" + toUnsigned(data);
 	}
 
-	private int readMem(final int startAddr, final int bytes, final StringBuffer buf, final String prefix,
+	private int readMem(final int startAddr, final int bytes, final StringBuilder buf, final String prefix,
 		final boolean hex) throws InterruptedException
 	{
 		final int v = readMem(startAddr, bytes);
-		if (v != -1)
-			buf.append(prefix).append(hex ? Integer.toHexString(v) : v).append("\n");
+		return v;
+	}
+
+	private int readMem(final int startAddr, final int bytes, final String prefix, final boolean hex, final Parameter p)
+		throws InterruptedException
+	{
+		final int v = readMem(startAddr, bytes, null, prefix, hex);
+		result.formatted.put(p, hex ? Long.toHexString(v) : Long.toString(v));
+		result.raw.put(p, (long) v);
 		return v;
 	}
 
@@ -737,7 +863,7 @@ public class DeviceInfo implements Runnable
 	private int readMem(final int startAddr, final int bytes) throws InterruptedException
 	{
 		try {
-			return toUnsigned(mc.readMemory(d, startAddr, bytes));
+			return (int) toUnsigned(mc.readMemory(d, startAddr, bytes));
 		}
 		catch (final KNXException e) {
 			return -1;
@@ -873,7 +999,7 @@ public class DeviceInfo implements Runnable
 
 	private static void showUsage()
 	{
-		final StringBuffer sb = new StringBuffer();
+		final StringBuilder sb = new StringBuilder();
 		sb.append("Usage: ").append(tool).append(" [options] <host|port> <KNX device address>")
 				.append(sep);
 		sb.append("Options:").append(sep);
@@ -899,15 +1025,23 @@ public class DeviceInfo implements Runnable
 		LogService.logAlways(out, Settings.getLibraryHeader(false));
 	}
 
-	private static int toUnsigned(final byte[] data)
+	private static long toUnsigned(final byte[] data)
 	{
-		int value = data[0] & 0xff;
+		// XXX remove again
+		if (data == null)
+			return dummy;
+		long value = data[0] & 0xff;
 		if (data.length == 1)
 			return value;
 		value = value << 8 | data[1] & 0xff;
 		if (data.length == 2)
 			return value;
 		value = value << 16 | data[2] & 0xff << 8 | data[3] & 0xff;
+		if (data.length == 4)
+			return value;
+		if (data.length == 5)
+			return value << 8 | data[4] & 0xff;
+		value = value << 32 | data[4] & 0xff << 24 | data[5] & 0xff << 16 | data[6] & 0xff << 8 | data[7] & 0xff;
 		return value;
 	}
 
