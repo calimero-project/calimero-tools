@@ -1028,20 +1028,12 @@ public class DeviceInfo implements Runnable
 	private static long toUnsigned(final byte[] data)
 	{
 		// XXX remove again
-		if (data == null)
+		if (data == null || data.length > 8)
 			return dummy;
-		long value = data[0] & 0xff;
-		if (data.length == 1)
-			return value;
-		value = value << 8 | data[1] & 0xff;
-		if (data.length == 2)
-			return value;
-		value = value << 16 | data[2] & 0xff << 8 | data[3] & 0xff;
-		if (data.length == 4)
-			return value;
-		if (data.length == 5)
-			return value << 8 | data[4] & 0xff;
-		value = value << 32 | data[4] & 0xff << 24 | data[5] & 0xff << 16 | data[6] & 0xff << 8 | data[7] & 0xff;
+		long value = 0;
+		for (final byte b : data) {
+			value = value << 8 | b & 0xff;
+		}
 		return value;
 	}
 
