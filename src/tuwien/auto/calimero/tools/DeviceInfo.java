@@ -1064,8 +1064,8 @@ public class DeviceInfo implements Runnable
 			return "Power-line 110";
 		case 2:
 			return "Radio Frequency";
-		case 4:
-			return "Power-line 132";
+		case 5:
+			return "KNX IP";
 		default:
 			return "Type " + type;
 		}
