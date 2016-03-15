@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2013, 2015 B. Malinowsky
+    Copyright (c) 2013, 2016 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -179,10 +179,9 @@ public class ScanDevices implements Runnable
 			// TODO onCompletion prints '0 network devices found' on showing help etc., either
 			// suppress that or move the following out of the try (skipping onCompletion altogether)
 			if (options.isEmpty()) {
-				LogService.logAlways(out, tool
-						+ " - Determine existing KNX devices on a KNX subnetwork");
+				out(tool + " - Determine existing KNX devices on a KNX subnetwork");
 				showVersion();
-				LogService.logAlways(out, "Type --help for help message");
+				out("Type --help for help message");
 				return;
 			}
 			if (options.containsKey("help")) {
@@ -209,7 +208,7 @@ public class ScanDevices implements Runnable
 				}
 			}
 			else {
-				LogService.logAlways(out, "start scan of " + area + "." + line + ".[0..255] ...");
+				out("start scan of " + area + "." + line + ".[0..255] ...");
 				// this call is interruptible (via exception), in which case we won't get any
 				// result, even though some devices might have answered already
 				// ??? think whether to refactor scanning into interruptible with partial result set
@@ -408,11 +407,16 @@ public class ScanDevices implements Runnable
 		sb.append("The area and line are given as numbers in the range [0..15], e.g., 3.1")
 				.append(sep);
 		sb.append("The (optional) device address part is in the range [0..255]").append(sep);
-		LogService.logAlways(out, sb.toString());
+		out(sb.toString());
 	}
 
 	private static void showVersion()
 	{
-		LogService.logAlways(out, Settings.getLibraryHeader(false));
+		out(Settings.getLibraryHeader(false));
+	}
+
+	private static void out(final String s)
+	{
+		System.out.println(s);
 	}
 }

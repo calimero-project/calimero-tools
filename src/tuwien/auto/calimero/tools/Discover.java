@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2015 B. Malinowsky
+    Copyright (c) 2006, 2016 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -166,9 +166,9 @@ public class Discover implements Runnable
 		boolean canceled = false;
 		try {
 			if (options.isEmpty()) {
-				LogService.logAlways(out, tool + " - KNXnet/IP server discovery & self description");
+				out(tool + " - KNXnet/IP server discovery & self description");
 				showVersion();
-				LogService.logAlways(out, "Type --help for help message");
+				out("Type --help for help message");
 			}
 			else if (options.containsKey("help"))
 				showUsage();
@@ -459,11 +459,16 @@ public class Discover implements Runnable
 		sb.append(" --description -d <host>  query description from host").append(sep);
 		sb.append(" --serverport -p <number> server UDP port for description (default ")
 				.append(KNXnetIPConnection.DEFAULT_PORT).append(")").append(sep);
-		LogService.logAlways(out, sb.toString());
+		out(sb.toString());
 	}
 
 	private static void showVersion()
 	{
-		LogService.logAlways(out, Settings.getLibraryHeader(false));
+		out(Settings.getLibraryHeader(false));
+	}
+
+	private static void out(final String s)
+	{
+		System.out.println(s);
 	}
 }

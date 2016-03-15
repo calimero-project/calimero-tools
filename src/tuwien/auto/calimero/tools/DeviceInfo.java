@@ -310,9 +310,9 @@ public class DeviceInfo implements Runnable
 	{
 		// ??? as with the other tools, maybe put this into the try block to also call onCompletion
 		if (options.isEmpty()) {
-			LogService.logAlways(out, tool + " - Read KNX device information");
+			out(tool + " - Read KNX device information");
 			showVersion();
-			LogService.logAlways(out, "Type --help for help message");
+			out("Type --help for help message");
 			return;
 		}
 		if (options.containsKey("help")) {
@@ -1015,14 +1015,18 @@ public class DeviceInfo implements Runnable
 		sb.append(" --usb -u                 use KNX USB communication").append(sep);
 		sb.append(" --tpuart                 use TP-UART communication").append(sep);
 		sb.append(" --routing                use KNXnet/IP routing").append(sep);
-		sb.append(" --medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)").append(
-				sep);
-		LogService.logAlways(out, sb.toString());
+		sb.append(" --medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)").append(sep);
+		out(sb.toString());
 	}
 
 	private static void showVersion()
 	{
-		LogService.logAlways(out, Settings.getLibraryHeader(false));
+		out(Settings.getLibraryHeader(false));
+	}
+
+	private static void out(final String s)
+	{
+		System.out.println(s);
 	}
 
 	private static long toUnsigned(final byte[] data)

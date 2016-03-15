@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2015 B. Malinowsky
+    Copyright (c) 2006, 2016 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -201,9 +201,9 @@ public class IPConfig implements Runnable
 		boolean canceled = false;
 		try {
 			if (options.isEmpty()) {
-				LogService.logAlways(out, tool + " - KNXnet/IP address configuration");
+				out(tool + " - KNXnet/IP address configuration");
 				showVersion();
-				LogService.logAlways(out, "Type --help for help message");
+				out("Type --help for help message");
 				return;
 			}
 			if (options.containsKey("help")) {
@@ -656,12 +656,17 @@ public class IPConfig implements Runnable
 		sb.append("  dhcp           enable DHCP IP assignment for current IP address").append(sep);
 		sb.append("  auto           enable automatic IP assignment for current IP address").append(
 				sep);
-		LogService.logAlways(out, sb.toString());
+		out(sb.toString());
 	}
 
 	private static void showVersion()
 	{
-		LogService.logAlways(out, Settings.getLibraryHeader(false));
+		out(Settings.getLibraryHeader(false));
+	}
+
+	private static void out(final String s)
+	{
+		System.out.println(s);
 	}
 
 	private static byte[] getAuthorizeKey(final String key)

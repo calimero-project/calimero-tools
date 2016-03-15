@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2015 B. Malinowsky
+    Copyright (c) 2006, 2016 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -290,9 +290,9 @@ public class ProcComm implements Runnable
 	public void start(final ProcessListener l) throws KNXException, InterruptedException
 	{
 		if (options.isEmpty()) {
-			LogService.logAlways(out, tool + " - KNX process communication & group monitor");
+			out(tool + " - KNX process communication & group monitor");
 			showVersion();
-			LogService.logAlways(out, "Type --help for help message");
+			out("Type --help for help message");
 			return;
 		}
 		if (options.containsKey("help")) {
@@ -744,7 +744,7 @@ public class ProcComm implements Runnable
 				.append("  angle (5.003) {0..360}, ucount (5.010) {0..255}").append(sep)
 				.append("  temp (9.001) {-273..+670760}, float/float2 (9.002)").append(sep)
 				.append("  int (13.001), float4 (14.005), string (16.001)");
-		LogService.logAlways(out, sb.toString());
+		out(sb.toString());
 	}
 
 	//
@@ -753,7 +753,12 @@ public class ProcComm implements Runnable
 
 	private static void showVersion()
 	{
-		LogService.logAlways(out, Settings.getLibraryHeader(false));
+		out(Settings.getLibraryHeader(false));
+	}
+
+	private static void out(final String s)
+	{
+		System.out.println(s);
 	}
 
 	private final class ShutdownHandler extends Thread

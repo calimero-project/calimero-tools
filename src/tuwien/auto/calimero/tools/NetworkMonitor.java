@@ -243,9 +243,9 @@ public class NetworkMonitor implements Runnable
 	public void start() throws KNXException, InterruptedException
 	{
 		if (options.isEmpty()) {
-			LogService.logAlways(out, tool + " - Monitor a KNX network (passive busmonitor mode)");
+			out(tool + " - Monitor a KNX network (passive busmonitor mode)");
 			showVersion();
-			LogService.logAlways(out, "Type --help for help message");
+			out("Type --help for help message");
 			return;
 		}
 		if (options.containsKey("help")) {
@@ -464,12 +464,17 @@ public class NetworkMonitor implements Runnable
 		sb.append("  --tpuart                 use TP-UART communication").append(sep);
 		sb.append("  --medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)")
 				.append(sep);
-		LogService.logAlways(out, sb.toString());
+		out(sb.toString());
 	}
 
 	private static void showVersion()
 	{
-		LogService.logAlways(out, Settings.getLibraryHeader(false));
+		out(Settings.getLibraryHeader(false));
+	}
+
+	private static void out(final String s)
+	{
+		System.out.println(s);
 	}
 
 	private final class ShutdownHandler extends Thread
