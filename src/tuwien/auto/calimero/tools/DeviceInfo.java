@@ -652,6 +652,45 @@ public class DeviceInfo implements Runnable
 		final int userprog = 0x100 + progptr;
 	}
 
+//	private void readTP1Bcu1() throws InterruptedException
+//	{
+//		// Option Reg: bit 1: mem 0x120-0x1ff protected/writable
+//		final int addrOptionReg = 0x100;
+//		final int addrManufactData = 0x0101; // length 3
+//		final int addrManufact = 0x0104;
+//		final int addrDevType = 0x0105; // length 2
+//		final int addrVersion = 0x0107;
+//		final int addrPeiType = 0x0109; // _required_ PEI type
+//		final int addrRunError = 0x010d;
+//		final int addrRoutingCnt = 0x010e;
+//		final int addrMxRstCnt = 0x010f; // bits (msb): 3 INAK / 2 (unused) / 3 BUSY (lsb)
+//		final int addrConfigDesc = 0x0110;
+//		final int addrAssocTablePtr = 0x0111;
+//		final int addrGroupObjTablePtr = 0x0112;
+//		final int addrProgramPtr = 0x0114;
+//		final int addrGroupAddrTable = 0x0116; // max. length 233
+//	}
+//
+//	private void readTP1Bcu2()
+//	{
+//		// Option Reg: bit 0: watchdog disabled/enabled, bit 1: mem 0x300-0x4df protected/writable
+//		final int addrOptionReg = 0x100;
+//
+//		final int addrManufactData = 0x0101; // length 2
+//		// App Id, length 5: App manufacturer (2), SW dev type (2), SW version (1)
+//		// the App manufacturer can differ from product manufacturer (0x101), if a compatible program was downloaded
+//		final int addrAppId = 0x0103;
+//
+//		// address table realization type 2
+//		final int addrUsrEeprom = 0x0116; // max. length 858: Addr Table, Assoc Table, EEData, Code
+//
+//		// Page 0 RAM
+//		final int addrPeiInterface = 0x00c4; // if used
+//		final int addrPeiInfo = 0x00c5; // if used
+//
+//		// interface objects: Device Object, Address table object, Assoc table object, App program object
+//	}
+
 	private void readKnxipInfo(final StringBuilder info) throws KNXException, InterruptedException
 	{
 		// Device Name (friendly)
