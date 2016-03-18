@@ -595,7 +595,12 @@ public class DeviceInfo implements Runnable
 		}
 	}
 
-	private void putResult(final Parameter p, final String formatted, final long raw)
+	private void putResult(final Parameter p, final String formatted, final int raw)
+	{
+		putResult(p, formatted, Long.valueOf(raw));
+	}
+
+	private void putResult(final Parameter p, final String formatted, final Long raw)
 	{
 		result.formatted.put(p, formatted);
 		result.raw.put(p, raw);
@@ -696,7 +701,7 @@ public class DeviceInfo implements Runnable
 	private void readKnxipInfo(final StringBuilder info) throws KNXException, InterruptedException
 	{
 		// Device Name (friendly)
-		putResult(KnxipParameter.DeviceName, readFriendlyName(), dummy);
+		putResult(KnxipParameter.DeviceName, readFriendlyName(), null);
 		// Device Capabilities Device State
 		byte[] data = read(knxnetipObjectIdx, PropertyAccess.PID.KNXNETIP_DEVICE_CAPABILITIES);
 		putResult(KnxipParameter.Capabilities, toCapabilitiesString(data), toUnsigned(data));
@@ -704,7 +709,7 @@ public class DeviceInfo implements Runnable
 
 		// MAC Address
 		data = read(knxnetipObjectIdx, PropertyAccess.PID.MAC_ADDRESS);
-		putResult(KnxipParameter.MacAddress, DataUnitBuilder.toHex(data, " "), dummy);
+		putResult(KnxipParameter.MacAddress, DataUnitBuilder.toHex(data, " "), toUnsigned(data));
 		// Current IP Assignment
 		data = read(knxnetipObjectIdx, PropertyAccess.PID.CURRENT_IP_ASSIGNMENT_METHOD);
 		putResult(KnxipParameter.CurrentIPAssignment, toIPAssignmentString(data), toUnsigned(data));
@@ -773,7 +778,7 @@ public class DeviceInfo implements Runnable
 				data = read(knxnetipObjectIdx, pid);
 				sb.append(new IndividualAddress(data)).append(" ");
 			}
-			putResult(KnxipParameter.AdditionalIndividualAddresses, sb.toString(), dummy);
+			putResult(KnxipParameter.AdditionalIndividualAddresses, sb.toString(), null);
 		}
 	}
 
