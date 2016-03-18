@@ -382,7 +382,9 @@ public class DeviceInfo implements Runnable
 			// create human readable name from parameter by inserting some spaces
 			final String name = p.name().replaceAll("([A-Z])", " $1").replace("I P", "IP").trim();
 			final String raw = result.raw(p).map((v) -> v.toString()).orElse("n/a");
-			System.out.println(name + " = " + result.formatted(p) + (verbose ? "\t [raw=" + raw + "]" : ""));
+			final String formatted = result.formatted(p);
+			if (formatted != null)
+				System.out.println(name + " = " + formatted + (verbose ? "\t [raw=" + raw + "]" : ""));
 		}
 	}
 
