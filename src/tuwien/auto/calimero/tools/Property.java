@@ -161,7 +161,6 @@ public class Property implements Runnable, PropertyAdapterListener
 	 * </ul>
 	 * For remote property service these options are available:
 	 * <ul>
-	 * <li><code>--routing</code> use KNXnet/IP routing</li>
 	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to tp1)
 	 * </li>
 	 * <li><code>--knx-address -k</code> <i>KNX address</i> &nbsp;KNX device address of local
@@ -470,10 +469,10 @@ public class Property implements Runnable, PropertyAdapterListener
 		else {
 			final InetSocketAddress local = Main.createLocalSocket(
 					(InetAddress) options.get("localhost"), (Integer) options.get("localport"));
-			final InetSocketAddress sa = new InetSocketAddress(Main.parseHost(host),
-					((Integer) options.get("port")).intValue());
-			lnk = new KNXNetworkLinkIP(options.containsKey("routing") ? KNXNetworkLinkIP.ROUTING
-					: KNXNetworkLinkIP.TUNNELING, local, sa, options.containsKey("nat"), medium);
+			final InetAddress addr = Main.parseHost(host);
+			final InetSocketAddress remote = new InetSocketAddress(addr, ((Integer) options.get("port")).intValue());
+			final int mode = addr.isMulticastAddress() ? KNXNetworkLinkIP.ROUTING : KNXNetworkLinkIP.TUNNELING;
+			lnk = new KNXNetworkLinkIP(mode, local, remote, options.containsKey("nat"), medium);
 		}
 		final IndividualAddress remote = (IndividualAddress) options.get("remote");
 		// if an authorization key was supplied, the adapter uses
@@ -550,8 +549,6 @@ public class Property implements Runnable, PropertyAdapterListener
 				options.put("connect", null);
 			else if (Main.isOption(arg, "authorize", "a"))
 				options.put("authorize", getAuthorizeKey(args[++i]));
-			else if (Main.isOption(arg, "routing", null))
-				options.put("routing", null);
 			else if (arg.equals("get") || arg.equals("set") || arg.equals("desc") || arg.equals("scan")) {
 				final List<String> cmd = new ArrayList<>();
 				cmd.add(arg);
@@ -734,7 +731,6 @@ public class Property implements Runnable, PropertyAdapterListener
 		sb.append("Options for local device management mode only:").append(sep);
 		sb.append("  --emulatewriteenable -e  check write-enable of a property").append(sep);
 		sb.append("Options for remote property service mode only:").append(sep);
-		sb.append("  --routing                use KNXnet/IP routing").append(sep);
 		sb.append("  --medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)")
 				.append(sep);
 		sb.append("  --connect -c             connection oriented mode").append(sep);

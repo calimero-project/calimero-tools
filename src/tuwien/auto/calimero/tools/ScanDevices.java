@@ -121,7 +121,6 @@ public class ScanDevices implements Runnable
 	 * <li><code>--serial -s</code> use FT1.2 serial communication</li>
 	 * <li><code>--usb -u</code> use KNX USB communication</li>
 	 * <li><code>--tpuart</code> use TP-UART communication</li>
-	 * <li><code>--routing</code> use KNXnet/IP routing</li>
 	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to tp1)
 	 * </li>
 	 * <li><code>--knx-address -k</code> <i>KNX address</i> &nbsp;KNX device address of local
@@ -268,10 +267,9 @@ public class ScanDevices implements Runnable
 		// create local and remote socket address for network link
 		final InetSocketAddress local = Main.createLocalSocket(
 				(InetAddress) options.get("localhost"), (Integer) options.get("localport"));
-		final InetSocketAddress remote = new InetSocketAddress(Main.parseHost(host),
-				((Integer) options.get("port")).intValue());
-		final int mode = options.containsKey("routing") ? KNXNetworkLinkIP.ROUTING
-				: KNXNetworkLinkIP.TUNNELING;
+		final InetAddress addr = Main.parseHost(host);
+		final InetSocketAddress remote = new InetSocketAddress(addr, ((Integer) options.get("port")).intValue());
+		final int mode = addr.isMulticastAddress() ? KNXNetworkLinkIP.ROUTING : KNXNetworkLinkIP.TUNNELING;
 		return new KNXNetworkLinkIP(mode, local, remote, options.containsKey("nat"), medium);
 	}
 
@@ -344,8 +342,6 @@ public class ScanDevices implements Runnable
 				options.put("port", Integer.decode(args[++i]));
 			else if (Main.isOption(arg, "nat", "n"))
 				options.put("nat", null);
-			else if (Main.isOption(arg, "routing", null))
-				options.put("routing", null);
 			else if (Main.isOption(arg, "serial", "s"))
 				options.put("serial", null);
 			else if (Main.isOption(arg, "usb", "u"))
@@ -401,7 +397,6 @@ public class ScanDevices implements Runnable
 		sb.append(" --serial -s              use FT1.2 serial communication").append(sep);
 		sb.append(" --usb -u                 use KNX USB communication").append(sep);
 		sb.append(" --tpuart                 use TP-UART communication").append(sep);
-		sb.append(" --routing                use KNXnet/IP routing").append(sep);
 		sb.append(" --medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)")
 				.append(sep);
 		sb.append("The area and line are given as numbers in the range [0..15], e.g., 3.1")

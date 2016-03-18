@@ -123,9 +123,9 @@ Read a KNX datapoint value (switch button on/off) from a group address (`1/2/1`)
 
 	java -jar calimero-tools-2.3-SNAPSHOT.jar read switch 1/2/1 --serial /dev/ttyS01
 
-Start process communication group monitoring for a TP1 KNX network (the default) using KNXnet/IP routing (`--routing`) in the multicast group `224.0.23.12`, and a specific local host address (`--localhost`, useful in multihoming to specify the outgoing network interface)
+Start process communication group monitoring for a TP1 KNX network (the default) using KNXnet/IP Routing in the multicast group `224.0.23.12`, and a specific local host address (`--localhost`, useful in multihoming to specify the outgoing network interface)
 
-	java -jar calimero-tools-2.3-SNAPSHOT.jar groupmon --routing --localhost 192.168.10.14 224.0.23.12
+	java -jar calimero-tools-2.3-SNAPSHOT.jar groupmon --localhost 192.168.10.14 224.0.23.12
 
 **Busmonitor**
 

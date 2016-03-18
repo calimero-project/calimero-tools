@@ -153,7 +153,6 @@ public class IPConfig implements Runnable
 	 * </ul>
 	 * For remote property service these options are available:
 	 * <ul>
-	 * <li><code>--routing</code> use KNXnet/IP routing</li>
 	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to tp1)
 	 * </li>
 	 * <li><code>--knx-address -k</code> <i>KNX address</i> &nbsp;KNX device address of local
@@ -516,10 +515,9 @@ public class IPConfig implements Runnable
 			lnk = new KNXNetworkLinkTpuart(host, medium, Collections.emptyList());
 		}
 		else {
-			final int mode = options.containsKey("routing") ? KNXNetworkLinkIP.ROUTING
-					: KNXNetworkLinkIP.TUNNELING;
-			final InetSocketAddress remote = new InetSocketAddress(Main.parseHost(host),
-					((Integer) options.get("port")).intValue());
+			final InetAddress addr = Main.parseHost(host);
+			final InetSocketAddress remote = new InetSocketAddress(addr, ((Integer) options.get("port")).intValue());
+			final int mode = addr.isMulticastAddress() ? KNXNetworkLinkIP.ROUTING : KNXNetworkLinkIP.TUNNELING;
 			lnk = new KNXNetworkLinkIP(mode, local, remote, options.containsKey("nat"), medium);
 		}
 		final IndividualAddress remote = (IndividualAddress) options.get("remote");
@@ -581,8 +579,6 @@ public class IPConfig implements Runnable
 				options.put("connect", null);
 			else if (Main.isOption(arg, "authorize", "a"))
 				options.put("authorize", getAuthorizeKey(i.next()));
-			else if (Main.isOption(arg, "routing", null))
-				options.put("routing", null);
 			// IP configuration options
 			else if (arg.equalsIgnoreCase("manual"))
 				options.put("manual", null);
@@ -635,8 +631,6 @@ public class IPConfig implements Runnable
 		sb.append("  --serial -s              use FT1.2 serial communication").append(sep);
 		sb.append("  --usb -u                 use KNX USB communication").append(sep);
 		sb.append("  --tpuart                 use TP-UART communication").append(sep);
-		sb.append("  --routing                use KNXnet/IP routing (always on port 3671)").append(
-				sep);
 		sb.append("  --medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)")
 				.append(sep);
 		sb.append("  --connect -c             connection oriented mode").append(sep);

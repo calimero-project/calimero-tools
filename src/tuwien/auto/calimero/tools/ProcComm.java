@@ -196,7 +196,6 @@ public class ProcComm implements Runnable
 	 * </li>
 	 * <li><code>--port -p</code> <i>number</i> &nbsp;UDP port on host (default 3671)</li>
 	 * <li><code>--nat -n</code> enable Network Address Translation</li>
-	 * <li><code>--routing</code> use KNXnet/IP routing</li>
 	 * <li><code>--serial -s</code> use FT1.2 serial communication</li>
 	 * <li><code>--usb -u</code> use KNX USB communication</li>
 	 * <li><code>--tpuart</code> use TP-UART communication</li>
@@ -439,10 +438,9 @@ public class ProcComm implements Runnable
 		// create local and remote socket address for network link
 		final InetSocketAddress local = Main.createLocalSocket(
 				(InetAddress) options.get("localhost"), (Integer) options.get("localport"));
-		final InetSocketAddress remote = new InetSocketAddress(Main.parseHost(host),
-				((Integer) options.get("port")).intValue());
-		final int mode = options.containsKey("routing") ? KNXNetworkLinkIP.ROUTING
-				: KNXNetworkLinkIP.TUNNELING;
+		final InetAddress addr = Main.parseHost(host);
+		final InetSocketAddress remote = new InetSocketAddress(addr, ((Integer) options.get("port")).intValue());
+		final int mode = addr.isMulticastAddress() ? KNXNetworkLinkIP.ROUTING : KNXNetworkLinkIP.TUNNELING;
 		return new KNXNetworkLinkIP(mode, local, remote, options.containsKey("nat"), medium);
 	}
 
@@ -681,8 +679,6 @@ public class ProcComm implements Runnable
 				options.put("medium", Main.getMedium(args[++i]));
 			else if (Main.isOption(arg, "timeout", "t"))
 				options.put("timeout", Integer.decode(args[++i]));
-			else if (Main.isOption(arg, "routing", null))
-				options.put("routing", null);
 			else if (!options.containsKey("host"))
 				options.put("host", arg);
 			else
@@ -724,8 +720,6 @@ public class ProcComm implements Runnable
 		sb.append("  --port -p <number>       UDP port on <host> (default ")
 				.append(KNXnetIPConnection.DEFAULT_PORT + ")").append(sep);
 		sb.append("  --nat -n                 enable Network Address Translation").append(sep);
-		sb.append("  --routing                use KNX net/IP routing (always on port 3671)")
-				.append(sep);
 		sb.append("  --serial -s              use FT1.2 serial communication").append(sep);
 		sb.append("  --usb -u                 use KNX USB communication").append(sep);
 		sb.append("  --tpuart                 use TP-UART communication").append(sep);

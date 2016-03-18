@@ -149,7 +149,6 @@ public class PropClient implements Runnable
 	 * </ul>
 	 * For remote property service these options are available:
 	 * <ul>
-	 * <li><code>--routing</code> use KNXnet/IP routing</li>
 	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to
 	 * tp1)</li>
 	 * <li><code>--connect -c</code> connection oriented mode</li>
