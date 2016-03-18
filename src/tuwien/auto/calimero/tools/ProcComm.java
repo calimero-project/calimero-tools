@@ -142,7 +142,7 @@ public class ProcComm implements Runnable
 	private static final String sep = System.getProperty("line.separator");
 	private static final String toolDatapointsFile = "." + tool.toLowerCase() + "_dplist.xml";
 
-	private static Logger out;
+	private static final Logger out = LogService.getLogger("calimero.tools");
 
 	/**
 	 * The used process communicator.
@@ -703,7 +703,7 @@ public class ProcComm implements Runnable
 			final String lvl = args.contains("-v") || args.contains("--verbose") ? "debug" : "info";
 			System.setProperty(simpleLoggerLogLevel, lvl);
 		}
-		out = LogService.getLogger("calimero.tools");
+//		out = LogService.getLogger("calimero.tools");
 	}
 
 	private static void showUsage()
