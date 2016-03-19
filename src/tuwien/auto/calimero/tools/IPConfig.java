@@ -218,8 +218,6 @@ public class IPConfig implements Runnable
 			final PropertyAdapter adapter = createAdapter();
 			// hand our adapter to a new property client
 			pc = new PropertyClient(adapter);
-			// ??? we should add our log writer to property client logger
-			// LogManager.getManager().addWriter("PC " + adapter.getName(), w);
 
 			// get object type with KNXnet/IP parameters
 			pc.scanProperties(false, d -> {

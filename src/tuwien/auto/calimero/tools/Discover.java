@@ -146,8 +146,6 @@ public class Discover implements Runnable
 	 */
 	public static void main(final String[] args)
 	{
-		// TODO set default warning level for slf4j
-		final Logger w; // = LogStreamWriter.newUnformatted(LogLevel.INFO, System.out, true, false);
 		try {
 			final Discover d = new Discover(args);
 			final ShutdownHandler sh = new ShutdownHandler().register();
