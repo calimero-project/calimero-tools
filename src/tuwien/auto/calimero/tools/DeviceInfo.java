@@ -43,7 +43,6 @@ import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -296,9 +295,6 @@ public class DeviceInfo implements Runnable
 	 */
 	public static void main(final String[] args)
 	{
-		setLogVerbosity(Arrays.asList(args));
-
-		out = LogService.getLogger("calimero.tools");
 		try {
 			final DeviceInfo d = new DeviceInfo(args);
 			final ShutdownHandler sh = new ShutdownHandler().register();
@@ -853,8 +849,7 @@ public class DeviceInfo implements Runnable
 			return res.toByteArray();
 		}
 		catch (final KNXException e) {
-			out.warn("object index " + objectIndex + " property " + pid + " error, "
-					+ e.getMessage());
+			out.warn("object index " + objectIndex + " property " + pid + " error, " + e.getMessage());
 		}
 		return null;
 	}
@@ -1000,19 +995,6 @@ public class DeviceInfo implements Runnable
 			throw new KNXIllegalArgumentException("specify either IP host, serial port, or device");
 		if (!options.containsKey("device"))
 			throw new KNXIllegalArgumentException("KNX device individual address missing");
-	}
-
-	// a helper in case slf4j simple logger is used
-	private static void setLogVerbosity(final List<String> args)
-	{
-		// TODO problem: this overrules the log level from a simplelogger.properties file!!
-		final String simpleLoggerLogLevel = "org.slf4j.simpleLogger.defaultLogLevel";
-		if (!System.getProperties().containsKey(simpleLoggerLogLevel)) {
-			final String lvl = args.contains("-v") || args.contains("--verbose") ? "debug"
-					: "error";
-			System.setProperty(simpleLoggerLogLevel, lvl);
-		}
-		out = LogService.getLogger("calimero.tools");
 	}
 
 	private static void showUsage()

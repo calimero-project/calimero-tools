@@ -237,7 +237,6 @@ public class ProcComm implements Runnable
 	 */
 	public static void main(final String[] args)
 	{
-		setLogVerbosity(Arrays.asList(args));
 		try {
 			final ProcComm pc = new ProcComm(args);
 			final ShutdownHandler sh = pc.new ShutdownHandler().register();
@@ -692,18 +691,6 @@ public class ProcComm implements Runnable
 			throw new KNXIllegalArgumentException("specify read, write, or group monitoring");
 		if (options.containsKey("read") && options.containsKey("write"))
 			throw new KNXIllegalArgumentException("either read or write - not both");
-	}
-
-	// a helper in case slf4j simple logger is used
-	private static void setLogVerbosity(final List<String> args)
-	{
-		// TODO problem: this overrules the log level from a simplelogger.properties file!!
-		final String simpleLoggerLogLevel = "org.slf4j.simpleLogger.defaultLogLevel";
-		if (!System.getProperties().containsKey(simpleLoggerLogLevel)) {
-			final String lvl = args.contains("-v") || args.contains("--verbose") ? "debug" : "info";
-			System.setProperty(simpleLoggerLogLevel, lvl);
-		}
-//		out = LogService.getLogger("calimero.tools");
 	}
 
 	private static void showUsage()

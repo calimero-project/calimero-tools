@@ -63,7 +63,6 @@ import tuwien.auto.calimero.link.KNXNetworkLinkTpuart;
 import tuwien.auto.calimero.link.KNXNetworkLinkUsb;
 import tuwien.auto.calimero.link.medium.KNXMediumSettings;
 import tuwien.auto.calimero.link.medium.TPSettings;
-import tuwien.auto.calimero.log.LogService;
 import tuwien.auto.calimero.mgmt.Description;
 import tuwien.auto.calimero.mgmt.LocalDeviceManagementUsb;
 import tuwien.auto.calimero.mgmt.LocalDeviceMgmtAdapter;
@@ -196,7 +195,6 @@ public class Property implements Runnable, PropertyAdapterListener
 	 */
 	public static void main(final String[] args)
 	{
-		setLogVerbosity(Arrays.asList(args));
 		try {
 			new Property(args).run();
 		}
@@ -694,18 +692,6 @@ public class Property implements Runnable, PropertyAdapterListener
 	private void printHelp(final String help)
 	{
 		out(help);
-	}
-
-	// a helper in case slf4j simple logger is used
-	private static void setLogVerbosity(final List<String> args)
-	{
-		// TODO problem: this overrules the log level from a simplelogger.properties file!!
-		final String simpleLoggerLogLevel = "org.slf4j.simpleLogger.defaultLogLevel";
-		if (!System.getProperties().containsKey(simpleLoggerLogLevel)) {
-			final String lvl = args.contains("-v") || args.contains("--verbose") ? "debug" : "warn";
-			System.setProperty(simpleLoggerLogLevel, lvl);
-		}
-		out = LogService.getLogger("calimero.tools");
 	}
 
 	private static void showUsage()

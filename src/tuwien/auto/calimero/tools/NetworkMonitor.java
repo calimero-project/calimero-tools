@@ -39,9 +39,7 @@ package tuwien.auto.calimero.tools;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.time.LocalTime;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -175,7 +173,6 @@ public class NetworkMonitor implements Runnable
 	 */
 	public static void main(final String[] args)
 	{
-		setLogVerbosity(Arrays.asList(args));
 		try {
 			// if listener is null, we create our default one
 			final NetworkMonitor m = new NetworkMonitor(args);
@@ -430,18 +427,6 @@ public class NetworkMonitor implements Runnable
 		if (!options.containsKey("host")
 				|| (options.containsKey("serial") && options.containsKey("usb")))
 			throw new KNXIllegalArgumentException("specify either IP host, serial port, or device");
-	}
-
-	// a helper in case slf4j simple logger is used
-	private static void setLogVerbosity(final List<String> args)
-	{
-		// TODO problem: this overrules the log level from a simplelogger.properties file!!
-		final String simpleLoggerLogLevel = "org.slf4j.simpleLogger.defaultLogLevel";
-		if (!System.getProperties().containsKey(simpleLoggerLogLevel)) {
-			final String lvl = args.contains("-v") || args.contains("--verbose") ? "debug" : "info";
-			System.setProperty(simpleLoggerLogLevel, lvl);
-		}
-		out = LogService.getLogger("calimero.tools");
 	}
 
 	private static void showUsage()

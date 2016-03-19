@@ -39,7 +39,6 @@ package tuwien.auto.calimero.tools;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -60,7 +59,6 @@ import tuwien.auto.calimero.link.KNXNetworkLinkTpuart;
 import tuwien.auto.calimero.link.KNXNetworkLinkUsb;
 import tuwien.auto.calimero.link.medium.KNXMediumSettings;
 import tuwien.auto.calimero.link.medium.TPSettings;
-import tuwien.auto.calimero.log.LogService;
 import tuwien.auto.calimero.mgmt.ManagementProcedures;
 import tuwien.auto.calimero.mgmt.ManagementProceduresImpl;
 import tuwien.auto.calimero.tools.Main.ShutdownHandler;
@@ -135,7 +133,6 @@ public class ScanDevices implements Runnable
 	 */
 	public static void main(final String[] args)
 	{
-		setLogVerbosity(Arrays.asList(args));
 		try {
 			final ScanDevices scan = new ScanDevices(args);
 			final ShutdownHandler sh = new ShutdownHandler().register();
@@ -365,18 +362,6 @@ public class ScanDevices implements Runnable
 			throw new KNXIllegalArgumentException("specify either IP host, serial port, or device");
 		if (!options.containsKey("range"))
 			throw new KNXIllegalArgumentException("Missing area.line range to scan for devices");
-	}
-
-	// a helper in case slf4j simple logger is used
-	private static void setLogVerbosity(final List<String> args)
-	{
-		// TODO problem: this overrules the log level from a simplelogger.properties file!!
-		final String simpleLoggerLogLevel = "org.slf4j.simpleLogger.defaultLogLevel";
-		if (!System.getProperties().containsKey(simpleLoggerLogLevel)) {
-			final String lvl = args.contains("-v") || args.contains("--verbose") ? "trace" : "warn";
-			System.setProperty(simpleLoggerLogLevel, lvl);
-		}
-		out = LogService.getLogger("calimero.tools");
 	}
 
 	private static void showUsage()
