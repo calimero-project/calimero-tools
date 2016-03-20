@@ -205,9 +205,6 @@ public class ScanDevices implements Runnable
 			}
 			else {
 				out("start scan of " + area + "." + line + ".[0..255] ...");
-				// this call is interruptible (via exception), in which case we won't get any
-				// result, even though some devices might have answered already
-				// ??? think whether to refactor scanning into interruptible with partial result set
 				final List<IndividualAddress> devices = new ArrayList<>();
 				mp.scanNetworkDevices(area, line, (d) -> { devices.add(d); onDeviceFound(d); });
 				found = devices.toArray(found);
