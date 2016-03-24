@@ -355,11 +355,17 @@ public class DeviceInfo implements Runnable
 	 * @param info holds the result of reading KNX device information; depending on the device, not all available
 	 *        parameters might be set
 	 */
-	// TODO provide onDeviceInformation on receiving individual parameters
-	protected void onDeviceInformation(final IndividualAddress device, final Result info)
+	protected void onDeviceInformation(final IndividualAddress device, final Result info) {}
+
+	/**
+	 * Invoked after reading a KNX device parameter.
+	 *
+	 * @param device KNX device address
+	 * @param parameter the parameter read from the device
+	 */
+	void onDeviceInformation(final IndividualAddress device, final Parameter parameter)
 	{
-		out(CommonParameter.values());
-		out(KnxipParameter.values());
+		out(new Parameter[] {parameter});
 	}
 
 	/**
@@ -593,6 +599,7 @@ public class DeviceInfo implements Runnable
 	{
 		result.formatted.put(p, formatted);
 		result.raw.put(p, raw);
+		onDeviceInformation((IndividualAddress) options.get("device"), p);
 	}
 
 	private void readPL110Bcu1() throws InterruptedException
