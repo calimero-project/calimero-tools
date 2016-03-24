@@ -150,7 +150,7 @@ public class Property implements Runnable, PropertyAdapterListener
 	 * </li>
 	 * <li><code>--port -p</code> <i>number</i> &nbsp;UDP port on host (default 3671)</li>
 	 * <li><code>--nat -n</code> enable Network Address Translation</li>
-	 * <li><code>--serial -s</code> use FT1.2 serial communication</li>
+	 * <li><code>--ft12 -f</code> use FT1.2 serial communication</li>
 	 * <li><code>--usb -u</code> use KNX USB communication</li>
 	 * <li><code>--tpuart</code> use TP-UART communication</li>
 	 * </ul>
@@ -445,7 +445,7 @@ public class Property implements Runnable, PropertyAdapterListener
 		InterruptedException
 	{
 		final KNXMediumSettings medium = (KNXMediumSettings) options.get("medium");
-		if (options.containsKey("serial")) {
+		if (options.containsKey("ft12")) {
 			// create FT1.2 network link
 			try {
 				lnk = new KNXNetworkLinkFT12(Integer.parseInt(host), medium);
@@ -531,8 +531,8 @@ public class Property implements Runnable, PropertyAdapterListener
 				options.put("port", Integer.decode(args[++i]));
 			else if (Main.isOption(arg, "nat", "n"))
 				options.put("nat", null);
-			else if (Main.isOption(arg, "serial", "s"))
-				options.put("serial", null);
+			else if (Main.isOption(arg, "ft12", "f"))
+				options.put("ft12", null);
 			else if (Main.isOption(arg, "usb", "u"))
 				options.put("usb", null);
 			else if (Main.isOption(arg, "tpuart", null))
@@ -571,8 +571,8 @@ public class Property implements Runnable, PropertyAdapterListener
 			options.put("local", null);
 		if (!options.containsKey("host"))
 			throw new KNXIllegalArgumentException("no communication device/host specified");
-		if (options.containsKey("serial") && !options.containsKey("remote"))
-			throw new KNXIllegalArgumentException("--remote option is mandatory with --serial");
+		if (options.containsKey("ft12") && !options.containsKey("remote"))
+			throw new KNXIllegalArgumentException("--remote option is mandatory with --ft12");
 	}
 
 	//
@@ -711,7 +711,7 @@ public class Property implements Runnable, PropertyAdapterListener
 		sb.append("  --port -p <number>       UDP port on <host> (default ")
 				.append(KNXnetIPConnection.DEFAULT_PORT).append(")").append(sep);
 		sb.append("  --nat -n                 enable Network Address Translation").append(sep);
-		sb.append("  --serial -s              use FT1.2 serial communication").append(sep);
+		sb.append("  --ft12 -f                use FT1.2 serial communication").append(sep);
 		sb.append("  --usb -u                 use KNX USB communication").append(sep);
 		sb.append("  --tpuart                 use TP-UART communication").append(sep);
 		sb.append("Options for local device management mode only:").append(sep);

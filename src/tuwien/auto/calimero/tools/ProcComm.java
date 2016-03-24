@@ -196,7 +196,7 @@ public class ProcComm implements Runnable
 	 * </li>
 	 * <li><code>--port -p</code> <i>number</i> &nbsp;UDP port on host (default 3671)</li>
 	 * <li><code>--nat -n</code> enable Network Address Translation</li>
-	 * <li><code>--serial -s</code> use FT1.2 serial communication</li>
+	 * <li><code>--ft12 -f</code> use FT1.2 serial communication</li>
 	 * <li><code>--usb -u</code> use KNX USB communication</li>
 	 * <li><code>--tpuart</code> use TP-UART communication</li>
 	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to tp1)
@@ -417,7 +417,7 @@ public class ProcComm implements Runnable
 	{
 		final String host = (String) options.get("host");
 		final KNXMediumSettings medium = (KNXMediumSettings) options.get("medium");
-		if (options.containsKey("serial")) {
+		if (options.containsKey("ft12")) {
 			// create FT1.2 network link
 			try {
 				return new KNXNetworkLinkFT12(Integer.parseInt(host), medium);
@@ -668,8 +668,8 @@ public class ProcComm implements Runnable
 				options.put("port", Integer.decode(args[++i]));
 			else if (Main.isOption(arg, "nat", "n"))
 				options.put("nat", null);
-			else if (Main.isOption(arg, "serial", "s"))
-				options.put("serial", null);
+			else if (Main.isOption(arg, "ft12", "f"))
+				options.put("ft12", null);
 			else if (Main.isOption(arg, "usb", "u"))
 				options.put("usb", null);
 			else if (Main.isOption(arg, "tpuart", null))
@@ -684,7 +684,7 @@ public class ProcComm implements Runnable
 				throw new KNXIllegalArgumentException("unknown option " + arg);
 		}
 		if (!options.containsKey("host")
-				|| (options.containsKey("serial") && options.containsKey("usb")))
+				|| (options.containsKey("ft12") && options.containsKey("usb")))
 			throw new KNXIllegalArgumentException("specify either IP host, serial port, or device");
 		if (!(options.containsKey("monitor") || options.containsKey("read") || options
 				.containsKey("write")))
@@ -707,7 +707,7 @@ public class ProcComm implements Runnable
 		sb.append("  --port -p <number>       UDP port on <host> (default ")
 				.append(KNXnetIPConnection.DEFAULT_PORT + ")").append(sep);
 		sb.append("  --nat -n                 enable Network Address Translation").append(sep);
-		sb.append("  --serial -s              use FT1.2 serial communication").append(sep);
+		sb.append("  --ft12 -f                use FT1.2 serial communication").append(sep);
 		sb.append("  --usb -u                 use KNX USB communication").append(sep);
 		sb.append("  --tpuart                 use TP-UART communication").append(sep);
 		sb.append("  --medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)")
