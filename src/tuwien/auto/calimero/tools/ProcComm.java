@@ -516,22 +516,19 @@ public class ProcComm implements Runnable
 	}
 
 	// shows one DPT of each matching main type based on the length of the supplied ASDU
-	private String decodeAsduByLength(final byte[] asdu, final boolean optimized)
-		throws KNXFormatException
+	private String decodeAsduByLength(final byte[] asdu, final boolean optimized) throws KNXFormatException
 	{
 		final StringBuffer sb = new StringBuffer();
-		final List<MainType> typesBySize = TranslatorTypes.getMainTypesBySize(optimized ? 0
-				: asdu.length);
+		final List<MainType> typesBySize = TranslatorTypes.getMainTypesBySize(optimized ? 0 : asdu.length);
 		for (final Iterator<MainType> i = typesBySize.iterator(); i.hasNext();) {
 			final MainType main = i.next();
 			try {
 				final String dptid = main.getSubTypes().keySet().iterator().next();
 				final DPTXlator t = TranslatorTypes.createTranslator(main.getMainNumber(), dptid);
 				t.setData(asdu);
-				sb.append(t.getValue()).append(" [").append(dptid).append("]")
-						.append(i.hasNext() ? ", " : "");
+				sb.append(t.getValue()).append(" [").append(dptid).append("]").append(i.hasNext() ? ", " : "");
 			}
-			catch (final KNXException ignore) {}
+			catch (final KNXException | KNXIllegalArgumentException ignore) {}
 		}
 		return sb.toString();
 	}
