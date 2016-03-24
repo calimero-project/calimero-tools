@@ -327,8 +327,8 @@ public class DeviceInfo implements Runnable
 
 		Exception thrown = null;
 		boolean canceled = false;
-		try (KNXNetworkLink link = createLink()) {
-			mc = new ManagementClientImpl(link);
+		try (KNXNetworkLink link = createLink();
+				ManagementClient scoped = mc = new ManagementClientImpl(link)) {
 			final IndividualAddress device = (IndividualAddress) options.get("device");
 			d = mc.createDestination(device, true);
 			out.info("Reading data from device {}, might take some seconds ...", device);
