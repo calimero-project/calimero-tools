@@ -363,9 +363,7 @@ public class ProcComm implements Runnable
 				else
 					s = s + decodesep + decodeAsduByLength(asdu, e.isLengthOptimizedAPDU());
 			}
-			catch (final KNXException ke) {}
-			catch (final KNXIllegalArgumentException iae) {}
-			catch (final RuntimeException rte) {}
+			catch (final KNXException | RuntimeException ignore) {}
 		}
 		System.out.println(LocalTime.now() + " " + s);
 	}
