@@ -389,10 +389,15 @@ public class DeviceInfo implements Runnable
 		for (final Parameter p : values) {
 			// create human readable name from parameter by inserting some spaces
 			final String name = p.name().replaceAll("([A-Z])", " $1").replace("I P", "IP").trim();
-			final String raw = result.raw(p).map((v) -> v.toString()).orElse("n/a");
+			final String raw = result.raw(p).map(v -> "0x" + Long.toHexString(v)).orElse("n/a");
 			final String formatted = result.formatted(p);
-			if (formatted != null)
-				System.out.println(name + " = " + formatted + (verbose ? "\t [raw=" + raw + "]" : ""));
+			if (formatted != null) {
+				final String s = name + " = " + formatted;
+				// left-pad verbose output
+				final int n = Math.max(1, 60 - s.length());
+				final String detail = verbose ? String.format("%" + n + "s%s]", "[raw=", raw) : "";
+				System.out.println(s + detail);
+			}
 		}
 	}
 
