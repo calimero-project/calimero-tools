@@ -790,7 +790,6 @@ public class DeviceInfo implements Runnable
 		if (objectIdx == -1)
 			return;
 
-		// TODO can we show some ID of what program is installed?
 		readUnsigned(objectIdx, PID.PROGRAM_VERSION, true, CommonParameter.ProgramVersion);
 		readLoadState(objectIdx, hasErrorCode);
 
