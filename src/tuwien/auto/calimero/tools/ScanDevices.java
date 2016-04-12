@@ -38,10 +38,8 @@ package tuwien.auto.calimero.tools;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -169,8 +167,6 @@ public class ScanDevices implements Runnable
 	{
 		Exception thrown = null;
 		boolean canceled = false;
-		KNXNetworkLink link = null;
-		IndividualAddress[] found = new IndividualAddress[0];
 		try {
 			// TODO onCompletion prints '0 network devices found' on showing help etc., either
 			// suppress that or move the following out of the try (skipping onCompletion altogether)
@@ -189,31 +185,26 @@ public class ScanDevices implements Runnable
 				return;
 			}
 
-			link = createLink();
-			final ManagementProcedures mp = new ManagementProceduresImpl(link);
+			try (final KNXNetworkLink link = createLink();
+					final ManagementProcedures mp = new ManagementProceduresImpl(link)) {
 
-			final String[] range = ((String) options.get("range")).split("\\.");
-			final int area = Integer.decode(range[0]).intValue();
-			final int line = Integer.decode(range[1]).intValue();
-			if (range.length == 3) {
-				final int device = Integer.decode(range[2]).intValue();
-				final IndividualAddress addr = new IndividualAddress(area, line, device);
-				if (mp.isAddressOccupied(addr)) {
-					found = new IndividualAddress[] { addr };
-					onDeviceFound(addr);
+				final String[] range = ((String) options.get("range")).split("\\.");
+				final int area = Integer.decode(range[0]).intValue();
+				final int line = Integer.decode(range[1]).intValue();
+				if (range.length == 3) {
+					final int device = Integer.decode(range[2]).intValue();
+					final IndividualAddress addr = new IndividualAddress(area, line, device);
+					if (mp.isAddressOccupied(addr)) {
+						onDeviceFound(addr);
+					}
+				}
+				else {
+					out("start scan of " + area + "." + line + ".[0..255] ...");
+					mp.scanNetworkDevices(area, line, this::onDeviceFound);
 				}
 			}
-			else {
-				out("start scan of " + area + "." + line + ".[0..255] ...");
-				final List<IndividualAddress> devices = new ArrayList<>();
-				mp.scanNetworkDevices(area, line, (d) -> { devices.add(d); onDeviceFound(d); });
-				found = devices.toArray(found);
-			}
 		}
-		catch (final KNXException e) {
-			thrown = e;
-		}
-		catch (final RuntimeException e) {
+		catch (final KNXException | RuntimeException e) {
 			thrown = e;
 		}
 		catch (final InterruptedException e) {
@@ -221,9 +212,7 @@ public class ScanDevices implements Runnable
 			Thread.currentThread().interrupt();
 		}
 		finally {
-			if (link != null)
-				link.close();
-			onCompletion(thrown, canceled, found);
+			onCompletion(thrown, canceled);
 		}
 	}
 
@@ -279,22 +268,16 @@ public class ScanDevices implements Runnable
 
 	/**
 	 * Called by this tool on completion.
-	 * <p>
 	 *
-	 * @param thrown the thrown exception if operation completed due to a raised exception,
-	 *        <code>null</code> otherwise
+	 * @param thrown the thrown exception if operation completed due to a raised exception, <code>null</code> otherwise
 	 * @param canceled whether the operation got canceled before its planned end
-	 * @param devices array of KNX devices found by the scan, array size might be 0
 	 */
-	protected void onCompletion(final Exception thrown, final boolean canceled,
-		final IndividualAddress[] devices)
+	protected void onCompletion(final Exception thrown, final boolean canceled)
 	{
 		if (canceled)
 			out.info("scanning for devices canceled");
 		if (thrown != null)
 			out.error("completed", thrown);
-
-		System.out.println("found " + devices.length + " network devices");
 	}
 
 	/**
