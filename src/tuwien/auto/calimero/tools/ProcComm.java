@@ -142,7 +142,7 @@ public class ProcComm implements Runnable
 	private static final String sep = System.getProperty("line.separator");
 	private static final String toolDatapointsFile = "." + tool.toLowerCase() + "_dplist.xml";
 
-	private static final Logger out = LogService.getLogger("calimero.tools");
+	private static final Logger out = LogService.getLogger("calimero.tools." + tool);
 
 	/**
 	 * The used process communicator.
@@ -381,7 +381,7 @@ public class ProcComm implements Runnable
 		if (canceled)
 			out.info("process communicator was stopped");
 		if (thrown != null)
-			out.error("completed", thrown);
+			out.error("completed with error", thrown);
 	}
 
 	/**
@@ -504,7 +504,7 @@ public class ProcComm implements Runnable
 		throws KNXException, InterruptedException
 	{
 		if (!write)
-			System.out.println("read value: " + pc.read(dp));
+			System.out.println("read " + dp.getMainAddress() + " value: " + pc.read(dp));
 		else {
 			// note, a write to a non existing datapoint might finish successfully,
 			// too.. no check for existence or read back of a written value is done
