@@ -45,6 +45,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 import org.slf4j.Logger;
 
@@ -121,6 +122,7 @@ public class DeviceInfo implements Runnable
 		SerialNumber,
 		DomainAddress,
 		Manufacturer,
+		ManufacturerData,
 		DeviceTypeNumber,
 		SoftwareVersion,
 		/** Actual PEI type is determined by reading the ADC. */
@@ -445,9 +447,9 @@ public class DeviceInfo implements Runnable
 		if (dd == DD0.TYPE_1013)
 			readPL110Bcu1();
 		else if (dd == DD0.TYPE_0010 || dd == DD0.TYPE_0011 || dd == DD0.TYPE_0012)
-			;
-		else if (dd == DD0.TYPE_0020 || dd == DD0.TYPE_0021)
-			;
+			readTP1Bcu1();
+		else if (dd == DD0.TYPE_0020 || dd == DD0.TYPE_0021 || dd == DD0.TYPE_0025)
+			readTP1Bcu2();
 		else
 			findInterfaceObjects();
 
@@ -607,46 +609,93 @@ public class DeviceInfo implements Runnable
 		onDeviceInformation((IndividualAddress) options.get("device"), p);
 	}
 
+	private static final int addrManufact = 0x0104;
+	private static final int addrDevType = 0x0105; // length 2
+	private static final int addrVersion = 0x0107;
+	private static final int addrPeiType = 0x0109; // _required_ PEI type
+	private static final int addrRunError = 0x010d;
+	private static final int addrRoutingCnt = 0x010e;
+	private static final int addrGroupObjTablePtr = 0x0112;
+	private static final int addrProgramPtr = 0x0114;
+	private static final int addrGroupAddrTable = 0x0116; // max. length 233
+
 	private void readPL110Bcu1() throws InterruptedException
 	{
 		final int addrDoA = 0x0102; // length 2
-		final int addrManufact = 0x0104;
-		final int addrDevType = 0x0105; // length 2
-		final int addrVersion = 0x0107;
-		final int addrPeiType = 0x0109;
-		final int addrRunError = 0x010d;
-		final int addrRoutingCnt = 0x010e;
-		final int addrGroupObjTablePtr = 0x0112;
-		final int addrProgramPtr = 0x0114;
-		final int addrGroupAddrTable = 0x0116; // max. length 233
 
 		readMem(addrDoA, 2, "DoA ", true, CommonParameter.DomainAddress);
-		final int mfId = readMem(addrManufact, 1, "KNX manufacturer ID ", false, CommonParameter.Manufacturer);
-		if (mfId > -1)
-			putResult(CommonParameter.Manufacturer, manufacturer.get(mfId), mfId);
+		readBcuInfo();
+	}
 
+	private void readTP1Bcu1() throws InterruptedException
+	{
+		// Option Reg: bit 1: mem 0x120-0x1ff protected/writable
+//		final int addrOptionReg = 0x100;
+		final int addrManufactData = 0x0101; // length 3
+//		final int addrMxRstCnt = 0x010f; // bits (msb): 3 INAK / 2 (unused) / 3 BUSY (lsb)
+//		final int addrConfigDesc = 0x0110;
+//		final int addrAssocTablePtr = 0x0111;
+
+		readMem(addrManufactData, 3, "KNX manufacturer data ", true, CommonParameter.ManufacturerData);
+
+		readBcuInfo();
+	}
+
+	private void readTP1Bcu2() throws InterruptedException, KNXException
+	{
+		// Option Reg: bit 0: watchdog disabled/enabled, bit 1: mem 0x300-0x4df protected/writable
+//		final int addrOptionReg = 0x100;
+
+		final int addrManufactData = 0x0101; // length 2
+		// App Id, length 5: App manufacturer (2), SW dev type (2), SW version (1)
+		// the App manufacturer can differ from product manufacturer (0x101), if a compatible program was downloaded
+		final int addrAppId = 0x0103;
+
+		// address table realization type 2
+//		final int addrUsrEeprom = 0x0116; // max. length 858: Addr Table, Assoc Table, EEData, Code
+
+		// Page 0 RAM
+//		final int addrPeiInterface = 0x00c4; // if used
+//		final int addrPeiInfo = 0x00c5; // if used
+
+		readMem(addrManufactData, 3, "KNX manufacturer data ", true, CommonParameter.ManufacturerData);
+		final long appId = readMemLong(addrAppId, 5);
+		final String appMf = manufacturer.get((int) appId >> (3 * 8));
+		final long swDev = (appId >> 8) & 0xff;
+		final long swVersion = appId & 0xff;
+
+		out.info("appId 0x{} - app manufacturer: {}, SW dev type {}, SW version {}", Long.toHexString(appId),
+				appMf, swDev, swVersion);
+
+		readBcuInfo();
+
+		// interface objects: Device Object, Address table object, Assoc table object, App program object
+		findInterfaceObjects();
+	}
+
+	private void readBcuInfo() throws InterruptedException
+	{
+		readMem(addrManufact, 1, "KNX manufacturer ID ", manufacturer::get, CommonParameter.Manufacturer);
 		readMem(addrDevType, 2, "Device type number ", true, CommonParameter.DeviceTypeNumber);
-		final int version = readMem(addrVersion, 1, "SW version ", true, CommonParameter.SoftwareVersion);
-		putResult(CommonParameter.SoftwareVersion, (version >> 4) + "." + (version & 0xf), version);
-
+		readMem(addrVersion, 1, "SW version ", v -> (v >> 4) + "." + (v & 0xf), CommonParameter.SoftwareVersion);
 		// mechanical PEI type required by the application SW
-		final int peitype = readMem(addrPeiType, 1, "Hardware PEI type ", false, CommonParameter.RequiredPeiType);
-		putResult(CommonParameter.RequiredPeiType, toPeiTypeString(peitype), peitype);
-		final int runerror = readMem(addrRunError, 1, "Run error 0x", true, CommonParameter.RunError);
-		putResult(CommonParameter.RunError, decodeRunError(runerror), runerror);
+		readMem(addrPeiType, 1, "Hardware PEI type ", DeviceInfo::toPeiTypeString, CommonParameter.RequiredPeiType);
+		readMem(addrRunError, 1, "Run error 0x", DeviceInfo::decodeRunError, CommonParameter.RunError);
 
 		readSystemState();
-		final int rcnt = (readMem(addrRoutingCnt, 1, "Routing count ", false, CommonParameter.RoutingCount) >> 4) & 0x7;
-		putResult(CommonParameter.RoutingCount, "" + rcnt, rcnt);
+
+		readMem(addrRoutingCnt, 1, "Routing count ", v -> Integer.toString((v >> 4) & 0x7),
+				CommonParameter.RoutingCount);
 		// realization type 1
 		// Location of group object table
 		readMem(addrGroupObjTablePtr, 1, "Group object table location ", true, CommonParameter.GroupObjTableLocation);
 		// realization type 1
 		final int entries = readMem(addrGroupAddrTable, 1, "Group address table entries ", false,
 				CommonParameter.GroupAddrTableEntries);
+		// address of device address
 		int startAddr = addrGroupAddrTable + 1;
-		final KNXAddress device = new IndividualAddress(readMem(startAddr, 2) & 0x7fff);
-		result.formatted.put(CommonParameter.DeviceAddress, device.toString());
+		readMem(startAddr, 2, "", v -> new IndividualAddress(v & 0x7fff).toString(), CommonParameter.DeviceAddress);
+
 		final StringBuilder sb = new StringBuilder();
 		for (int i = 1; i < entries; i++) {
 			startAddr += 2;
@@ -663,45 +712,6 @@ public class DeviceInfo implements Runnable
 		final int progptr = readMem(addrProgramPtr, 1);
 		final int userprog = 0x100 + progptr;
 	}
-
-//	private void readTP1Bcu1() throws InterruptedException
-//	{
-//		// Option Reg: bit 1: mem 0x120-0x1ff protected/writable
-//		final int addrOptionReg = 0x100;
-//		final int addrManufactData = 0x0101; // length 3
-//		final int addrManufact = 0x0104;
-//		final int addrDevType = 0x0105; // length 2
-//		final int addrVersion = 0x0107;
-//		final int addrPeiType = 0x0109; // _required_ PEI type
-//		final int addrRunError = 0x010d;
-//		final int addrRoutingCnt = 0x010e;
-//		final int addrMxRstCnt = 0x010f; // bits (msb): 3 INAK / 2 (unused) / 3 BUSY (lsb)
-//		final int addrConfigDesc = 0x0110;
-//		final int addrAssocTablePtr = 0x0111;
-//		final int addrGroupObjTablePtr = 0x0112;
-//		final int addrProgramPtr = 0x0114;
-//		final int addrGroupAddrTable = 0x0116; // max. length 233
-//	}
-//
-//	private void readTP1Bcu2()
-//	{
-//		// Option Reg: bit 0: watchdog disabled/enabled, bit 1: mem 0x300-0x4df protected/writable
-//		final int addrOptionReg = 0x100;
-//
-//		final int addrManufactData = 0x0101; // length 2
-//		// App Id, length 5: App manufacturer (2), SW dev type (2), SW version (1)
-//		// the App manufacturer can differ from product manufacturer (0x101), if a compatible program was downloaded
-//		final int addrAppId = 0x0103;
-//
-//		// address table realization type 2
-//		final int addrUsrEeprom = 0x0116; // max. length 858: Addr Table, Assoc Table, EEData, Code
-//
-//		// Page 0 RAM
-//		final int addrPeiInterface = 0x00c4; // if used
-//		final int addrPeiInfo = 0x00c5; // if used
-//
-//		// interface objects: Device Object, Address table object, Assoc table object, App program object
-//	}
 
 	private void readKnxipInfo() throws KNXException, InterruptedException
 	{
@@ -881,17 +891,29 @@ public class DeviceInfo implements Runnable
 	private int readMem(final int startAddr, final int bytes, final String prefix, final boolean hex, final Parameter p)
 		throws InterruptedException
 	{
+		final long v = readMemLong(startAddr, bytes);
+		putResult(p, hex ? Long.toHexString(v) : Long.toString(v), v);
+		return (int) v;
+	}
+
+	private void readMem(final int startAddr, final int bytes, final String prefix,
+		final Function<Integer, String> representation, final Parameter p) throws InterruptedException
+	{
 		final int v = readMem(startAddr, bytes);
-		result.formatted.put(p, hex ? Long.toHexString(v) : Long.toString(v));
-		result.raw.put(p, (long) v);
-		return v;
+		putResult(p, representation.apply(v), (long) v);
 	}
 
 	// pre: 3 bytes max
 	private int readMem(final int startAddr, final int bytes) throws InterruptedException
 	{
+		return (int) readMemLong(startAddr, bytes);
+	}
+
+	// pre: 7 bytes max
+	private long readMemLong(final int startAddr, final int bytes) throws InterruptedException
+	{
 		try {
-			return (int) toUnsigned(mc.readMemory(d, startAddr, bytes));
+			return toUnsigned(mc.readMemory(d, startAddr, bytes));
 		}
 		catch (final KNXException e) {
 			return -1;
@@ -1099,6 +1121,8 @@ public class DeviceInfo implements Runnable
 
 	private static String toPeiTypeString(final int peitype)
 	{
+		if (peitype == -1)
+			return "n/a";
 		final String[] desc = new String[] {
 			"No adapter", // 0
 			"Illegal adapter",
