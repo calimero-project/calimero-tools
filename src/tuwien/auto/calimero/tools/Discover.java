@@ -115,9 +115,9 @@ public class Discover implements Runnable
 		final Integer lp = ((Integer) options.get("localport"));
 		// if a network interface was specified, use an assigned IP for local host
 		final NetworkInterface nif = (NetworkInterface) options.get("if");
-		final InetAddress local = nif != null ? nif.getInetAddresses().nextElement()
-				: null;
-		d = new Discoverer(local, lp != null ? lp.intValue() : 0, options.containsKey("nat"), true);
+		final InetAddress local = nif != null ? nif.getInetAddresses().nextElement() : null;
+		final boolean mcast = (boolean) options.get("mcastResponse");
+		d = new Discoverer(local, lp != null ? lp.intValue() : 0, options.containsKey("nat"), mcast);
 	}
 
 	/**
@@ -137,6 +137,7 @@ public class Discover implements Runnable
 	 * <li><code>--search -s</code> start a discovery search</li>
 	 * <li><code>--interface -i</code> <i>if-name</i> | <i>ip-address</i> &nbsp;local multicast
 	 * network interface for discovery or local host for self description (default system assigned)</li>
+	 * <li><code>--unicast -u</code> request unicast response
 	 * <li><code>--description -d <i>host</i></code> &nbsp;query description from host</li>
 	 * <li><code>--serverport -p</code> <i>number</i> &nbsp;server UDP port for description
 	 * (defaults to port 3671)</li>
@@ -296,8 +297,7 @@ public class Discover implements Runnable
 			}
 		}
 		finally {
-			out.info("search stopped after " + timeout + " seconds with " + displayed
-					+ " responses");
+			out.info("search stopped after " + timeout + " seconds with " + displayed + " responses");
 		}
 	}
 
@@ -364,9 +364,10 @@ public class Discover implements Runnable
 			return;
 
 		// add defaults
-		options.put("localport", new Integer(0));
-		options.put("serverport", new Integer(KNXnetIPConnection.DEFAULT_PORT));
-		options.put("timeout", new Integer(3));
+		options.put("localport", Integer.valueOf(0));
+		options.put("serverport", Integer.valueOf(KNXnetIPConnection.DEFAULT_PORT));
+		options.put("timeout", Integer.valueOf(3));
+		options.put("mcastResponse", Boolean.TRUE);
 
 		int i = 0;
 		for (; i < args.length; i++) {
@@ -394,6 +395,8 @@ public class Discover implements Runnable
 			}
 			else if (Main.isOption(arg, "search", "s"))
 				options.put("search", null);
+			else if (Main.isOption(arg, "unicast", "u"))
+				options.put("mcastResponse", Boolean.FALSE);
 			else if (arg.equals("sd"))
 				options.put("searchWithDescription", null);
 			else if (Main.isOption(arg, "description", "d"))
@@ -451,6 +454,7 @@ public class Discover implements Runnable
 		sb.append(" --nat -n                 enable Network Address Translation").append(sep);
 		sb.append(" --timeout -t             discovery/description response timeout").append(sep);
 		sb.append(" --search -s              start a discovery search").append(sep);
+		sb.append(" --unicast -u             request unicast response (default is multicast)").append(sep);
 		sb.append(" --interface -i <IF name | host name | IP address>").append(sep);
 		sb.append("      local multicast network interface for discovery or").append(sep);
 		sb.append("      local host for self description (default system assigned)").append(sep);
