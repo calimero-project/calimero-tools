@@ -55,7 +55,9 @@ import tuwien.auto.calimero.knxnetip.Discoverer.Result;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.knxnetip.servicetype.DescriptionResponse;
 import tuwien.auto.calimero.knxnetip.servicetype.SearchResponse;
+import tuwien.auto.calimero.knxnetip.util.DeviceDIB;
 import tuwien.auto.calimero.knxnetip.util.HPAI;
+import tuwien.auto.calimero.knxnetip.util.ServiceFamiliesDIB;
 import tuwien.auto.calimero.log.LogService;
 import tuwien.auto.calimero.tools.Main.ShutdownHandler;
 
@@ -205,18 +207,8 @@ public class Discover implements Runnable
 	 */
 	protected void onEndpointReceived(final Result<SearchResponse> result)
 	{
-		final StringBuffer buf = new StringBuffer(sep);
-		buf.append("Using ").append(result.getAddress()).append(" on ")
-				.append(nameOf(result.getNetworkInterface())).append(sep);
-		buf.append("----------------------------------------").append(sep);
-		final SearchResponse response = result.getResponse();
-		buf.append("control endpoint ").append(response.getControlEndpoint()).append(sep);
-		buf.append(response.getDevice().toString()).append(sep);
-		buf.append("supported service families:").append(sep);
-		buf.append('\t').append(response.getServiceFamilies().toString().replace(", ", sep + "\t"));
-		for (int i = buf.indexOf(", "); i != -1; i = buf.indexOf(", "))
-			buf.replace(i, i + 2, sep);
-		System.out.println(buf);
+		final SearchResponse sr = result.getResponse();
+		System.out.println(formatResponse(result, sr.getControlEndpoint(), sr.getDevice(), sr.getServiceFamilies()));
 	}
 
 	/**
@@ -234,21 +226,24 @@ public class Discover implements Runnable
 
 	private void onDescriptionReceived(final Result<DescriptionResponse> result, final HPAI hpai)
 	{
-		final StringBuffer buf = new StringBuffer(sep);
-		buf.append("Using ").append(result.getAddress()).append(" on ")
-				.append(nameOf(result.getNetworkInterface())).append(sep);
-		buf.append("----------------------------------------").append(sep);
-		if (hpai != null)
-			buf.append("control endpoint ").append(hpai).append(sep);
-		final DescriptionResponse response = result.getResponse();
-		buf.append(response.getDevice().toString()).append(sep);
-		buf.append("supported service families:").append(sep);
-		buf.append('\t').append(response.getServiceFamilies().toString().replace(", ", sep + '\t'));
-		if (response.getManufacturerData() != null)
-			buf.append(sep).append(sep).append(response.getManufacturerData().toString());
-		for (int i = buf.indexOf(", "); i != -1; i = buf.indexOf(", "))
-			buf.replace(i, i + 2, sep);
-		System.out.println(buf);
+		final DescriptionResponse dr = result.getResponse();
+		String formatted = formatResponse(result, hpai, dr.getDevice(), dr.getServiceFamilies());
+		if (dr.getManufacturerData() != null)
+			formatted += sep + dr.getManufacturerData().toString().replaceAll(", ", sep);
+		System.out.println(formatted);
+	}
+
+	private String formatResponse(final Result<?> r, final HPAI controlEp, final DeviceDIB device,
+		final ServiceFamiliesDIB serviceFamilies)
+	{
+		final StringBuilder sb = new StringBuilder(sep);
+		sb.append("Using ").append(r.getAddress()).append(" at ").append(nameOf(r.getNetworkInterface())).append(sep);
+		sb.append("----------------------------------------").append(sep);
+		sb.append("Control endpoint ").append(controlEp).append(" ");
+		sb.append(device.toString()).append(sep);
+		sb.append("Supported service families:").append(sep);
+		sb.append('\t').append(serviceFamilies.toString().replace(", ", sep + "\t"));
+		return sb.toString().replaceAll(", ", sep);
 	}
 
 	/**
@@ -262,8 +257,7 @@ public class Discover implements Runnable
 	protected void onCompletion(final Exception thrown, final boolean canceled)
 	{
 		if (canceled) {
-			final String msg = options.containsKey("search") ? "stopped discovery"
-					: "self description canceled";
+			final String msg = options.containsKey("search") ? "stopped discovery" : "self description canceled";
 			out.info(msg);
 		}
 		if (thrown != null)
@@ -344,7 +338,7 @@ public class Discover implements Runnable
 		}
 		catch (final KNXException e) {
 			System.out.println("description failed for server " + hpai + " using " + r.getAddress()
-					+ " on " + r.getNetworkInterface() + ": " + e.getMessage());
+					+ " at " + r.getNetworkInterface().getName() + ": " + e.getMessage());
 		}
 	}
 
