@@ -203,28 +203,25 @@ public class Discover implements Runnable
 	 * <p>
 	 * This default implementation writes the endpoint information to standard output.
 	 *
-	 * @param response the received search response containing information about a
-	 *        KNXnet/IP endpoint
+	 * @param response the received search response containing information about a KNXnet/IP endpoint
 	 */
 	protected void onEndpointReceived(final SearchResponse response)
 	{
 		final StringBuffer buf = new StringBuffer();
-		buf.append(sep).append("control endpoint ");
+		buf.append(sep).append("Control endpoint ");
 		buf.append(response.getControlEndpoint().toString()).append(sep);
 		buf.append(response.getDevice().toString());
-		buf.append(sep).append(sep).append("supported service families:").append(sep);
-		buf.append(response.getServiceFamilies().toString());
 		for (int i = buf.indexOf(", "); i != -1; i = buf.indexOf(", "))
 			buf.replace(i, i + 2, sep);
+		buf.append(sep).append("Supported service families: ");
+		buf.append(response.getServiceFamilies().toString());
 		System.out.println(buf);
 	}
 
 	/**
 	 * Invoked by this tool immediately after receiving a description response.
 	 * <p>
-	 * This default implementation extracts the information and writes it to the standard
-	 * output.
-	 * <p>
+	 * This default implementation extracts the information and writes it to the standard output.
 	 *
 	 * @param r the received description response
 	 */
@@ -232,18 +229,17 @@ public class Discover implements Runnable
 	{
 		final StringBuffer buf = new StringBuffer();
 		buf.append(r.getDevice().toString());
-		buf.append(sep).append(sep).append("supported service families:").append(sep);
-		buf.append(r.getServiceFamilies().toString());
-		if (r.getManufacturerData() != null)
-			buf.append(sep).append(sep).append(r.getManufacturerData().toString());
 		for (int i = buf.indexOf(", "); i != -1; i = buf.indexOf(", "))
 			buf.replace(i, i + 2, sep);
+		buf.append(sep).append("Supported service families: ");
+		buf.append(r.getServiceFamilies().toString());
+		if (r.getManufacturerData() != null)
+			buf.append(sep).append(r.getManufacturerData().toString());
 		System.out.println(buf);
 	}
 
 	/**
 	 * Called by this tool on completion.
-	 * <p>
 	 *
 	 * @param thrown the thrown exception if operation completed due to a raised
 	 *        exception, <code>null</code> otherwise
