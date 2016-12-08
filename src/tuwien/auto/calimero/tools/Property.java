@@ -146,8 +146,7 @@ public class Property implements Runnable, PropertyAdapterListener
 	 * <li><code>--remote -r</code> <i>KNX addr</i> &nbsp;remote property service</li>
 	 * <li><code>--definitions -d</code> <i>file</i> &nbsp;use property definition file</li>
 	 * <li><code>--localhost</code> <i>id</i> &nbsp;local IP/host name</li>
-	 * <li><code>--localport</code> <i>number</i> &nbsp;local UDP port (default system assigned)
-	 * </li>
+	 * <li><code>--localport</code> <i>number</i> &nbsp;local UDP port (default system assigned)</li>
 	 * <li><code>--port -p</code> <i>number</i> &nbsp;UDP port on host (default 3671)</li>
 	 * <li><code>--nat -n</code> enable Network Address Translation</li>
 	 * <li><code>--ft12 -f</code> use FT1.2 serial communication</li>
@@ -160,26 +159,19 @@ public class Property implements Runnable, PropertyAdapterListener
 	 * </ul>
 	 * For remote property service these options are available:
 	 * <ul>
-	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to tp1)
-	 * </li>
-	 * <li><code>--knx-address -k</code> <i>KNX address</i> &nbsp;KNX device address of local
-	 * endpoint</li>
+	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to tp1)</li>
+	 * <li><code>--knx-address -k</code> <i>KNX address</i> &nbsp;KNX device address of local endpoint</li>
 	 * <li><code>--connect -c</code> connection oriented mode</li>
 	 * <li><code>--authorize -a</code> <i>key</i> &nbsp;authorize key to access the KNX device</li>
 	 * </ul>
 	 * Use one of the following commands for property access, with <i>object-idx</i> being the
 	 * interface object index, and <i>pid</i> the KNX property identifier:
 	 * <ul>
-	 * <li><code>get <i>object-idx pid [start-idx elements]</i></code> get the property value(s)
-	 * </li>
-	 * <li><code>set <i>object-idx pid [start-idx] string-value</i></code> set the property
-	 * string-formatted value</li>
-	 * <li><code>set <i>object-idx pid start-idx elements [\"0x\"|\"0\"|\"b\"]data</i></code> set
-	 * the property data</li>
-	 * <li><code>desc <i>object-idx pid</i></code> get the property description of the property ID
-	 * </li>
-	 * <li><code>desc <i>object-idx "i" prop-idx</i></code> get the property description of the
-	 * property index</li>
+	 * <li><code>get <i>object-idx pid [start-idx elements]</i></code> get the property value(s)</li>
+	 * <li><code>set <i>object-idx pid [start-idx] string-value</i></code> set the property string-formatted value</li>
+	 * <li><code>set <i>object-idx pid start-idx elements [\"0x\"|\"0\"|\"b\"]data</i></code> set the property data</li>
+	 * <li><code>desc <i>object-idx pid</i></code> get the property description of the property ID</li>
+	 * <li><code>desc <i>object-idx "i" prop-idx</i></code> get the property description of the property index</li>
 	 * <li><code>scan <i>[object-idx]</i></code> list interface object type descriptions (of the
 	 * indexed interface object)</li>
 	 * <li><code>scan <i>[object-idx]</i> "all"</code> list all property descriptions (of the
