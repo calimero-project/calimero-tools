@@ -241,9 +241,9 @@ public class Discover implements Runnable
 		sb.append("----------------------------------------").append(sep);
 		sb.append("Control endpoint ").append(controlEp).append(" ");
 		sb.append(device.toString()).append(sep);
-		sb.append("Supported service families:").append(sep);
-		sb.append('\t').append(serviceFamilies.toString().replace(", ", sep + "\t"));
-		return sb.toString().replaceAll(", ", sep);
+		sb.append("Supported service families: ");
+		final String s = sb.toString().replaceAll(", ", sep);
+		return s + serviceFamilies.toString();
 	}
 
 	/**
