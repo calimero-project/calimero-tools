@@ -45,6 +45,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -589,26 +590,38 @@ public class Property implements Runnable, PropertyAdapterListener
 		else if (args.length == 3 || args.length == 5) {
 			final int oi = toInt(args[1]);
 			final int pid = toInt(args[2]);
-			String s;
+			final int maxElements = 15;
+			String s = "";
 			try {
 				if (args.length == 3)
 					s = pc.getProperty(oi, pid);
-				else
-					s = Arrays.asList(pc.getPropertyTranslated(oi, pid, toInt(args[3]),
-							toInt(args[4])).getAllValues()).toString();
+				else {
+					final int start = toInt(args[3]);
+					final int elements = toInt(args[4]);
+					for (int i = start; i <= elements; i += maxElements) {
+						final int min = Math.min(maxElements, (elements - i + 1));
+						final String[] allValues = pc.getPropertyTranslated(oi, pid, i, min).getAllValues();
+						if (!s.isEmpty())
+							s += ", ";
+						s += Arrays.asList(allValues).stream().collect(Collectors.joining(", "));
+					}
+				}
 				onPropertyValue(oi, pid, s);
 			}
 			catch (final KNXException e) {
+				s = "";
 				if (args.length == 3)
 					s = "0x" + DataUnitBuilder.toHex(pc.getProperty(oi, pid, 1, 1), "");
 				else {
-					final int elems = toInt(args[4]);
-					final String hex = DataUnitBuilder.toHex(
-							pc.getProperty(oi, pid, toInt(args[3]), elems), "");
-					final int chars = hex.length() / elems;
-					s = "";
-					for (int i = 0; i < elems; ++i)
-						s += "0x" + hex.substring(i * chars, (i + 1) * chars) + " ";
+					final int start = toInt(args[3]);
+					final int elements = toInt(args[4]);
+					for (int i = start; i <= elements; i += maxElements) {
+						final int min = Math.min(maxElements, (elements - i + 1));
+						final String hex = DataUnitBuilder.toHex(pc.getProperty(oi, pid, i, min), "");
+						final int chars = hex.length() / elements;
+						for (int k = 0; k < min; ++k)
+							s += "0x" + hex.substring(k * chars, (k + 1) * chars) + " ";
+					}
 				}
 				onPropertyValue(oi, pid, s);
 			}
