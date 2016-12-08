@@ -48,6 +48,7 @@ import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.link.medium.KNXMediumSettings;
+import tuwien.auto.calimero.link.medium.KnxIPSettings;
 import tuwien.auto.calimero.link.medium.PLSettings;
 import tuwien.auto.calimero.link.medium.RFSettings;
 import tuwien.auto.calimero.link.medium.TPSettings;
@@ -183,14 +184,17 @@ final class Main
 		// for now, the local device address is always left 0 in the
 		// created medium setting, since there is no user cmd line option for this
 		// so KNXnet/IP server will supply address
-		if (id.equals("tp1"))
+
+		final int medium = KNXMediumSettings.getMedium(id);
+		if (medium == KNXMediumSettings.MEDIUM_TP1)
 			return TPSettings.TP1;
-		else if (id.equals("p110"))
+		if (medium == KNXMediumSettings.MEDIUM_PL110)
 			return new PLSettings();
-		else if (id.equals("rf"))
+		if (medium == KNXMediumSettings.MEDIUM_RF)
 			return new RFSettings(null);
-		else
-			throw new KNXIllegalArgumentException("unknown medium");
+		if (medium == KNXMediumSettings.MEDIUM_KNXIP)
+			return new KnxIPSettings(null);
+		throw new KNXIllegalArgumentException("unsupported KNX medium " + id);
 	}
 
 	static IndividualAddress getAddress(final String address)
