@@ -11,11 +11,20 @@ repositories {
 }
 
 apply plugin:'java'
+apply plugin:'application'
 
 version = '2.4-SNAPSHOT'
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
+
+mainClassName = 'tuwien.auto.calimero.tools.Main'
+
+run {
+    // for passing program arguments, use -Dexec.args="..."
+    args System.getProperty("exec.args", "").split() 
+    standardInput = System.in
+}
 
 compileJava.options*.compilerArgs = [
 	'-Xlint:all',
