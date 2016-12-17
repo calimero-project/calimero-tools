@@ -951,12 +951,14 @@ public class DeviceInfo implements Runnable
 			return new KNXNetworkLinkTpuart(host, medium, Collections.emptyList());
 		}
 		// create local and remote socket address for network link
-		final InetSocketAddress local = Main.createLocalSocket(
-				(InetAddress) options.get("localhost"), (Integer) options.get("localport"));
+		final InetSocketAddress local = Main.createLocalSocket((InetAddress) options.get("localhost"),
+				(Integer) options.get("localport"));
 		final InetAddress addr = Main.parseHost(host);
+
+		if (addr.isMulticastAddress())
+			return KNXNetworkLinkIP.newRoutingLink(local.getAddress(), addr, medium);
 		final InetSocketAddress remote = new InetSocketAddress(addr, ((Integer) options.get("port")).intValue());
-		final int mode = addr.isMulticastAddress() ? KNXNetworkLinkIP.ROUTING : KNXNetworkLinkIP.TUNNELING;
-		return new KNXNetworkLinkIP(mode, local, remote, options.containsKey("nat"), medium);
+		return KNXNetworkLinkIP.newTunnelingLink(local, remote, options.containsKey("nat"), medium);
 	}
 
 	/**

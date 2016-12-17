@@ -458,12 +458,15 @@ public class Property implements Runnable, PropertyAdapterListener
 			lnk = new KNXNetworkLinkTpuart(host, medium, Collections.emptyList());
 		}
 		else {
-			final InetSocketAddress local = Main.createLocalSocket(
-					(InetAddress) options.get("localhost"), (Integer) options.get("localport"));
+			final InetSocketAddress local = Main.createLocalSocket((InetAddress) options.get("localhost"),
+					(Integer) options.get("localport"));
 			final InetAddress addr = Main.parseHost(host);
-			final InetSocketAddress remote = new InetSocketAddress(addr, ((Integer) options.get("port")).intValue());
-			final int mode = addr.isMulticastAddress() ? KNXNetworkLinkIP.ROUTING : KNXNetworkLinkIP.TUNNELING;
-			lnk = new KNXNetworkLinkIP(mode, local, remote, options.containsKey("nat"), medium);
+			if (addr.isMulticastAddress())
+				lnk = KNXNetworkLinkIP.newRoutingLink(local.getAddress(), addr, medium);
+			else {
+				final InetSocketAddress remote = new InetSocketAddress(addr, (Integer) options.get("port"));
+				lnk = KNXNetworkLinkIP.newTunnelingLink(local, remote, options.containsKey("nat"), medium);
+			}
 		}
 		final IndividualAddress remote = (IndividualAddress) options.get("remote");
 		// if an authorization key was supplied, the adapter uses
