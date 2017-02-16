@@ -623,34 +623,30 @@ public class IPConfig implements Runnable
 		sb.append("  --local -l               local device management (default)").append(sep);
 		sb.append("  --remote -r <KNX addr>   remote property service").append(sep);
 		sb.append("  --localhost <id>         local IP/host name").append(sep);
-		sb.append("  --localport <number>     local UDP port (default system assigned)")
-				.append(sep);
-		sb.append("  --port -p <number>       UDP port on <host> (default ")
-				.append(KNXnetIPConnection.DEFAULT_PORT).append(")").append(sep);
+		sb.append("  --localport <number>     local UDP port (default system assigned)").append(sep);
+		sb.append("  --port -p <number>       remote UDP port (default ").append(KNXnetIPConnection.DEFAULT_PORT)
+				.append(")").append(sep);
 		sb.append("  --nat -n                 enable Network Address Translation").append(sep);
 		sb.append("Options for remote property service only:").append(sep);
 		sb.append("  --ft12 -f                use FT1.2 serial communication").append(sep);
 		sb.append("  --usb -u                 use KNX USB communication").append(sep);
 		sb.append("  --tpuart                 use TP-UART communication").append(sep);
-		sb.append("  --medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)")
-				.append(sep);
+		sb.append("  --medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)").append(sep);
 		sb.append("  --connect -c             connection oriented mode").append(sep);
 		sb.append("  --authorize -a <key>     authorize key to access KNX device").append(sep);
 		sb.append("To change the IP configuration, supply one or more commands:").append(sep);
-		sb.append("  ip <address>            set the configured fixed IP address").append(sep);
-		sb.append("  subnet <address>        set the configured IP subnet mask").append(sep);
-		sb.append(
-				"  gateway <address>       set the configured IP address of the "
-						+ "default gateway").append(sep);
-		sb.append("  multicast <address>     set the routing multicast address").append(sep);
-		sb.append("  manual         enable manual IP assignment for current IP address")
+		sb.append("  ip <address>             set the configured fixed IP address").append(sep);
+		sb.append("  subnet <address>         set the configured IP subnet mask").append(sep);
+		sb.append("  gateway <address>        set the configured IP address of the default gateway").append(sep);
+		sb.append("  multicast <address>      set the routing multicast address").append(sep);
+		sb.append("  manual                   enable manual IP assignment for current IP address").append(sep);
+		sb.append("  bootp                    enable Bootstrap Protocol IP assignment for current IP address")
 				.append(sep);
-		sb.append(
-				"  bootp          enable Bootstrap Protocol IP assignment for current "
-						+ "IP address").append(sep);
-		sb.append("  dhcp           enable DHCP IP assignment for current IP address").append(sep);
-		sb.append("  auto           enable automatic IP assignment for current IP address").append(
-				sep);
+		sb.append("  dhcp                     enable DHCP IP assignment for current IP address").append(sep);
+		sb.append("  auto                     enable automatic IP (AutoIP) assignment for current IP address")
+				.append(sep)
+				.append("                                           (address range 169.254.1.0 to 169.254.254.255)")
+				.append(sep);
 		out(sb.toString());
 	}
 
