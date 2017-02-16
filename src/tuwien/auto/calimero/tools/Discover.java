@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2016 B. Malinowsky
+    Copyright (c) 2006, 2017 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -55,6 +55,7 @@ import tuwien.auto.calimero.knxnetip.Discoverer.Result;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.knxnetip.servicetype.DescriptionResponse;
 import tuwien.auto.calimero.knxnetip.servicetype.SearchResponse;
+import tuwien.auto.calimero.knxnetip.util.DIB;
 import tuwien.auto.calimero.knxnetip.util.DeviceDIB;
 import tuwien.auto.calimero.knxnetip.util.HPAI;
 import tuwien.auto.calimero.knxnetip.util.ServiceFamiliesDIB;
@@ -228,8 +229,12 @@ public class Discover implements Runnable
 	{
 		final DescriptionResponse dr = result.getResponse();
 		String formatted = formatResponse(result, hpai, dr.getDevice(), dr.getServiceFamilies());
-		if (dr.getManufacturerData() != null)
-			formatted += sep + dr.getManufacturerData().toString().replaceAll(", ", sep);
+		for (final DIB dib : dr.getDescription()) {
+			if (dib.getDescTypeCode() == DIB.KNX_ADDRESSES)
+				formatted += sep + "KNX addresses: " + dib;
+			else if (dib.getDescTypeCode() > DIB.SUPP_SVC_FAMILIES)
+				formatted += sep + dib;
+		}
 		System.out.println(formatted);
 	}
 
