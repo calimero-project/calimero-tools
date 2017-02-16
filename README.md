@@ -17,9 +17,12 @@ $ hub clone calimero-project/calimero-tools
 Compile and execute the tools using your favorite Java IDE, e.g., import into Eclipse or NetBeans. Alternatively, with maven available on the terminal, execute
 
 ~~~ sh
-$ mvn clean install -DskipTests
+$ mvn install
 ~~~
 
+With Gradle, execute
+
+	./gradlew build
 
 Available Tools
 ---------------
@@ -36,22 +39,24 @@ Currently, the following tools are provided:
 * ScanDevices - list KNX devices, or check whether a specific KNX individual address is currently assigned to a KNX device
 
 
-Tool Examples
+Examples
 -------------
+
+### Using Gradle
+
+	./gradlew run
+	
+Run group monitor (using KNXnet/IP Routing)
+
+	./gradlew run -Dexec.args="groupmon 224.0.23.12"
+
+Show help for a command (here, _scan_ for scanning devices)
+
+	./gradlew run -Dexec.args="scan -h"	
 
 ### Using Maven
 
-Run a tool with no arguments for basic info
-
-	mvn exec:java -Dexec.mainClass=tuwien.auto.calimero.tools.ProcComm 
-
-Output
-
-	18:26:02:753 INFO ProcComm - KNX process communication
-	18:26:02:755 INFO Calimero 2 version 2.3-dev
-	18:26:02:755 INFO Type --help for help message
-
-or, relying on the Maven POM information, show all supported commands
+Show all supported commands
 
 	mvn exec:java
 	
@@ -80,7 +85,7 @@ Start process communication for group monitoring (command `groupmon`), accessing
 	mvn exec:java -Dexec.args="groupmon -v --usb busch-jaeger -m p110"
 	
 The option `-v` sets logging to `--verbose`. With USB, you can also specify the USB interface using the vendor and product ID as `VendorID:ProductID`. If you don't know any identification yet, run the tool using a bogus ID and debug settings to print the available USB interfaces. 
-	
+
 Start process communication for group monitoring, accessing a RF network using a Weinzierl USB interface. Adjust the slf4 [Simple Logger](http://www.slf4j.org/api/org/slf4j/impl/SimpleLogger.html) logging level for `debug` output using `-Dorg.slf4j.simpleLogger.defaultLogLevel=debug`:
 
 	mvn exec:java -Dexec.args="groupmon --usb weinzierl -m rf" -Dorg.slf4j.simpleLogger.defaultLogLevel=debug
@@ -105,33 +110,33 @@ Once you enter the CLI of the property client, execute, e.g., `scan all` to scan
 
 ### Using Java
 
-Replace the version in the examples (2.3-SNAPSHOT) with the exact version you are running. Make sure all dependencies are available, either by relying on the Calimero Tools MANIFEST file or the [Java class path](https://docs.oracle.com/javase/8/docs/technotes/tools/windows/classpath.html) settings (using the `-classpath` option or the [CLASSPATH](https://docs.oracle.com/javase/tutorial/essential/environment/paths.html) environment variable). The simplest way is to have all required `.jar` files in the same directory.
+Replace the version in the examples (2.4-SNAPSHOT) with the exact version you are running. Make sure all dependencies are available, either by relying on the Calimero Tools MANIFEST file or the [Java class path](https://docs.oracle.com/javase/8/docs/technotes/tools/windows/classpath.html) settings (using the `-classpath` option or the [CLASSPATH](https://docs.oracle.com/javase/tutorial/essential/environment/paths.html) environment variable). The simplest way is to have all required `.jar` files in the same directory.
 
 For an overview of tools, run
 
-	java -jar calimero-tools-2.3-SNAPSHOT.jar
+	java -jar calimero-tools-2.4-SNAPSHOT.jar
 
 **Discover KNXnet/IP devices**
 
 Discover KNXnet/IP servers, with Network Address Translation (NAT) enabled:
 
-	java -jar calimero-tools-2.3-SNAPSHOT.jar discover -s --nat
+	java -jar calimero-tools-2.4-SNAPSHOT.jar discover -s --nat
 
 **Process Communication**
 
 Read a KNX datapoint value (switch button on/off) from a group address (`1/2/1`) using the FT1.2 protocol over the serial port `/dev/ttyS01`
 
-	java -jar calimero-tools-2.3-SNAPSHOT.jar read switch 1/2/1 --serial /dev/ttyS01
+	java -jar calimero-tools-2.4-SNAPSHOT.jar read switch 1/2/1 --serial /dev/ttyS01
 
 Start process communication group monitoring for a TP1 KNX network (the default) using KNXnet/IP Routing in the multicast group `224.0.23.12`, and a specific local host address (`--localhost`, useful in multihoming to specify the outgoing network interface)
 
-	java -jar calimero-tools-2.3-SNAPSHOT.jar groupmon --localhost 192.168.10.14 224.0.23.12
+	java -jar calimero-tools-2.4-SNAPSHOT.jar groupmon --localhost 192.168.10.14 224.0.23.12
 
 **Busmonitor**
 
 Start a KNX busmonitor on a KNX TP1 (Twisted Pair) network, using a compact (`-c` or `--compact`) busmonitor indication output format
 
-	java -jar calimero-tools-2.3-SNAPSHOT.jar monitor -c --usb busch-jaeger
+	java -jar calimero-tools-2.4-SNAPSHOT.jar monitor -c --usb busch-jaeger
 
 Calimero busmonitor output in compact mode looks like
 
@@ -148,19 +153,19 @@ Calimero busmonitor output in compact mode looks like
 
 Read device information of KNX device `1.1.4` in a TP1 network (default medium) using the KNXnet/IP server `192.168.10.12`
 
-	java -cp "calimero-tools-2.3-SNAPSHOT.jar" devinfo 192.168.10.12 1.1.4
+	java -cp "calimero-tools-2.4-SNAPSHOT.jar" devinfo 192.168.10.12 1.1.4
 
 
 Logging
 -------
 
-Calimero Tools use the [Simple Logging Facade for Java (slf4j)](http://www.slf4j.org/). Bind any desired logging frameworks of your choice. By default, the [Simple Logger](http://www.slf4j.org/api/org/slf4j/impl/SimpleLogger.html) is used. It logs everything to standard output. The simple logger can be configured via the resource file `simplelogger.properties`, or--with Maven--using command line arguments, e.g., `-Dorg.slf4j.simpleLogger.defaultLogLevel=warn`.
+Calimero Tools use the [Simple Logging Facade for Java (slf4j)](http://www.slf4j.org/). Bind any desired logging frameworks of your choice. By default, the [Simple Logger](http://www.slf4j.org/api/org/slf4j/impl/SimpleLogger.html) is used. It logs everything to standard output. The simple logger can be configured via the resource file `simplelogger.properties`, or -- with Maven -- using command line arguments, e.g., `-Dorg.slf4j.simpleLogger.defaultLogLevel=warn`.
 
 Extending Tools
 ---------------
 
 All tools implement the interface `Runnable` and can be extended.
-Override the method that provides the result and customize behavior. For example, with KNXnet/IP discovery
+Override the method that provides the result and customize its behavior. For example, with KNXnet/IP discovery
 
 ```
 public class MyDiscovery extends Discover {
