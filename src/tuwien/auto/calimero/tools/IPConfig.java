@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2016 B. Malinowsky
+    Copyright (c) 2006, 2017 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -229,7 +229,7 @@ public class IPConfig implements Runnable
 				return;
 			}
 			setIPAssignment();
-			setIP(PropertyAccess.PID.IP_ADDRESS, "IP");
+			setIP(PropertyAccess.PID.IP_ADDRESS, "ip");
 			setIP(PropertyAccess.PID.SUBNET_MASK, "subnet");
 			setIP(PropertyAccess.PID.DEFAULT_GATEWAY, "gateway");
 			setIP(PropertyAccess.PID.ROUTING_MULTICAST_ADDRESS, "multicast");
