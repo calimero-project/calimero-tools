@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2010, 2016 B. Malinowsky
+    Copyright (c) 2010, 2017 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -153,8 +153,7 @@ final class Main
 	{
 		final int p = port != null ? port.intValue() : 0;
 		try {
-			return host != null ? new InetSocketAddress(host, p)
-					: p != 0 ? new InetSocketAddress(InetAddress.getLocalHost(), p) : null;
+			return host != null ? new InetSocketAddress(host, p) : new InetSocketAddress(InetAddress.getLocalHost(), p);
 		}
 		catch (final UnknownHostException e) {
 			throw new KNXIllegalArgumentException("failed getting local host " + e.getMessage(), e);
