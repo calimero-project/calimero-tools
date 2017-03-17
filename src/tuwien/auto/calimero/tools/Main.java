@@ -172,7 +172,6 @@ final class Main
 
 	/**
 	 * Creates a medium settings type for the supplied medium identifier.
-	 * <p>
 	 *
 	 * @param id a medium identifier from command line option
 	 * @return medium settings object

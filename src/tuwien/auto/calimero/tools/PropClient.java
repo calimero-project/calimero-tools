@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2016 B. Malinowsky
+    Copyright (c) 2006, 2017 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -71,7 +71,7 @@ public class PropClient implements Runnable
 			super(args);
 		}
 
-		protected void runCommand(final String[] cmd) throws InterruptedException
+		protected void runCommand(final String... cmd) throws InterruptedException
 		{
 			// ignore any command supplied on command line
 			options.remove("command");

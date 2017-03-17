@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2010, 2016 B. Malinowsky
+    Copyright (c) 2010, 2017 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -280,7 +280,7 @@ public class Property implements Runnable, PropertyAdapterListener
 	 * @param cmd the command to execute together with its parameters
 	 * @throws InterruptedException on thread interrupt
 	 */
-	protected void runCommand(final String[] cmd) throws InterruptedException
+	protected void runCommand(final String... cmd) throws InterruptedException
 	{
 		if (cmd == null)
 			return;
@@ -763,8 +763,7 @@ public class Property implements Runnable, PropertyAdapterListener
 		final long value = Long.decode(key).longValue();
 		if (value < 0 || value > 0xFFFFFFFFL)
 			throw new KNXIllegalArgumentException("invalid authorize key");
-		return new byte[] { (byte) (value >> 24), (byte) (value >> 16), (byte) (value >> 8),
-			(byte) value };
+		return new byte[] { (byte) (value >> 24), (byte) (value >> 16), (byte) (value >> 8), (byte) value };
 	}
 
 	private static int toInt(final String number)
