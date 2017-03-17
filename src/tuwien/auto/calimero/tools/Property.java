@@ -599,7 +599,8 @@ public class Property implements Runnable, PropertyAdapterListener
 		else if (args.length == 3 || args.length == 5) {
 			final int oi = toInt(args[1]);
 			final int pid = toInt(args[2]);
-			final int maxElements = 15;
+			// std.frame: max ASDU = 14 -> actual data = 10, we assume max. PDT size of 4 bytes -> max 2 elements
+			final int maxElements = 2;
 			String s = "";
 			try {
 				if (args.length == 3)
@@ -627,7 +628,7 @@ public class Property implements Runnable, PropertyAdapterListener
 					for (int i = start; i <= elements; i += maxElements) {
 						final int min = Math.min(maxElements, (elements - i + 1));
 						final String hex = DataUnitBuilder.toHex(pc.getProperty(oi, pid, i, min), "");
-						final int chars = hex.length() / elements;
+						final int chars = hex.length() / min;
 						for (int k = 0; k < min; ++k)
 							s += "0x" + hex.substring(k * chars, (k + 1) * chars) + " ";
 					}
