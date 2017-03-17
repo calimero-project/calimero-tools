@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2011, 2016 B. Malinowsky
+    Copyright (c) 2011, 2017 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -329,16 +329,15 @@ public class DeviceInfo implements Runnable
 
 		Exception thrown = null;
 		boolean canceled = false;
+		final IndividualAddress device = (IndividualAddress) options.get("device");
+		result = new Result();
 		try (KNXNetworkLink link = createLink();
 				ManagementClient scoped = mc = new ManagementClientImpl(link)) {
-			final IndividualAddress device = (IndividualAddress) options.get("device");
 			d = mc.createDestination(device, true);
 			out.info("Reading data from device {}, might take some seconds ...", device);
-			result = new Result();
 			readDeviceInfo();
-			onDeviceInformation(device, result);
 		}
-		catch (final KNXException | RuntimeException e) {
+		catch (KNXException | RuntimeException e) {
 			thrown = e;
 		}
 		catch (final InterruptedException e) {
@@ -346,6 +345,8 @@ public class DeviceInfo implements Runnable
 			Thread.currentThread().interrupt();
 		}
 		finally {
+			if (!result.formatted.isEmpty())
+				onDeviceInformation(device, result);
 			onCompletion(thrown, canceled);
 		}
 	}
