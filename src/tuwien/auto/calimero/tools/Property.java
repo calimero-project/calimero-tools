@@ -668,8 +668,21 @@ public class Property implements Runnable, PropertyAdapterListener
 			pc.setProperty(oi, pid, 1, args[3]);
 		else if (cnt == 5)
 			pc.setProperty(oi, pid, toInt(args[3]), args[4]);
-		else if (cnt == 6)
-			pc.setProperty(oi, pid, toInt(args[3]), toInt(args[4]), toByteArray(args[5]));
+		else if (cnt == 6) {
+			final int start = toInt(args[3]);
+			final int elements = toInt(args[4]);
+			final byte[] data = toByteArray(args[5]);
+			final int typeSize = data.length / elements;
+			if (typeSize == 0)
+				throw new KNXIllegalArgumentException(String.format(
+						"property data %s cannot be split into %d elements (type size 0)", args[5], elements));
+			final int usableAsdu = 14 - 4; // std. frame
+			final int maxLength = usableAsdu / typeSize * typeSize;
+			for (int i = 0; i < data.length; i += maxLength) {
+				final int len = Math.min(maxLength, (data.length - i));
+				pc.setProperty(oi, pid, start + i / typeSize, len / typeSize, Arrays.copyOfRange(data, i, i + len));
+			}
+		}
 	}
 
 	private void scanProperties(final String[] args) throws KNXException, InterruptedException
