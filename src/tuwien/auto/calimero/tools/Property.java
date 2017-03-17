@@ -631,6 +631,7 @@ public class Property implements Runnable, PropertyAdapterListener
 						for (int k = 0; k < min; ++k)
 							s += "0x" + hex.substring(k * chars, (k + 1) * chars) + " ";
 					}
+					s = s.trim();
 				}
 				onPropertyValue(oi, pid, s);
 			}
