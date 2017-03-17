@@ -105,7 +105,7 @@ public class Property implements Runnable, PropertyAdapterListener
 
 	/** The used property client. */
 	protected PropertyClient pc;
-	private KNXNetworkLink lnk;
+	private KNXNetworkLink link;
 	private Map<PropertyKey, PropertyClient.Property> definitions;
 
 	private final Thread interruptOnClose;
@@ -256,8 +256,8 @@ public class Property implements Runnable, PropertyAdapterListener
 		finally {
 			if (pc != null)
 				pc.close();
-			if (lnk != null)
-				lnk.close();
+			if (link != null)
+				link.close();
 			onCompletion(thrown, canceled);
 		}
 	}
@@ -370,6 +370,12 @@ public class Property implements Runnable, PropertyAdapterListener
 			out.error("on completion", thrown);
 	}
 
+	/** Returns the network link used by this tool. */
+	protected KNXNetworkLink link()
+	{
+		return link;
+	}
+
 	/**
 	 * Creates the property adapter to be used with the property client depending on the supplied
 	 * user <code>options</code>.
@@ -441,31 +447,31 @@ public class Property implements Runnable, PropertyAdapterListener
 		if (options.containsKey("ft12")) {
 			// create FT1.2 network link
 			try {
-				lnk = new KNXNetworkLinkFT12(Integer.parseInt(host), medium);
+				link = new KNXNetworkLinkFT12(Integer.parseInt(host), medium);
 			}
 			catch (final NumberFormatException e) {
-				lnk = new KNXNetworkLinkFT12(host, medium);
+				link = new KNXNetworkLinkFT12(host, medium);
 			}
 		}
 		else if (options.containsKey("usb")) {
 			// create KNX USB HID network link
-			lnk = new KNXNetworkLinkUsb(host, medium);
+			link = new KNXNetworkLinkUsb(host, medium);
 		}
 		else if (options.containsKey("tpuart")) {
 			// create TP-UART link
 			final IndividualAddress device = (IndividualAddress) options.get("knx-address");
 			medium.setDeviceAddress(device);
-			lnk = new KNXNetworkLinkTpuart(host, medium, Collections.emptyList());
+			link = new KNXNetworkLinkTpuart(host, medium, Collections.emptyList());
 		}
 		else {
 			final InetSocketAddress local = Main.createLocalSocket((InetAddress) options.get("localhost"),
 					(Integer) options.get("localport"));
 			final InetAddress addr = Main.parseHost(host);
 			if (addr.isMulticastAddress())
-				lnk = KNXNetworkLinkIP.newRoutingLink(local.getAddress(), addr, medium);
+				link = KNXNetworkLinkIP.newRoutingLink(local.getAddress(), addr, medium);
 			else {
 				final InetSocketAddress remote = new InetSocketAddress(addr, (Integer) options.get("port"));
-				lnk = KNXNetworkLinkIP.newTunnelingLink(local, remote, options.containsKey("nat"), medium);
+				link = KNXNetworkLinkIP.newTunnelingLink(local, remote, options.containsKey("nat"), medium);
 			}
 		}
 		final IndividualAddress remote = (IndividualAddress) options.get("remote");
@@ -473,8 +479,8 @@ public class Property implements Runnable, PropertyAdapterListener
 		// connection oriented mode and tries to authenticate
 		final byte[] authKey = (byte[]) options.get("authorize");
 		if (authKey != null)
-			return new RemotePropertyServiceAdapter(lnk, remote, this, authKey);
-		return new RemotePropertyServiceAdapter(lnk, remote, this, options.containsKey("connect"));
+			return new RemotePropertyServiceAdapter(link, remote, this, authKey);
+		return new RemotePropertyServiceAdapter(link, remote, this, options.containsKey("connect"));
 	}
 
 	private static String alignRight(final int value)
