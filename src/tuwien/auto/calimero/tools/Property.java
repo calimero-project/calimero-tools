@@ -232,8 +232,17 @@ public class Property implements Runnable, PropertyAdapterListener
 		Exception thrown = null;
 		boolean canceled = false;
 		try {
-			// create a property adapter and supply it to a new property client
-			pc = new PropertyClient(createAdapter());
+			final PropertyAdapter adapter = createAdapter();
+
+			if (options.containsKey("reset") && adapter instanceof LocalDeviceMgmtAdapter) {
+				out("send local device management reset request to " + options.get("host") + ":" + options.get("port"));
+				final LocalDeviceMgmtAdapter ldm = (LocalDeviceMgmtAdapter) adapter;
+				ldm.reset();
+				while (ldm.isOpen())
+					Thread.sleep(1000);
+			}
+
+			pc = new PropertyClient(adapter);
 			// check if user supplied a XML resource with property definitions
 			if (defs != null) {
 				pc.addDefinitions(defs);
@@ -549,6 +558,8 @@ public class Property implements Runnable, PropertyAdapterListener
 				options.put("connect", null);
 			else if (Main.isOption(arg, "authorize", "a"))
 				options.put("authorize", getAuthorizeKey(args[++i]));
+			else if (arg.equals("reset"))
+				options.put("reset", null);
 			else if (arg.equals("get") || arg.equals("set") || arg.equals("desc") || arg.equals("scan")) {
 				final List<String> cmd = new ArrayList<>();
 				cmd.add(arg);
