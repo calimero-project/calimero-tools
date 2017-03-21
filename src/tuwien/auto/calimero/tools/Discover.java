@@ -244,7 +244,8 @@ public class Discover implements Runnable
 		final StringBuilder sb = new StringBuilder(sep);
 		sb.append("Using ").append(r.getAddress()).append(" at ").append(nameOf(r.getNetworkInterface())).append(sep);
 		sb.append("----------------------------------------").append(sep);
-		sb.append("Control endpoint ").append(controlEp).append(" ");
+		if (controlEp != null)
+			sb.append("Control endpoint ").append(controlEp).append(" ");
 		sb.append(device.toString()).append(sep);
 		sb.append("Supported services: ");
 		final String s = sb.toString().replaceAll(", ", sep);
