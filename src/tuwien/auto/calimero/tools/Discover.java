@@ -243,7 +243,7 @@ public class Discover implements Runnable
 	{
 		final StringBuilder sb = new StringBuilder(sep);
 		sb.append("Using ").append(r.getAddress()).append(" at ").append(nameOf(r.getNetworkInterface())).append(sep);
-		sb.append("----------------------------------------").append(sep);
+		sb.append(new String(new char[sb.length() - 2]).replace('\0', '-')).append(sep);
 		if (controlEp != null)
 			sb.append("Control endpoint ").append(controlEp).append(" ");
 		sb.append(device.toString()).append(sep);
