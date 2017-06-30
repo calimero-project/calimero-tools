@@ -235,7 +235,13 @@ public class IPConfig implements Runnable
 			setIP(PropertyAccess.PID.SUBNET_MASK, "subnet");
 			setIP(PropertyAccess.PID.DEFAULT_GATEWAY, "gateway");
 			setIP(PropertyAccess.PID.ROUTING_MULTICAST_ADDRESS, "multicast");
-			readConfig();
+			final List<String[]> config = new ArrayList<>();
+			try {
+				readConfig(config);
+			}
+			finally {
+				onConfigurationReceived(config);
+			}
 		}
 		catch (final KNXException e) {
 			thrown = e;
@@ -318,9 +324,8 @@ public class IPConfig implements Runnable
 			}
 	}
 
-	private void readConfig() throws KNXException, InterruptedException
+	private void readConfig(final List<String[]> config) throws KNXException, InterruptedException
 	{
-		final List<String[]> config = new ArrayList<>();
 		int pid = PropertyAccess.PID.KNX_INDIVIDUAL_ADDRESS;
 		byte[] data = query(pid);
 		if (data != null)
@@ -356,8 +361,6 @@ public class IPConfig implements Runnable
 		addIP(config, PropertyAccess.PID.CURRENT_DEFAULT_GATEWAY, "Current default gateway");
 		addIP(config, PropertyAccess.PID.DHCP_BOOTP_SERVER, "DHCP/BootP server");
 		addIP(config, PropertyAccess.PID.ROUTING_MULTICAST_ADDRESS, "Routing multicast");
-
-		onConfigurationReceived(config);
 	}
 
 	private void addIP(final List<String[]> config, final int pid, final String name)
