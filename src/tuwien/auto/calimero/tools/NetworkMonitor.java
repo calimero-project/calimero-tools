@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2016 B. Malinowsky
+    Copyright (c) 2006, 2017 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -165,8 +165,8 @@ public class NetworkMonitor implements Runnable
 	 * <li><code>--ft12 -f</code> use FT1.2 serial communication</li>
 	 * <li><code>--usb -u</code> use KNX USB communication</li>
 	 * <li><code>--tpuart</code> use TP-UART communication</li>
-	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to
-	 * tp1)</li>
+	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to tp1)</li>
+	 * <li><code>--domain</code> <i>address</i> &nbsp;domain address on open KNX medium (PL or RF)</li>
 	 * </ul>
 	 *
 	 * @param args command line options for network monitoring
@@ -419,14 +419,16 @@ public class NetworkMonitor implements Runnable
 				options.put("tpuart", null);
 			else if (Main.isOption(arg, "medium", "m"))
 				options.put("medium", Main.getMedium(args[++i]));
+			else if (Main.isOption(arg, "domain", null))
+				options.put("domain", Long.decode(args[++i]));
 			else if (!options.containsKey("host"))
 				options.put("host", arg);
 			else
 				throw new KNXIllegalArgumentException("unknown option " + arg);
 		}
-		if (!options.containsKey("host")
-				|| (options.containsKey("ft12") && options.containsKey("usb")))
+		if (!options.containsKey("host") || (options.containsKey("ft12") && options.containsKey("usb")))
 			throw new KNXIllegalArgumentException("specify either IP host, serial port, or device");
+		Main.setDomainAddress(options);
 	}
 
 	private static void showUsage()
@@ -447,7 +449,8 @@ public class NetworkMonitor implements Runnable
 		sb.append("  --ft12 -f                use FT1.2 serial communication").append(sep);
 		sb.append("  --usb -u                 use KNX USB communication").append(sep);
 		sb.append("  --tpuart                 use TP-UART communication").append(sep);
-		sb.append("  --medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)")
+		sb.append("  --medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)").append(sep);
+		sb.append("  --domain <address>       domain address on KNX PL/RF medium (defaults to broadcast domain)")
 				.append(sep);
 		out(sb.toString());
 	}

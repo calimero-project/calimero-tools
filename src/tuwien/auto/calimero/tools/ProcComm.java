@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2016 B. Malinowsky
+    Copyright (c) 2006, 2017 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -35,6 +35,8 @@
 */
 
 package tuwien.auto.calimero.tools;
+
+import static tuwien.auto.calimero.tools.Main.setDomainAddress;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -192,15 +194,14 @@ public class ProcComm implements Runnable
 	 * <li><code>--version</code> show tool/library version and exit</li>
 	 * <li><code>--verbose -v</code> enable verbose status output</li>
 	 * <li><code>--localhost</code> <i>id</i> &nbsp;local IP/host name</li>
-	 * <li><code>--localport</code> <i>number</i> &nbsp;local UDP port (default system assigned)
-	 * </li>
+	 * <li><code>--localport</code> <i>number</i> &nbsp;local UDP port (default system assigned)</li>
 	 * <li><code>--port -p</code> <i>number</i> &nbsp;UDP port on host (default 3671)</li>
 	 * <li><code>--nat -n</code> enable Network Address Translation</li>
 	 * <li><code>--ft12 -f</code> use FT1.2 serial communication</li>
 	 * <li><code>--usb -u</code> use KNX USB communication</li>
 	 * <li><code>--tpuart</code> use TP-UART communication</li>
-	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to tp1)
-	 * </li>
+	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to tp1)</li>
+	 * <li><code>--domain</code> <i>address</i> &nbsp;domain address on open KNX medium (PL or RF)</li>
 	 * </ul>
 	 * Available commands for process communication:
 	 * <ul>
@@ -672,6 +673,8 @@ public class ProcComm implements Runnable
 				options.put("tpuart", null);
 			else if (Main.isOption(arg, "medium", "m"))
 				options.put("medium", Main.getMedium(args[++i]));
+			else if (Main.isOption(arg, "domain", null))
+				options.put("domain", Long.decode(args[++i]));
 			else if (Main.isOption(arg, "timeout", "t"))
 				options.put("timeout", Integer.decode(args[++i]));
 			else if (!options.containsKey("host"))
@@ -679,14 +682,14 @@ public class ProcComm implements Runnable
 			else
 				throw new KNXIllegalArgumentException("unknown option " + arg);
 		}
-		if (!options.containsKey("host")
-				|| (options.containsKey("ft12") && options.containsKey("usb")))
+		if (!options.containsKey("host") || (options.containsKey("ft12") && options.containsKey("usb")))
 			throw new KNXIllegalArgumentException("specify either IP host, serial port, or device");
-		if (!(options.containsKey("monitor") || options.containsKey("read") || options
-				.containsKey("write")))
+		if (!(options.containsKey("monitor") || options.containsKey("read") || options.containsKey("write")))
 			throw new KNXIllegalArgumentException("specify read, write, or group monitoring");
 		if (options.containsKey("read") && options.containsKey("write"))
 			throw new KNXIllegalArgumentException("either read or write - not both");
+
+		setDomainAddress(options);
 	}
 
 	private static void showUsage()
@@ -706,7 +709,8 @@ public class ProcComm implements Runnable
 		sb.append("  --ft12 -f                use FT1.2 serial communication").append(sep);
 		sb.append("  --usb -u                 use KNX USB communication").append(sep);
 		sb.append("  --tpuart                 use TP-UART communication").append(sep);
-		sb.append("  --medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)")
+		sb.append("  --medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)").append(sep);
+		sb.append("  --domain <address>       domain address on KNX PL/RF medium (defaults to broadcast domain)")
 				.append(sep);
 		sb.append("Available commands for process communication:").append(sep);
 		sb.append("  read <DPT> <KNX address>           read from group address").append(sep);

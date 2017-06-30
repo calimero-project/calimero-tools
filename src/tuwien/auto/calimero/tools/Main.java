@@ -41,8 +41,10 @@ import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.KNXFormatException;
@@ -214,6 +216,23 @@ final class Main
 		if (arg.equals("-" + longOpt))
 			throw new KNXIllegalArgumentException("use --" + longOpt);
 		return lo || so;
+	}
+
+	static void setDomainAddress(final Map<String, Object> options)
+	{
+		final Long value = (Long) options.get("domain");
+		if (value == null)
+			return;
+		final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
+		buffer.putLong(value);
+		final KNXMediumSettings medium = (KNXMediumSettings) options.get("medium");
+		final byte[] domain = new byte[medium.getMedium() == KNXMediumSettings.MEDIUM_PL110 ? 2 : 6];
+		buffer.position(8 - domain.length);
+		buffer.get(domain);
+		if (medium.getMedium() == KNXMediumSettings.MEDIUM_RF)
+			((RFSettings) medium).setDomainAddress(domain);
+		if (medium.getMedium() == KNXMediumSettings.MEDIUM_PL110)
+			((PLSettings) medium).setDomainAddress(domain);
 	}
 
 	static final class ShutdownHandler extends Thread

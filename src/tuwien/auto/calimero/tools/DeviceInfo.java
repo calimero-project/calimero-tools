@@ -36,6 +36,8 @@
 
 package tuwien.auto.calimero.tools;
 
+import static tuwien.auto.calimero.tools.Main.setDomainAddress;
+
 import java.io.ByteArrayOutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -283,8 +285,8 @@ public class DeviceInfo implements Runnable
 	 * <li><code>--ft12 -f</code> use FT1.2 serial communication</li>
 	 * <li><code>--usb -u</code> use KNX USB communication</li>
 	 * <li><code>--tpuart</code> use TP-UART communication</li>
-	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to tp1)
-	 * </li>
+	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to tp1)</li>
+	 * <li><code>--domain</code> <i>address</i> &nbsp;domain address on open KNX medium (PL or RF)</li>
 	 * <li><code>--knx-address -k</code> <i>KNX address</i> &nbsp;KNX device address of local
 	 * endpoint</li>
 	 * </ul>
@@ -1009,6 +1011,8 @@ public class DeviceInfo implements Runnable
 				options.put("tpuart", null);
 			else if (Main.isOption(arg, "medium", "m"))
 				options.put("medium", Main.getMedium(args[++i]));
+			else if (Main.isOption(arg, "domain", null))
+				options.put("domain", Long.decode(args[++i]));
 			else if (Main.isOption(arg, "knx-address", "k"))
 				options.put("knx-address", Main.getAddress(args[++i]));
 			else if (!options.containsKey("host"))
@@ -1026,11 +1030,11 @@ public class DeviceInfo implements Runnable
 				throw new KNXIllegalArgumentException("unknown option " + arg);
 		}
 
-		if (!options.containsKey("host")
-				|| (options.containsKey("ft12") && options.containsKey("usb")))
+		if (!options.containsKey("host") || (options.containsKey("ft12") && options.containsKey("usb")))
 			throw new KNXIllegalArgumentException("specify either IP host, serial port, or device");
 		if (!options.containsKey("device"))
 			throw new KNXIllegalArgumentException("KNX device individual address missing");
+		setDomainAddress(options);
 	}
 
 	private static void showUsage()
@@ -1051,6 +1055,8 @@ public class DeviceInfo implements Runnable
 		sb.append(" --usb -u                 use KNX USB communication").append(sep);
 		sb.append(" --tpuart                 use TP-UART communication").append(sep);
 		sb.append(" --medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)").append(sep);
+		sb.append(" --domain <address>       domain address on KNX PL/RF medium (defaults to broadcast domain)")
+				.append(sep);
 		out(sb.toString());
 	}
 

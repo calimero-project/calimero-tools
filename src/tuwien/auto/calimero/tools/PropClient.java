@@ -149,8 +149,8 @@ public class PropClient implements Runnable
 	 * </ul>
 	 * For remote property service these options are available:
 	 * <ul>
-	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to
-	 * tp1)</li>
+	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to tp1)</li>
+	 * <li><code>--domain</code> <i>address</i> &nbsp;domain address on open KNX medium (PL or RF)</li>
 	 * <li><code>--connect -c</code> connection oriented mode</li>
 	 * <li><code>--authorize -a</code> <i>key</i> &nbsp;authorize key to access KNX device</li>
 	 * </ul>
@@ -169,9 +169,6 @@ public class PropClient implements Runnable
 		}
 	}
 
-	/* (non-Javadoc)
-	 * @see java.lang.Runnable#run()
-	 */
 	@Override
 	public void run()
 	{

@@ -161,6 +161,7 @@ public class Property implements Runnable, PropertyAdapterListener
 	 * For remote property service these options are available:
 	 * <ul>
 	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to tp1)</li>
+	 * <li><code>--domain</code> <i>address</i> &nbsp;domain address on open KNX medium (PL or RF)</li>
 	 * <li><code>--knx-address -k</code> <i>KNX address</i> &nbsp;KNX device address of local endpoint</li>
 	 * <li><code>--connect -c</code> connection oriented mode</li>
 	 * <li><code>--authorize -a</code> <i>key</i> &nbsp;authorize key to access the KNX device</li>
@@ -550,6 +551,8 @@ public class Property implements Runnable, PropertyAdapterListener
 				options.put("tpuart", null);
 			else if (Main.isOption(arg, "medium", "m"))
 				options.put("medium", Main.getMedium(args[++i]));
+			else if (Main.isOption(arg, "domain", null))
+				options.put("domain", Long.decode(args[++i]));
 			else if (Main.isOption(arg, "knx-address", "k"))
 				options.put("knx-address", Main.getAddress(args[++i]));
 			else if (Main.isOption(arg, "emulatewriteenable", "e"))
@@ -586,6 +589,7 @@ public class Property implements Runnable, PropertyAdapterListener
 			throw new KNXIllegalArgumentException("no communication device/host specified");
 		if (options.containsKey("ft12") && !options.containsKey("remote"))
 			throw new KNXIllegalArgumentException("--remote option is mandatory with --ft12");
+		Main.setDomainAddress(options);
 	}
 
 	//
@@ -757,7 +761,8 @@ public class Property implements Runnable, PropertyAdapterListener
 		sb.append("Options for local device management mode only:").append(sep);
 		sb.append("  --emulatewriteenable -e  check write-enable of a property").append(sep);
 		sb.append("Options for remote property service mode only:").append(sep);
-		sb.append("  --medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)")
+		sb.append("  --medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)").append(sep);
+		sb.append("  --domain <address>       domain address on KNX PL/RF medium (defaults to broadcast domain)")
 				.append(sep);
 		sb.append("  --connect -c             connection oriented mode").append(sep);
 		sb.append("  --authorize -a <key>     authorize key to access KNX device").append(sep);

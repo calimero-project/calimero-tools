@@ -36,6 +36,8 @@
 
 package tuwien.auto.calimero.tools;
 
+import static tuwien.auto.calimero.tools.Main.setDomainAddress;
+
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -153,8 +155,8 @@ public class IPConfig implements Runnable
 	 * </ul>
 	 * For remote property service these options are available:
 	 * <ul>
-	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to tp1)
-	 * </li>
+	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to tp1)</li>
+	 * <li><code>--domain</code> <i>address</i> &nbsp;domain address on open KNX medium (PL or RF)</li>
 	 * <li><code>--knx-address -k</code> <i>KNX address</i> &nbsp;KNX device address of local
 	 * endpoint</li>
 	 * <li><code>--connect -c</code> connection oriented mode</li>
@@ -534,7 +536,7 @@ public class IPConfig implements Runnable
 	{
 		// remove empty arguments
 		final List<String> l = new ArrayList<>(Arrays.asList(args));
-		l.removeAll(Arrays.asList(new String[] { "" }));
+		l.removeAll(Arrays.asList(""));
 		if (l.size() == 0)
 			return;
 
@@ -574,6 +576,8 @@ public class IPConfig implements Runnable
 				options.put("tpuart", null);
 			else if (Main.isOption(arg, "medium", "m"))
 				options.put("medium", Main.getMedium(i.next()));
+			else if (Main.isOption(arg, "domain", null))
+				options.put("domain", Long.decode(i.next()));
 			else if (Main.isOption(arg, "knx-address", "k"))
 				options.put("knx-address", Main.getAddress(i.next()));
 			else if (Main.isOption(arg, "connect", "c"))
@@ -611,6 +615,7 @@ public class IPConfig implements Runnable
 			throw new KNXIllegalArgumentException("no host or serial port specified");
 		if (options.containsKey("ft12") && !options.containsKey("remote"))
 			throw new KNXIllegalArgumentException("--remote option is mandatory with --ft12");
+		setDomainAddress(options);
 	}
 
 	private static void showUsage()
@@ -632,6 +637,8 @@ public class IPConfig implements Runnable
 		sb.append("  --usb -u                 use KNX USB communication").append(sep);
 		sb.append("  --tpuart                 use TP-UART communication").append(sep);
 		sb.append("  --medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)").append(sep);
+		sb.append("  --domain <address>       domain address on KNX PL/RF medium (defaults to broadcast domain)")
+				.append(sep);
 		sb.append("  --connect -c             connection oriented mode").append(sep);
 		sb.append("  --authorize -a <key>     authorize key to access KNX device").append(sep);
 		sb.append("To change the IP configuration, supply one or more commands:").append(sep);

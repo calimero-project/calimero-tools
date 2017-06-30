@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2013, 2016 B. Malinowsky
+    Copyright (c) 2013, 2017 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -98,13 +98,10 @@ public class ScanDevices implements Runnable
 	 * <p>
 	 * Syntax: ScanDevices [options] &lt;host|port&gt; &lt;area.line[.device]&gt;
 	 * <p>
-	 * The area and line are expected as numbers in the range [0..0x0F]; the (optional) device
-	 * address part is in the range [0..0x0FF]. Accepted are decimal, hexadecimal (0x), or octal (0)
-	 * representations.<br>
-	 * To show usage message of the tool on the console, supply the command line option --help (or
-	 * -h).<br>
-	 * Command line options are treated case sensitive. Available options for connecting to the KNX
-	 * device in question:
+	 * The area and line are expected as numbers in the range [0..0x0F]; the (optional) device address part is in the
+	 * range [0..0x0FF]. Accepted are decimal, hexadecimal (0x), or octal (0) representations.<br>
+	 * To show usage message of the tool on the console, supply the command line option --help (or -h).<br>
+	 * Command line options are treated case sensitive. Available options for connecting to the KNX device in question:
 	 * <ul>
 	 * <li>no arguments: only show short description and version info</li>
 	 * <li><code>--help -h</code> show help message</li>
@@ -117,15 +114,14 @@ public class ScanDevices implements Runnable
 	 * <li><code>--ft12 -f</code> use FT1.2 serial communication</li>
 	 * <li><code>--usb -u</code> use KNX USB communication</li>
 	 * <li><code>--tpuart</code> use TP-UART communication</li>
-	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to tp1)
-	 * </li>
-	 * <li><code>--knx-address -k</code> <i>KNX address</i> &nbsp;KNX device address of local
-	 * endpoint</li>
+	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to tp1)</li>
+	 * <li><code>--domain</code> <i>address</i> &nbsp;domain address on open KNX medium (PL or RF, defaults to broadcast
+	 * domain)</li>
+	 * <li><code>--knx-address -k</code> <i>KNX address</i> &nbsp;KNX device address of local endpoint</li>
 	 * </ul>
-	 * The <code>--knx-address</code> option is only necessary if an access protocol is selected
-	 * that directly communicates with the KNX network, i.e., KNX IP or TP-UART. The selected KNX
-	 * individual address shall be unique in a network, and the subnetwork address (area and line)
-	 * should be set to match the network configuration.
+	 * The <code>--knx-address</code> option is only necessary if an access protocol is selected that directly
+	 * communicates with the KNX network, i.e., KNX IP or TP-UART. The selected KNX individual address shall be unique
+	 * in a network, and the subnetwork address (area and line) should be set to match the network configuration.
 	 *
 	 * @param args command line options for running the device info tool
 	 */
@@ -328,6 +324,8 @@ public class ScanDevices implements Runnable
 				options.put("tpuart", null);
 			else if (Main.isOption(arg, "medium", "m"))
 				options.put("medium", Main.getMedium(args[++i]));
+			else if (Main.isOption(arg, "domain", null))
+				options.put("domain", Long.decode(args[++i]));
 			else if (Main.isOption(arg, "knx-address", "k"))
 				options.put("knx-address", Main.getAddress(args[++i]));
 			else if (!options.containsKey("host"))
@@ -343,6 +341,7 @@ public class ScanDevices implements Runnable
 			throw new KNXIllegalArgumentException("specify either IP host, serial port, or device");
 		if (!options.containsKey("range"))
 			throw new KNXIllegalArgumentException("Missing area.line range to scan for devices");
+		Main.setDomainAddress(options);
 	}
 
 	private static void showUsage()
@@ -363,10 +362,10 @@ public class ScanDevices implements Runnable
 		sb.append(" --ft12 -f                use FT1.2 serial communication").append(sep);
 		sb.append(" --usb -u                 use KNX USB communication").append(sep);
 		sb.append(" --tpuart                 use TP-UART communication").append(sep);
-		sb.append(" --medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)")
+		sb.append(" --medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)").append(sep);
+		sb.append(" --domain <address>       domain address on KNX PL/RF medium (defaults to broadcast domain)")
 				.append(sep);
-		sb.append("The area and line are given as numbers in the range [0..15], e.g., 3.1")
-				.append(sep);
+		sb.append("The area and line are given as numbers in the range [0..15], e.g., 3.1").append(sep);
 		sb.append("The (optional) device address part is in the range [0..255]").append(sep);
 		out(sb.toString());
 	}
