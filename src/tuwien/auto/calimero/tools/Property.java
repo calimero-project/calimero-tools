@@ -511,7 +511,7 @@ public class Property implements Runnable, PropertyAdapterListener
 		if (args.length == 0)
 			return;
 		// add defaults
-		options.put("port", new Integer(KNXnetIPConnection.DEFAULT_PORT));
+		options.put("port", KNXnetIPConnection.DEFAULT_PORT);
 		options.put("medium", TPSettings.TP1);
 		// default subnetwork address for TP1 and unregistered device
 		options.put("knx-address", new IndividualAddress(0, 0x02, 0xff));

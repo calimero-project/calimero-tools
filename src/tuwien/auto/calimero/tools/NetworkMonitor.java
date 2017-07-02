@@ -385,7 +385,7 @@ public class NetworkMonitor implements Runnable
 			return;
 
 		// add defaults
-		options.put("port", new Integer(KNXnetIPConnection.DEFAULT_PORT));
+		options.put("port", KNXnetIPConnection.DEFAULT_PORT);
 		options.put("medium", TPSettings.TP1);
 
 		int i = 0;
