@@ -32,6 +32,7 @@ run {
 compileJava.options*.compilerArgs = [
 	'-Xlint:all',
 	'-Xlint:-try',
+	'-Xlint:-options',
 	'-Werror'
 ]
 
