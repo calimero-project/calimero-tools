@@ -225,7 +225,7 @@ public class Discover implements Runnable
 		onDescriptionReceived(result, null);
 	}
 
-	private void onDescriptionReceived(final Result<DescriptionResponse> result, final HPAI hpai)
+	private static void onDescriptionReceived(final Result<DescriptionResponse> result, final HPAI hpai)
 	{
 		final DescriptionResponse dr = result.getResponse();
 		String formatted = formatResponse(result, hpai, dr.getDevice(), dr.getServiceFamilies());
@@ -238,7 +238,7 @@ public class Discover implements Runnable
 		System.out.println(formatted);
 	}
 
-	private String formatResponse(final Result<?> r, final HPAI controlEp, final DeviceDIB device,
+	private static String formatResponse(final Result<?> r, final HPAI controlEp, final DeviceDIB device,
 		final ServiceFamiliesDIB serviceFamilies)
 	{
 		final StringBuilder sb = new StringBuilder(sep);
@@ -335,6 +335,7 @@ public class Discover implements Runnable
 	{
 		final SearchResponse sr = r.getResponse();
 		final HPAI hpai = sr.getControlEndpoint();
+		// TODO if hpai contains 0.0.0.0:0, the server sent a NAT response -> use the sender address
 		final InetSocketAddress server = new InetSocketAddress(hpai.getAddress(), hpai.getPort());
 		final int timeout = 2;
 		try {
@@ -412,7 +413,7 @@ public class Discover implements Runnable
 	{
 		final String name = nif.getName();
 		final String friendly = nif.getDisplayName();
-		if (friendly != null & !name.equals(friendly))
+		if (friendly != null && !name.equals(friendly))
 			return name + " (" + friendly + ")";
 		return name;
 	}

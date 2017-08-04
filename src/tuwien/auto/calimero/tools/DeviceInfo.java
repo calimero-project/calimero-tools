@@ -423,6 +423,7 @@ public class DeviceInfo implements Runnable
 		final byte[] data = read(deviceObjectIdx, PropertyAccess.PID.IO_LIST, 1, objects);
 		if (data == null)
 			return;
+		// TODO this will give us only the last object instance in case of several IO instances of the same type
 		for (int i = 0; i < objects; ++i) {
 			final int type = (data[2 * i] & 0xff) << 8 | data[2 * i + 1] & 0xff;
 			if (type == addresstableObject)
@@ -526,7 +527,7 @@ public class DeviceInfo implements Runnable
 		// Manufacturer ID (Device Object)
 		 byte[] data = read(deviceObjectIdx, PID.MANUFACTURER_ID);
 		if (data != null) {
-			final long mfId = toUnsigned(data);
+			final int mfId = (int) toUnsigned(data);
 			putResult(CommonParameter.Manufacturer, manufacturer.get(mfId), mfId);
 		}
 		// Order Info
@@ -692,6 +693,15 @@ public class DeviceInfo implements Runnable
 		// realization type 1
 		// Location of group object table
 		readMem(addrGroupObjTablePtr, 1, "Group object table location ", true, CommonParameter.GroupObjTableLocation);
+		readGroupAddresses();
+
+		// Location of user program 0x100 + progptr
+		final int progptr = readMem(addrProgramPtr, 1);
+		final int userprog = 0x100 + progptr;
+	}
+
+	private void readGroupAddresses() throws InterruptedException
+	{
 		// realization type 1
 		final int entries = readMem(addrGroupAddrTable, 1, "Group address table entries ", false,
 				CommonParameter.GroupAddrTableEntries);
@@ -710,10 +720,6 @@ public class DeviceInfo implements Runnable
 				sb.append("(R)");
 		}
 		putResult(CommonParameter.GroupAddresses, sb.toString(), null);
-
-		// Location of user program 0x100 + progptr
-		final int progptr = readMem(addrProgramPtr, 1);
-		final int userprog = 0x100 + progptr;
 	}
 
 	private void readKnxipInfo() throws KNXException, InterruptedException
@@ -873,7 +879,7 @@ public class DeviceInfo implements Runnable
 			return res.toByteArray();
 		}
 		catch (final KNXException e) {
-			out.warn("object index " + objectIndex + " property " + pid + " error, " + e.getMessage());
+			out.warn("error reading KNX property " + objectIndex + "|" + pid + ", " + e.getMessage());
 		}
 		return null;
 	}

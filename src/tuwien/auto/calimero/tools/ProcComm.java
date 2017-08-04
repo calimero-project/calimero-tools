@@ -313,9 +313,13 @@ public class ProcComm implements Runnable
 		// this is the listener if group monitoring is requested
 		if (options.containsKey("monitor")) {
 			final ProcessListener monitor = new ProcessListener() {
+				@Override
 				public void groupWrite(final ProcessEvent e) { onGroupEvent(e); }
+				@Override
 				public void groupReadResponse(final ProcessEvent e) { onGroupEvent(e); }
+				@Override
 				public void groupReadRequest(final ProcessEvent e) { onGroupEvent(e); }
+				@Override
 				public void detached(final DetachEvent e) { closed = true; }
 			};
 			pc.addProcessListener(monitor);
@@ -516,7 +520,7 @@ public class ProcComm implements Runnable
 	}
 
 	// shows one DPT of each matching main type based on the length of the supplied ASDU
-	private String decodeAsduByLength(final byte[] asdu, final boolean optimized) throws KNXFormatException
+	private static String decodeAsduByLength(final byte[] asdu, final boolean optimized) throws KNXFormatException
 	{
 		final StringBuffer sb = new StringBuffer();
 		final List<MainType> typesBySize = TranslatorTypes.getMainTypesBySize(optimized ? 0 : asdu.length);
@@ -588,8 +592,7 @@ public class ProcComm implements Runnable
 	{
 		if (!options.containsKey("monitor"))
 			return;
-		try (final XmlWriter w = XmlOutputFactory.newInstance()
-				.createXMLWriter(toolDatapointsFile)) {
+		try (final XmlWriter w = XmlOutputFactory.newInstance().createXMLWriter(toolDatapointsFile)) {
 			datapoints.save(w);
 		}
 		catch (final KNXMLException e) {
@@ -758,6 +761,7 @@ public class ProcComm implements Runnable
 			catch (final IllegalStateException expected) {}
 		}
 
+		@Override
 		public void run()
 		{
 			quit();

@@ -104,6 +104,7 @@ public class NetworkMonitor implements Runnable
 	private KNXNetworkMonitor m;
 
 	private final LinkListener l = new LinkListener() {
+		@Override
 		public void indication(final FrameEvent e)
 		{
 			try {
@@ -113,7 +114,7 @@ public class NetworkMonitor implements Runnable
 				out.warn("on indication", rte);
 			}
 		}
-
+		@Override
 		public void linkClosed(final CloseEvent e)
 		{
 			out.info("network monitor closed (" + e.getReason() + ")");
@@ -481,6 +482,7 @@ public class NetworkMonitor implements Runnable
 			catch (final IllegalStateException expected) {}
 		}
 
+		@Override
 		public void run()
 		{
 			quit();

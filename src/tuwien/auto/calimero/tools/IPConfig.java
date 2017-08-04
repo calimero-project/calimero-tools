@@ -369,7 +369,7 @@ public class IPConfig implements Runnable
 		add(config, pid, name, queryIP(pid));
 	}
 
-	private void add(final List<String[]> config, final int pid, final String name,
+	private static void add(final List<String[]> config, final int pid, final String name,
 		final String value)
 	{
 		config.add(new String[] { Integer.toString(pid), name, value });

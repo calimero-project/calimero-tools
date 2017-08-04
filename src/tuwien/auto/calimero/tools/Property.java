@@ -380,7 +380,7 @@ public class Property implements Runnable, PropertyAdapterListener
 			out.error("on completion", thrown);
 	}
 
-	/** Returns the network link used by this tool. */
+	/** @return the network link used by this tool */
 	protected KNXNetworkLink link()
 	{
 		return link;
@@ -488,8 +488,11 @@ public class Property implements Runnable, PropertyAdapterListener
 		// if an authorization key was supplied, the adapter uses
 		// connection oriented mode and tries to authenticate
 		final byte[] authKey = (byte[]) options.get("authorize");
-		if (authKey != null)
-			return new RemotePropertyServiceAdapter(link, remote, this, authKey);
+		if (authKey != null) {
+			final RemotePropertyServiceAdapter adapter = new RemotePropertyServiceAdapter(link, remote, this, authKey);
+			out.info("{} granted access level {}", remote, adapter.accessLevel());
+			return adapter;
+		}
 		return new RemotePropertyServiceAdapter(link, remote, this, options.containsKey("connect"));
 	}
 
@@ -722,7 +725,7 @@ public class Property implements Runnable, PropertyAdapterListener
 			out("sorry, wrong number of arguments");
 	}
 
-	private void showCommandList()
+	private static void showCommandList()
 	{
 		final StringBuffer buf = new StringBuffer();
 		buf.append("commands: get | set | desc | scan (append ? for help)" + sep);
@@ -733,7 +736,7 @@ public class Property implements Runnable, PropertyAdapterListener
 		out(buf.toString());
 	}
 
-	private void printHelp(final String help)
+	private static void printHelp(final String help)
 	{
 		out(help);
 	}

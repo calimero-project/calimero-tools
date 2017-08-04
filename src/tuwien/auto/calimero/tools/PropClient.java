@@ -71,6 +71,7 @@ public class PropClient implements Runnable
 			super(args);
 		}
 
+		@Override
 		protected void runCommand(final String... cmd) throws InterruptedException
 		{
 			// ignore any command supplied on command line
@@ -94,10 +95,7 @@ public class PropClient implements Runnable
 						super.runCommand(args);
 				}
 			}
-			catch (final InterruptedException e) {
-				System.out.println("received interrupt, closing ...");
-			}
-			catch (final InterruptedIOException e) {
+			catch (InterruptedException | InterruptedIOException e) {
 				System.out.println("received interrupt, closing ...");
 			}
 			catch (final IOException e) {

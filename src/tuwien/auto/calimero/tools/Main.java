@@ -250,6 +250,7 @@ final class Main
 			Runtime.getRuntime().removeShutdownHook(this);
 		}
 
+		@Override
 		public void run()
 		{
 			t.interrupt();
