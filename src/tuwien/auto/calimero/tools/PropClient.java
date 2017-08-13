@@ -77,7 +77,7 @@ public class PropClient implements Runnable
 			// ignore any command supplied on command line
 			options.remove("command");
 			// show some command info
-			super.runCommand(new String[] { "?" });
+			super.runCommand("?");
 			out("exit - close connection and exit");
 			runReaderLoop(PropClient.this);
 		}
@@ -89,10 +89,11 @@ public class PropClient implements Runnable
 			String[] args;
 			try {
 				while ((args = propClient.readLine(r)) != null) {
-					if ("exit".equalsIgnoreCase(args[0]))
-						break;
-					if (args.length > 0)
+					if (args.length > 0) {
+						if ("exit".equalsIgnoreCase(args[0]))
+							break;
 						super.runCommand(args);
+					}
 				}
 			}
 			catch (InterruptedException | InterruptedIOException e) {

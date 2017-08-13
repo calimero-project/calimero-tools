@@ -539,8 +539,7 @@ public class ProcComm implements Runnable
 
 	private void runMonitorLoop() throws IOException, KNXException, InterruptedException
 	{
-		try (final XmlReader r = XmlInputFactory.newInstance()
-				.createXMLReader(toolDatapointsFile)) {
+		try (final XmlReader r = XmlInputFactory.newInstance().createXMLReader(toolDatapointsFile)) {
 			datapoints.load(r);
 		}
 		catch (final KNXMLException e) {
@@ -553,6 +552,8 @@ public class ProcComm implements Runnable
 			if (closed)
 				break;
 			final String line = in.readLine();
+			if (line == null)
+				continue;
 			final String[] s = line.trim().split(" +");
 			if (s.length == 1 && "exit".equalsIgnoreCase(s[0]))
 				return;
@@ -569,18 +570,16 @@ public class ProcComm implements Runnable
 					StateDP dp;
 					try {
 						final GroupAddress ga = new GroupAddress(addr);
-						dp = new StateDP(ga, "tmp", 0, withDpt ? fromDptName(s[2])
-								: null);
+						dp = new StateDP(ga, "tmp", 0, withDpt ? fromDptName(s[2]) : null);
 						if (withDpt && !s[2].equals("-")) {
 							datapoints.remove(dp);
 							datapoints.add(dp);
 						}
 						dp = datapoints.contains(ga) ? datapoints.get(ga) : dp;
-						readWrite(dp, write, write ? Arrays.asList(s)
-								.subList(withDpt ? 3 : 2, s.length)
-								.stream().collect(Collectors.joining(" ")) : null);
+						readWrite(dp, write, write ? Arrays.asList(s).subList(withDpt ? 3 : 2, s.length).stream()
+								.collect(Collectors.joining(" ")) : null);
 					}
-					catch (final KNXException | RuntimeException e) {
+					catch (KNXException | RuntimeException e) {
 						out.error("[{}] {}", line, e.toString());
 					}
 				}

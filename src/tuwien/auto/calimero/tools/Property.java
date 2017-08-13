@@ -253,10 +253,7 @@ public class Property implements Runnable, PropertyAdapterListener
 			// run the user command
 			runCommand((String[]) options.get("command"));
 		}
-		catch (final KNXException e) {
-			thrown = e;
-		}
-		catch (final RuntimeException e) {
+		catch (KNXException | RuntimeException e) {
 			thrown = e;
 		}
 		catch (final InterruptedException e) {
@@ -427,7 +424,7 @@ public class Property implements Runnable, PropertyAdapterListener
 		final InetSocketAddress local = Main.createLocalSocket(
 				(InetAddress) options.get("localhost"), (Integer) options.get("localport"));
 		return new LocalDeviceMgmtAdapter(local, new InetSocketAddress(Main.parseHost(host),
-				((Integer) options.get("port")).intValue()), options.containsKey("nat"), this,
+				(Integer) options.get("port")), options.containsKey("nat"), this,
 				options.containsKey("emulatewriteenable"));
 	}
 
@@ -673,14 +670,16 @@ public class Property implements Runnable, PropertyAdapterListener
 
 	private void setProperty(final String[] args) throws KNXException, InterruptedException
 	{
+		if (args.length == 2 && args[1].equals("?")) {
+			printHelp("set object-idx pid [start-idx] string-value" + sep
+					+ "set object-idx pid start-idx elements [\"0x\"|\"0\"|\"b\"]data" + sep
+					+ "(use hexadecimal format for more than 8 byte data or leading zeros)");
+			return;
+		}
 		if (args.length < 4 || args.length > 6) {
 			out("sorry, wrong number of arguments");
 			return;
 		}
-		if (args.length == 2 && args[1].equals("?"))
-			printHelp("set object-idx pid [start-idx] string-value" + sep
-					+ "set object-idx pid start-idx elements [\"0x\"|\"0\"|\"b\"]data" + sep
-					+ "(use hexadecimal format for more than 8 byte data or leading zeros)");
 		final int cnt = args.length;
 		final int oi = toInt(args[1]);
 		final int pid = toInt(args[2]);
@@ -688,7 +687,7 @@ public class Property implements Runnable, PropertyAdapterListener
 			pc.setProperty(oi, pid, 1, args[3]);
 		else if (cnt == 5)
 			pc.setProperty(oi, pid, toInt(args[3]), args[4]);
-		else if (cnt == 6) {
+		else {
 			final int start = toInt(args[3]);
 			final int elements = toInt(args[4]);
 			final byte[] data = toByteArray(args[5]);
@@ -814,7 +813,7 @@ public class Property implements Runnable, PropertyAdapterListener
 	private static byte[] toByteArray(final String s)
 	{
 		// use of BigXXX equivalent is a bit awkward, for now this is sufficient ...
-		long l = 0;
+		long l;
 		if (s.startsWith("0x") || s.startsWith("0X")) {
 			final byte[] d = new byte[(s.length() - 1) / 2];
 			int k = (s.length() & 0x01) != 0 ? 3 : 4;
