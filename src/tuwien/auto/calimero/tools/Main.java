@@ -86,11 +86,12 @@ final class Main
 		{ SET_PROPERTY, "Write a KNX property", "set" },
 		{ PROPERTIES, "Open KNX property client", "" },
 		{ DEV_INFO, "Read KNX device information", "" },
+		{ "progmode", "Check/set device(s) in programming mode", "" },
 	};
 
 	private static final List<Class<? extends Runnable>> tools = Arrays.asList(Discover.class, Discover.class,
 			ScanDevices.class, IPConfig.class, NetworkMonitor.class, ProcComm.class, ProcComm.class, ProcComm.class,
-			Property.class, Property.class, PropClient.class, DeviceInfo.class);
+			Property.class, Property.class, PropClient.class, DeviceInfo.class, ProgMode.class);
 
 	private static final String sep = System.getProperty("line.separator");
 
