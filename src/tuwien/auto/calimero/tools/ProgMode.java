@@ -43,6 +43,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import tuwien.auto.calimero.IndividualAddress;
@@ -173,7 +174,7 @@ public class ProgMode implements Runnable
 	protected void devicesInProgMode(final IndividualAddress... devices)
 	{
 		final String output = devices.length == 0 ? "none"
-				: Arrays.asList(devices).stream().map(Objects::toString).collect(Collectors.joining(", "));
+				: new TreeSet<>(Arrays.asList(devices)).stream().map(Objects::toString).collect(Collectors.joining(", "));
 		System.out.print("\33[2K\rDevice(s) in programming mode: " + output);
 		System.out.flush();
 	}
