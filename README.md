@@ -34,6 +34,7 @@ Currently, the following tools are provided:
 * IPConfig - read/write the IP configuration of a KNXnet/IP server using KNX properties
 * NetworkMonitor - busmonitor for KNX networks (monitor raw frames on the network, completely passive)
 * ProcComm - process communication, read or write a KNX datapoint, or group monitor KNX datapoints
+* ProgMode - shows the KNX devices currently in programming mode
 * PropClient - a property client for KNX device property descriptions, get or set KNX device properties
 * Property - get/set a single KNX device interface object property
 * ScanDevices - list KNX devices, or check whether a specific KNX individual address is currently assigned to a KNX device
