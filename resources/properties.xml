@@ -15,7 +15,7 @@
             <usage></usage>
         </property>
         <property pid="5" pidName="PID_LOAD_STATE_CONTROL" name="Load Control" pdt="0" rw="R/W" writeEnabled="1">
-            <usage>Access to load state machines.</usage>
+            <usage>Access to load state machines</usage>
         </property>
         <property pid="6" pidName="PID_RUN_STATE_CONTROL" name="Run Control" pdt="0" rw="R(/W)" writeEnabled="1">
             <usage>Access to run state machines</usage>
@@ -89,6 +89,9 @@
         <property pid="29" pidName="PID_OBJECT_INDEX" name="Object Index" pdt="2" dpt="5.010" rw="(3/x)" writeEnabled="0">
             <usage>Access to Object Index of any FB</usage>
         </property>
+        <property pid="30" pidName="PID_DOWNLOAD_COUNTER" name="Download Counter" pdt="4" dpt="7.010" rw="(3/x)" writeEnabled="0">
+            <usage>Download Counter</usage>
+        </property>
     </object>
     <object type="0">
         <property pid="51" pidName="PID_ROUTING_COUNT" name="Routing Count" pdt="2" rw="R(/W)" writeEnabled="0/1">
@@ -149,7 +152,7 @@
             <usage>control over DPSU functionality in the device, device information: real data</usage>
         </property>
         <property pid="70" pidName="PID_DOMAIN_ADDRESS" name="Domain Address" pdt="4" rw="R/W" writeEnabled="0/1">
-            <usage>To read out the Domain Address of a device.</usage>
+            <usage>To read out the Domain Address of a device</usage>
         </property>
         <property pid="71" pidName="PID_IO_LIST" name="Interface Object List" pdt="4" rw="R/W" writeEnabled="1">
             <usage>cEMI</usage>
@@ -327,11 +330,11 @@
         <property pid="53" pidName="PID_SUB_LCCONFIG" name="Line Coupler Configuration for Subline" pdt="17" rw="3/0" writeEnabled="0">
             <usage>Defines the handling of point-to-point addressed and broadcast frames from the secondary side.</usage>
         </property>
-        <property pid="54" pidName="PID_MAIN_LCGRPCONFIG" name="Line Coupler Configuraion for multicast from Main Line." pdt="17" rw="3/0" writeEnabled="0">
+        <property pid="54" pidName="PID_MAIN_LCGRPCONFIG" name="Line Coupler Configuration for multicast from Main Line" pdt="17" rw="3/0" writeEnabled="0">
             <usage>Defines the handling of multicast frames from the primary side.</usage>
         </property>
-        <property pid="55" pidName="PID_SUB_LCGRPCONFIG" name="Line Coupler Configuraion for multicast from Subline." pdt="17" rw="3/0" writeEnabled="0">
-            <usage>Defines the handling of multicast frames from the secondary side</usage>
+        <property pid="55" pidName="PID_SUB_LCGRPCONFIG" name="Line Coupler Configuration for multicast from Subline" pdt="17" rw="3/0" writeEnabled="0">
+            <usage>Defines the handling of multicast frames from the secondary side.</usage>
         </property>
         <property pid="56" pidName="PID_ROUTETABLE_CONTROL" name="Routing Table Control" pdt="62" rw="3/0" writeEnabled="0">
             <usage>Set of methods to modify the routing table.</usage>
@@ -356,7 +359,7 @@
             <usage>Medium types supported by the cEMI server</usage>
         </property>
         <property pid="52" pidName="PID_COMM_MODE" name="Communication Mode" pdt="53" dpt="20.1000" rw="R/W" writeEnabled="1">
-            <usage>cEMI server communicatin mode</usage>
+            <usage>cEMI server communication mode</usage>
         </property>
         <property pid="53" pidName="PID_MEDIUM_AVAILABILITY" name="Medium Availability" pdt="52" dpt="22.1000" rw="R" writeEnabled="0">
             <usage>Available media in the cEMI server</usage>
@@ -390,6 +393,9 @@
         </property>
         <property pid="63" pidName="PID_RF_FILTERING_MODE_SUPPORT" name="Supported RF Filtering Mode" pdt="51" rw="R" writeEnabled="0">
             <usage>Discussed on KSG meeting 2004.09.07.</usage>
+        </property>
+        <property pid="64" pidName="PID_COMM_MODES_SUPPORTED" name="cEMI Supported Communication Modes" pdt="52" rw="(3/x)" writeEnabled="0">
+            <usage>Allow discovering the Communication Modes supported by the cEMI Server</usage>
         </property>
     </object>
     <object type="9">
