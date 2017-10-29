@@ -192,9 +192,9 @@ final class Main
 		if (medium == KNXMediumSettings.MEDIUM_PL110)
 			return new PLSettings();
 		if (medium == KNXMediumSettings.MEDIUM_RF)
-			return new RFSettings(null);
+			return new RFSettings(KNXMediumSettings.BackboneRouter);
 		if (medium == KNXMediumSettings.MEDIUM_KNXIP)
-			return new KnxIPSettings(null);
+			return new KnxIPSettings(KNXMediumSettings.BackboneRouter);
 		throw new KNXIllegalArgumentException("unsupported KNX medium " + id);
 	}
 
