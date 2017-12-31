@@ -36,6 +36,8 @@
 
 package tuwien.auto.calimero.tools;
 
+import static java.util.stream.Collectors.joining;
+
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -56,6 +58,7 @@ import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.Settings;
+import tuwien.auto.calimero.dptxlator.DPTXlator;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.KNXNetworkLinkFT12;
@@ -349,21 +352,28 @@ public class Property implements Runnable, PropertyAdapterListener
 		System.out.println(buf.toString());
 	}
 
+	@Deprecated
+	protected void onPropertyValue(final int idx, final int pid, final String value)
+	{
+		onPropertyValue(idx, pid, value, Collections.emptyList());
+	}
+
 	/**
 	 * Invoked on receiving a property value.
 	 *
 	 * @param idx the object index
 	 * @param pid the property ID
 	 * @param value the property values
+	 * @param raw list with the raw property data, <code>list size == property elements</code>
 	 */
-	protected void onPropertyValue(final int idx, final int pid, final String value)
+	protected void onPropertyValue(final int idx, final int pid, final String value, final List<byte[]> raw)
 	{
-		System.out.println(value);
+		final String rawValue = raw.stream().map(e -> DataUnitBuilder.toHex(e, "")).collect(joining(", ", " (", ")"));
+		System.out.println(value + rawValue);
 	}
 
 	/**
 	 * Called by this tool on completion.
-	 * <p>
 	 *
 	 * @param thrown the thrown exception if operation completed due to a raised exception,
 	 *        <code>null</code> otherwise
@@ -617,6 +627,7 @@ public class Property implements Runnable, PropertyAdapterListener
 			// std.frame: max ASDU = 14 -> actual data = 10, we assume max. PDT size of 4 bytes -> max 2 elements
 			final int maxElements = 2;
 			String s = "";
+			final List<byte[]> raw = new ArrayList<>();
 			try {
 				if (args.length == 3)
 					s = pc.getProperty(oi, pid);
@@ -625,32 +636,43 @@ public class Property implements Runnable, PropertyAdapterListener
 					final int elements = toInt(args[4]);
 					for (int i = start; i <= elements; i += maxElements) {
 						final int min = Math.min(maxElements, (elements - i + 1));
-						final String[] allValues = pc.getPropertyTranslated(oi, pid, i, min).getAllValues();
+						final DPTXlator translator = pc.getPropertyTranslated(oi, pid, i, min);
+						final byte[] data = translator.getData();
+						final int size = data.length / min;
+						for (int from = 0; from < data.length; from += size)
+							raw.add(Arrays.copyOfRange(data, from, from + size));
+						final String[] allValues = translator.getAllValues();
 						if (!s.isEmpty())
 							s += ", ";
 						s += Arrays.asList(allValues).stream().collect(Collectors.joining(", "));
 					}
 				}
-				onPropertyValue(oi, pid, s);
 			}
 			catch (final KNXException e) {
 				s = "";
-				if (args.length == 3)
-					s = "0x" + DataUnitBuilder.toHex(pc.getProperty(oi, pid, 1, 1), "");
+				if (args.length == 3) {
+					final byte[] data = pc.getProperty(oi, pid, 1, 1);
+					s = "0x" + DataUnitBuilder.toHex(data, "");
+					raw.add(data);
+				}
 				else {
 					final int start = toInt(args[3]);
 					final int elements = toInt(args[4]);
 					for (int i = start; i <= elements; i += maxElements) {
 						final int min = Math.min(maxElements, (elements - i + 1));
-						final String hex = DataUnitBuilder.toHex(pc.getProperty(oi, pid, i, min), "");
+						final byte[] data = pc.getProperty(oi, pid, i, min);
+						final String hex = DataUnitBuilder.toHex(data, "");
 						final int chars = hex.length() / min;
 						for (int k = 0; k < min; ++k)
 							s += "0x" + hex.substring(k * chars, (k + 1) * chars) + " ";
+						final int size = data.length / min;
+						for (int from = 0; from < data.length; from += size)
+							raw.add(Arrays.copyOfRange(data, from, from + size));
 					}
 					s = s.trim();
 				}
-				onPropertyValue(oi, pid, s);
 			}
+			onPropertyValue(oi, pid, s, raw);
 		}
 		else
 			out("sorry, wrong number of arguments");
