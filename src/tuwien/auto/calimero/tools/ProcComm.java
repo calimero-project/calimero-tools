@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2017 B. Malinowsky
+    Copyright (c) 2006, 2018 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -43,6 +43,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.nio.charset.Charset;
 import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.Collections;
@@ -522,7 +523,7 @@ public class ProcComm implements Runnable
 	// shows one DPT of each matching main type based on the length of the supplied ASDU
 	private static String decodeAsduByLength(final byte[] asdu, final boolean optimized) throws KNXFormatException
 	{
-		final StringBuffer sb = new StringBuffer();
+		final StringBuilder sb = new StringBuilder();
 		final List<MainType> typesBySize = TranslatorTypes.getMainTypesBySize(optimized ? 0 : asdu.length);
 		for (final Iterator<MainType> i = typesBySize.iterator(); i.hasNext();) {
 			final MainType main = i.next();
@@ -539,13 +540,13 @@ public class ProcComm implements Runnable
 
 	private void runMonitorLoop() throws IOException, KNXException, InterruptedException
 	{
-		try (final XmlReader r = XmlInputFactory.newInstance().createXMLReader(toolDatapointsFile)) {
+		try (XmlReader r = XmlInputFactory.newInstance().createXMLReader(toolDatapointsFile)) {
 			datapoints.load(r);
 		}
 		catch (final KNXMLException e) {
 			out.trace("no monitor datapoint information loaded, " + e.getMessage());
 		}
-		final BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+		final BufferedReader in = new BufferedReader(new InputStreamReader(System.in, Charset.defaultCharset()));
 		while (true) {
 			while (!in.ready() && !closed)
 				Thread.sleep(250);
@@ -566,7 +567,7 @@ public class ProcComm implements Runnable
 				final boolean read = cmd.equals("read") || cmd.equals("r");
 				final boolean write = cmd.equals("write") || cmd.equals("w");
 				if (read || write) {
-					final boolean withDpt = read && s.length == 3 || write && s.length >= 4;
+					final boolean withDpt = (read && s.length == 3) || (write && s.length >= 4);
 					StateDP dp;
 					try {
 						final GroupAddress ga = new GroupAddress(addr);
@@ -591,7 +592,7 @@ public class ProcComm implements Runnable
 	{
 		if (!options.containsKey("monitor"))
 			return;
-		try (final XmlWriter w = XmlOutputFactory.newInstance().createXMLWriter(toolDatapointsFile)) {
+		try (XmlWriter w = XmlOutputFactory.newInstance().createXMLWriter(toolDatapointsFile)) {
 			datapoints.save(w);
 		}
 		catch (final KNXMLException e) {
@@ -696,7 +697,7 @@ public class ProcComm implements Runnable
 
 	private static void showUsage()
 	{
-		final StringBuffer sb = new StringBuffer();
+		final StringBuilder sb = new StringBuilder();
 		sb.append("Usage: ").append(tool + " [options] <host|port>").append(sep);
 		sb.append("Options:").append(sep);
 		sb.append("  --help -h                show this help message").append(sep);

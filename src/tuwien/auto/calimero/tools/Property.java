@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2010, 2017 B. Malinowsky
+    Copyright (c) 2010, 2018 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -324,7 +324,7 @@ public class Property implements Runnable, PropertyAdapterListener
 	 */
 	protected void onDescription(final Description d)
 	{
-		final StringBuffer buf = new StringBuffer();
+		final StringBuilder buf = new StringBuilder();
 		buf.append(alignRight(d.getPropIndex()));
 		buf.append(" OT ").append(alignRight(d.getObjectType()));
 		buf.append(", OI ").append(alignRight(d.getObjectIndex()));
@@ -350,12 +350,6 @@ public class Property implements Runnable, PropertyAdapterListener
 		buf.append(", r/w access " + d.getReadLevel() + "/" + d.getWriteLevel());
 		buf.append(d.isWriteEnabled() ? ", w.enabled" : ", r.only");
 		System.out.println(buf.toString());
-	}
-
-	@Deprecated
-	protected void onPropertyValue(final int idx, final int pid, final String value)
-	{
-		onPropertyValue(idx, pid, value, Collections.emptyList());
 	}
 
 	/**
@@ -748,7 +742,7 @@ public class Property implements Runnable, PropertyAdapterListener
 
 	private static void showCommandList()
 	{
-		final StringBuffer buf = new StringBuffer();
+		final StringBuilder buf = new StringBuilder();
 		buf.append("commands: get | set | desc | scan (append ? for help)" + sep);
 		buf.append("get  - read property value(s)" + sep);
 		buf.append("set  - write property value(s)" + sep);
@@ -764,7 +758,7 @@ public class Property implements Runnable, PropertyAdapterListener
 
 	private static void showUsage()
 	{
-		final StringBuffer sb = new StringBuffer();
+		final StringBuilder sb = new StringBuilder();
 		sb.append("Usage: ").append(tool).append(" [options] <host|port> <command>").append(sep);
 		sb.append("Options:").append(sep);
 		sb.append("  --help -h                show this help message").append(sep);

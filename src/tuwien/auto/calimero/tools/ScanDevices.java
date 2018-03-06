@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2013, 2017 B. Malinowsky
+    Copyright (c) 2013, 2018 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -181,10 +181,10 @@ public class ScanDevices implements Runnable
 				return;
 			}
 
-			try (final KNXNetworkLink link = createLink();
-					final ManagementProcedures mp = new ManagementProceduresImpl(link)) {
+			try (KNXNetworkLink link = createLink();
+					ManagementProcedures mp = new ManagementProceduresImpl(link)) {
 
-				final String[] range = ((String) options.get("range")).split("\\.");
+				final String[] range = ((String) options.get("range")).split("\\.", -1);
 				final int area = Integer.decode(range[0]).intValue();
 				final int line = Integer.decode(range[1]).intValue();
 				if (range.length == 3) {
@@ -346,7 +346,7 @@ public class ScanDevices implements Runnable
 
 	private static void showUsage()
 	{
-		final StringBuffer sb = new StringBuffer();
+		final StringBuilder sb = new StringBuilder();
 		// ??? accept several line requests
 		sb.append("Usage: ").append(tool).append(" [options] <host|port> <area.line[.device]>")
 				.append(sep);

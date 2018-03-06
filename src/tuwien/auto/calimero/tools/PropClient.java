@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2017 B. Malinowsky
+    Copyright (c) 2006, 2018 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -40,6 +40,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.InterruptedIOException;
+import java.nio.charset.Charset;
 
 import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.log.LogService;
@@ -85,7 +86,7 @@ public class PropClient implements Runnable
 		private void runReaderLoop(final PropClient propClient)
 		{
 			// create reader for user input
-			final BufferedReader r = new BufferedReader(new InputStreamReader(System.in));
+			final BufferedReader r = new BufferedReader(new InputStreamReader(System.in, Charset.defaultCharset()));
 			String[] args;
 			try {
 				while ((args = propClient.readLine(r)) != null) {

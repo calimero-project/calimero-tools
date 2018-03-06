@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2011, 2017 B. Malinowsky
+    Copyright (c) 2011, 2018 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -333,8 +333,8 @@ public class DeviceInfo implements Runnable
 		boolean canceled = false;
 		final IndividualAddress device = (IndividualAddress) options.get("device");
 		result = new Result();
-		try (KNXNetworkLink link = createLink();
-				ManagementClient scoped = mc = new ManagementClientImpl(link)) {
+		try (KNXNetworkLink link = createLink(); ManagementClient scoped = new ManagementClientImpl(link)) {
+			mc = scoped;
 			d = mc.createDestination(device, true);
 			out.info("Reading data from device {}, might take some seconds ...", device);
 			readDeviceInfo();
@@ -425,7 +425,7 @@ public class DeviceInfo implements Runnable
 			return;
 		// TODO this will give us only the last object instance in case of several IO instances of the same type
 		for (int i = 0; i < objects; ++i) {
-			final int type = (data[2 * i] & 0xff) << 8 | data[2 * i + 1] & 0xff;
+			final int type = (data[2 * i] & 0xff) << 8 | (data[2 * i + 1] & 0xff);
 			if (type == addresstableObject)
 				addresstableObjectIdx = i;
 			else if (type == assoctableObject)
@@ -584,13 +584,15 @@ public class DeviceInfo implements Runnable
 
 	private void readActualPeiType() throws InterruptedException
 	{
+		final int channel = 4;
+		final int repeat = 1;
 		try {
-			final int v = mc.readADC(d, 4, 1);
+			final int v = mc.readADC(d, channel, repeat);
 			final int peitype = (10 * v + 60) / 128;
 			putResult(CommonParameter.ActualPeiType, toPeiTypeString(peitype), peitype);
 		}
 		catch (final KNXException e) {
-			e.printStackTrace();
+			out.error("reading actual PEI type (A/D converter channel {}, repeat {})", channel, repeat, e);
 		}
 	}
 
@@ -1081,7 +1083,7 @@ public class DeviceInfo implements Runnable
 			return -1;
 		long value = 0;
 		for (final byte b : data) {
-			value = value << 8 | b & 0xff;
+			value = value << 8 | (b & 0xff);
 		}
 		return value;
 	}

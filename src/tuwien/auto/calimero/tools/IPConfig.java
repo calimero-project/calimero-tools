@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2017 B. Malinowsky
+    Copyright (c) 2006, 2018 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -270,7 +270,7 @@ public class IPConfig implements Runnable
 	 */
 	protected void onConfigurationReceived(final List<String[]> config)
 	{
-		final StringBuffer sb = new StringBuffer();
+		final StringBuilder sb = new StringBuilder();
 		sb.append("KNXnet/IP server ").append(config.get(0)[2]).append(" ")
 				.append(config.get(1)[2]).append(sep);
 		final String padding = "                                   ";
@@ -623,7 +623,7 @@ public class IPConfig implements Runnable
 
 	private static void showUsage()
 	{
-		final StringBuffer sb = new StringBuffer();
+		final StringBuilder sb = new StringBuilder();
 		sb.append("Usage: ").append(tool).append(" [options] <host|port>").append(sep);
 		sb.append("Options:").append(sep);
 		sb.append("  --help -h                show this help message and exit").append(sep);
