@@ -1,14 +1,14 @@
 buildscript {
-    repositories {
-        mavenCentral()
-        maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
-    }
+	repositories {
+		mavenCentral()
+		maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+	}
 }
 
 repositories {
-    mavenLocal()
-    mavenCentral()
-    maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+	mavenLocal()
+	mavenCentral()
+	maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
 }
 
 apply plugin:'java'
@@ -24,9 +24,9 @@ targetCompatibility = 1.8
 mainClassName = 'tuwien.auto.calimero.tools.Main'
 
 run {
-    // for passing program arguments, use -Dexec.args="..."
-    args System.getProperty("exec.args", "").split() 
-    standardInput = System.in
+	// for passing program arguments, use -Dexec.args="..."
+	args System.getProperty("exec.args", "").split() 
+	standardInput = System.in
 }
 
 compileJava.options*.compilerArgs = [
@@ -42,22 +42,20 @@ compileTestJava.options*.compilerArgs = [
 ]
 
 sourceSets {
-    main {
-        java.srcDir 'src'
-        resources.srcDir 'resources'
-    }
-    test {
-        java.srcDirs = [ 'test' ]
-        file('build/classes/test').mkdirs()
-        runtimeClasspath = runtimeClasspath + files('build/classes/test')
-    }
+	main {
+		java.srcDirs = [ 'src' ]
+		resources.srcDir 'resources'
+	}
+	test {
+		java.srcDirs = [ 'test' ]
+	}
 }
 
 dependencies {
-    compile "com.github.calimero:calimero-core:${version}"
-    runtime "com.github.calimero:calimero-rxtx:${version}"
-    compile 'org.slf4j:slf4j-api:1.7.22'
-    runtime 'org.slf4j:slf4j-simple:1.7.22'
+	compile "com.github.calimero:calimero-core:${version}"
+	runtime "com.github.calimero:calimero-rxtx:${version}"
+	implementation 'org.slf4j:slf4j-api:1.8.0-beta1'
+	runtime 'org.slf4j:slf4j-simple:1.8.0-beta1'
 }
 
 jar {
