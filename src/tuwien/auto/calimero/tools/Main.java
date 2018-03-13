@@ -232,8 +232,11 @@ final class Main
 		buffer.get(domain);
 		if (medium.getMedium() == KNXMediumSettings.MEDIUM_RF)
 			((RFSettings) medium).setDomainAddress(domain);
-		if (medium.getMedium() == KNXMediumSettings.MEDIUM_PL110)
+		else if (medium.getMedium() == KNXMediumSettings.MEDIUM_PL110)
 			((PLSettings) medium).setDomainAddress(domain);
+		else
+			throw new KNXIllegalArgumentException(medium.getMediumString()
+					+ " networks don't use domain addresses, use --medium to specify KNX network medium");
 	}
 
 	static final class ShutdownHandler extends Thread
