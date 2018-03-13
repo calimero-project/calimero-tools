@@ -76,17 +76,17 @@ final class Main
 	private static final String[][] cmds = new String[][] {
 		{ DISCOVER, "Discover KNXnet/IP servers", "--search" },
 		{ DESCRIPTION, "KNXnet/IP server self-description", "--description" },
-		{ SCAN, "Determine the existing KNX devices on a KNX subnetwork", "" },
-		{ IPCONFIG, "KNXnet/IP device address configuration", "" },
-		{ MONITOR, "Open bus monitor (passive) for KNX network traffic", "" },
+		{ SCAN, "Determine the existing KNX devices on a KNX subnetwork" },
+		{ IPCONFIG, "KNXnet/IP device address configuration" },
+		{ MONITOR, "Open bus monitor (passive) for KNX network traffic" },
 		{ COM_READ, "Read a value using KNX process communication", "read" },
 		{ COM_WRITE, "Write a value using KNX process communication", "write" },
 		{ COM_GROUPMON, "Open group monitor for KNX process communication", "monitor" },
-		{ GET_PROPERTY, "Read a KNX property", "get" },
-		{ SET_PROPERTY, "Write a KNX property", "set" },
-		{ PROPERTIES, "Open KNX property client", "" },
-		{ DEV_INFO, "Read KNX device information", "" },
-		{ "progmode", "Check/set device(s) in programming mode", "" },
+		{ GET_PROPERTY, "Read a KNX property", "-d", "resources/properties.xml", "get" },
+		{ SET_PROPERTY, "Write a KNX property", "-d", "resources/properties.xml", "set" },
+		{ PROPERTIES, "Open KNX property client", "-d", "resources/properties.xml" },
+		{ DEV_INFO, "Read KNX device information" },
+		{ "progmode", "Check/set device(s) in programming mode" },
 	};
 
 	private static final List<Class<? extends Runnable>> tools = Arrays.asList(Discover.class, Discover.class,
@@ -120,8 +120,12 @@ final class Main
 					if (args.length > 1 && (args[1].equals("--help") || args[1].equals("-h")))
 						toolargs = new String[] { "-h" };
 					else {
-						args[0] = cmds[i][2];
-						toolargs = args[0].isEmpty() ? Arrays.copyOfRange(args, 1, args.length) : args;
+						final int defaultArgsStart = 2;
+						final int defaultArgs = cmds[i].length - defaultArgsStart;
+						final int userArgs = args.length - 1;
+						toolargs = Arrays.copyOfRange(cmds[i], defaultArgsStart,
+								defaultArgsStart + defaultArgs + userArgs);
+						System.arraycopy(args, 1, toolargs, defaultArgs, userArgs);
 					}
 					m.invoke(null, new Object[] { toolargs });
 				}
