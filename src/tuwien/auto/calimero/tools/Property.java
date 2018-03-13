@@ -623,8 +623,11 @@ public class Property implements Runnable, PropertyAdapterListener
 			String s = "";
 			final List<byte[]> raw = new ArrayList<>();
 			try {
-				if (args.length == 3)
-					s = pc.getProperty(oi, pid);
+				if (args.length == 3) {
+					final DPTXlator x = pc.getPropertyTranslated(oi, pid, 1, 1);
+					s = x.getValue();
+					raw.add(x.getData());
+				}
 				else {
 					final int start = toInt(args[3]);
 					final int elements = toInt(args[4]);
