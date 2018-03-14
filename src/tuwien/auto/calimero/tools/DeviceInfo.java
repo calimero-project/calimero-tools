@@ -36,18 +36,20 @@
 
 package tuwien.auto.calimero.tools;
 
-import static tuwien.auto.calimero.tools.Main.setDomainAddress;
-
 import java.io.ByteArrayOutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.Callable;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 
@@ -60,11 +62,13 @@ import tuwien.auto.calimero.KNXAddress;
 import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
+import tuwien.auto.calimero.KNXRemoteException;
 import tuwien.auto.calimero.Settings;
 import tuwien.auto.calimero.dptxlator.DPTXlator;
 import tuwien.auto.calimero.dptxlator.DPTXlatorBoolean;
 import tuwien.auto.calimero.dptxlator.TranslatorTypes;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
+import tuwien.auto.calimero.link.KNXLinkClosedException;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.KNXNetworkLinkFT12;
 import tuwien.auto.calimero.link.KNXNetworkLinkIP;
@@ -74,10 +78,21 @@ import tuwien.auto.calimero.link.medium.KNXMediumSettings;
 import tuwien.auto.calimero.link.medium.TPSettings;
 import tuwien.auto.calimero.log.LogService;
 import tuwien.auto.calimero.mgmt.Destination;
+import tuwien.auto.calimero.mgmt.LocalDeviceManagementUsb;
+import tuwien.auto.calimero.mgmt.LocalDeviceMgmtAdapter;
 import tuwien.auto.calimero.mgmt.ManagementClient;
-import tuwien.auto.calimero.mgmt.ManagementClientImpl;
 import tuwien.auto.calimero.mgmt.PropertyAccess;
 import tuwien.auto.calimero.mgmt.PropertyAccess.PID;
+import tuwien.auto.calimero.mgmt.PropertyAdapter;
+import tuwien.auto.calimero.mgmt.PropertyClient;
+import tuwien.auto.calimero.mgmt.RemotePropertyServiceAdapter;
+import tuwien.auto.calimero.serial.usb.UsbConnection;
+import tuwien.auto.calimero.tools.DeviceInfo.CemiParameter;
+import tuwien.auto.calimero.tools.DeviceInfo.CommonParameter;
+import tuwien.auto.calimero.tools.DeviceInfo.InternalParameter;
+import tuwien.auto.calimero.tools.DeviceInfo.KnxipParameter;
+import tuwien.auto.calimero.tools.DeviceInfo.Parameter;
+import tuwien.auto.calimero.tools.DeviceInfo.RfParameter;
 import tuwien.auto.calimero.tools.Main.ShutdownHandler;
 
 /**
@@ -123,6 +138,7 @@ public class DeviceInfo implements Runnable
 		HardwareType,
 		SerialNumber,
 		DomainAddress,
+		MaxApduLength,
 		Manufacturer,
 		ManufacturerData,
 		DeviceTypeNumber,
@@ -151,6 +167,14 @@ public class DeviceInfo implements Runnable
 	}
 
 	/**
+	 * cEMI server parameters.
+	 */
+	public enum CemiParameter implements Parameter {
+		MediumType, SupportedCommModes, SelectedCommMode, ClientAddress, SupportedRfModes, SelectedRfMode,
+		SupportedFilteringModes, SelectedFilteringModes
+	}
+
+	/**
 	 * KNX IP device parameters.
 	 */
 	@SuppressWarnings("checkstyle:javadocvariable")
@@ -172,6 +196,18 @@ public class DeviceInfo implements Runnable
 		TimeToLive,
 		TransmitToIP,
 		AdditionalIndividualAddresses
+	}
+
+	/**
+	 * RF medium parameters.
+	 */
+	public enum RfParameter implements Parameter {
+		DomainAddress
+	}
+
+	// not in a category yet
+	public enum InternalParameter implements Parameter {
+		IAWriteEnabled, ServiceControl, AdditionalProfile, ErrorFlags
 	}
 
 	/**
@@ -216,8 +252,12 @@ public class DeviceInfo implements Runnable
 	private static final int appProgramObject = 3;
 	// Interface Object "Interface Program Object" in interface object server
 	private static final int interfaceProgramObject = 4;
+	// Interface Object "cEMI Server Object" in interface object server
+	private static final int cemiServerObject = 8;
 	// Interface Object "KNXnet/IP Parameter Object" in interface object server
 	private static final int knxnetipObject = 11;
+	// Interface Object "RF Medium Object" in interface object server
+	private static final int rfMediumObject = 19;
 
 	// property id to distinguish hardware types which are using the same
 	// device descriptor mask version
@@ -230,11 +270,16 @@ public class DeviceInfo implements Runnable
 	private int appProgramObjectIdx = -1;
 	private int interfaceProgramObjectIdx = -1;
 	private int knxnetipObjectIdx = -1;
+	private int cemiServerObjectIdx = -1;
+	private int rfMediumObjectIdx = -1;
+
+	private DeviceDescriptor dd;
 
 	private static Logger out = LogService.getLogger("calimero.tools");
 
 	private ManagementClient mc;
 	private Destination d;
+	private PropertyClient pc;
 
 	private final Map<String, Object> options = new HashMap<>();
 	private Result result;
@@ -266,20 +311,19 @@ public class DeviceInfo implements Runnable
 	/**
 	 * Entry point for running DeviceInfo.
 	 * <p>
-	 * Syntax: DeviceInfo [options] &lt;host|port&gt; &lt;KNX device address&gt;
+	 * Syntax: DeviceInfo [options] &lt;host|port&gt; [&lt;KNX device address&gt;]
 	 * <p>
-	 * To show usage message of the tool on the console, supply the command line option --help (or
-	 * -h).<br>
-	 * Command line options are treated case sensitive. Available options for connecting to the KNX
-	 * device in question:
+	 * Running the tool without a KNX device address will read the device info of the local KNX interface (KNXnet/IP and
+	 * USB only).<br>
+	 * To show usage message of the tool on the console, supply the command line option --help (or -h). Command line
+	 * options are treated case sensitive. Available options for connecting to the KNX device in question:
 	 * <ul>
 	 * <li>no arguments: only show short description and version info</li>
 	 * <li><code>--help -h</code> show help message</li>
 	 * <li><code>--version</code> show tool/library version and exit</li>
 	 * <li><code>--verbose -v</code> enable verbose status output</li>
 	 * <li><code>--localhost</code> <i>id</i> &nbsp;local IP/host name</li>
-	 * <li><code>--localport</code> <i>number</i> &nbsp;local UDP port (default system assigned)
-	 * </li>
+	 * <li><code>--localport</code> <i>number</i> &nbsp;local UDP port (default system assigned)</li>
 	 * <li><code>--port -p</code> <i>number</i> &nbsp;UDP port on host (default 3671)</li>
 	 * <li><code>--nat -n</code> enable Network Address Translation</li>
 	 * <li><code>--ft12 -f</code> use FT1.2 serial communication</li>
@@ -287,13 +331,11 @@ public class DeviceInfo implements Runnable
 	 * <li><code>--tpuart</code> use TP-UART communication</li>
 	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to tp1)</li>
 	 * <li><code>--domain</code> <i>address</i> &nbsp;domain address on open KNX medium (PL or RF)</li>
-	 * <li><code>--knx-address -k</code> <i>KNX address</i> &nbsp;KNX device address of local
-	 * endpoint</li>
+	 * <li><code>--knx-address -k</code> <i>KNX address</i> &nbsp;KNX device address of local endpoint</li>
 	 * </ul>
-	 * The <code>--knx-address</code> option is only necessary if an access protocol is selected that
-	 * directly communicates with the KNX network, i.e., KNX IP or TP-UART. The selected KNX
-	 * individual address shall be unique in a network, and the subnetwork address (area and line)
-	 * should be set to match the network configuration.
+	 * The <code>--knx-address</code> option is only necessary if an access protocol is selected that directly
+	 * communicates with the KNX network, i.e., KNX IP or TP-UART. The selected KNX individual address shall be unique
+	 * in a network, and the subnetwork address (area and line) should be set to match the network configuration.
 	 *
 	 * @param args command line options for running the device info tool
 	 */
@@ -333,11 +375,47 @@ public class DeviceInfo implements Runnable
 		boolean canceled = false;
 		final IndividualAddress device = (IndividualAddress) options.get("device");
 		result = new Result();
-		try (KNXNetworkLink link = createLink(); ManagementClient scoped = new ManagementClientImpl(link)) {
-			mc = scoped;
-			d = mc.createDestination(device, true);
-			out.info("Reading data from device {}, might take some seconds ...", device);
-			readDeviceInfo();
+
+		try {
+			if (device != null) {
+				// setup for reading device info of remote device
+				try (KNXNetworkLink link = createLink();
+						RemotePropertyServiceAdapter adapter = new RemotePropertyServiceAdapter(link, device, e -> {},
+								true)) {
+					mc = adapter.managementClient();
+					d = adapter.destination();
+					pc = new PropertyClient(adapter);
+
+					out.info("Reading data from device {}, might take some seconds ...", device);
+					readDeviceInfo();
+				}
+			}
+			else if (options.containsKey("usb")) {
+				// setup for reading device info of usb interface
+				try (UsbConnection conn = new UsbConnection((String) options.get("host"));
+						PropertyAdapter adapter = new LocalDeviceManagementUsb(conn, e -> {}, false)) {
+					dd = DeviceDescriptor.DD0.fromType0(conn.getDeviceDescriptorType0());
+					pc = new PropertyClient(adapter);
+
+					out.info("Reading info of KNX USB adapter {}, might take some seconds ...", dd);
+					readDeviceInfo();
+				}
+			}
+			else {
+				// setup for reading device info of knxnet/ip interface
+				final InetSocketAddress local = Main.createLocalSocket((InetAddress) options.get("localhost"),
+						(Integer) options.get("localport"));
+				final InetSocketAddress server = new InetSocketAddress(Main.parseHost((String) options.get("host")),
+						(Integer) options.get("port"));
+
+				try (PropertyAdapter adapter = new LocalDeviceMgmtAdapter(local, server, options.containsKey("nat"),
+						e -> {}, options.containsKey("emulatewriteenable"))) {
+					pc = new PropertyClient(adapter);
+
+					out.info("Reading info of KNXnet/IP {}, might take some seconds ...", adapter.getName());
+					readDeviceInfo();
+				}
+			}
 		}
 		catch (KNXException | RuntimeException e) {
 			thrown = e;
@@ -415,8 +493,8 @@ public class DeviceInfo implements Runnable
 		final int objects = readElements(deviceObjectIdx, PropertyAccess.PID.IO_LIST);
 		if (objects == 0) {
 			// device only has device- and cEMI server-object
-//			final int cEmiObjectIdx = 1; // interface object type 8
-			out.warn("Device implements only Device Object and cEMI Object");
+			cemiServerObjectIdx = 1; // interface object type 8
+			out.info("Device implements only Device Object and cEMI Object");
 			return;
 		}
 
@@ -434,51 +512,50 @@ public class DeviceInfo implements Runnable
 				appProgramObjectIdx = i;
 			else if (type == interfaceProgramObject)
 				interfaceProgramObjectIdx = i;
+			else if (type == cemiServerObject)
+				cemiServerObjectIdx = i;
 			else if (type == knxnetipObject)
 				knxnetipObjectIdx = i;
+			else if (type == rfMediumObject)
+				rfMediumObjectIdx = i;
 		}
 	}
 
-	// read device info similar to ETS
 	private void readDeviceInfo() throws KNXException, InterruptedException
 	{
-		// read: general, application program, PEI program, group communication, KNX IP
+		// find device descriptor
+		if (dd != null)
+			dd = deviceDescriptor(dd.toByteArray());
+		else if (mc != null)
+			dd = deviceDescriptor(mc.readDeviceDesc(d, 0));
 
-		// General information
-		final DD0 dd = readDeviceDescriptor();
-
-		// check for PL110 BCU1
-		if (dd == DD0.TYPE_1013)
-			readPL110Bcu1();
-		else if (dd == DD0.TYPE_0010 || dd == DD0.TYPE_0011 || dd == DD0.TYPE_0012)
-			readTP1Bcu1();
-		else if (dd == DD0.TYPE_0020 || dd == DD0.TYPE_0021 || dd == DD0.TYPE_0025)
-			readTP1Bcu2();
-		else
+		// check for BCU1/BCU2 first, which don't have interface objects
+		if (dd != null) {
+			if (dd == DD0.TYPE_1013)
+				readPL110Bcu1();
+			else if (dd == DD0.TYPE_0010 || dd == DD0.TYPE_0011 || dd == DD0.TYPE_0012)
+				readTP1Bcu1();
+			else if (dd == DD0.TYPE_0020 || dd == DD0.TYPE_0021 || dd == DD0.TYPE_0025)
+				readTP1Bcu2();
+			else {
+				findInterfaceObjects();
+			}
+		}
+		else {
 			findInterfaceObjects();
+		}
+
+		readDeviceObject();
 
 		readActualPeiType();
-
-		readDeviceObject(dd);
-
 		// Required PEI Type (Application Program Object)
 		if (appProgramObjectIdx != -1)
 			readUnsigned(appProgramObjectIdx, PID.PEI_TYPE, false, CommonParameter.RequiredPeiType);
 
-		// Programming Mode (memory address 0x60)
-		try {
-			final byte[] data = mc.readMemory(d, 0x60, 1);
-			final DPTXlator x = new DPTXlatorBoolean(DPTXlatorBoolean.DPT_SWITCH);
-			x.setData(data);
-			putResult(CommonParameter.ProgrammingMode, x.getValue(), (long) x.getNumericValue());
-		}
-		catch (final KNXException e) {
-			out.error("reading memory location 0x60", e);
-		}
+		programmingMode();
 
-		final int maskVersion = dd.getMaskVersion();
 		// System B has mask version 0x07B0 or 0x17B0 and provides error code property
-		final boolean isSystemB = maskVersion == 0x07B0 || maskVersion == 0x17B0;
+		final boolean isSystemB = dd == DD0.TYPE_07B0 || dd == DD0.TYPE_17B0;
 
 		// Application Program (Application Program Object)
 		readProgram(appProgramObjectIdx, isSystemB);
@@ -496,34 +573,50 @@ public class DeviceInfo implements Runnable
 			readLoadState(assoctableObjectIdx, isSystemB);
 		}
 
-		// if we have a KNX IP device, show KNX IP info
-		if (dd == DD0.TYPE_5705 && knxnetipObjectIdx != -1) {
-			readKnxipInfo();
-		}
+		if (mc != null && !result.formatted.containsKey(CommonParameter.GroupAddresses))
+			readGroupAddresses();
+
+		readCemiServerObject();
+		readRFMediumObject();
+		readKnxipInfo();
 	}
 
-	private DD0 readDeviceDescriptor() throws KNXException, InterruptedException
+	// is device in programming mode
+	private void programmingMode() throws KNXFormatException, InterruptedException {
+		final DPTXlatorBoolean x = new DPTXlatorBoolean(DPTXlatorBoolean.DPT_SWITCH);
+		try {
+			x.setData(pc.getProperty(deviceObjectIdx, PID.PROGMODE, 1, 1));
+		}
+		catch (final KNXException e) {
+			// fall back and read memory location (remote device info only)
+			try {
+				if (mc != null)
+					x.setData(mc.readMemory(d, 0x60, 1));
+			}
+			catch (final KNXException e2) {
+				out.error("reading memory location 0x60", e2);
+			}
+		}
+		putResult(CommonParameter.ProgrammingMode, x.getValue(), (long) x.getNumericValue());
+	}
+
+	private DD0 deviceDescriptor(final byte[] data)
 	{
-		// Mask Version, Value of Device Descriptor Type 0
-		final byte[] data = mc.readDeviceDesc(d, 0);
 		final DD0 dd = DeviceDescriptor.DD0.fromType0(data);
 		putResult(CommonParameter.DeviceDescriptor, dd.toString(), dd.getMaskVersion());
 		putResult(CommonParameter.KnxMedium, toMediumTypeString(dd.getMediumType()), dd.getMediumType());
 		putResult(CommonParameter.FirmwareType, toFirmwareTypeString(dd.getFirmwareType()), dd.getFirmwareType());
 		putResult(CommonParameter.FirmwareVersion, "" + dd.getFirmwareVersion(), dd.getFirmwareVersion());
-//		info.append("Subcode/Version ").append(dd.getSubcode()).append("\n");
-		// TODO we skip Subcode/Version now
-//		putResult(, "" + dd.getSubcode(), dd.getSubcode());
 		return dd;
 	}
 
-	private void readDeviceObject(final DeviceDescriptor dd) throws InterruptedException
+	private void readDeviceObject() throws InterruptedException
 	{
 		if (deviceObjectIdx == -1)
 			return;
 
 		// Manufacturer ID (Device Object)
-		 byte[] data = read(deviceObjectIdx, PID.MANUFACTURER_ID);
+		byte[] data = read(deviceObjectIdx, PID.MANUFACTURER_ID);
 		if (data != null) {
 			final int mfId = (int) toUnsigned(data);
 			putResult(CommonParameter.Manufacturer, manufacturer.get(mfId), mfId);
@@ -542,10 +635,238 @@ public class DeviceInfo implements Runnable
 		readUnsigned(deviceObjectIdx, PID.PEI_TYPE, false, CommonParameter.ActualPeiType);
 
 		// Hardware Type, 6 bytes with most significant byte always 0
-		readUnsigned(deviceObjectIdx, pidHardwareType,  true, CommonParameter.HardwareType);
+		readUnsigned(deviceObjectIdx, pidHardwareType, true, CommonParameter.HardwareType);
 
 		// Firmware Revision
 		readUnsigned(deviceObjectIdx, PID.FIRMWARE_REVISION, false, CommonParameter.FirmwareRevision);
+
+		// Get information about an optional additional KNX profile implemented in the device.
+		// This property is optional, and only required in KNXnet/IP devices or if the device
+		// is implemented in combination with another profile. If a DD is returned we should compare
+		// it to our other DD. If they match, we can assume a stand-alone device (no other profile).
+		// Also, if there is another profile, the KNX individual address has to be different to
+		// the cEMI server one (as provided by the cEMI server object)
+		data = read(deviceObjectIdx, PID.DEVICE_DESCRIPTOR, 1, 1);
+		if (data != null) {
+			final DD0 profile = DeviceDescriptor.DD0.fromType0(data);
+			if (dd == null)
+				dd = deviceDescriptor(data);
+			// device with additional profile?
+			else if (!profile.equals(dd))
+				putResult(InternalParameter.AdditionalProfile, profile.toString(), profile.getMaskVersion());
+		}
+
+		// Info about possible additional profile in device
+		try {
+			final byte[] profileSna = read(deviceObjectIdx, PID.SUBNET_ADDRESS, 1, 1);
+			final byte[] profileDev = read(deviceObjectIdx, PID.DEVICE_ADDRESS, 1, 1);
+			final byte[] profileAddr = new byte[] { profileSna[0], profileDev[0] };
+			final IndividualAddress ia = new IndividualAddress(profileAddr);
+			putResult(CommonParameter.DeviceAddress, "Additional profile address " + ia, ia.getRawAddress());
+		}
+		catch (final Exception e) {}
+
+		// read device service control
+		try {
+			final byte[] svcCtrl = read(deviceObjectIdx, PID.SERVICE_CONTROL, 1, 1);
+			final boolean indAddrWriteEnabled = (svcCtrl[1] & 0x04) == 0x04;
+			putResult(InternalParameter.IAWriteEnabled, indAddrWriteEnabled ? "yes" : "no", svcCtrl[1] & 0x04);
+			final int services = svcCtrl[0] & 0xff;
+			final String formatted = String.format("%8s", Integer.toBinaryString(services)).replace(' ', '0');
+			putResult(InternalParameter.ServiceControl,
+					"Disabled services on EMI [Mgmt App TL-conn Switch TL-group Network Link User]: " + formatted,
+					services);
+		}
+		catch (final Exception e) {}
+
+		// RF domain address
+		// Device object RF domain address is mandatory if the cEMI server supports RF.
+		// With mask 0x2311, the RF domain address is mandatory in the RF medium object (PID 56) and
+		// optional in the device object (PID 82). At least the Weinzierl USB stores it only in the device object.
+		try {
+			final byte[] doaAddr = read(deviceObjectIdx, PID.RF_DOMAIN_ADDRESS, 1, 1);
+			if (doaAddr != null)
+				putResult(CommonParameter.DomainAddress, DataUnitBuilder.toHex(doaAddr, ""), toUnsigned(doaAddr));
+		}
+		catch (final Exception e) {}
+
+		readUnsigned(deviceObjectIdx, PID.MAX_APDULENGTH, false, CommonParameter.MaxApduLength);
+
+		final int pidErrorFlags = 53;
+		final byte[] flags = read(deviceObjectIdx, pidErrorFlags);
+		if (flags != null)
+			putResult(InternalParameter.ErrorFlags, errorFlags(flags), toUnsigned(data));
+	}
+
+	private static final int legacyPidFilteringModeSelect = 62;
+	private static final int legacyPidFilteringModeSupport = 63;
+
+	private void readCemiServerObject() throws InterruptedException {
+		if (cemiServerObjectIdx == -1)
+			return;
+
+		try {
+			final byte[] d = read(cemiServerObjectIdx, PropertyAccess.PID.MEDIUM_TYPE, 1, 1);
+			if (d != null)
+				putResult(CemiParameter.MediumType, mediumTypes(d), toUnsigned(d));
+		}
+		catch (final Exception e) {}
+
+		// Get supported cEMI communication modes, DLL is mandatory for any cEMI server
+		// communication mode can then be set using PID_COMM_MODE
+		try {
+			final byte[] commModes = read(cemiServerObjectIdx, PID.COMM_MODES_SUPPORTED, 1, 1);
+			putResult(CemiParameter.SupportedCommModes, supportedCommModes(commModes), toUnsigned(commModes));
+		}
+		catch (final Exception e) {}
+
+		try {
+			final byte[] d = read(cemiServerObjectIdx, PID.COMM_MODE, 1, 1);
+			if (d != null)
+				putResult(CemiParameter.SelectedCommMode, commMode(d), toUnsigned(d));
+		}
+		catch (final Exception e) {}
+
+		// if we deal with a USB stand-alone device, the Device Object stores the IA of the USB interface
+		// if we deal with a USB device that is embedded with another end device profile, the Device Object stores
+		// the IA of the end device. In that case, the cEMI Server Object holds the IA of the USB interface
+		try {
+			final byte[] dev = read(cemiServerObjectIdx, PID.CLIENT_DEVICE_ADDRESS, 1, 1);
+			final byte[] sna = read(cemiServerObjectIdx, PID.CLIENT_SNA, 1, 1);
+
+			final byte[] addr = new byte[] { sna[0], dev[0] };
+			final IndividualAddress ia = new IndividualAddress(addr);
+			putResult(CemiParameter.ClientAddress, "USB cEMI client address " + ia, ia.getRawAddress());
+		}
+		catch (final Exception e) {}
+
+		// filtering modes
+		readSupportedFilteringModes(PID.FILTERING_MODE_SUPPORT);
+		readSelectedFilteringMode(PID.FILTERING_MODE_SELECT);
+
+		// do the same stuff again using the legacy PIDs for filtering mode
+		readSupportedFilteringModes(legacyPidFilteringModeSupport);
+		readSelectedFilteringMode(legacyPidFilteringModeSelect);
+
+		// read supported and selected RF communication mode
+		try {
+			cEmiExtensionRfBiBat();
+		}
+		catch (final Exception e) {}
+
+		try {
+			final byte[] data = read(cemiServerObjectIdx, PID.RF_MODE_SELECT, 1, 1);
+			final int selected = data[0] & 0xff;
+			final boolean slave = (data[0] & 0x04) == 0x04;
+			final boolean master = (data[0] & 0x02) == 0x02;
+			final boolean async = (data[0] & 0x01) == 0x01;
+			final String formatted = "selected RF mode: BiBat slave " + slave + ", BiBat master " + master + ", async "
+					+ async;
+			putResult(CemiParameter.SelectedRfMode, formatted, selected);
+		}
+		catch (final Exception e) {}
+	}
+
+	//         		Supports/Disable filtering on:
+	//      ------------------------------------------------------
+	// Bit  |  15 ... 4  |     3     |  2  |     1    |  0       |
+	// Name |  Reserved  | Ext. Grp  | DoA | Repeated | Own Ind. |
+	//      |            | Addresses |     |  Frames  | Address  |
+	//      ------------------------------------------------------
+	private void readSupportedFilteringModes(final int pid) {
+		try {
+			final byte[] filters = read(cemiServerObjectIdx, pid, 1, 1);
+			final int filter = filters[1] & 0xff;
+			final boolean grp = (filter & 0x08) == 0x08;
+			final boolean doa = (filter & 0x04) == 0x04;
+			final boolean rep = (filter & 0x02) == 0x02;
+			final boolean ownIa = (filter & 0x01) == 0x01;
+			putResult(CemiParameter.SupportedFilteringModes, "supported frame filters: ext. group addresses " + grp
+					+ ", domain address " + doa + ", repeated frames " + rep + ", own individual address " + ownIa,
+					filter);
+		}
+		catch (final Exception e) {}
+	}
+
+	// Check disabled frame filters in the device
+	// A set bit (1) indicates a disabled filter, by default all filters are active
+	private void readSelectedFilteringMode(final int pid) {
+		try {
+			final byte[] filters = read(cemiServerObjectIdx, pid, 1, 1);
+			final int selected = filters[1] & 0xff;
+			final boolean grp = (selected & 0x08) == 0x08;
+			final boolean doa = (selected & 0x04) == 0x04;
+			final boolean rep = (selected & 0x02) == 0x02;
+			final boolean ownIa = (selected & 0x01) == 0x01;
+			if (selected == 0)
+				putResult(CemiParameter.SelectedFilteringModes, "all supported filters active", selected);
+			else
+				putResult(CemiParameter.SelectedFilteringModes, "disabled frame filters: ext. group addresses " + grp
+						+ ", domain address " + doa + ", repeated frames " + rep + ", own individual address " + ownIa,
+						selected);
+		}
+		catch (final Exception e) {}
+	}
+
+	private void cEmiExtensionRfBiBat() throws KNXException, InterruptedException {
+		final byte[] support = read(cemiServerObjectIdx, PID.RF_MODE_SUPPORT, 1, 1);
+		final boolean slave = (support[0] & 0x04) == 0x04;
+		final boolean master = (support[0] & 0x02) == 0x02;
+		final boolean async = (support[0] & 0x01) == 0x01;
+
+		final String formatted = "Supported RF modes: BiBat slave " + slave + ", BiBat master " + master + ", Async "
+				+ async;
+		putResult(CemiParameter.SupportedRfModes, formatted, toUnsigned(support));
+	}
+
+	//      --------------------------------------
+	// Bit  |  15 ... 4  |  3  |  2  |  1  |  0  |
+	// Name |  Reserved  | TLL | RAW | BM  | DLL |
+	//      --------------------------------------
+	//
+	// TLL: Transport layer local
+	// RAW: Data link layer, RAW mode (receive L-Raw.req, L-Raw.ind from the bus)
+	// BM: Data link layer, busmonitor mode
+	// DLL: Data link layer, normal mode
+	private String supportedCommModes(final byte[] commModes) {
+		final int modes = commModes[1] & 0xff;
+		final boolean tll = (modes & 0x08) == 0x08;
+		final boolean raw = (modes & 0x04) == 0x04;
+		final boolean bm = (modes & 0x02) == 0x02;
+		final boolean dll = (modes & 0x01) == 0x01;
+		final String s = "Transport layer local " + tll + ", Data link layer modes: normal " + dll + ", busmonitor "
+				+ bm + ", raw mode " + raw;
+		return s;
+	}
+
+	private String commMode(final byte[] data) {
+		final int commMode = data[0] & 0xff;
+		switch (commMode) {
+		case 0:
+			return "Data link layer";
+		case 1:
+			return "Data link layer busmonitor";
+		case 2:
+			return "Data link layer raw frames";
+		case 6:
+			return "cEMI transport layer";
+		case 0xff:
+			return "no layer";
+		}
+		return "unknown/unspecified (" + commMode + ")";
+	}
+
+	private void readRFMediumObject() {
+		if (rfMediumObjectIdx != -1) {
+			try {
+				// different PID as in Device Object !!!
+				final int pidRfDomainAddress = 56;
+				final byte[] doaAddr = read(rfMediumObjectIdx, pidRfDomainAddress, 1, 1);
+				if (doaAddr != null)
+					putResult(RfParameter.DomainAddress, "0x" + DataUnitBuilder.toHex(doaAddr, ""), toUnsigned(doaAddr));
+			}
+			catch (final Exception e) {}
+		}
 	}
 
 	// verbose info what the BCU is currently doing
@@ -584,6 +905,8 @@ public class DeviceInfo implements Runnable
 
 	private void readActualPeiType() throws InterruptedException
 	{
+		if (mc == null)
+			return;
 		final int channel = 4;
 		final int repeat = 1;
 		try {
@@ -594,6 +917,21 @@ public class DeviceInfo implements Runnable
 		catch (final KNXException e) {
 			out.error("reading actual PEI type (A/D converter channel {}, repeat {})", channel, repeat, e);
 		}
+	}
+
+	// same as BCU error flags located at 0x10d
+	private String errorFlags(final byte[] data) {
+		if ((data[0] & 0xff) == 0xff)
+			return "everything OK";
+		final String[] description = { "System 1 internal system error", "Illegal system state",
+			"Checksum / CRC error in internal non-volatile memory", "Stack overflow error",
+			"Inconsistent system tables", "Physical transceiver error", "System 2 internal system error",
+			"System 3 internal system error" };
+		final List<String> errors = new ArrayList<>();
+		for (int i = 0; i < 8; i++)
+			if ((data[0] & (1 << i)) == 0)
+				errors.add(description[i]);
+		return errors.stream().collect(Collectors.joining(", "));
 	}
 
 	private void putResult(final Parameter p, final long raw)
@@ -724,10 +1062,16 @@ public class DeviceInfo implements Runnable
 
 	private void readKnxipInfo() throws KNXException, InterruptedException
 	{
+		if (knxnetipObjectIdx == -1 || dd != DD0.TYPE_5705)
+			return;
+
 		// Device Name (friendly)
-		putResult(KnxipParameter.DeviceName, readFriendlyName(), null);
+		read(KnxipParameter.DeviceName, this::readFriendlyName);
+
 		// Device Capabilities Device State
 		byte[] data = read(knxnetipObjectIdx, PropertyAccess.PID.KNXNETIP_DEVICE_CAPABILITIES);
+		if (data == null)
+			return;
 		putResult(KnxipParameter.Capabilities, toCapabilitiesString(data), toUnsigned(data));
 		final boolean supportsTunneling = (data[1] & 0x01) == 0x01;
 
@@ -841,13 +1185,29 @@ public class DeviceInfo implements Runnable
 		}
 	}
 
+	private void read(final Parameter p, final Callable<String> c) throws KNXLinkClosedException, InterruptedException {
+		try {
+			out.debug("read {} ...", p);
+			final String s = c.call();
+			putResult(p, s, null);
+		}
+		catch (InterruptedException | KNXLinkClosedException e) {
+			throw e;
+		}
+		catch (KNXRemoteException e) {
+			out.warn("reading {}: {}", p, e.getMessage());
+		}
+		catch (Exception e) {
+			out.error("error reading {}", p, e);
+		}
+	}
+
 	private String readFriendlyName() throws KNXException, InterruptedException
 	{
 		final char[] name = new char[30];
 		int start = 0;
 		while (true) {
-			final byte[] data = mc.readProperty(d, knxnetipObjectIdx, PID.FRIENDLY_NAME, start + 1,
-					10);
+			final byte[] data = pc.getProperty(knxnetipObjectIdx, PID.FRIENDLY_NAME, start + 1, 10);
 			for (int i = 0; i < 10 && data[i] != 0; ++i, ++start)
 				name[start] = (char) (data[i] & 0xff);
 			if (start >= 30 || data[9] == 0)
@@ -873,13 +1233,13 @@ public class DeviceInfo implements Runnable
 			// since we don't know the max. allowed APDU length, play it safe
 			final ByteArrayOutputStream res = new ByteArrayOutputStream();
 			for (int i = start; i < start + elements; i++) {
-				final byte[] data = mc.readProperty(d, objectIndex, pid, i, 1);
+				final byte[] data = pc.getProperty(objectIndex, pid, i, 1);
 				res.write(data, 0, data.length);
 			}
 			return res.toByteArray();
 		}
 		catch (final KNXException e) {
-			out.warn("error reading KNX property " + objectIndex + "|" + pid + ", " + e.getMessage());
+			out.info("error reading KNX property " + objectIndex + "|" + pid + ", " + e.getMessage());
 		}
 		return null;
 	}
@@ -984,7 +1344,6 @@ public class DeviceInfo implements Runnable
 
 		// add defaults
 		options.put("port", KNXnetIPConnection.DEFAULT_PORT);
-		options.put("medium", TPSettings.TP1);
 		// default subnetwork address for TP1 and unregistered device
 		options.put("knx-address", new IndividualAddress(0, 0x02, 0xff));
 
@@ -1038,9 +1397,21 @@ public class DeviceInfo implements Runnable
 
 		if (!options.containsKey("host") || (options.containsKey("ft12") && options.containsKey("usb")))
 			throw new KNXIllegalArgumentException("specify either IP host, serial port, or device");
-		if (!options.containsKey("device"))
-			throw new KNXIllegalArgumentException("KNX device individual address missing");
-		setDomainAddress(options);
+		if (!options.containsKey("device")) {
+			// we will read device info using cEMI local device management, check some invalid options
+			// supported is knxnet/ip and usb
+			final String adapter = options.containsKey("ft12") ? "FT1.2"
+					: options.containsKey("tpuart") ? "TP-UART" : "";
+			if (!adapter.isEmpty())
+				throw new KNXIllegalArgumentException("reading device info of local " + adapter
+						+ " interface is not supported, specify remote KNX device address");
+
+			if (options.containsKey("medium") || options.containsKey("domain"))
+				throw new KNXIllegalArgumentException("missing remote KNX device address");
+		}
+		if (!options.containsKey("medium"))
+			options.put("medium", TPSettings.TP1);
+		Main.setDomainAddress(options);
 	}
 
 	private static void showUsage()
@@ -1112,6 +1483,21 @@ public class DeviceInfo implements Runnable
 		default:
 			return "Type " + type;
 		}
+	}
+
+	// DPT Media
+	private static String mediumTypes(final byte[] data) {
+		final long types = toUnsigned(data);
+		final List<String> supported = new ArrayList<>();
+		if ((types & 0x02) > 0)
+			supported.add("TP1");
+		if ((types & 0x04) > 0)
+			supported.add("PL110");
+		if ((types & 0x10) > 0)
+			supported.add("RF");
+		if ((types & 0x20) > 0)
+			supported.add("KNX IP");
+		return supported.stream().collect(Collectors.joining(", "));
 	}
 
 	private static String toFirmwareTypeString(final int type)
