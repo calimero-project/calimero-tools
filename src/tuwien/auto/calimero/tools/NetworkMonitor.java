@@ -315,11 +315,17 @@ public class NetworkMonitor implements Runnable
 			else if (raw instanceof RFLData) {
 				final RFLData rf = (RFLData) raw;
 				try {
-					sb.append(": ").append(DataUnitBuilder.decode(rf.getTpdu(), rf.getDestination()));
-					sb.append(" ").append(decodeLteFrame(rf));
+					sb.append(": ");
+					final String bibat = decodeBibat(rf);
+					if (!bibat.isEmpty())
+						sb.append(bibat);
+					else {
+						sb.append(DataUnitBuilder.decode(rf.getTpdu(), rf.getDestination()));
+						sb.append(" ").append(decodeLteFrame(rf));
+					}
 				}
 				catch (final Exception ex) {
-					out.error("decoding LTE frame", ex);
+					out.error("decoding RF frame", ex);
 				}
 			}
 		}
@@ -557,6 +563,24 @@ public class NetworkMonitor implements Runnable
 					+ DataUnitBuilder.toHex(Arrays.copyOfRange(tpdu, 6, tpdu.length), ""));
 
 		return sb.toString();
+	}
+
+	protected static String decodeBibat(final RFLData frame) throws KNXFormatException {
+		final int frameType = frame.getFrameType() >>> 4;
+		final byte[] tpdu = frame.getTpdu();
+
+		if (frameType == 1) // Fast ACK
+			return "Fast ACK";
+		if (frameType == 5) // Sync
+			return "RndPausePtr " + (tpdu[0] & 0xff);
+		if (frameType == 6) // Help
+			return "Retransmitter " + (tpdu[0] & 0xff);
+		if (frameType == 7) { // Help Response
+			final int ticks = ((tpdu[0] & 0xff) << 16) | ((tpdu[1] & 0xff) << 8) | (tpdu[2] & 0xff);
+			final double next = (ticks * 10) / 16384 / 10d;
+			return "NextBlock " + next + " ms NextBlock# " + (tpdu[3] & 0xff) + " RndPausePtr " + (tpdu[4] & 0xff);
+		}
+		return "";
 	}
 
 	private final class ShutdownHandler extends Thread
