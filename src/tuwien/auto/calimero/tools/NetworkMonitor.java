@@ -39,6 +39,7 @@ package tuwien.auto.calimero.tools;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.time.LocalTime;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -48,6 +49,7 @@ import tuwien.auto.calimero.CloseEvent;
 import tuwien.auto.calimero.DataUnitBuilder;
 import tuwien.auto.calimero.FrameEvent;
 import tuwien.auto.calimero.KNXException;
+import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.Settings;
 import tuwien.auto.calimero.cemi.CEMIBusMon;
@@ -60,6 +62,8 @@ import tuwien.auto.calimero.link.KNXNetworkMonitorUsb;
 import tuwien.auto.calimero.link.LinkListener;
 import tuwien.auto.calimero.link.MonitorFrameEvent;
 import tuwien.auto.calimero.link.medium.KNXMediumSettings;
+import tuwien.auto.calimero.link.medium.RFLData;
+import tuwien.auto.calimero.link.medium.RFLData.Tpci;
 import tuwien.auto.calimero.link.medium.RawFrame;
 import tuwien.auto.calimero.link.medium.RawFrameBase;
 import tuwien.auto.calimero.link.medium.TPSettings;
@@ -308,6 +312,16 @@ public class NetworkMonitor implements Runnable
 				sb.append(" ").append(
 						DataUnitBuilder.toHex(DataUnitBuilder.extractASDU(f.getTPDU()), " "));
 			}
+			else if (raw instanceof RFLData) {
+				final RFLData rf = (RFLData) raw;
+				try {
+					sb.append(": ").append(DataUnitBuilder.decode(rf.getTpdu(), rf.getDestination()));
+					sb.append(" ").append(decodeLteFrame(rf));
+				}
+				catch (final Exception ex) {
+					out.error("decoding LTE frame", ex);
+				}
+			}
 		}
 		System.out.println(LocalTime.now() + " " + sb.toString());
 	}
@@ -464,6 +478,85 @@ public class NetworkMonitor implements Runnable
 	private static void out(final String s)
 	{
 		System.out.println(s);
+	}
+
+	protected static String decodeLteFrame(final RFLData frame) throws KNXFormatException {
+		final int extFormat = frame.getFrameType() & 0xf;
+		final boolean lteExt = (extFormat & 0x0c) == 0x04;
+		if (!lteExt)
+			return "no LTE";
+
+		// LTE-HEE bits 1 and 0 contain the extension of the group address
+		final int ext = extFormat & 0b11;
+		final String[] zoningInfo = { "geographical tags: Apartment/Floor 01 ... 63.R.S",
+			"geographical tags: Apartment/Floor 64 ... 126.R.S", "application specific tags",
+			"unassigned (peripheral) tags & broadcast" };
+		final String desc = zoningInfo[ext];
+		out.trace("LTE-HEE group address extension " + ext + " (" + desc + ")");
+
+		final StringBuilder sb = new StringBuilder();
+		final int rawAddress = frame.getDestination().getRawAddress();
+		if (rawAddress == 0) {
+			sb.append("broadcast");
+		}
+		else if (ext <= 1) {
+			int aptFloor = (rawAddress & 0b1111110000000000) >> 10;
+			if (aptFloor != 0)
+				aptFloor += ext == 0 ? 0 : 0x40;
+			final int room = rawAddress & 0b1111110000 >> 4;
+			final int subzone = rawAddress & 0b1111;
+			sb.append("Floor/Room/Subzone " + (aptFloor == 0 ? "*" : aptFloor) + "/" + (room == 0 ? "*" : room) + "/"
+					+ (subzone == 0 ? "*" : subzone));
+		}
+		else if (ext == 2) {
+			final int domain = rawAddress & 0xf000;
+			if (domain == 0) {
+				sb.append("HVAC ");
+				final int mapping = (rawAddress >> 5);
+				final int producer = (rawAddress >> 5) & 0xf;
+				final int zone = rawAddress & 0x1f;
+				// distribution (segments or zones)
+				final String[] zones = { "", "D HotWater", "D ColdWater", "D Vent", "DHW", "Outside", "Calendar" };
+				if (mapping <= 6)
+					sb.append(zones[mapping]).append(' ').append(zone);
+				// producers and their zones
+				else if ((mapping & 0x70) == 0x10)
+					sb.append("P HotWater ").append(producer).append(' ').append(zone);
+				else if ((mapping & 0x70) == 0x20)
+					sb.append("P ColdWater ").append(producer).append(' ').append(zone);
+				else
+					sb.append("Reserved 0b")
+							.append(String.format("%8s", Integer.toBinaryString(rawAddress & 0xfff)).replace(' ', '0'));
+			}
+			else
+				sb.append("Reserved app domain " + domain + " tag 0x" + Integer.toHexString(rawAddress & 0xfff));
+		}
+		else { // ext = 3
+			sb.append("Unassigned (peripheral) tag 0x" + Integer.toHexString(rawAddress & 0xfff));
+		}
+		sb.append(' ');
+
+		final byte[] tpdu = frame.getTpdu();
+		final int pci = tpdu[0] & 0xff;
+		final int tpci = (pci >>> 6);
+		// LTE has tpci always set 0
+		if (tpci != Tpci.UnnumberedData.ordinal())
+			throw new KNXFormatException("LTE extended frame requires TPCI " + Tpci.UnnumberedData);
+
+		final int iot = ((tpdu[2] & 0xff) << 8) | (tpdu[3] & 0xff);
+		final int ioi = tpdu[4] & 0xff;
+		final int pid = tpdu[5] & 0xff;
+		if (pid == 0xff) {
+			final int companyCode = ((tpdu[6] & 0xff) << 8) | (tpdu[7] & 0xff);
+			final int privatePid = tpdu[8] & 0xff;
+			sb.append("IOT " + iot + " OI " + ioi + " Company " + companyCode + " PID " + privatePid + ": "
+					+ DataUnitBuilder.toHex(Arrays.copyOfRange(tpdu, 9, tpdu.length), ""));
+		}
+		else
+			sb.append("IOT " + iot + " OI " + ioi + " PID " + pid + ": "
+					+ DataUnitBuilder.toHex(Arrays.copyOfRange(tpdu, 6, tpdu.length), ""));
+
+		return sb.toString();
 	}
 
 	private final class ShutdownHandler extends Thread
