@@ -394,7 +394,7 @@ public class DeviceInfo implements Runnable
 				// setup for reading device info of usb interface
 				try (UsbConnection conn = new UsbConnection((String) options.get("host"));
 						PropertyAdapter adapter = new LocalDeviceManagementUsb(conn, e -> {}, false)) {
-					dd = DeviceDescriptor.DD0.fromType0(conn.getDeviceDescriptorType0());
+					dd = conn.deviceDescriptor();
 					pc = new PropertyClient(adapter);
 
 					out.info("Reading info of KNX USB adapter {}, might take some seconds ...", dd);
@@ -603,7 +603,7 @@ public class DeviceInfo implements Runnable
 	private DD0 deviceDescriptor(final byte[] data)
 	{
 		final DD0 dd = DeviceDescriptor.DD0.fromType0(data);
-		putResult(CommonParameter.DeviceDescriptor, dd.toString(), dd.getMaskVersion());
+		putResult(CommonParameter.DeviceDescriptor, dd.toString(), dd.maskVersion());
 		putResult(CommonParameter.KnxMedium, toMediumTypeString(dd.getMediumType()), dd.getMediumType());
 		putResult(CommonParameter.FirmwareType, toFirmwareTypeString(dd.getFirmwareType()), dd.getFirmwareType());
 		putResult(CommonParameter.FirmwareVersion, "" + dd.getFirmwareVersion(), dd.getFirmwareVersion());
@@ -653,7 +653,7 @@ public class DeviceInfo implements Runnable
 				dd = deviceDescriptor(data);
 			// device with additional profile?
 			else if (!profile.equals(dd))
-				putResult(InternalParameter.AdditionalProfile, profile.toString(), profile.getMaskVersion());
+				putResult(InternalParameter.AdditionalProfile, profile.toString(), profile.maskVersion());
 		}
 
 		// Info about possible additional profile in device
