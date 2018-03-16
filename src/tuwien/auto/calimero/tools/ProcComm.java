@@ -45,6 +45,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -55,13 +56,20 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 
+import tuwien.auto.calimero.CloseEvent;
 import tuwien.auto.calimero.DataUnitBuilder;
 import tuwien.auto.calimero.DetachEvent;
+import tuwien.auto.calimero.FrameEvent;
 import tuwien.auto.calimero.GroupAddress;
 import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
+import tuwien.auto.calimero.KNXTimeoutException;
+import tuwien.auto.calimero.Priority;
 import tuwien.auto.calimero.Settings;
+import tuwien.auto.calimero.cemi.CEMI;
+import tuwien.auto.calimero.cemi.CEMILData;
+import tuwien.auto.calimero.cemi.CEMILDataEx;
 import tuwien.auto.calimero.datapoint.Datapoint;
 import tuwien.auto.calimero.datapoint.DatapointMap;
 import tuwien.auto.calimero.datapoint.DatapointModel;
@@ -70,11 +78,13 @@ import tuwien.auto.calimero.dptxlator.DPTXlator;
 import tuwien.auto.calimero.dptxlator.TranslatorTypes;
 import tuwien.auto.calimero.dptxlator.TranslatorTypes.MainType;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
+import tuwien.auto.calimero.link.KNXLinkClosedException;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.KNXNetworkLinkFT12;
 import tuwien.auto.calimero.link.KNXNetworkLinkIP;
 import tuwien.auto.calimero.link.KNXNetworkLinkTpuart;
 import tuwien.auto.calimero.link.KNXNetworkLinkUsb;
+import tuwien.auto.calimero.link.NetworkLinkListener;
 import tuwien.auto.calimero.link.medium.KNXMediumSettings;
 import tuwien.auto.calimero.link.medium.TPSettings;
 import tuwien.auto.calimero.log.LogService;
@@ -146,6 +156,8 @@ public class ProcComm implements Runnable
 	private static final String toolDatapointsFile = "." + tool.toLowerCase() + "_dplist.xml";
 
 	private static final Logger out = LogService.getLogger("calimero.tools." + tool);
+
+	private KNXNetworkLink link;
 
 	/**
 	 * The used process communicator.
@@ -306,6 +318,7 @@ public class ProcComm implements Runnable
 
 		// create the network link to the KNX network
 		final KNXNetworkLink lnk = createLink();
+		link = lnk;
 		// create process communicator with the established link
 		pc = new ProcessCommunicatorImpl(lnk);
 		if (l != null)
@@ -324,6 +337,16 @@ public class ProcComm implements Runnable
 				public void detached(final DetachEvent e) { closed = true; }
 			};
 			pc.addProcessListener(monitor);
+		}
+		if (options.containsKey("lte")) {
+			link.addLinkListener(new NetworkLinkListener(){
+				@Override
+				public void linkClosed(final CloseEvent e) {}
+				@Override
+				public void indication(final FrameEvent e) { checkForLteFrame(e); }
+				@Override
+				public void confirmation(final FrameEvent e) {}
+			});
 		}
 
 		// user might specify a response timeout for KNX message
@@ -500,6 +523,12 @@ public class ProcComm implements Runnable
 		final boolean write = options.containsKey("write");
 		if (!write && !options.containsKey("read"))
 			return;
+		if (options.containsKey("lte")) {
+			issueLteCommand(write, (String) options.get("tag"), (String[]) options.get("lte-cmd"));
+			if (!write)
+				Thread.sleep(4000);
+			return;
+		}
 		final GroupAddress main = (GroupAddress) options.get("dst");
 		// encapsulate information into a datapoint
 		// this is a convenient way to let the process communicator
@@ -517,6 +546,106 @@ public class ProcComm implements Runnable
 			// too.. no check for existence or read back of a written value is done
 			pc.write(dp, value);
 			System.out.println("write to " + dp.getMainAddress() + " successful");
+		}
+	}
+
+	private void issueLteCommand(final boolean write, final String addr, final String... s)
+		throws KNXFormatException, KNXTimeoutException, KNXLinkClosedException {
+		if (s.length < 5) {
+			System.out.println("LTE-HEE command: r|w address IOT OI [\"company\" company] PID [hex values]");
+			return;
+		}
+		final int iot = Integer.parseInt(s[2]);
+		final int oi = Integer.parseInt(s[3]);
+		final int privatePidOffset = "company".equals(s[4]) ? 2 : 0;
+		final int company = privatePidOffset > 0 ? Integer.parseInt(s[5]) : 0;
+		final int pid = Integer.parseInt(s[4 + privatePidOffset]);
+		final String data = Arrays.asList(Arrays.copyOfRange(s, 5 + privatePidOffset, s.length)).stream()
+				.collect(Collectors.joining("")).replaceAll("0x", "");
+
+		if (write == data.isEmpty())
+			System.out.println("data value(s) required for writing (but never for reading)!");
+		else
+			readWrite(write, addr, iot, oi, company, pid, data);
+	}
+
+	private void readWrite(final boolean write, final String tag, final int iot, final int oi, final int company,
+		final int pid, final String data) throws KNXFormatException, KNXTimeoutException, KNXLinkClosedException {
+
+		// create asdu
+		final int dataLen = data.length() / 2;
+		final int asduLen = 4 + (company > 0 ? 3 : 0) + dataLen;
+		final byte[] asdu = new byte[asduLen];
+		int i = 0;
+		asdu[i++] = (byte) (iot >> 8);
+		asdu[i++] = (byte) iot;
+		asdu[i++] = (byte) oi;
+		if (company > 0) {
+			asdu[i++] = (byte) 255;
+			asdu[i++] = (byte) (company >> 8);
+			asdu[i++] = (byte) company;
+		}
+		asdu[i++] = (byte) pid;
+		for (int k = 0; k < data.length(); k+= 2)
+			asdu[i++] = (byte) Integer.parseInt(data.substring(k, k + 2), 16);
+
+		// create tpdu
+		final int groupPropRead = 0b1111101000;
+		final int groupPropWrite = 0b1111101010;
+		final int dataTagGroup = 0x04;
+		final byte[] tpdu = DataUnitBuilder.createAPDU(write ? groupPropWrite : groupPropRead, asdu);
+		tpdu[0] |= dataTagGroup;
+
+		final GroupAddress group = parseLteTag(tag);
+		final int tagClass = 0; // 0=lower range geo, 1=upper range geo, 2=app. specific, 3=unassigned (peripheral)
+
+		final CEMILDataEx ldata = new CEMILDataEx(CEMILData.MC_LDATA_REQ, KNXMediumSettings.BackboneRouter, group, tpdu,
+				Priority.LOW) {{
+				// adjust cEMI Ext Ctrl Field with frame format parameters for LTE
+				final int lteExtAddrType = 0x04; // LTE-HEE extended address type
+				ctrl2 |= lteExtAddrType;
+				ctrl2 |= tagClass;
+		}};
+		System.out.println("LTE-HEE " + (write ? "write " : "read ") + tag + " IOT " + iot + " OI " + oi + " PID " + pid
+				+ " data [" + data + "]");
+		System.out.println("send " + ldata + " [" + DataUnitBuilder.toHex(ldata.toByteArray(), " ") + "]");
+
+		link.send(ldata, true);
+	}
+
+	// currently only geo tags with wildcards, broadcast, and tag in hex notation
+	private GroupAddress parseLteTag(final String tag) throws KNXFormatException {
+		final String[] split = tag.replaceAll("\\*", "0").split("/", -1);
+		final List<Integer> levels = Arrays.stream(split).map(Integer::parseInt).collect(Collectors.toList());
+		if (levels.size() == 1)
+			return new GroupAddress(Integer.parseInt(tag, 16));
+		// bits 7/6/4
+		final int address = (levels.get(0) << 10) | (levels.get(1) << 4) | levels.get(2);
+		final boolean upperRangeGeoTag = address > 0xffff;
+		if (upperRangeGeoTag)
+			throw new KNXFormatException("geographical tag with apartment/floor > 63 not supported", tag);
+		return new GroupAddress(address & 0xffff);
+	}
+
+	private void checkForLteFrame(final FrameEvent e) {
+		final CEMI cemi = e.getFrame();
+		if (!(cemi instanceof CEMILDataEx))
+			return;
+
+		try {
+			final CEMILDataEx f = (CEMILDataEx) cemi;
+			final byte[] data = f.toByteArray();
+			final int ctrl2 = data[3 + data[1]];
+			if ((ctrl2 & 0x04) == 0)
+				return;
+			final StringBuilder sb = new StringBuilder();
+			sb.append(f.getSource()).append("->").append(f.getDestination()).append(" ");
+			sb.append(DataUnitBuilder.decodeAPCI(DataUnitBuilder.getAPDUService(cemi.getPayload())));
+			sb.append(" ").append(NetworkMonitor.decodeLteFrame(0, f.getDestination(), f.getPayload()));
+			System.out.println(LocalTime.now() + " " + sb.toString());
+		}
+		catch (final Exception ex) {
+			out.error("decoding LTE frame", ex);
 		}
 	}
 
@@ -566,10 +695,13 @@ public class ProcComm implements Runnable
 
 				final boolean read = cmd.equals("read") || cmd.equals("r");
 				final boolean write = cmd.equals("write") || cmd.equals("w");
-				if (read || write) {
-					final boolean withDpt = (read && s.length == 3) || (write && s.length >= 4);
-					StateDP dp;
-					try {
+				try {
+					if (options.containsKey("lte") && (read || write))
+						issueLteCommand(write, addr, s);
+					else if (read || write) {
+						final boolean withDpt = (read && s.length == 3) || (write && s.length >= 4);
+						StateDP dp;
+
 						final GroupAddress ga = new GroupAddress(addr);
 						dp = new StateDP(ga, "tmp", 0, withDpt ? fromDptName(s[2]) : null);
 						if (withDpt && !s[2].equals("-")) {
@@ -580,9 +712,9 @@ public class ProcComm implements Runnable
 						readWrite(dp, write, write ? Arrays.asList(s).subList(withDpt ? 3 : 2, s.length).stream()
 								.collect(Collectors.joining(" ")) : null);
 					}
-					catch (KNXException | RuntimeException e) {
-						out.error("[{}] {}", line, e.toString());
-					}
+				}
+				catch (KNXException | RuntimeException e) {
+					out.error("[{}] {}", line, e.toString());
 				}
 			}
 		}
@@ -633,10 +765,32 @@ public class ProcComm implements Runnable
 			}
 			else if (Main.isOption(arg, "verbose", "v"))
 				options.put("verbose", null);
+			else if (Main.isOption(arg, "lte", null)) {
+				options.put("lte", null);
+				if (options.containsKey("tag")) {
+					final List<String> list = new ArrayList<>();
+					list.add("n/a");
+					list.add(args[++i]); // tag
+					list.add(args[++i]); // IOT
+					list.add(args[++i]); // OI
+					if ("company".equals(args[i + 1])) {
+						list.add(args[++i]);
+						list.add(args[++i]);
+					}
+					list.add(args[++i]); // PID
+					if (options.containsKey("write"))
+						list.add(args[++i]); // data
+					options.put("lte-cmd", list.toArray(new String[0]));
+				}
+			}
 			else if (arg.equals("read")) {
 				if (i + 2 >= args.length)
 					break;
 				options.put("read", null);
+				if ("--lte".equals(args[i + 1])) {
+					options.put("tag", args[i + 2]);
+					continue;
+				}
 				options.put("dpt", args[++i]);
 				try {
 					options.put("dst", new GroupAddress(args[++i]));
@@ -649,6 +803,10 @@ public class ProcComm implements Runnable
 				if (i + 3 >= args.length)
 					break;
 				options.put("write", null);
+				if ("--lte".equals(args[i + 1])) {
+					options.put("tag", args[i + 2]);
+					continue;
+				}
 				options.put("dpt", args[++i]);
 				options.put("value", args[++i]);
 				try {
