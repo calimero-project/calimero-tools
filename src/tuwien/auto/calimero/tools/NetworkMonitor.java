@@ -48,6 +48,7 @@ import org.slf4j.Logger;
 import tuwien.auto.calimero.CloseEvent;
 import tuwien.auto.calimero.DataUnitBuilder;
 import tuwien.auto.calimero.FrameEvent;
+import tuwien.auto.calimero.KNXAddress;
 import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
@@ -491,6 +492,10 @@ public class NetworkMonitor implements Runnable
 		final boolean lteExt = (extFormat & 0x0c) == 0x04;
 		if (!lteExt)
 			return "no LTE";
+		return decodeLteFrame(extFormat, frame.getDestination(), frame.getTpdu());
+	}
+
+	protected static String decodeLteFrame(final int extFormat, final KNXAddress dst, final byte[] tpdu) throws KNXFormatException {
 
 		// LTE-HEE bits 1 and 0 contain the extension of the group address
 		final int ext = extFormat & 0b11;
@@ -501,7 +506,7 @@ public class NetworkMonitor implements Runnable
 		out.trace("LTE-HEE group address extension " + ext + " (" + desc + ")");
 
 		final StringBuilder sb = new StringBuilder();
-		final int rawAddress = frame.getDestination().getRawAddress();
+		final int rawAddress = dst.getRawAddress();
 		if (rawAddress == 0) {
 			sb.append("broadcast");
 		}
@@ -542,7 +547,6 @@ public class NetworkMonitor implements Runnable
 		}
 		sb.append(' ');
 
-		final byte[] tpdu = frame.getTpdu();
 		final int pci = tpdu[0] & 0xff;
 		final int tpci = (pci >>> 6);
 		// LTE has tpci always set 0
