@@ -45,6 +45,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -61,6 +62,8 @@ import tuwien.auto.calimero.DataUnitBuilder;
 import tuwien.auto.calimero.DetachEvent;
 import tuwien.auto.calimero.FrameEvent;
 import tuwien.auto.calimero.GroupAddress;
+import tuwien.auto.calimero.IndividualAddress;
+import tuwien.auto.calimero.KNXAddress;
 import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
@@ -380,21 +383,28 @@ public class ProcComm implements Runnable
 	protected void onGroupEvent(final ProcessEvent e)
 	{
 		final byte[] asdu = e.getASDU();
-		String s = e.getSourceAddr() + "->" + e.getDestination() + " "
-				+ DataUnitBuilder.decodeAPCI(e.getServiceCode()) + " "
-				+ DataUnitBuilder.toHex(asdu, " ");
+		String s = e.getSourceAddr() + "->" + e.getDestination() + " " + DataUnitBuilder.decodeAPCI(e.getServiceCode())
+				+ " " + DataUnitBuilder.toHex(asdu, " ");
 		if (asdu.length > 0) {
-			final Datapoint dp = datapoints.get(e.getDestination());
 			try {
 				final String decodesep = ": ";
-				if (dp != null)
-					s = s + decodesep + asString(asdu, 0, dp.getDPT());
-				else
-					s = s + decodesep + decodeAsduByLength(asdu, e.isLengthOptimizedAPDU());
+				if ((e.getServiceCode() & 0b1111111100) == 0b1111101000) {
+					// group property service
+					final LteProcessEvent lteEvent = (LteProcessEvent) e;
+					s = s + decodesep + decodeLteFrame(lteEvent.extFrameFormat, e.getDestination(), lteEvent.tpdu());
+				}
+				else {
+					final Datapoint dp = datapoints.get(e.getDestination());
+
+					if (dp != null)
+						s = s + decodesep + asString(asdu, 0, dp.getDPT());
+					else
+						s = s + decodesep + decodeAsduByLength(asdu, e.isLengthOptimizedAPDU());
+				}
 			}
 			catch (final KNXException | RuntimeException ignore) {}
 		}
-		System.out.println(LocalTime.now() + " " + s);
+		System.out.println(LocalTime.now().truncatedTo(ChronoUnit.MILLIS) + " " + s);
 	}
 
 	/**
@@ -614,7 +624,7 @@ public class ProcComm implements Runnable
 	}
 
 	// currently only geo tags with wildcards, broadcast, and tag in hex notation
-	private GroupAddress parseLteTag(final String tag) throws KNXFormatException {
+	private static GroupAddress parseLteTag(final String tag) throws KNXFormatException {
 		final String[] split = tag.replaceAll("\\*", "0").split("/", -1);
 		final List<Integer> levels = Arrays.stream(split).map(Integer::parseInt).collect(Collectors.toList());
 		if (levels.size() == 1)
@@ -627,6 +637,25 @@ public class ProcComm implements Runnable
 		return new GroupAddress(address & 0xffff);
 	}
 
+	protected static final class LteProcessEvent extends ProcessEvent {
+		private static final long serialVersionUID = 1L;
+
+		public final int extFrameFormat;
+		private final byte[] tpdu;
+
+		LteProcessEvent(final ProcessCommunicator source, final IndividualAddress src, final int eff,
+			final GroupAddress tag, final byte[] tpdu) {
+			super(source, src, tag, DataUnitBuilder.getAPDUService(tpdu), DataUnitBuilder.extractASDU(tpdu), false);
+
+			this.extFrameFormat = eff;
+			this.tpdu = tpdu;
+		}
+
+		public byte[] tpdu() {
+			return tpdu.clone();
+		}
+	}
+
 	private void checkForLteFrame(final FrameEvent e) {
 		final CEMI cemi = e.getFrame();
 		if (!(cemi instanceof CEMILDataEx))
@@ -635,18 +664,21 @@ public class ProcComm implements Runnable
 		try {
 			final CEMILDataEx f = (CEMILDataEx) cemi;
 			final byte[] data = f.toByteArray();
-			final int ctrl2 = data[3 + data[1]];
+			final int ctrl2 = data[3 + data[1]] & 0xff;
 			if ((ctrl2 & 0x04) == 0)
 				return;
-			final StringBuilder sb = new StringBuilder();
-			sb.append(f.getSource()).append("->").append(f.getDestination()).append(" ");
-			sb.append(DataUnitBuilder.decodeAPCI(DataUnitBuilder.getAPDUService(cemi.getPayload())));
-			sb.append(" ").append(NetworkMonitor.decodeLteFrame(0, f.getDestination(), f.getPayload()));
-			System.out.println(LocalTime.now() + " " + sb.toString());
+
+			final byte[] tpdu = f.getPayload();
+			onGroupEvent(new LteProcessEvent(pc, f.getSource(), ctrl2 & 0x0f, (GroupAddress) f.getDestination(), tpdu));
 		}
 		catch (final Exception ex) {
 			out.error("decoding LTE frame", ex);
 		}
+	}
+
+	protected static String decodeLteFrame(final int extFormat, final KNXAddress dst, final byte[] tpdu)
+		throws KNXFormatException {
+		return NetworkMonitor.decodeLteFrame(extFormat, dst, tpdu);
 	}
 
 	// shows one DPT of each matching main type based on the length of the supplied ASDU
