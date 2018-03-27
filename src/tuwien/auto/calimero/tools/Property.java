@@ -163,7 +163,7 @@ public class Property implements Runnable, PropertyAdapterListener
 	 * </ul>
 	 * For remote property service these options are available:
 	 * <ul>
-	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to tp1)</li>
+	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|knxip|rf] (defaults to tp1)</li>
 	 * <li><code>--domain</code> <i>address</i> &nbsp;domain address on open KNX medium (PL or RF)</li>
 	 * <li><code>--knx-address -k</code> <i>KNX address</i> &nbsp;KNX device address of local endpoint</li>
 	 * <li><code>--connect -c</code> connection oriented mode</li>
@@ -782,7 +782,7 @@ public class Property implements Runnable, PropertyAdapterListener
 		sb.append("Options for local device management mode only:").append(sep);
 		sb.append("  --emulatewriteenable -e  check write-enable of a property").append(sep);
 		sb.append("Options for remote property service mode only:").append(sep);
-		sb.append("  --medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)").append(sep);
+		sb.append("  --medium -m <id>         KNX medium [tp1|p110|knxip|rf] (default tp1)").append(sep);
 		sb.append("  --domain <address>       domain address on KNX PL/RF medium (defaults to broadcast domain)")
 				.append(sep);
 		sb.append("  --connect -c             connection oriented mode").append(sep);

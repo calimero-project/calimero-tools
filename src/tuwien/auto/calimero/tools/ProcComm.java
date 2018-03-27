@@ -209,6 +209,7 @@ public class ProcComm implements Runnable
 	 * <li><code>--help -h</code> show help message</li>
 	 * <li><code>--version</code> show tool/library version and exit</li>
 	 * <li><code>--verbose -v</code> enable verbose status output</li>
+	 * <li><code>--compact -c</code> show incoming process communication data in compact format</li>
 	 * <li><code>--localhost</code> <i>id</i> &nbsp;local IP/host name</li>
 	 * <li><code>--localport</code> <i>number</i> &nbsp;local UDP port (default system assigned)</li>
 	 * <li><code>--port -p</code> <i>number</i> &nbsp;UDP port on host (default 3671)</li>
@@ -216,7 +217,7 @@ public class ProcComm implements Runnable
 	 * <li><code>--ft12 -f</code> use FT1.2 serial communication</li>
 	 * <li><code>--usb -u</code> use KNX USB communication</li>
 	 * <li><code>--tpuart</code> use TP-UART communication</li>
-	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to tp1)</li>
+	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|knxip|rf] (defaults to tp1)</li>
 	 * <li><code>--domain</code> <i>address</i> &nbsp;domain address on open KNX medium (PL or RF)</li>
 	 * </ul>
 	 * Available commands for process communication:
@@ -383,28 +384,31 @@ public class ProcComm implements Runnable
 	protected void onGroupEvent(final ProcessEvent e)
 	{
 		final byte[] asdu = e.getASDU();
-		String s = e.getSourceAddr() + "->" + e.getDestination() + " " + DataUnitBuilder.decodeAPCI(e.getServiceCode())
-				+ " " + DataUnitBuilder.toHex(asdu, " ");
+		final StringBuilder sb = new StringBuilder();
+		sb.append(e.getSourceAddr()).append("->").append(e.getDestination());
+		if (!options.containsKey("compact"))
+			sb.append(" ").append(DataUnitBuilder.decodeAPCI(e.getServiceCode())).append(" ")
+					.append(DataUnitBuilder.toHex(asdu, " "));
 		if (asdu.length > 0) {
 			try {
-				final String decodesep = ": ";
+				sb.append(options.containsKey("compact") ? " " : ": ");
 				if ((e.getServiceCode() & 0b1111111100) == 0b1111101000) {
 					// group property service
 					final LteProcessEvent lteEvent = (LteProcessEvent) e;
-					s = s + decodesep + decodeLteFrame(lteEvent.extFrameFormat, e.getDestination(), lteEvent.tpdu());
+					sb.append(decodeLteFrame(lteEvent.extFrameFormat, e.getDestination(), lteEvent.tpdu()));
 				}
 				else {
 					final Datapoint dp = datapoints.get(e.getDestination());
 
 					if (dp != null)
-						s = s + decodesep + asString(asdu, 0, dp.getDPT());
+						sb.append(asString(asdu, 0, dp.getDPT()));
 					else
-						s = s + decodesep + decodeAsduByLength(asdu, e.isLengthOptimizedAPDU());
+						sb.append(decodeAsduByLength(asdu, e.isLengthOptimizedAPDU()));
 				}
 			}
-			catch (final KNXException | RuntimeException ignore) {}
+			catch (KNXException | RuntimeException ignore) {}
 		}
-		System.out.println(LocalTime.now().truncatedTo(ChronoUnit.MILLIS) + " " + s);
+		System.out.println(LocalTime.now().truncatedTo(ChronoUnit.MILLIS) + " " + sb);
 	}
 
 	/**
@@ -797,6 +801,8 @@ public class ProcComm implements Runnable
 			}
 			else if (Main.isOption(arg, "verbose", "v"))
 				options.put("verbose", null);
+			else if (Main.isOption(arg, "compact", "c"))
+				options.put("compact", null);
 			else if (Main.isOption(arg, "lte", null)) {
 				options.put("lte", null);
 				if (options.containsKey("tag")) {
@@ -902,7 +908,7 @@ public class ProcComm implements Runnable
 		sb.append("  --ft12 -f                use FT1.2 serial communication").append(sep);
 		sb.append("  --usb -u                 use KNX USB communication").append(sep);
 		sb.append("  --tpuart                 use TP-UART communication").append(sep);
-		sb.append("  --medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)").append(sep);
+		sb.append("  --medium -m <id>         KNX medium [tp1|p110|knxip|rf] (default tp1)").append(sep);
 		sb.append("  --domain <address>       domain address on KNX PL/RF medium (defaults to broadcast domain)")
 				.append(sep);
 		sb.append("Available commands for process communication:").append(sep);

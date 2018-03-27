@@ -171,7 +171,7 @@ public class NetworkMonitor implements Runnable
 	 * <li><code>--ft12 -f</code> use FT1.2 serial communication</li>
 	 * <li><code>--usb -u</code> use KNX USB communication</li>
 	 * <li><code>--tpuart</code> use TP-UART communication</li>
-	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to tp1)</li>
+	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|knxip|rf] (defaults to tp1)</li>
 	 * <li><code>--domain</code> <i>address</i> &nbsp;domain address on open KNX medium (PL or RF)</li>
 	 * </ul>
 	 *
@@ -471,7 +471,7 @@ public class NetworkMonitor implements Runnable
 		sb.append("  --ft12 -f                use FT1.2 serial communication").append(sep);
 		sb.append("  --usb -u                 use KNX USB communication").append(sep);
 		sb.append("  --tpuart                 use TP-UART communication").append(sep);
-		sb.append("  --medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)").append(sep);
+		sb.append("  --medium -m <id>         KNX medium [tp1|p110|knxip|rf] (default tp1)").append(sep);
 		sb.append("  --domain <address>       domain address on KNX PL/RF medium (defaults to broadcast domain)")
 				.append(sep);
 		out(sb.toString());

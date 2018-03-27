@@ -114,7 +114,7 @@ public class ScanDevices implements Runnable
 	 * <li><code>--ft12 -f</code> use FT1.2 serial communication</li>
 	 * <li><code>--usb -u</code> use KNX USB communication</li>
 	 * <li><code>--tpuart</code> use TP-UART communication</li>
-	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|p132|rf] (defaults to tp1)</li>
+	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|knxip|rf] (defaults to tp1)</li>
 	 * <li><code>--domain</code> <i>address</i> &nbsp;domain address on open KNX medium (PL or RF, defaults to broadcast
 	 * domain)</li>
 	 * <li><code>--knx-address -k</code> <i>KNX address</i> &nbsp;KNX device address of local endpoint</li>
@@ -362,7 +362,7 @@ public class ScanDevices implements Runnable
 		sb.append(" --ft12 -f                use FT1.2 serial communication").append(sep);
 		sb.append(" --usb -u                 use KNX USB communication").append(sep);
 		sb.append(" --tpuart                 use TP-UART communication").append(sep);
-		sb.append(" --medium -m <id>         KNX medium [tp1|p110|p132|rf] (default tp1)").append(sep);
+		sb.append(" --medium -m <id>         KNX medium [tp1|p110|knxip|rf] (default tp1)").append(sep);
 		sb.append(" --domain <address>       domain address on KNX PL/RF medium (defaults to broadcast domain)")
 				.append(sep);
 		sb.append("The area and line are given as numbers in the range [0..15], e.g., 3.1").append(sep);
