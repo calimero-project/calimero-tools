@@ -602,11 +602,11 @@ public class DeviceInfo implements Runnable
 
 	private DD0 deviceDescriptor(final byte[] data)
 	{
-		final DD0 dd = DeviceDescriptor.DD0.fromType0(data);
+		final DD0 dd = DeviceDescriptor.DD0.from(data);
 		putResult(CommonParameter.DeviceDescriptor, dd.toString(), dd.maskVersion());
-		putResult(CommonParameter.KnxMedium, toMediumTypeString(dd.getMediumType()), dd.getMediumType());
-		putResult(CommonParameter.FirmwareType, toFirmwareTypeString(dd.getFirmwareType()), dd.getFirmwareType());
-		putResult(CommonParameter.FirmwareVersion, "" + dd.getFirmwareVersion(), dd.getFirmwareVersion());
+		putResult(CommonParameter.KnxMedium, toMediumTypeString(dd.mediumType()), dd.mediumType());
+		putResult(CommonParameter.FirmwareType, toFirmwareTypeString(dd.firmwareType()), dd.firmwareType());
+		putResult(CommonParameter.FirmwareVersion, "" + dd.firmwareVersion(), dd.firmwareVersion());
 		return dd;
 	}
 
@@ -648,7 +648,7 @@ public class DeviceInfo implements Runnable
 		// the cEMI server one (as provided by the cEMI server object)
 		data = read(deviceObjectIdx, PID.DEVICE_DESCRIPTOR, 1, 1);
 		if (data != null) {
-			final DD0 profile = DeviceDescriptor.DD0.fromType0(data);
+			final DD0 profile = DeviceDescriptor.DD0.from(data);
 			if (dd == null)
 				dd = deviceDescriptor(data);
 			// device with additional profile?
