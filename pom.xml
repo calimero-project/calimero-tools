@@ -13,7 +13,6 @@
 		<url>https://github.com/calimero-project/calimero-tools.git</url>
 	</scm>
 	<url>https://github.com/calimero-project/calimero-tools</url>
-
 	<licenses>
 		<license>
 			<name>GNU General Public License, version 2, with the Classpath Exception</name>
@@ -26,11 +25,9 @@
 			<email>b.malinowsky@gmail.com</email>
 		</developer>
 	</developers>
-
 	<properties>
 		<exec.mainClass>tuwien.auto.calimero.tools.Main</exec.mainClass>
 	</properties>
-
 	<build>
 		<plugins>
 			<plugin>
@@ -84,4 +81,17 @@
 			<scope>runtime</scope>
 		</dependency>
 	</dependencies>
+	<repositories>
+		<repository>
+			<id>snapshots</id>
+			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+				<updatePolicy>daily</updatePolicy>
+			</snapshots>
+		</repository>
+	</repositories>
 </project>
