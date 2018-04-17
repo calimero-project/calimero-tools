@@ -54,8 +54,8 @@ sourceSets {
 dependencies {
 	compile "com.github.calimero:calimero-core:${version}"
 	runtime "com.github.calimero:calimero-rxtx:${version}"
-	implementation 'org.slf4j:slf4j-api:1.8.0-beta1'
-	runtime 'org.slf4j:slf4j-simple:1.8.0-beta1'
+	implementation 'org.slf4j:slf4j-api:1.8.0-beta2'
+	runtime 'org.slf4j:slf4j-simple:1.8.0-beta2'
 }
 
 jar {
