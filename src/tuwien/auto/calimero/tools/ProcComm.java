@@ -377,7 +377,6 @@ public class ProcComm implements Runnable
 
 	/**
 	 * Called by this tool on receiving a process communication group event.
-	 * <p>
 	 *
 	 * @param e the process event
 	 */
@@ -406,7 +405,9 @@ public class ProcComm implements Runnable
 						sb.append(decodeAsduByLength(asdu, e.isLengthOptimizedAPDU()));
 				}
 			}
-			catch (KNXException | RuntimeException ignore) {}
+			catch (KNXException | RuntimeException ex) {
+				out.info("error parsing group event {}", sb, ex);
+			}
 		}
 		System.out.println(LocalTime.now().truncatedTo(ChronoUnit.MILLIS) + " " + sb);
 	}
@@ -422,7 +423,7 @@ public class ProcComm implements Runnable
 	protected void onCompletion(final Exception thrown, final boolean canceled)
 	{
 		if (canceled)
-			out.info("process communicator was stopped");
+			out.info("process communication was stopped");
 		if (thrown != null)
 			out.error("completed with error", thrown);
 	}
@@ -566,7 +567,7 @@ public class ProcComm implements Runnable
 	private void issueLteCommand(final boolean write, final String addr, final String... s)
 		throws KNXFormatException, KNXTimeoutException, KNXLinkClosedException {
 		if (s.length < 5) {
-			System.out.println("LTE-HEE command: r|w address IOT OI [\"company\" company] PID [hex values]");
+			System.out.println("LTE-HEE command: r|w|i address IOT OI [\"company\" company] PID [hex values]");
 			return;
 		}
 		final int iot = Integer.parseInt(s[2]);
@@ -577,13 +578,22 @@ public class ProcComm implements Runnable
 		final String data = Arrays.asList(Arrays.copyOfRange(s, 5 + privatePidOffset, s.length)).stream()
 				.collect(Collectors.joining("")).replaceAll("0x", "");
 
-		if (write == data.isEmpty())
+		final String cmd = s[0];
+		final boolean read = cmd.equals("read") || cmd.equals("r");
+		final boolean info = cmd.equals("info") || cmd.equals("i");
+		final int svc = write ? 0 : read ? 1 : info ? 2 : -1;
+		if (svc == -1) {
+			System.out.println("unknown command '" + cmd + "'");
+			return;
+		}
+		if ((info || write) == data.isEmpty())
 			System.out.println("data value(s) required for writing (but never for reading)!");
-		else
-			readWrite(write, addr, iot, oi, company, pid, data);
+		else {
+			readWrite(svc, addr, iot, oi, company, pid, data);
+		}
 	}
 
-	private void readWrite(final boolean write, final String tag, final int iot, final int oi, final int company,
+	private void readWrite(final int cmd, final String tag, final int iot, final int oi, final int company,
 		final int pid, final String data) throws KNXFormatException, KNXTimeoutException, KNXLinkClosedException {
 
 		// create asdu
@@ -606,8 +616,9 @@ public class ProcComm implements Runnable
 		// create tpdu
 		final int groupPropRead = 0b1111101000;
 		final int groupPropWrite = 0b1111101010;
+		final int groupPropInfo = 0b1111101011;
 		final int dataTagGroup = 0x04;
-		final byte[] tpdu = DataUnitBuilder.createAPDU(write ? groupPropWrite : groupPropRead, asdu);
+		final byte[] tpdu = DataUnitBuilder.createAPDU(cmd == 0 ? groupPropWrite : cmd == 1 ? groupPropRead : groupPropInfo, asdu);
 		tpdu[0] |= dataTagGroup;
 
 		final GroupAddress group = parseLteTag(tag);
@@ -620,19 +631,17 @@ public class ProcComm implements Runnable
 				ctrl2 |= lteExtAddrType;
 				ctrl2 |= tagClass;
 		}};
-		System.out.println("LTE-HEE " + (write ? "write " : "read ") + tag + " IOT " + iot + " OI " + oi + " PID " + pid
-				+ " data [" + data + "]");
-		System.out.println("send " + ldata + " [" + DataUnitBuilder.toHex(ldata.toByteArray(), " ") + "]");
-
+		final String svc = cmd == 0 ? "write" : cmd == 1 ? "read" : "info";
+		System.out.println("send LTE-HEE " + svc + " " + tag + " IOT " + iot + " OI " + oi + " PID " + pid + " data [" + data + "]");
 		link.send(ldata, true);
 	}
 
 	// currently only geo tags with wildcards, broadcast, and tag in hex notation
 	private static GroupAddress parseLteTag(final String tag) throws KNXFormatException {
 		final String[] split = tag.replaceAll("\\*", "0").split("/", -1);
-		final List<Integer> levels = Arrays.stream(split).map(Integer::parseInt).collect(Collectors.toList());
+		final List<Integer> levels = Arrays.stream(split).map(Integer::decode).collect(Collectors.toList());
 		if (levels.size() == 1)
-			return new GroupAddress(Integer.parseInt(tag, 16));
+			return new GroupAddress(levels.get(0));
 		// bits 7/6/4
 		final int address = (levels.get(0) << 10) | (levels.get(1) << 4) | levels.get(2);
 		final boolean upperRangeGeoTag = address > 0xffff;
@@ -732,7 +741,7 @@ public class ProcComm implements Runnable
 				final boolean read = cmd.equals("read") || cmd.equals("r");
 				final boolean write = cmd.equals("write") || cmd.equals("w");
 				try {
-					if (options.containsKey("lte") && (read || write))
+					if (options.containsKey("lte"))
 						issueLteCommand(write, addr, s);
 					else if (read || write) {
 						final boolean withDpt = (read && s.length == 3) || (write && s.length >= 4);
