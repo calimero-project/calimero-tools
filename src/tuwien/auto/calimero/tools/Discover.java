@@ -242,11 +242,18 @@ public class Discover implements Runnable
 		final ServiceFamiliesDIB serviceFamilies)
 	{
 		final StringBuilder sb = new StringBuilder(sep);
-		sb.append("Using ").append(r.getAddress()).append(" at ").append(nameOf(r.getNetworkInterface())).append(sep);
+		sb.append("Using ").append(r.getAddress().getHostAddress()).append(" at ").append(nameOf(r.getNetworkInterface())).append(sep);
 		sb.append(new String(new char[sb.length() - 2]).replace('\0', '-')).append(sep);
+		sb.append("\"").append(device.getName()).append("\"");
 		if (controlEp != null)
-			sb.append("Control endpoint ").append(controlEp).append(" ");
-		sb.append(device.toString()).append(sep);
+			sb.append(" endpoint ").append(controlEp);
+		final String info = device.toString();
+		// device name is already there
+		final String withoutName = info.substring(info.indexOf(","));
+		// skip SN in search responses
+		final boolean search = r.getResponse() instanceof SearchResponse;
+		final String formatted = search ? withoutName.substring(0, withoutName.lastIndexOf(",")) : withoutName;
+		sb.append(formatted).append(sep);
 		sb.append("Supported services: ");
 		final String s = sb.toString().replaceAll(", ", sep);
 		return s + serviceFamilies.toString();
