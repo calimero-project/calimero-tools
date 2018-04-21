@@ -514,7 +514,7 @@ public class NetworkMonitor implements Runnable
 			int aptFloor = (rawAddress & 0b1111110000000000) >> 10;
 			if (aptFloor != 0)
 				aptFloor += ext == 0 ? 0 : 0x40;
-			final int room = rawAddress & 0b1111110000 >> 4;
+			final int room = (rawAddress & 0b1111110000) >> 4;
 			final int subzone = rawAddress & 0b1111;
 			sb.append("Floor/Room/Subzone " + (aptFloor == 0 ? "*" : aptFloor) + "/" + (room == 0 ? "*" : room) + "/"
 					+ (subzone == 0 ? "*" : subzone));
@@ -523,7 +523,7 @@ public class NetworkMonitor implements Runnable
 			final int domain = rawAddress & 0xf000;
 			if (domain == 0) {
 				sb.append("HVAC ");
-				final int mapping = (rawAddress >> 5);
+				final int mapping = rawAddress >> 5;
 				final int producer = (rawAddress >> 5) & 0xf;
 				final int zone = rawAddress & 0x1f;
 				// distribution (segments or zones)

@@ -384,7 +384,9 @@ public class ProcComm implements Runnable
 	{
 		final byte[] asdu = e.getASDU();
 		final StringBuilder sb = new StringBuilder();
-		sb.append(e.getSourceAddr()).append("->").append(e.getDestination());
+		sb.append(e.getSourceAddr()).append("->");
+		if (!options.containsKey("lte"))
+			sb.append(e.getDestination());
 		if (!options.containsKey("compact"))
 			sb.append(" ").append(DataUnitBuilder.decodeAPCI(e.getServiceCode())).append(" ")
 					.append(DataUnitBuilder.toHex(asdu, " "));
@@ -621,8 +623,9 @@ public class ProcComm implements Runnable
 		final byte[] tpdu = DataUnitBuilder.createAPDU(cmd == 0 ? groupPropWrite : cmd == 1 ? groupPropRead : groupPropInfo, asdu);
 		tpdu[0] |= dataTagGroup;
 
-		final GroupAddress group = parseLteTag(tag);
-		final int tagClass = 0; // 0=lower range geo, 1=upper range geo, 2=app. specific, 3=unassigned (peripheral)
+		final Object[] parsed = parseLteTag(tag);
+		final int tagClass = (int) parsed[0]; // 0=lower range geo, 1=upper range geo, 2=app. specific, 3=unassigned (peripheral)
+		final GroupAddress group = (GroupAddress) parsed[1];
 
 		final CEMILDataEx ldata = new CEMILDataEx(CEMILData.MC_LDATA_REQ, KNXMediumSettings.BackboneRouter, group, tpdu,
 				Priority.LOW) {{
@@ -636,18 +639,17 @@ public class ProcComm implements Runnable
 		link.send(ldata, true);
 	}
 
-	// currently only geo tags with wildcards, broadcast, and tag in hex notation
-	private static GroupAddress parseLteTag(final String tag) throws KNXFormatException {
+	// currently only geo tags with wildcards, broadcast, and general peripheral in hex notation is supported
+	// returns [tagClass, GroupAddress]
+	private static Object[] parseLteTag(final String tag) throws KNXFormatException {
 		final String[] split = tag.replaceAll("\\*", "0").split("/", -1);
 		final List<Integer> levels = Arrays.stream(split).map(Integer::decode).collect(Collectors.toList());
 		if (levels.size() == 1)
-			return new GroupAddress(levels.get(0));
+			return new Object[] { 3, new GroupAddress(levels.get(0)) };
 		// bits 7/6/4
 		final int address = (levels.get(0) << 10) | (levels.get(1) << 4) | levels.get(2);
-		final boolean upperRangeGeoTag = address > 0xffff;
-		if (upperRangeGeoTag)
-			throw new KNXFormatException("geographical tag with apartment/floor > 63 not supported", tag);
-		return new GroupAddress(address & 0xffff);
+		final int upperRangeGeoTag = address > 0xffff ? 1 : 0;
+		return new Object[] { upperRangeGeoTag, new GroupAddress(address & 0xffff) };
 	}
 
 	protected static final class LteProcessEvent extends ProcessEvent {
@@ -740,8 +742,9 @@ public class ProcComm implements Runnable
 
 				final boolean read = cmd.equals("read") || cmd.equals("r");
 				final boolean write = cmd.equals("write") || cmd.equals("w");
+				final boolean info = cmd.equals("info") || cmd.equals("i");
 				try {
-					if (options.containsKey("lte"))
+					if (options.containsKey("lte") && (read || write || info))
 						issueLteCommand(write, addr, s);
 					else if (read || write) {
 						final boolean withDpt = (read && s.length == 3) || (write && s.length >= 4);
@@ -757,6 +760,8 @@ public class ProcComm implements Runnable
 						readWrite(dp, write, write ? Arrays.asList(s).subList(withDpt ? 3 : 2, s.length).stream()
 								.collect(Collectors.joining(" ")) : null);
 					}
+					else
+						System.out.println("unknown command '" + cmd + "'");
 				}
 				catch (KNXException | RuntimeException e) {
 					out.error("[{}] {}", line, e.toString());
