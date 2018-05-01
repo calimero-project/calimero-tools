@@ -78,7 +78,7 @@ final class Main
 		{ DESCRIPTION, "KNXnet/IP server self-description", "--description" },
 		{ SCAN, "Determine the existing KNX devices on a KNX subnetwork" },
 		{ IPCONFIG, "KNXnet/IP device address configuration" },
-		{ MONITOR, "Open bus monitor (passive) for KNX network traffic" },
+		{ MONITOR, "Open network monitor (passive) for KNX network traffic" },
 		{ COM_READ, "Read a value using KNX process communication", "read" },
 		{ COM_WRITE, "Write a value using KNX process communication", "write" },
 		{ COM_GROUPMON, "Open group monitor for KNX process communication", "monitor" },

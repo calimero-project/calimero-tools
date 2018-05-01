@@ -294,7 +294,6 @@ public class NetworkMonitor implements Runnable
 		final CEMIBusMon frame = (CEMIBusMon) e.getFrame();
 		final boolean compact = options.containsKey("compact");
 		if (compact) {
-//			sb.append(frame.getTimestamp());
 			sb.append("Seq ").append(frame.getSequenceNumber());
 		}
 		else
@@ -499,11 +498,6 @@ public class NetworkMonitor implements Runnable
 
 		// LTE-HEE bits 1 and 0 contain the extension of the group address
 		final int ext = extFormat & 0b11;
-		final String[] zoningInfo = { "geographical tags: Apartment/Floor 01 ... 63.R.S",
-			"geographical tags: Apartment/Floor 64 ... 126.R.S", "application specific tags",
-			"unassigned (peripheral) tags & broadcast" };
-		final String desc = zoningInfo[ext];
-		out.trace("LTE-HEE group address extension " + ext + " (" + desc + ")");
 
 		final StringBuilder sb = new StringBuilder();
 		final int rawAddress = dst.getRawAddress();
