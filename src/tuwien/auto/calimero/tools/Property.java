@@ -71,7 +71,6 @@ import tuwien.auto.calimero.mgmt.Description;
 import tuwien.auto.calimero.mgmt.LocalDeviceManagementUsb;
 import tuwien.auto.calimero.mgmt.LocalDeviceMgmtAdapter;
 import tuwien.auto.calimero.mgmt.PropertyAdapter;
-import tuwien.auto.calimero.mgmt.PropertyAdapterListener;
 import tuwien.auto.calimero.mgmt.PropertyClient;
 import tuwien.auto.calimero.mgmt.PropertyClient.PropertyKey;
 import tuwien.auto.calimero.mgmt.PropertyClient.XmlPropertyDefinitions;
@@ -96,7 +95,7 @@ import tuwien.auto.calimero.xml.KNXMLException;
  *
  * @author B. Malinowsky
  */
-public class Property implements Runnable, PropertyAdapterListener
+public class Property implements Runnable
 {
 	private static final String tool = "Property";
 	private static final String sep = System.getProperty("line.separator");
@@ -200,9 +199,6 @@ public class Property implements Runnable, PropertyAdapterListener
 		}
 	}
 
-	/* (non-Javadoc)
-	 * @see java.lang.Runnable#run()
-	 */
 	@Override
 	public void run()
 	{
@@ -272,12 +268,7 @@ public class Property implements Runnable, PropertyAdapterListener
 		}
 	}
 
-	/* (non-Javadoc)
-	 * @see tuwien.auto.calimero.mgmt.PropertyAdapterListener#adapterClosed(
-	 * tuwien.auto.calimero.CloseEvent)
-	 */
-	@Override
-	public void adapterClosed(final CloseEvent e)
+	private void adapterClosed(final CloseEvent e)
 	{
 		out("connection closed (" + e.getReason() + ")");
 		if (e.getInitiator() != CloseEvent.USER_REQUEST)
@@ -428,7 +419,7 @@ public class Property implements Runnable, PropertyAdapterListener
 		final InetSocketAddress local = Main.createLocalSocket(
 				(InetAddress) options.get("localhost"), (Integer) options.get("localport"));
 		return new LocalDeviceMgmtAdapter(local, new InetSocketAddress(Main.parseHost(host),
-				(Integer) options.get("port")), options.containsKey("nat"), this,
+				(Integer) options.get("port")), options.containsKey("nat"), this::adapterClosed,
 				options.containsKey("emulatewriteenable"));
 	}
 
@@ -439,7 +430,7 @@ public class Property implements Runnable, PropertyAdapterListener
 		InterruptedException
 	{
 		final UsbConnection usb = new UsbConnection(device);
-		return new LocalDeviceManagementUsb(usb, this, options.containsKey("emulatewriteenable"));
+		return new LocalDeviceManagementUsb(usb, this::adapterClosed, options.containsKey("emulatewriteenable"));
 	}
 
 	/**
@@ -490,11 +481,11 @@ public class Property implements Runnable, PropertyAdapterListener
 		// connection oriented mode and tries to authenticate
 		final byte[] authKey = (byte[]) options.get("authorize");
 		if (authKey != null) {
-			final RemotePropertyServiceAdapter adapter = new RemotePropertyServiceAdapter(link, remote, this, authKey);
+			final RemotePropertyServiceAdapter adapter = new RemotePropertyServiceAdapter(link, remote, this::adapterClosed, authKey);
 			out.info("{} granted access level {}", remote, adapter.accessLevel());
 			return adapter;
 		}
-		return new RemotePropertyServiceAdapter(link, remote, this, options.containsKey("connect"));
+		return new RemotePropertyServiceAdapter(link, remote, this::adapterClosed, options.containsKey("connect"));
 	}
 
 	private static String alignRight(final int value)
