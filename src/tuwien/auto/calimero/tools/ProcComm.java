@@ -43,6 +43,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
@@ -89,6 +90,7 @@ import tuwien.auto.calimero.link.KNXNetworkLinkTpuart;
 import tuwien.auto.calimero.link.KNXNetworkLinkUsb;
 import tuwien.auto.calimero.link.NetworkLinkListener;
 import tuwien.auto.calimero.link.medium.KNXMediumSettings;
+import tuwien.auto.calimero.link.medium.RFSettings;
 import tuwien.auto.calimero.link.medium.TPSettings;
 import tuwien.auto.calimero.log.LogService;
 import tuwien.auto.calimero.process.ProcessCommunicator;
@@ -197,14 +199,10 @@ public class ProcComm implements Runnable
 	}
 
 	/**
-	 * Entry point for running ProcComm.
-	 * <p>
-	 * An IP host or port identifier has to be supplied, specifying the endpoint for the KNX network
-	 * access.<br>
-	 * To show the usage message of this tool on the console, supply the command line option --help
-	 * (or -h).<br>
-	 * Command line options are treated case sensitive. Available options for the communication
-	 * connection:
+	 * Entry point for running ProcComm. The endpoint for KNX network
+	 * access is either an IP host or port identifier for IP, USB, FT1.2 or TP-UART communication.
+	 * Use the command line option <tt>--help</tt> (or <tt>-h</tt>) to show the usage of this tool.<p>
+	 * Command line options are treated case sensitive. Available options for communication:
 	 * <ul>
 	 * <li><code>--help -h</code> show help message</li>
 	 * <li><code>--version</code> show tool/library version and exit</li>
@@ -219,6 +217,7 @@ public class ProcComm implements Runnable
 	 * <li><code>--tpuart</code> use TP-UART communication</li>
 	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|knxip|rf] (defaults to tp1)</li>
 	 * <li><code>--domain</code> <i>address</i> &nbsp;domain address on open KNX medium (PL or RF)</li>
+	 * <li><code>--sn</code> <i>number</i> &nbsp;device serial number to use in RF multicasts & broadcasts</li>
 	 * </ul>
 	 * Available commands for process communication:
 	 * <ul>
@@ -229,9 +228,13 @@ public class ProcComm implements Runnable
 	 * <li><code>monitor</code> enter group monitoring</li>
 	 * </ul>
 	 * In monitor mode, read/write commands can be issued on the terminal using
-	 * <code>cmd DP [DPT] [value]</code>, with <code>cmd = ("r"|"read") | ("w"|"write")</code>.
+	 * <code>cmd DP [DPT] [value]</code>, with <code>cmd = ("r"|"read") | ("w"|"write")</code>.<br>
+	 * Additionally, the tool will either create or load an existing datapoint list and maintain it
+	 * with all datapoints being read or written. Hence, once the datapoint type of a datapoint is known, the DPT part can be omitted
+	 * from the command. The list is saved to the current working directory.<br>
+	 * Examples: <code>write 1/0/1 switch off</code>, <code>w 1/0/1 off</code>, <code>r 1/0/1</code>.
 	 * <p>
-	 * For the more common datapoint types (DPTs) the following name aliases can be used instead of
+	 * For common datapoint types (DPTs) the following name aliases can be used instead of
 	 * the general DPT number string:
 	 * <ul>
 	 * <li><code>switch</code> for DPT 1.001, with values <code>off</code>, <code>on</code></li>
@@ -628,7 +631,7 @@ public class ProcComm implements Runnable
 		final GroupAddress group = (GroupAddress) parsed[1];
 
 		final CEMILDataEx ldata = new CEMILDataEx(CEMILData.MC_LDATA_REQ, KNXMediumSettings.BackboneRouter, group, tpdu,
-				Priority.LOW) {{
+				Priority.LOW, true, false, false, 6) {{
 				// adjust cEMI Ext Ctrl Field with frame format parameters for LTE
 				final int lteExtAddrType = 0x04; // LTE-HEE extended address type
 				ctrl2 |= lteExtAddrType;
@@ -888,6 +891,10 @@ public class ProcComm implements Runnable
 				options.put("medium", Main.getMedium(args[++i]));
 			else if (Main.isOption(arg, "domain", null))
 				options.put("domain", Long.decode(args[++i]));
+			else if (Main.isOption(arg, "sn", null))
+				options.put("sn", Long.decode(args[++i]));
+			else if (Main.isOption(arg, "knx-address", null))
+				options.put("knx-address", Main.getAddress(args[++i]));
 			else if (Main.isOption(arg, "timeout", "t"))
 				options.put("timeout", Integer.decode(args[++i]));
 			else if (!options.containsKey("host"))
@@ -903,6 +910,24 @@ public class ProcComm implements Runnable
 			throw new KNXIllegalArgumentException("either read or write - not both");
 
 		setDomainAddress(options);
+		setRfDeviceSettings();
+	}
+
+	private void setRfDeviceSettings() {
+		final Long value = (Long) options.get("sn");
+		if (value == null)
+			return;
+		final KNXMediumSettings medium = (KNXMediumSettings) options.get("medium");
+		if (medium.getMedium() != KNXMediumSettings.MEDIUM_RF)
+			throw new KNXIllegalArgumentException(
+					medium.getMediumString() + " networks don't use serial number, use --medium to specify KNX RF");
+		final RFSettings rf = ((RFSettings) medium);
+		final IndividualAddress device = (IndividualAddress) options.getOrDefault("knx-address", rf.getDeviceAddress());
+
+		final byte[] sn = new byte[6];
+		final ByteBuffer buffer = (ByteBuffer) ByteBuffer.allocate(Long.BYTES).putLong(value).position(2);
+		buffer.get(sn);
+		options.put("medium", new RFSettings(device, rf.getDomainAddress(), sn, rf.isUnidirectional()));
 	}
 
 	private static void showUsage()
