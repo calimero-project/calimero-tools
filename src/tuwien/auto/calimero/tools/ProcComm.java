@@ -153,9 +153,6 @@ import tuwien.auto.calimero.xml.XmlWriter;
  */
 public class ProcComm implements Runnable
 {
-	// XXX The expected sequence for read/write commands on the terminal differs between
-	// the tool command line arguments and monitor mode input --> unify.
-
 	private static final String tool = "ProcComm";
 	private static final String sep = System.getProperty("line.separator");
 	private static final String toolDatapointsFile = "." + tool.toLowerCase() + "_dplist.xml";
@@ -199,9 +196,10 @@ public class ProcComm implements Runnable
 	}
 
 	/**
-	 * Entry point for running ProcComm. The endpoint for KNX network
-	 * access is either an IP host or port identifier for IP, USB, FT1.2 or TP-UART communication.
-	 * Use the command line option <tt>--help</tt> (or <tt>-h</tt>) to show the usage of this tool.<p>
+	 * Entry point for running ProcComm. The endpoint for KNX network access is either an IP host or port identifier for
+	 * IP, USB, FT1.2 or TP-UART communication. Use the command line option <code>--help</code> (or <code>-h</code>) to show the
+	 * usage of this tool.
+	 * <p>
 	 * Command line options are treated case sensitive. Available options for communication:
 	 * <ul>
 	 * <li><code>--help -h</code> show help message</li>
@@ -217,32 +215,30 @@ public class ProcComm implements Runnable
 	 * <li><code>--tpuart</code> use TP-UART communication</li>
 	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|knxip|rf] (defaults to tp1)</li>
 	 * <li><code>--domain</code> <i>address</i> &nbsp;domain address on open KNX medium (PL or RF)</li>
-	 * <li><code>--sn</code> <i>number</i> &nbsp;device serial number to use in RF multicasts & broadcasts</li>
+	 * <li><code>--sn</code> <i>number</i> &nbsp;device serial number to use in RF multicasts &amp; broadcasts</li>
 	 * </ul>
 	 * Available commands for process communication:
 	 * <ul>
-	 * <li><code>read</code> <i>DPT &nbsp;KNX-address</i> &nbsp;read from group address, using DPT
-	 * value format</li>
-	 * <li><code>write</code> <i>DPT &nbsp;value &nbsp;KNX-address</i> &nbsp;write to group address,
-	 * using DPT value format</li>
+	 * <li><code>read</code> <i>group-address &nbsp;[DPT]</i> &nbsp;&nbsp;&nbsp;read from datapoint with the specified
+	 * group address, using DPT value format (optional)</li>
+	 * <li><code>write</code> <i>group-address &nbsp;[DPT] &nbsp;value</i> &nbsp;&nbsp;&nbsp;write to datapoint with the
+	 * specified group address, using DPT value format</li>
 	 * <li><code>monitor</code> enter group monitoring</li>
 	 * </ul>
-	 * In monitor mode, read/write commands can be issued on the terminal using
-	 * <code>cmd DP [DPT] [value]</code>, with <code>cmd = ("r"|"read") | ("w"|"write")</code>.<br>
-	 * Additionally, the tool will either create or load an existing datapoint list and maintain it
-	 * with all datapoints being read or written. Hence, once the datapoint type of a datapoint is known, the DPT part can be omitted
-	 * from the command. The list is saved to the current working directory.<br>
+	 * In monitor mode, read/write commands can be issued on the terminal using <code>cmd DP [DPT] [value]</code>, with
+	 * <code>cmd = ("r"|"read") | ("w"|"write")</code>.<br>
+	 * Additionally, the tool will either create or load an existing datapoint list and maintain it with all datapoints
+	 * being read or written. Hence, once the datapoint type of a datapoint is known, the DPT part can be omitted from
+	 * the command. The datapoint list is saved to the current working directory.<br>
 	 * Examples: <code>write 1/0/1 switch off</code>, <code>w 1/0/1 off</code>, <code>r 1/0/1</code>.
 	 * <p>
-	 * For common datapoint types (DPTs) the following name aliases can be used instead of
-	 * the general DPT number string:
+	 * For common datapoint types (DPTs) the following name aliases can be used instead of the general DPT number
+	 * string:
 	 * <ul>
 	 * <li><code>switch</code> for DPT 1.001, with values <code>off</code>, <code>on</code></li>
 	 * <li><code>bool</code> for DPT 1.002, with values <code>false</code>, <code>true</code></li>
-	 * <li><code>dimmer</code> for DPT 3.007, with values <code>decrease 0..7</code>,
-	 * <code>increase 0..7</code></li>
-	 * <li><code>blinds</code> for DPT 3.008, with values <code>up 0..7</code>,
-	 * <code>down 0..7</code></li>
+	 * <li><code>dimmer</code> for DPT 3.007, with values <code>decrease 0..7</code>, <code>increase 0..7</code></li>
+	 * <li><code>blinds</code> for DPT 3.008, with values <code>up 0..7</code>, <code>down 0..7</code></li>
 	 * <li><code>percent</code> for DPT 5.001, with values <code>0..100</code></li>
 	 * <li><code>%</code> for DPT 5.001, with values <code>0..100</code></li>
 	 * <li><code>angle</code> for DPT 5.003, with values <code>0..360</code></li>
@@ -849,20 +845,21 @@ public class ProcComm implements Runnable
 				}
 			}
 			else if (arg.equals("read")) {
-				if (i + 2 >= args.length)
+				if (i + 1 >= args.length)
 					break;
 				options.put("read", null);
 				if ("--lte".equals(args[i + 1])) {
 					options.put("tag", args[i + 2]);
 					continue;
 				}
-				options.put("dpt", args[++i]);
 				try {
 					options.put("dst", new GroupAddress(args[++i]));
 				}
 				catch (final KNXFormatException e) {
 					throw new KNXIllegalArgumentException("read DPT: " + e.getMessage(), e);
 				}
+				if ((i + 1 < args.length) && !"-".equals(args[++i]))
+					options.put("dpt", args[i]);
 			}
 			else if (arg.equals("write")) {
 				if (i + 3 >= args.length)
@@ -872,14 +869,14 @@ public class ProcComm implements Runnable
 					options.put("tag", args[i + 2]);
 					continue;
 				}
-				options.put("dpt", args[++i]);
-				options.put("value", args[++i]);
 				try {
 					options.put("dst", new GroupAddress(args[++i]));
 				}
 				catch (final KNXFormatException e) {
 					throw new KNXIllegalArgumentException("write DPT: " + e.getMessage(), e);
 				}
+				options.put("dpt", args[++i]);
+				options.put("value", args[++i]);
 			}
 			else if (arg.equals("info")) {
 				if (i + 3 >= args.length)
