@@ -540,15 +540,15 @@ public class ProcComm implements Runnable
 
 	private void readWrite() throws KNXException, InterruptedException
 	{
-		final boolean write = options.containsKey("write");
-		if (!write && !options.containsKey("read"))
-			return;
 		if (options.containsKey("lte")) {
-			issueLteCommand(write, (String) options.get("tag"), (String[]) options.get("lte-cmd"));
-			if (!write)
+			issueLteCommand((String) options.get("tag"), (String[]) options.get("lte-cmd"));
+			if (options.containsKey("read"))
 				Thread.sleep(pc.getResponseTimeout() * 1000);
 			return;
 		}
+		final boolean write = options.containsKey("write");
+		if (!write && !options.containsKey("read"))
+			return;
 		final GroupAddress main = (GroupAddress) options.get("dst");
 		// encapsulate information into a datapoint
 		// this is a convenient way to let the process communicator
@@ -573,7 +573,7 @@ public class ProcComm implements Runnable
 		}
 	}
 
-	private void issueLteCommand(final boolean write, final String addr, final String... s)
+	private void issueLteCommand(final String addr, final String... s)
 		throws KNXFormatException, KNXTimeoutException, KNXLinkClosedException {
 		if (s.length < 5) {
 			System.out.println("LTE-HEE command: r|w|i address IOT OI [\"company\" company] PID [hex values]");
@@ -589,6 +589,7 @@ public class ProcComm implements Runnable
 
 		final String cmd = s[0];
 		final boolean read = cmd.equals("read") || cmd.equals("r");
+		final boolean write = cmd.equals("write") || cmd.equals("w");
 		final boolean info = cmd.equals("info") || cmd.equals("i");
 		final int svc = write ? 0 : read ? 1 : info ? 2 : -1;
 		if (svc == -1) {
@@ -619,6 +620,11 @@ public class ProcComm implements Runnable
 			asdu[i++] = (byte) company;
 		}
 		asdu[i++] = (byte) pid;
+		if (data.length() % 2 != 0) {
+			System.out.println("error writing [" + data + "]: data length has to be even");
+			return;
+		}
+
 		for (int k = 0; k < data.length(); k+= 2)
 			asdu[i++] = (byte) Integer.parseInt(data.substring(k, k + 2), 16);
 
@@ -752,7 +758,7 @@ public class ProcComm implements Runnable
 				final boolean info = cmd.equals("info") || cmd.equals("i");
 				try {
 					if (options.containsKey("lte") && (read || write || info))
-						issueLteCommand(write, addr, s);
+						issueLteCommand(addr, s);
 					else if (read || write) {
 						final boolean withDpt = (read && s.length == 3) || (write && s.length >= 4);
 						StateDP dp;
@@ -828,7 +834,7 @@ public class ProcComm implements Runnable
 				options.put("lte", null);
 				if (options.containsKey("tag")) {
 					final List<String> list = new ArrayList<>();
-					list.add("n/a");
+					list.add(options.containsKey("read") ? "read" : options.containsKey("write") ? "write" : "info");
 					list.add(args[++i]); // tag
 					list.add(args[++i]); // IOT
 					list.add(args[++i]); // OI
@@ -837,7 +843,7 @@ public class ProcComm implements Runnable
 						list.add(args[++i]);
 					}
 					list.add(args[++i]); // PID
-					if (options.containsKey("write"))
+					if (options.containsKey("write") || options.containsKey("info"))
 						list.add(args[++i]); // data
 					options.put("lte-cmd", list.toArray(new String[0]));
 				}
@@ -875,6 +881,13 @@ public class ProcComm implements Runnable
 					throw new KNXIllegalArgumentException("write DPT: " + e.getMessage(), e);
 				}
 			}
+			else if (arg.equals("info")) {
+				if (i + 3 >= args.length)
+					break;
+				options.put("info", null);
+				options.put("tag", args[i + 2]);
+				continue;
+			}
 			else if (arg.equals("monitor"))
 				options.put("monitor", null);
 			else if (Main.isOption(arg, "localhost", null))
@@ -908,7 +921,7 @@ public class ProcComm implements Runnable
 		}
 		if (!options.containsKey("host") || (options.containsKey("ft12") && options.containsKey("usb")))
 			throw new KNXIllegalArgumentException("specify either IP host, serial port, or device");
-		if (!(options.containsKey("monitor") || options.containsKey("read") || options.containsKey("write")))
+		if (!(options.containsKey("monitor") || options.containsKey("read") || options.containsKey("write") || options.containsKey("info")))
 			throw new KNXIllegalArgumentException("specify read, write, or group monitoring");
 		if (options.containsKey("read") && options.containsKey("write"))
 			throw new KNXIllegalArgumentException("either read or write - not both");
