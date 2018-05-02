@@ -546,7 +546,7 @@ public class ProcComm implements Runnable
 		if (options.containsKey("lte")) {
 			issueLteCommand(write, (String) options.get("tag"), (String[]) options.get("lte-cmd"));
 			if (!write)
-				Thread.sleep(4000);
+				Thread.sleep(pc.getResponseTimeout() * 1000);
 			return;
 		}
 		final GroupAddress main = (GroupAddress) options.get("dst");
