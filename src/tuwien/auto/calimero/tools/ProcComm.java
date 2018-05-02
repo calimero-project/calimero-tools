@@ -562,6 +562,10 @@ public class ProcComm implements Runnable
 		if (!write)
 			System.out.println("read " + dp.getMainAddress() + " value: " + pc.read(dp));
 		else {
+			if (dp.getDPT() == null) {
+				System.out.println("cannot write to " + dp.getMainAddress() + " because DPT is not known yet, retry and specify DPT once");
+				return;
+			}
 			// note, a write to a non existing datapoint might finish successfully,
 			// too.. no check for existence or read back of a written value is done
 			pc.write(dp, value);
