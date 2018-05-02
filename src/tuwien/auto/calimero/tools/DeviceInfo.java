@@ -40,13 +40,13 @@ import java.io.ByteArrayOutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -87,12 +87,8 @@ import tuwien.auto.calimero.mgmt.PropertyAdapter;
 import tuwien.auto.calimero.mgmt.PropertyClient;
 import tuwien.auto.calimero.mgmt.RemotePropertyServiceAdapter;
 import tuwien.auto.calimero.serial.usb.UsbConnection;
-import tuwien.auto.calimero.tools.DeviceInfo.CemiParameter;
 import tuwien.auto.calimero.tools.DeviceInfo.CommonParameter;
-import tuwien.auto.calimero.tools.DeviceInfo.InternalParameter;
 import tuwien.auto.calimero.tools.DeviceInfo.KnxipParameter;
-import tuwien.auto.calimero.tools.DeviceInfo.Parameter;
-import tuwien.auto.calimero.tools.DeviceInfo.RfParameter;
 import tuwien.auto.calimero.tools.Main.ShutdownHandler;
 
 /**
@@ -216,7 +212,7 @@ public class DeviceInfo implements Runnable
 	public static final class Result
 	{
 		private final Map<Parameter, String> formatted = new HashMap<>();
-		private final Map<Parameter, Long> raw = new HashMap<>();
+		private final Map<Parameter, byte[]> raw = new HashMap<>();
 
 		/**
 		 * Returns the formatted value of the requested device information parameter.
@@ -230,14 +226,14 @@ public class DeviceInfo implements Runnable
 		}
 
 		/**
-		 * Returns the raw value of the requested device information parameter, if available.
+		 * Returns the raw data of the requested device information parameter, if available.
 		 *
-		 * @param p parameter indicating the requested device information
-		 * @return raw value for parameter
+		 * @param p parameter specifying the requested device information
+		 * @return raw data for parameter, or empty array
 		 */
-		public Optional<Long> raw(final Parameter p)
+		public byte[] raw(final Parameter p)
 		{
-			return Optional.ofNullable(raw.get(p));
+			return raw.get(p);
 		}
 	}
 
@@ -355,28 +351,27 @@ public class DeviceInfo implements Runnable
 	@Override
 	public void run()
 	{
-		// ??? as with the other tools, maybe put this into the try block to also call onCompletion
-		if (options.isEmpty()) {
-			out(tool + " - Read KNX device information");
-			showVersion();
-			out("Type --help for help message");
-			return;
-		}
-		if (options.containsKey("help")) {
-			showUsage();
-			return;
-		}
-		if (options.containsKey("version")) {
-			showVersion();
-			return;
-		}
-
 		Exception thrown = null;
 		boolean canceled = false;
 		final IndividualAddress device = (IndividualAddress) options.get("device");
 		result = new Result();
 
 		try {
+			if (options.isEmpty()) {
+				out(tool + " - Read KNX device information");
+				showVersion();
+				out("Type --help for help message");
+				return;
+			}
+			if (options.containsKey("help")) {
+				showUsage();
+				return;
+			}
+			if (options.containsKey("version")) {
+				showVersion();
+				return;
+			}
+
 			if (device != null) {
 				// setup for reading device info of remote device
 				try (KNXNetworkLink link = createLink();
@@ -426,7 +421,7 @@ public class DeviceInfo implements Runnable
 		}
 		finally {
 			if (!result.formatted.isEmpty())
-				onDeviceInformation(device, result);
+				onDeviceInformation(device == null ? KNXMediumSettings.BackboneRouter : device, result);
 			onCompletion(thrown, canceled);
 		}
 	}
@@ -441,14 +436,15 @@ public class DeviceInfo implements Runnable
 	protected void onDeviceInformation(final IndividualAddress device, final Result info) {}
 
 	/**
-	 * Invoked after reading a KNX device parameter.
+	 * Invoked after successfully reading a KNX device parameter. If a device parameter is not available or accessible
+	 * in the KNX device, this method won't be called.
 	 *
-	 * @param device KNX device address
 	 * @param parameter the parameter read from the device
+	 * @param value formatted value of that parameter
+	 * @param raw raw value of that parameter
 	 */
-	void onDeviceInformation(final IndividualAddress device, final Parameter parameter)
-	{
-		out(new Parameter[] {parameter});
+	protected void onDeviceInformation(final Parameter parameter, final String value, final byte[] raw) {
+		out(parameter, value, raw);
 	}
 
 	/**
@@ -466,22 +462,16 @@ public class DeviceInfo implements Runnable
 			out.error("completed", thrown);
 	}
 
-	private void out(final Parameter[] values)
-	{
+	private void out(final Parameter p, final String value, final byte[] raw) {
 		final boolean verbose = options.containsKey("verbose");
-		for (final Parameter p : values) {
-			// create human readable name from parameter by inserting some spaces
-			final String name = p.name().replaceAll("([A-Z])", " $1").replace("I P", "IP").trim();
-			final String raw = result.raw(p).map(v -> "0x" + Long.toHexString(v)).orElse("n/a");
-			final String formatted = result.formatted(p);
-			if (formatted != null) {
-				final String s = name + " = " + formatted;
-				// left-pad verbose output
-				final int n = Math.max(1, 60 - s.length());
-				final String detail = verbose ? String.format("%" + n + "s%s]", "[raw=", raw) : "";
-				System.out.println(s + detail);
-			}
-		}
+		// create human readable name from parameter by inserting some spaces
+		final String name = p.name().replaceAll("([A-Z])", " $1").replace("I P", "IP").trim();
+		final String s = name + " = " + value;
+		final String hex = raw.length > 0 ? "0x" + DataUnitBuilder.toHex(raw, "") : "n/a";
+		// left-pad verbose output
+		final int n = Math.max(1, 60 - s.length());
+		final String detail = verbose ? String.format("%" + n + "s%s]", "[raw=", hex) : "";
+		System.out.println(s + detail);
 	}
 
 	private void findInterfaceObjects() throws KNXException, InterruptedException
@@ -597,7 +587,7 @@ public class DeviceInfo implements Runnable
 				out.error("reading memory location 0x60", e2);
 			}
 		}
-		putResult(CommonParameter.ProgrammingMode, x.getValue(), (long) x.getNumericValue());
+		putResult(CommonParameter.ProgrammingMode, x.getValue(), x.getData());
 	}
 
 	private DD0 deviceDescriptor(final byte[] data)
@@ -619,7 +609,7 @@ public class DeviceInfo implements Runnable
 		byte[] data = read(deviceObjectIdx, PID.MANUFACTURER_ID);
 		if (data != null) {
 			final int mfId = (int) toUnsigned(data);
-			putResult(CommonParameter.Manufacturer, manufacturer.get(mfId), mfId);
+			putResult(CommonParameter.Manufacturer, manufacturer(mfId), data);
 		}
 		// Order Info
 		readUnsigned(deviceObjectIdx, PID.ORDER_INFO, false, CommonParameter.OrderInfo);
@@ -628,7 +618,7 @@ public class DeviceInfo implements Runnable
 		data = read(deviceObjectIdx, PropertyAccess.PID.SERIAL_NUMBER);
 		if (data != null) {
 			final String serialNo = DataUnitBuilder.toHex(data, "");
-			putResult(CommonParameter.SerialNumber, serialNo, toUnsigned(data));
+			putResult(CommonParameter.SerialNumber, serialNo, data);
 		}
 
 		// Physical PEI type, i.e., the currently connected PEI type
@@ -653,7 +643,7 @@ public class DeviceInfo implements Runnable
 				dd = deviceDescriptor(data);
 			// device with additional profile?
 			else if (!profile.equals(dd))
-				putResult(InternalParameter.AdditionalProfile, profile.toString(), profile.maskVersion());
+				putResult(InternalParameter.AdditionalProfile, profile.toString(), data);
 		}
 
 		// Info about possible additional profile in device
@@ -662,7 +652,7 @@ public class DeviceInfo implements Runnable
 			final byte[] profileDev = read(deviceObjectIdx, PID.DEVICE_ADDRESS, 1, 1);
 			final byte[] profileAddr = new byte[] { profileSna[0], profileDev[0] };
 			final IndividualAddress ia = new IndividualAddress(profileAddr);
-			putResult(CommonParameter.DeviceAddress, "Additional profile address " + ia, ia.getRawAddress());
+			putResult(CommonParameter.DeviceAddress, "Additional profile address " + ia, ia.toByteArray());
 		}
 		catch (final Exception e) {}
 
@@ -736,7 +726,7 @@ public class DeviceInfo implements Runnable
 
 			final byte[] addr = new byte[] { sna[0], dev[0] };
 			final IndividualAddress ia = new IndividualAddress(addr);
-			putResult(CemiParameter.ClientAddress, "USB cEMI client address " + ia, ia.getRawAddress());
+			putResult(CemiParameter.ClientAddress, "USB cEMI client address " + ia, ia.toByteArray());
 		}
 		catch (final Exception e) {}
 
@@ -783,7 +773,7 @@ public class DeviceInfo implements Runnable
 			final boolean ownIa = (filter & 0x01) == 0x01;
 			putResult(CemiParameter.SupportedFilteringModes, "supported frame filters: ext. group addresses " + grp
 					+ ", domain address " + doa + ", repeated frames " + rep + ", own individual address " + ownIa,
-					filter);
+					filters);
 		}
 		catch (final Exception e) {}
 	}
@@ -814,9 +804,8 @@ public class DeviceInfo implements Runnable
 		final boolean master = (support[0] & 0x02) == 0x02;
 		final boolean async = (support[0] & 0x01) == 0x01;
 
-		final String formatted = "Supported RF modes: BiBat slave " + slave + ", BiBat master " + master + ", Async "
-				+ async;
-		putResult(CemiParameter.SupportedRfModes, formatted, toUnsigned(support));
+		final String formatted = "Supported RF modes: BiBat slave " + slave + ", BiBat master " + master + ", Async " + async;
+		putResult(CemiParameter.SupportedRfModes, formatted, support);
 	}
 
 	//      --------------------------------------
@@ -863,7 +852,7 @@ public class DeviceInfo implements Runnable
 				final int pidRfDomainAddress = 56;
 				final byte[] doaAddr = read(rfMediumObjectIdx, pidRfDomainAddress, 1, 1);
 				if (doaAddr != null)
-					putResult(RfParameter.DomainAddress, "0x" + DataUnitBuilder.toHex(doaAddr, ""), toUnsigned(doaAddr));
+					putResult(RfParameter.DomainAddress, "0x" + DataUnitBuilder.toHex(doaAddr, ""), doaAddr);
 			}
 			catch (final Exception e) {}
 		}
@@ -939,16 +928,21 @@ public class DeviceInfo implements Runnable
 		putResult(p, "" + raw, raw);
 	}
 
-	private void putResult(final Parameter p, final String formatted, final int raw)
+	private void putResult(final Parameter p, final String formatted, final long raw)
 	{
-		putResult(p, formatted, Long.valueOf(raw));
+		putResult(p, formatted, ByteBuffer.allocate(Long.BYTES).putLong(raw).array());
 	}
 
-	private void putResult(final Parameter p, final String formatted, final Long raw)
+	private void putResult(final Parameter p, final String formatted, final int raw)
+	{
+		putResult(p, formatted, ByteBuffer.allocate(Integer.BYTES).putInt(raw).array());
+	}
+
+	private void putResult(final Parameter p, final String formatted, final byte[] raw)
 	{
 		result.formatted.put(p, formatted);
 		result.raw.put(p, raw);
-		onDeviceInformation((IndividualAddress) options.get("device"), p);
+		onDeviceInformation(p, formatted, raw);
 	}
 
 	private static final int addrManufact = 0x0104;
@@ -958,7 +952,7 @@ public class DeviceInfo implements Runnable
 	private static final int addrRunError = 0x010d;
 	private static final int addrRoutingCnt = 0x010e;
 	private static final int addrGroupObjTablePtr = 0x0112;
-	private static final int addrProgramPtr = 0x0114;
+//	private static final int addrProgramPtr = 0x0114;
 	private static final int addrGroupAddrTable = 0x0116; // max. length 233
 
 	private void readPL110Bcu1() throws InterruptedException
@@ -1017,7 +1011,7 @@ public class DeviceInfo implements Runnable
 
 	private void readBcuInfo() throws InterruptedException
 	{
-		readMem(addrManufact, 1, "KNX manufacturer ID ", manufacturer::get, CommonParameter.Manufacturer);
+		readMem(addrManufact, 1, "KNX manufacturer ID ", DeviceInfo::manufacturer, CommonParameter.Manufacturer);
 		readMem(addrDevType, 2, "Device type number ", true, CommonParameter.DeviceTypeNumber);
 		readMem(addrVersion, 1, "SW version ", v -> (v >> 4) + "." + (v & 0xf), CommonParameter.SoftwareVersion);
 		// mechanical PEI type required by the application SW
@@ -1034,8 +1028,8 @@ public class DeviceInfo implements Runnable
 		readGroupAddresses();
 
 		// Location of user program 0x100 + progptr
-		final int progptr = readMem(addrProgramPtr, 1);
-		final int userprog = 0x100 + progptr;
+//		final int progptr = readMem(addrProgramPtr, 1);
+//		final int userprog = 0x100 + progptr;
 	}
 
 	private void readGroupAddresses() throws InterruptedException
@@ -1052,12 +1046,14 @@ public class DeviceInfo implements Runnable
 			startAddr += 2;
 			final int raw = readMem(startAddr, 2);
 			final KNXAddress group = new GroupAddress(raw & 0x7fff);
-			sb.append(" ").append(group);
+			if (sb.length() > 0)
+				sb.append(" ");
+			sb.append(group);
 			// are we the group responder
 			if ((raw & 0x8000) == 0x8000)
 				sb.append("(R)");
 		}
-		putResult(CommonParameter.GroupAddresses, sb.toString(), null);
+		putResult(CommonParameter.GroupAddresses, sb.toString(), new byte[0]);
 	}
 
 	private void readKnxipInfo() throws KNXException, InterruptedException
@@ -1072,7 +1068,7 @@ public class DeviceInfo implements Runnable
 		byte[] data = read(knxnetipObjectIdx, PropertyAccess.PID.KNXNETIP_DEVICE_CAPABILITIES);
 		if (data == null)
 			return;
-		putResult(KnxipParameter.Capabilities, toCapabilitiesString(data), toUnsigned(data));
+		putResult(KnxipParameter.Capabilities, toCapabilitiesString(data), data);
 		final boolean supportsTunneling = (data[1] & 0x01) == 0x01;
 
 		// MAC Address
@@ -1157,7 +1153,8 @@ public class DeviceInfo implements Runnable
 		readLoadState(objectIdx, hasErrorCode);
 
 		final byte[] data = read(objectIdx, PropertyAccess.PID.RUN_STATE_CONTROL);
-		putResult(CommonParameter.RunStateControl, getRunState(data), toUnsigned(data));
+		if (data != null)
+			putResult(CommonParameter.RunStateControl, getRunState(data), data);
 	}
 
 	// XXX this method is called for address table and program, we can't store into same parameter
@@ -1167,7 +1164,7 @@ public class DeviceInfo implements Runnable
 			return;
 		byte[] data = read(objectIdx, PropertyAccess.PID.LOAD_STATE_CONTROL);
 		final String ls = getLoadState(data);
-		putResult(CommonParameter.LoadStateControl, ls, toUnsigned(data));
+		putResult(CommonParameter.LoadStateControl, ls, data == null ? new byte[0] : data);
 		// System B contains error code for load state "Error" (optional, but usually yes)
 		if (data != null && data[0] == 3 && hasErrorCode) {
 			data = read(objectIdx, PropertyAccess.PID.ERROR_CODE);
@@ -1176,7 +1173,7 @@ public class DeviceInfo implements Runnable
 					// enum ErrorClassSystem
 					final DPTXlator t = TranslatorTypes.createTranslator(0, "20.011");
 					t.setData(data);
-					putResult(CommonParameter.LoadStateError, t.getValue(), (int) t.getNumericValue());
+					putResult(CommonParameter.LoadStateError, t.getValue(), data);
 				}
 				catch (final KNXException e) {
 					// no translator
@@ -1248,12 +1245,14 @@ public class DeviceInfo implements Runnable
 		throws InterruptedException
 	{
 		final byte[] data = read(objectIndex, pid);
-		if (data == null)
+		if (data == null) {
 			result.formatted.put(p, "-");
+			result.raw.put(p, new byte[0]);
+		}
 		else {
 			final long v = toUnsigned(data);
-			result.formatted.put(p, hex ? Long.toHexString(v) : Long.toString(v));
-			result.raw.put(p, v);
+			final String formatted = hex ? Long.toHexString(v) : Long.toString(v);
+			putResult(p, formatted, data);
 		}
 	}
 
@@ -1269,7 +1268,7 @@ public class DeviceInfo implements Runnable
 		final Function<Integer, String> representation, final Parameter p) throws InterruptedException
 	{
 		final int v = readMem(startAddr, bytes);
-		putResult(p, representation.apply(v), (long) v);
+		putResult(p, representation.apply(v), v);
 	}
 
 	// pre: 3 bytes max
@@ -1645,6 +1644,10 @@ public class DeviceInfo implements Runnable
 		if ((data[1] & 0x20) == 0x20)
 			sb.append(" Object Server,");
 		return sb.length() == 0 ? "" : sb.substring(0, sb.length() - 1);
+	}
+
+	private static String manufacturer(int mf) {
+		return manufacturer.getOrDefault(mf, "Unknown");
 	}
 
 	// KNX manufacturer IDs as of 2015
