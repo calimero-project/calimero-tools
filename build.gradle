@@ -29,11 +29,17 @@ run {
 	standardInput = System.in
 }
 
+task execute(type: JavaExec) {
+	if (project.hasProperty("mainClass"))
+		main = mainClass
+	classpath = sourceSets.main.runtimeClasspath
+	args(System.getProperty("exec.args", "").split())
+}
+
 compileJava.options*.compilerArgs = [
 	'-Xlint:all',
 	'-Xlint:-try',
 	'-Xlint:-options',
-	'-Werror'
 ]
 
 compileTestJava.options*.compilerArgs = [
