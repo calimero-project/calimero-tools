@@ -87,8 +87,6 @@ import tuwien.auto.calimero.mgmt.PropertyAdapter;
 import tuwien.auto.calimero.mgmt.PropertyClient;
 import tuwien.auto.calimero.mgmt.RemotePropertyServiceAdapter;
 import tuwien.auto.calimero.serial.usb.UsbConnection;
-import tuwien.auto.calimero.tools.DeviceInfo.CommonParameter;
-import tuwien.auto.calimero.tools.DeviceInfo.KnxipParameter;
 import tuwien.auto.calimero.tools.Main.ShutdownHandler;
 
 /**
@@ -612,7 +610,7 @@ public class DeviceInfo implements Runnable
 			putResult(CommonParameter.Manufacturer, manufacturer(mfId), data);
 		}
 		// Order Info
-		readUnsigned(deviceObjectIdx, PID.ORDER_INFO, false, CommonParameter.OrderInfo);
+		readUnsigned(deviceObjectIdx, PID.ORDER_INFO, true, CommonParameter.OrderInfo);
 
 		// Serial Number
 		data = read(deviceObjectIdx, PropertyAccess.PID.SERIAL_NUMBER);
@@ -750,8 +748,7 @@ public class DeviceInfo implements Runnable
 			final boolean slave = (data[0] & 0x04) == 0x04;
 			final boolean master = (data[0] & 0x02) == 0x02;
 			final boolean async = (data[0] & 0x01) == 0x01;
-			final String formatted = "selected RF mode: BiBat slave " + slave + ", BiBat master " + master + ", async "
-					+ async;
+			final String formatted = "BiBat slave " + slave + ", BiBat master " + master + ", async " + async;
 			putResult(CemiParameter.SelectedRfMode, formatted, selected);
 		}
 		catch (final Exception e) {}
@@ -771,7 +768,7 @@ public class DeviceInfo implements Runnable
 			final boolean doa = (filter & 0x04) == 0x04;
 			final boolean rep = (filter & 0x02) == 0x02;
 			final boolean ownIa = (filter & 0x01) == 0x01;
-			putResult(CemiParameter.SupportedFilteringModes, "supported frame filters: ext. group addresses " + grp
+			putResult(CemiParameter.SupportedFilteringModes, "ext. group addresses " + grp
 					+ ", domain address " + doa + ", repeated frames " + rep + ", own individual address " + ownIa,
 					filters);
 		}
@@ -804,7 +801,7 @@ public class DeviceInfo implements Runnable
 		final boolean master = (support[0] & 0x02) == 0x02;
 		final boolean async = (support[0] & 0x01) == 0x01;
 
-		final String formatted = "Supported RF modes: BiBat slave " + slave + ", BiBat master " + master + ", Async " + async;
+		final String formatted = "BiBat slave " + slave + ", BiBat master " + master + ", Async " + async;
 		putResult(CemiParameter.SupportedRfModes, formatted, support);
 	}
 
@@ -1191,10 +1188,10 @@ public class DeviceInfo implements Runnable
 		catch (InterruptedException | KNXLinkClosedException e) {
 			throw e;
 		}
-		catch (KNXRemoteException e) {
+		catch (final KNXRemoteException e) {
 			out.warn("reading {}: {}", p, e.getMessage());
 		}
-		catch (Exception e) {
+		catch (final Exception e) {
 			out.error("error reading {}", p, e);
 		}
 	}
@@ -1250,8 +1247,7 @@ public class DeviceInfo implements Runnable
 			result.raw.put(p, new byte[0]);
 		}
 		else {
-			final long v = toUnsigned(data);
-			final String formatted = hex ? Long.toHexString(v) : Long.toString(v);
+			final String formatted = hex ? DataUnitBuilder.toHex(data, "") : Long.toString(toUnsigned(data));
 			putResult(p, formatted, data);
 		}
 	}
