@@ -90,7 +90,7 @@ public class PropClient implements Runnable
 			String[] args;
 			try {
 				while ((args = propClient.readLine(r)) != null) {
-					if (args.length > 0) {
+					if (args.length > 0 && !(args.length == 1 && args[0].isEmpty())) {
 						if ("exit".equalsIgnoreCase(args[0]))
 							break;
 						super.runCommand(args);
@@ -189,9 +189,9 @@ public class PropClient implements Runnable
 		System.out.print("> ");
 		synchronized (this) {
 			while (!r.ready())
-				wait(200);
+				wait(100);
 		}
 		final String line = r.readLine();
-		return line != null ? line.split("\\s") : null;
+		return line != null ? line.trim().split("\\s") : null;
 	}
 }
