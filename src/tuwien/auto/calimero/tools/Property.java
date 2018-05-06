@@ -300,11 +300,11 @@ public class Property implements Runnable
 			else
 				out("unknown command, type ? for help");
 		}
-		catch (final KNXException e) {
-			out.error(e.getMessage());
-		}
 		catch (final NumberFormatException e) {
 			out.error("invalid number (" + e.getMessage() + ")");
+		}
+		catch (final KNXException | RuntimeException e) {
+			out.error(e.getMessage());
 		}
 	}
 
@@ -316,24 +316,25 @@ public class Property implements Runnable
 	protected void onDescription(final Description d)
 	{
 		final StringBuilder buf = new StringBuilder();
-		buf.append(alignRight(d.getPropIndex()));
-		buf.append(" OT ").append(alignRight(d.getObjectType()));
-		buf.append(", OI ").append(alignRight(d.getObjectIndex()));
-		buf.append(", PID ").append(alignRight(d.getPID()));
-
+		buf.append("OI ").append(alignRight(d.getObjectIndex(), 2));
+		buf.append(", PI ").append(alignRight(d.getPropIndex(), 2)).append(" |");
+		buf.append(" OT ").append(alignRight(d.getObjectType(), 3));
+		buf.append(", PID ").append(alignRight(d.getPID(), 3));
+		buf.append(" | ");
 		tuwien.auto.calimero.mgmt.PropertyClient.Property p = getPropertyDef(d.getObjectType(),
 				d.getPID());
 		if (p == null)
 			p = getPropertyDef(PropertyKey.GLOBAL_OBJTYPE, d.getPID());
 		if (p != null) {
-			buf.append(" ");
 			buf.append(p.getName());
-			while (buf.length() < 55)
+			while (buf.length() < 65)
 				buf.append(' ');
 			buf.append(" (");
 			buf.append(p.getPIDName());
 			buf.append(")");
 		}
+		else
+			buf.append(new String(new char[33]).replace('\0', ' ')).append("(n/a)");
 		final String pdtDef = p != null ? Integer.toString(p.getPDT()) : "-";
 		buf.append(", PDT " + (d.getPDT() == -1 ? pdtDef : Integer.toString(d.getPDT())));
 		buf.append(", curr. elems " + d.getCurrentElements());
@@ -488,9 +489,9 @@ public class Property implements Runnable
 		return new RemotePropertyServiceAdapter(link, remote, this::adapterClosed, options.containsKey("connect"));
 	}
 
-	private static String alignRight(final int value)
+	private static String alignRight(final int value, final int width)
 	{
-		return value < 10 ? " " + value : "" + value;
+		return String.format("%1$" + width + "s", Integer.toString(value));
 	}
 
 	private tuwien.auto.calimero.mgmt.PropertyClient.Property getPropertyDef(final int objType,
@@ -716,7 +717,7 @@ public class Property implements Runnable
 
 	private void scanProperties(final String[] args) throws KNXException, InterruptedException
 	{
-		System.out.println("Object Type (OT), Object Index (OI), Property ID (PID)");
+		System.out.println("Object Index (OI), Property Index (PI), Object Type (OT), Property ID (PID)");
 		final int cnt = args.length;
 		if (cnt == 1)
 			pc.scanProperties(false, this::onDescription);
