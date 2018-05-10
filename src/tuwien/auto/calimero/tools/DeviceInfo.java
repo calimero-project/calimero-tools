@@ -1040,7 +1040,7 @@ public class DeviceInfo implements Runnable
 		readMem(startAddr, 2, "", v -> new IndividualAddress(v & 0x7fff).toString(), CommonParameter.DeviceAddress);
 
 		final StringBuilder sb = new StringBuilder();
-		for (int i = 1; i < entries; i++) {
+		for (int i = 0; i < entries; i++) {
 			startAddr += 2;
 			final int raw = readMem(startAddr, 2);
 			final KNXAddress group = new GroupAddress(raw & 0x7fff);
