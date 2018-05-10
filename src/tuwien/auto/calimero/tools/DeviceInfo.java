@@ -41,6 +41,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -1137,7 +1138,7 @@ public class DeviceInfo implements Runnable
 				data = read(knxnetipObjectIdx, pid);
 				sb.append(new IndividualAddress(data)).append(" ");
 			}
-			putResult(KnxipParameter.AdditionalIndividualAddresses, sb.toString(), null);
+			putResult(KnxipParameter.AdditionalIndividualAddresses, sb.toString(), new byte[0]);
 		}
 	}
 
@@ -1183,7 +1184,7 @@ public class DeviceInfo implements Runnable
 		try {
 			out.debug("read {} ...", p);
 			final String s = c.call();
-			putResult(p, s, null);
+			putResult(p, s, s.getBytes(Charset.forName("ISO-8859-1")));
 		}
 		catch (InterruptedException | KNXLinkClosedException e) {
 			throw e;
