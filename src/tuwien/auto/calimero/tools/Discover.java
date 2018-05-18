@@ -342,16 +342,22 @@ public class Discover implements Runnable
 	{
 		final SearchResponse sr = r.getResponse();
 		final HPAI hpai = sr.getControlEndpoint();
-		// TODO if hpai contains 0.0.0.0:0, the server sent a NAT response -> use the sender address
-		final InetSocketAddress server = new InetSocketAddress(hpai.getAddress(), hpai.getPort());
+
+		final InetSocketAddress server;
+		// check NAT with unicast response
+		if (hpai.getAddress().isAnyLocalAddress() || hpai.getPort() == 0)
+			server = r.remoteEndpoint();
+		else
+			server = new InetSocketAddress(hpai.getAddress(), hpai.getPort());
+
 		final int timeout = 2;
 		try {
 			final Result<DescriptionResponse> dr = new Discoverer(r.getAddress(), 0,
 					options.containsKey("nat"), false).getDescription(server, timeout);
-			onDescriptionReceived(dr, hpai);
+			onDescriptionReceived(dr, new HPAI(hpai.getHostProtocol(), server));
 		}
 		catch (final KNXException e) {
-			System.out.println("description failed for server " + hpai + " using " + r.getAddress()
+			System.out.println("description failed for server " + server + " using " + r.getAddress()
 					+ " at " + r.getNetworkInterface().getName() + ": " + e.getMessage());
 		}
 	}
