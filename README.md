@@ -95,7 +95,7 @@ Start process communication for group monitoring, accessing a RF network using a
 
 Open a client for _local_ device management of your KNXnet/IP server with control endpoint `192.168.10.10`
 
-	mvn exec:java -Dexec.args="properties 192.168.10.10 -d resources/properties.xml"
+	mvn exec:java -Dexec.args="properties 192.168.10.10"
 
 **Remote Device Management**
 
@@ -103,7 +103,7 @@ Remote property services (this example only works if the KNX device implements _
 remote (`-r`) KNX device with the device address `1.1.5`, via KNXnet/IP tunneling to a KNXnet/IP server with control 
 endpoint `192.168.10.10`
 
-	mvn exec:java -Dexec.args="properties 192.168.10.10 -r 1.1.5 -d resources/properties.xml"
+	mvn exec:java -Dexec.args="properties 192.168.10.10 -r 1.1.5"
 
 Once you enter the CLI of the property client, execute, e.g., `scan all` to scan all KNX properties of that device.
 

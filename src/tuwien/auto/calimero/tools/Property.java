@@ -202,36 +202,24 @@ public class Property implements Runnable
 	@Override
 	public void run()
 	{
-		// ??? as with the other tools, maybe put this into the try block to also call onCompletion
-		if (options.isEmpty()) {
-			out(tool + " - Access KNX properties");
-			showVersion();
-			out("Type --help for help message");
-			return;
-		}
-		if (options.containsKey("help")) {
-			showUsage();
-			return;
-		}
-		if (options.containsKey("version")) {
-			showVersion();
-			return;
-		}
-
-		// load property definitions from resource, if any
-		Collection<PropertyClient.Property> defs = null;
-		if (options.containsKey("definitions")) {
-			try {
-				defs = new XmlPropertyDefinitions().load((String) options.get("definitions"));
-			}
-			catch (final KNXMLException e) {
-				out.error("loading definitions from " + options.get("definitions") + " failed", e);
-			}
-		}
-
 		Exception thrown = null;
 		boolean canceled = false;
 		try {
+			if (options.isEmpty()) {
+				out(tool + " - Access KNX properties");
+				showVersion();
+				out("Type --help for help message");
+				return;
+			}
+			if (options.containsKey("help")) {
+				showUsage();
+				return;
+			}
+			if (options.containsKey("version")) {
+				showVersion();
+				return;
+			}
+
 			final PropertyAdapter adapter = createAdapter();
 
 			if (options.containsKey("reset") && adapter instanceof LocalDeviceMgmtAdapter) {
@@ -244,9 +232,15 @@ public class Property implements Runnable
 
 			pc = new PropertyClient(adapter);
 			// check if user supplied a XML resource with property definitions
-			if (defs != null) {
-				pc.addDefinitions(defs);
-				definitions = pc.getDefinitions();
+			if (options.containsKey("definitions")) {
+				try {
+					final Collection<PropertyClient.Property> defs = new XmlPropertyDefinitions().load((String) options.get("definitions"));
+					pc.addDefinitions(defs);
+					definitions = pc.getDefinitions();
+				}
+				catch (final KNXMLException e) {
+					out.error("loading definitions from " + options.get("definitions") + " failed", e);
+				}
 			}
 
 			// run the user command

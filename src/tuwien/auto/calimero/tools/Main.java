@@ -60,32 +60,19 @@ import tuwien.auto.calimero.link.medium.TPSettings;
  */
 final class Main
 {
-	private static final String DISCOVER = "discover";
-	private static final String DESCRIPTION = "describe";
-	private static final String SCAN = "scan";
-	private static final String IPCONFIG = "ipconfig";
-	private static final String MONITOR = "monitor";
-	private static final String COM_READ = "read";
-	private static final String COM_WRITE = "write";
-	private static final String COM_GROUPMON = "groupmon";
-	private static final String GET_PROPERTY = "get";
-	private static final String SET_PROPERTY = "set";
-	private static final String PROPERTIES = "properties";
-	private static final String DEV_INFO = "devinfo";
-
 	private static final String[][] cmds = new String[][] {
-		{ DISCOVER, "Discover KNXnet/IP servers", "--search" },
-		{ DESCRIPTION, "KNXnet/IP server self-description", "--description" },
-		{ SCAN, "Determine the existing KNX devices on a KNX subnetwork" },
-		{ IPCONFIG, "KNXnet/IP device address configuration" },
-		{ MONITOR, "Open network monitor (passive) for KNX network traffic" },
-		{ COM_READ, "Read a value using KNX process communication", "read" },
-		{ COM_WRITE, "Write a value using KNX process communication", "write" },
-		{ COM_GROUPMON, "Open group monitor for KNX process communication", "monitor" },
-		{ GET_PROPERTY, "Read a KNX property", "-d", "resources/properties.xml", "get" },
-		{ SET_PROPERTY, "Write a KNX property", "-d", "resources/properties.xml", "set" },
-		{ PROPERTIES, "Open KNX property client", "-d", "resources/properties.xml" },
-		{ DEV_INFO, "Read KNX device information" },
+		{ "discover", "Discover KNXnet/IP servers", "--search" },
+		{ "describe", "KNXnet/IP server self-description", "--description" },
+		{ "scan", "Determine the existing KNX devices on a KNX subnetwork" },
+		{ "ipconfig", "KNXnet/IP device address configuration" },
+		{ "monitor", "Open network monitor (passive) for KNX network traffic" },
+		{ "read", "Read a value using KNX process communication", "read" },
+		{ "write", "Write a value using KNX process communication", "write" },
+		{ "groupmon", "Open group monitor for KNX process communication", "monitor" },
+		{ "get", "Read a KNX property", "-d", "resources/properties.xml", "get" },
+		{ "set", "Write a KNX property", "-d", "resources/properties.xml", "set" },
+		{ "properties", "Open KNX property client", "-d", "resources/properties.xml" },
+		{ "devinfo", "Read KNX device information" },
 		{ "progmode", "Check/set device(s) in programming mode" },
 	};
 
@@ -159,12 +146,7 @@ final class Main
 	static InetSocketAddress createLocalSocket(final InetAddress host, final Integer port)
 	{
 		final int p = port != null ? port.intValue() : 0;
-		try {
-			return host != null ? new InetSocketAddress(host, p) : new InetSocketAddress(InetAddress.getLocalHost(), p);
-		}
-		catch (final UnknownHostException e) {
-			throw new KNXIllegalArgumentException("failed getting local host " + e.getMessage(), e);
-		}
+		return host != null ? new InetSocketAddress(host, p) : new InetSocketAddress(p);
 	}
 
 	static InetAddress parseHost(final String host)

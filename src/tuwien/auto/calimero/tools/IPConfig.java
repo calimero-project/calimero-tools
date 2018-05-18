@@ -483,7 +483,7 @@ public class IPConfig implements Runnable
 	private PropertyAdapter createLocalDMAdapter(final InetSocketAddress local,
 		final InetSocketAddress host) throws KNXException, InterruptedException
 	{
-		return new LocalDeviceMgmtAdapter(local, host, options.containsKey("nat"), null, false);
+		return new LocalDeviceMgmtAdapter(local, host, options.containsKey("nat"), e -> {}, false);
 	}
 
 	/**

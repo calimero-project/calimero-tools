@@ -88,7 +88,6 @@ public class ScanDevices implements Runnable
 	private static final String tool = "ScanDevices";
 	private static final String sep = System.getProperty("line.separator");
 
-	// TODO for use as runnable, we should get rid of the static tool logger
 	private static Logger out = LoggerFactory.getLogger("calimero.tools");
 
 	private final Map<String, Object> options = new HashMap<>();
@@ -164,8 +163,6 @@ public class ScanDevices implements Runnable
 		Exception thrown = null;
 		boolean canceled = false;
 		try {
-			// TODO onCompletion prints '0 network devices found' on showing help etc., either
-			// suppress that or move the following out of the try (skipping onCompletion altogether)
 			if (options.isEmpty()) {
 				out(tool + " - Determine existing KNX devices on a KNX subnetwork");
 				showVersion();
@@ -348,8 +345,7 @@ public class ScanDevices implements Runnable
 	{
 		final StringBuilder sb = new StringBuilder();
 		// ??? accept several line requests
-		sb.append("Usage: ").append(tool).append(" [options] <host|port> <area.line[.device]>")
-				.append(sep);
+		sb.append("Usage: ").append(tool).append(" [options] <host|port> <area.line[.device]>").append(sep);
 		sb.append("Options:").append(sep);
 		sb.append(" --help -h                show this help message").append(sep);
 		sb.append(" --version                show tool/library version and exit").append(sep);

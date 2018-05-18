@@ -334,7 +334,6 @@ public class NetworkMonitor implements Runnable
 
 	/**
 	 * Called by this tool on completion.
-	 * <p>
 	 *
 	 * @param thrown the thrown exception if operation completed due to an raised exception,
 	 *        <code>null</code> otherwise
@@ -351,7 +350,6 @@ public class NetworkMonitor implements Runnable
 
 	/**
 	 * Creates the KNX network monitor link to access the network specified in <code>options</code>.
-	 * <p>
 	 *
 	 * @return the KNX network monitor link
 	 * @throws KNXException on problems on link creation
