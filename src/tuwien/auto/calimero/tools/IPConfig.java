@@ -271,12 +271,13 @@ public class IPConfig implements Runnable
 	protected void onConfigurationReceived(final List<String[]> config)
 	{
 		final StringBuilder sb = new StringBuilder();
-		sb.append("KNXnet/IP server ").append(config.get(0)[2]).append(" ")
+		sb.append("KNX IP device ").append(config.get(0)[2]).append(" ")
 				.append(config.get(1)[2]).append(sep);
 		final String padding = "                                   ";
 		for (int i = 2; i < config.size(); ++i) {
 			final String[] s = config.get(i);
-			sb.append(s[1]).append(padding.substring(s[1].length()) + s[2]).append(sep);
+			final String value = s[2].isEmpty() ? "n/a" : s[2];
+			sb.append(s[1]).append(padding.substring(s[1].length()) + value).append(sep);
 		}
 		System.out.println(sb.toString());
 	}
@@ -330,7 +331,7 @@ public class IPConfig implements Runnable
 		byte[] data = query(pid);
 		if (data != null)
 			add(config, pid, "KNXnet/IP server", new IndividualAddress(data).toString());
-		add(config, PropertyAccess.PID.FRIENDLY_NAME, "name", queryFriendlyName());
+		add(config, PropertyAccess.PID.FRIENDLY_NAME, "Name", queryFriendlyName());
 
 		pid = PropertyAccess.PID.IP_CAPABILITIES;
 		data = query(pid);
@@ -404,7 +405,7 @@ public class IPConfig implements Runnable
 	{
 		try {
 			final byte[] data = query(pid);
-			return data == null ? "PID not found" : InetAddress.getByAddress(data).getHostAddress();
+			return data == null ? "" : InetAddress.getByAddress(data).getHostAddress();
 		}
 		catch (final UnknownHostException e) {}
 		catch (final KNXException e) {}
