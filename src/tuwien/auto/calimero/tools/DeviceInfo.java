@@ -1643,7 +1643,7 @@ public class DeviceInfo implements Runnable
 		return sb.length() == 0 ? "" : sb.substring(0, sb.length() - 1);
 	}
 
-	private static String manufacturer(int mf) {
+	private static String manufacturer(final int mf) {
 		return manufacturer.getOrDefault(mf, "Unknown");
 	}
 

@@ -939,7 +939,7 @@ public class ProcComm implements Runnable
 		final IndividualAddress device = (IndividualAddress) options.getOrDefault("knx-address", rf.getDeviceAddress());
 
 		final byte[] sn = new byte[6];
-		final ByteBuffer buffer = (ByteBuffer) ByteBuffer.allocate(Long.BYTES).putLong(value).position(2);
+		final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES).putLong(value).position(2);
 		buffer.get(sn);
 		options.put("medium", new RFSettings(device, rf.getDomainAddress(), sn, rf.isUnidirectional()));
 	}
