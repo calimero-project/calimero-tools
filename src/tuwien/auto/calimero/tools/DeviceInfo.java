@@ -1147,12 +1147,21 @@ public class DeviceInfo implements Runnable
 		if (objectIdx == -1)
 			return;
 
-		readUnsigned(objectIdx, PID.PROGRAM_VERSION, true, CommonParameter.ProgramVersion);
+		byte[] data = read(objectIdx, PID.PROGRAM_VERSION);
+		if (data != null)
+			putResult(CommonParameter.ProgramVersion, programVersion(data), data);
 		readLoadState(objectIdx, hasErrorCode);
 
-		final byte[] data = read(objectIdx, PropertyAccess.PID.RUN_STATE_CONTROL);
+		data = read(objectIdx, PropertyAccess.PID.RUN_STATE_CONTROL);
 		if (data != null)
 			putResult(CommonParameter.RunStateControl, getRunState(data), data);
+	}
+
+	private static String programVersion(final byte[] data) {
+		if (data.length != 5)
+			return DataUnitBuilder.toHex(data, "");
+		final int mfr = (data[0] & 0xff) << 8 | (data[1] & 0xff);
+		return String.format("%s %02x%02x v%d.%d", manufacturer(mfr), data[2], data[3], (data[4] & 0xff) >> 4, data[4] & 0xf);
 	}
 
 	// XXX this method is called for address table and program, we can't store into same parameter
