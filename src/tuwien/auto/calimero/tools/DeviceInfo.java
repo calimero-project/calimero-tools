@@ -202,7 +202,7 @@ public class DeviceInfo implements Runnable
 
 	// not in a category yet
 	public enum InternalParameter implements Parameter {
-		IAWriteEnabled, ServiceControl, AdditionalProfile, ErrorFlags
+		IndividualAddressWriteEnabled, ServiceControl, AdditionalProfile, ErrorFlags
 	}
 
 	/**
@@ -659,7 +659,7 @@ public class DeviceInfo implements Runnable
 		try {
 			final byte[] svcCtrl = read(deviceObjectIdx, PID.SERVICE_CONTROL, 1, 1);
 			final boolean indAddrWriteEnabled = (svcCtrl[1] & 0x04) == 0x04;
-			putResult(InternalParameter.IAWriteEnabled, indAddrWriteEnabled ? "yes" : "no", svcCtrl[1] & 0x04);
+			putResult(InternalParameter.IndividualAddressWriteEnabled, indAddrWriteEnabled ? "yes" : "no", svcCtrl[1] & 0x04);
 			final int services = svcCtrl[0] & 0xff;
 			final String formatted = String.format("%8s", Integer.toBinaryString(services)).replace(' ', '0');
 			putResult(InternalParameter.ServiceControl,
