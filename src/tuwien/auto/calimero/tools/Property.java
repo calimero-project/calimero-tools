@@ -38,11 +38,12 @@ package tuwien.auto.calimero.tools;
 
 import static java.util.stream.Collectors.joining;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,6 +72,8 @@ import tuwien.auto.calimero.mgmt.PropertyClient.XmlPropertyDefinitions;
 import tuwien.auto.calimero.mgmt.RemotePropertyServiceAdapter;
 import tuwien.auto.calimero.serial.usb.UsbConnection;
 import tuwien.auto.calimero.xml.KNXMLException;
+import tuwien.auto.calimero.xml.XmlInputFactory;
+import tuwien.auto.calimero.xml.XmlReader;
 
 /**
  * A tool for Calimero showing features of the {@link PropertyClient} used for KNX property access.
@@ -225,16 +228,24 @@ public class Property implements Runnable
 			}
 
 			pc = new PropertyClient(adapter);
-			// check if user supplied a XML resource with property definitions
-			if (options.containsKey("definitions")) {
-				try {
-					final Collection<PropertyClient.Property> defs = new XmlPropertyDefinitions().load((String) options.get("definitions"));
-					pc.addDefinitions(defs);
-					definitions = pc.getDefinitions();
+			String resource = "";
+			try {
+				// check if user supplied a XML resource with property definitions
+				if (options.containsKey("definitions")) {
+					resource = (String) options.get("definitions");
+					pc.addDefinitions(new XmlPropertyDefinitions().load(resource));
 				}
-				catch (final KNXMLException e) {
-					out.error("loading definitions from " + options.get("definitions") + " failed", e);
+				else {
+					resource = "/properties.xml";
+					try (InputStream is = Property.class.getResourceAsStream(resource);
+							XmlReader r = XmlInputFactory.newInstance().createXMLStreamReader(is)) {
+						pc.addDefinitions(new XmlPropertyDefinitions().load(r));
+					}
 				}
+				definitions = pc.getDefinitions();
+			}
+			catch (IOException | KNXMLException e) {
+				out.error("loading definitions from " + resource + " failed", e);
 			}
 
 			// run the user command

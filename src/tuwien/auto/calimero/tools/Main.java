@@ -79,9 +79,9 @@ final class Main
 		{ "read", "Read a value using KNX process communication", "read" },
 		{ "write", "Write a value using KNX process communication", "write" },
 		{ "groupmon", "Open group monitor for KNX process communication", "monitor" },
-		{ "get", "Read a KNX property", "-d", "resources/properties.xml", "get" },
-		{ "set", "Write a KNX property", "-d", "resources/properties.xml", "set" },
-		{ "properties", "Open KNX property client", "-d", "resources/properties.xml" },
+		{ "get", "Read a KNX property", "get" },
+		{ "set", "Write a KNX property", "set" },
+		{ "properties", "Open KNX property client", },
 		{ "devinfo", "Read KNX device information" },
 		{ "progmode", "Check/set device(s) in programming mode" },
 	};
