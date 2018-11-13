@@ -384,7 +384,13 @@ public class NetworkMonitor implements Runnable
 		// create the monitor link, based on the KNXnet/IP protocol
 		// specify whether network address translation shall be used,
 		// and tell the physical medium of the KNX network
-		return new KNXNetworkMonitorIP(local, remote, options.containsKey("nat"), medium);
+		final boolean nat = options.containsKey("nat");
+		if (options.containsKey("user")) {
+			final byte[] devAuth = (byte[]) options.getOrDefault("device-key", new byte[0]);
+			final byte[] userKey = (byte[]) options.getOrDefault("user-key", new byte[0]);
+			return KNXNetworkMonitorIP.newSecureMonitorLink(local, remote, nat, devAuth, (int) options.get("user"), userKey, medium);
+		}
+		return new KNXNetworkMonitorIP(local, remote, nat, medium);
 	}
 
 	/**
@@ -440,6 +446,8 @@ public class NetworkMonitor implements Runnable
 				options.put("medium", Main.getMedium(args[++i]));
 			else if (Main.isOption(arg, "domain", null))
 				options.put("domain", Long.decode(args[++i]));
+			else if (Main.parseSecureOption(args, i, options))
+				++i;
 			else if (!options.containsKey("host"))
 				options.put("host", arg);
 			else

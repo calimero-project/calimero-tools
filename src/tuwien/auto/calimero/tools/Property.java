@@ -43,7 +43,6 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,11 +60,6 @@ import tuwien.auto.calimero.Settings;
 import tuwien.auto.calimero.dptxlator.DPTXlator;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.link.KNXNetworkLink;
-import tuwien.auto.calimero.link.KNXNetworkLinkFT12;
-import tuwien.auto.calimero.link.KNXNetworkLinkIP;
-import tuwien.auto.calimero.link.KNXNetworkLinkTpuart;
-import tuwien.auto.calimero.link.KNXNetworkLinkUsb;
-import tuwien.auto.calimero.link.medium.KNXMediumSettings;
 import tuwien.auto.calimero.link.medium.TPSettings;
 import tuwien.auto.calimero.mgmt.Description;
 import tuwien.auto.calimero.mgmt.LocalDeviceManagementUsb;
@@ -440,37 +434,7 @@ public class Property implements Runnable
 	private PropertyAdapter createRemoteAdapter(final String host) throws KNXException,
 		InterruptedException
 	{
-		final KNXMediumSettings medium = (KNXMediumSettings) options.get("medium");
-		if (options.containsKey("ft12")) {
-			// create FT1.2 network link
-			try {
-				link = new KNXNetworkLinkFT12(Integer.parseInt(host), medium);
-			}
-			catch (final NumberFormatException e) {
-				link = new KNXNetworkLinkFT12(host, medium);
-			}
-		}
-		else if (options.containsKey("usb")) {
-			// create KNX USB HID network link
-			link = new KNXNetworkLinkUsb(host, medium);
-		}
-		else if (options.containsKey("tpuart")) {
-			// create TP-UART link
-			final IndividualAddress device = (IndividualAddress) options.get("knx-address");
-			medium.setDeviceAddress(device);
-			link = new KNXNetworkLinkTpuart(host, medium, Collections.emptyList());
-		}
-		else {
-			final InetSocketAddress local = Main.createLocalSocket((InetAddress) options.get("localhost"),
-					(Integer) options.get("localport"));
-			final InetAddress addr = Main.parseHost(host);
-			if (addr.isMulticastAddress())
-				link = KNXNetworkLinkIP.newRoutingLink(local.getAddress(), addr, medium);
-			else {
-				final InetSocketAddress remote = new InetSocketAddress(addr, (Integer) options.get("port"));
-				link = KNXNetworkLinkIP.newTunnelingLink(local, remote, options.containsKey("nat"), medium);
-			}
-		}
+		link = Main.newLink(options);
 		final IndividualAddress remote = (IndividualAddress) options.get("remote");
 		// if an authorization key was supplied, the adapter uses
 		// connection oriented mode and tries to authenticate
@@ -568,6 +532,8 @@ public class Property implements Runnable
 			}
 			else if (arg.equals("?"))
 				options.put("command", new String[] { "?" });
+			else if (Main.parseSecureOption(args, i, options))
+				++i;
 			else if (!options.containsKey("host"))
 				options.put("host", arg);
 			else

@@ -36,9 +36,6 @@
 
 package tuwien.auto.calimero.tools;
 
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -51,11 +48,6 @@ import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.Settings;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.link.KNXNetworkLink;
-import tuwien.auto.calimero.link.KNXNetworkLinkFT12;
-import tuwien.auto.calimero.link.KNXNetworkLinkIP;
-import tuwien.auto.calimero.link.KNXNetworkLinkTpuart;
-import tuwien.auto.calimero.link.KNXNetworkLinkUsb;
-import tuwien.auto.calimero.link.medium.KNXMediumSettings;
 import tuwien.auto.calimero.link.medium.TPSettings;
 import tuwien.auto.calimero.mgmt.ManagementProcedures;
 import tuwien.auto.calimero.mgmt.ManagementProceduresImpl;
@@ -211,43 +203,13 @@ public class ScanDevices implements Runnable
 
 	/**
 	 * Creates the KNX network link to access the network specified in <code>options</code>.
-	 * <p>
 	 *
 	 * @return the KNX network link
 	 * @throws KNXException on problems on link creation
 	 * @throws InterruptedException on interrupted thread
 	 */
-	private KNXNetworkLink createLink() throws KNXException, InterruptedException
-	{
-		final String host = (String) options.get("host");
-		final KNXMediumSettings medium = (KNXMediumSettings) options.get("medium");
-		if (options.containsKey("ft12")) {
-			// create FT1.2 network link
-			try {
-				return new KNXNetworkLinkFT12(Integer.parseInt(host), medium);
-			}
-			catch (final NumberFormatException e) {
-				return new KNXNetworkLinkFT12(host, medium);
-			}
-		}
-		if (options.containsKey("usb")) {
-			// create USB network link
-			return new KNXNetworkLinkUsb(host, medium);
-		}
-		if (options.containsKey("tpuart")) {
-			// create TP-UART link
-			final IndividualAddress device = (IndividualAddress) options.get("knx-address");
-			medium.setDeviceAddress(device);
-			return new KNXNetworkLinkTpuart(host, medium, Collections.emptyList());
-		}
-		// create local and remote socket address for network link
-		final InetSocketAddress local = Main.createLocalSocket(
-				(InetAddress) options.get("localhost"), (Integer) options.get("localport"));
-		final InetAddress addr = Main.parseHost(host);
-		if (addr.isMulticastAddress())
-			return KNXNetworkLinkIP.newRoutingLink(local.getAddress(), addr, medium);
-		final InetSocketAddress remote = new InetSocketAddress(addr, ((Integer) options.get("port")).intValue());
-		return KNXNetworkLinkIP.newTunnelingLink(local, remote, options.containsKey("nat"), medium);
+	private KNXNetworkLink createLink() throws KNXException, InterruptedException {
+		return Main.newLink(options);
 	}
 
 	/**
@@ -325,6 +287,8 @@ public class ScanDevices implements Runnable
 				options.put("domain", Long.decode(args[++i]));
 			else if (Main.isOption(arg, "knx-address", "k"))
 				options.put("knx-address", Main.getAddress(args[++i]));
+			else if (Main.parseSecureOption(args, i, options))
+				++i;
 			else if (!options.containsKey("host"))
 				// otherwise add a host key with argument as host
 				options.put("host", arg);

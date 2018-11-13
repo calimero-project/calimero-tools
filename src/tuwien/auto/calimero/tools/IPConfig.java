@@ -43,9 +43,7 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -59,11 +57,6 @@ import tuwien.auto.calimero.KNXRemoteException;
 import tuwien.auto.calimero.Settings;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.link.KNXNetworkLink;
-import tuwien.auto.calimero.link.KNXNetworkLinkFT12;
-import tuwien.auto.calimero.link.KNXNetworkLinkIP;
-import tuwien.auto.calimero.link.KNXNetworkLinkTpuart;
-import tuwien.auto.calimero.link.KNXNetworkLinkUsb;
-import tuwien.auto.calimero.link.medium.KNXMediumSettings;
 import tuwien.auto.calimero.link.medium.TPSettings;
 import tuwien.auto.calimero.log.LogService;
 import tuwien.auto.calimero.mgmt.LocalDeviceMgmtAdapter;
@@ -448,42 +441,31 @@ public class IPConfig implements Runnable
 	/**
 	 * Creates the property adapter to be used, depending on the supplied user <code>options</code>.
 	 * <p>
-	 * There are two types of property adapters. One uses KNXnet/IP local device management to
-	 * access KNX properties in an interface object, the other type uses remote property services.
-	 * The remote adapter needs a KNX network link to access the KNX network, the link is also
-	 * created by this method if this adapter type is requested.
+	 * There are two types of property adapters. One uses KNXnet/IP local device management to access KNX properties in
+	 * an interface object, the other type uses remote property services. The remote adapter needs a KNX network link to
+	 * access the KNX network, the link is also created by this method if this adapter type is requested.
 	 *
 	 * @return the created adapter
 	 * @throws KNXException on adapter creation problem
 	 * @throws InterruptedException on interrupted thread
 	 */
-	private PropertyAdapter createAdapter() throws KNXException, InterruptedException
-	{
-		// create local and remote socket address for use in adapter
-		final InetSocketAddress local = Main.createLocalSocket(
-				(InetAddress) options.get("localhost"), (Integer) options.get("localport"));
+	private PropertyAdapter createAdapter() throws KNXException, InterruptedException {
 		// decide what type of adapter to create
-		if (options.containsKey("localDM")) {
-			final InetSocketAddress host = new InetSocketAddress((String) options.get("host"),
-					((Integer) options.get("port")).intValue());
-			return createLocalDMAdapter(local, host);
-		}
-		return createRemoteAdapter(local);
+		if (options.containsKey("localDM"))
+			return createLocalDMAdapter();
+		return createRemoteAdapter();
 	}
 
 	/**
 	 * Creates a local device management adapter.
-	 * <p>
 	 *
-	 * @param local local socket address
-	 * @param host remote socket address of host
 	 * @return local DM adapter
 	 * @throws KNXException on adapter creation problem
 	 * @throws InterruptedException on interrupted thread
 	 */
-	private PropertyAdapter createLocalDMAdapter(final InetSocketAddress local,
-		final InetSocketAddress host) throws KNXException, InterruptedException
-	{
+	private PropertyAdapter createLocalDMAdapter() throws KNXException, InterruptedException {
+		final InetSocketAddress local = Main.createLocalSocket((InetAddress) options.get("localhost"), (Integer) options.get("localport"));
+		final InetSocketAddress host = new InetSocketAddress((String) options.get("host"), ((Integer) options.get("port")).intValue());
 		return new LocalDeviceMgmtAdapter(local, host, options.containsKey("nat"), e -> {}, false);
 	}
 
@@ -491,42 +473,12 @@ public class IPConfig implements Runnable
 	 * Creates a remote property service adapter for one device in the KNX network.
 	 * The adapter uses a KNX network link for access, which is also created by this method.
 	 *
-	 * @param local local socket address
 	 * @return remote property service adapter
 	 * @throws KNXException on adapter creation problem
 	 * @throws InterruptedException on interrupted thread
 	 */
-	private PropertyAdapter createRemoteAdapter(final InetSocketAddress local)
-		throws KNXException, InterruptedException
-	{
-		final String host = (String) options.get("host");
-		final KNXMediumSettings medium = (KNXMediumSettings) options.get("medium");
-		if (options.containsKey("ft12")) {
-			// create FT1.2 network link
-			try {
-				lnk = new KNXNetworkLinkFT12(Integer.parseInt(host), medium);
-			}
-			catch (final NumberFormatException e) {
-				lnk = new KNXNetworkLinkFT12(host, medium);
-			}
-		}
-		else if (options.containsKey("usb"))
-			lnk = new KNXNetworkLinkUsb(host, medium);
-		else if (options.containsKey("tpuart")) {
-			// create TP-UART link
-			final IndividualAddress device = (IndividualAddress) options.get("knx-address");
-			medium.setDeviceAddress(device);
-			lnk = new KNXNetworkLinkTpuart(host, medium, Collections.emptyList());
-		}
-		else {
-			final InetAddress addr = Main.parseHost(host);
-			if (addr.isMulticastAddress())
-				lnk = KNXNetworkLinkIP.newRoutingLink(local.getAddress(), addr, medium);
-			else {
-				final InetSocketAddress remote = new InetSocketAddress(addr, (Integer) options.get("port"));
-				lnk = KNXNetworkLinkIP.newTunnelingLink(local, remote, options.containsKey("nat"), medium);
-			}
-		}
+	private PropertyAdapter createRemoteAdapter() throws KNXException, InterruptedException {
+		lnk = Main.newLink(options);
 		final IndividualAddress remote = (IndividualAddress) options.get("remote");
 		// if an authorization key was supplied, the adapter uses
 		// connection oriented mode and tries to authenticate
@@ -550,8 +502,8 @@ public class IPConfig implements Runnable
 		// default subnetwork address for TP1 and unregistered device
 		options.put("knx-address", new IndividualAddress(0, 0x02, 0xff));
 
-		for (final Iterator<String> i = l.iterator(); i.hasNext();) {
-			final String arg = i.next();
+		for (int i = 0; i < l.size(); i++) {
+			final String arg = l.get(i);
 			if (Main.isOption(arg, "help", "h")) {
 				options.put("help", null);
 				return;
@@ -563,13 +515,13 @@ public class IPConfig implements Runnable
 			if (Main.isOption(arg, "local", "l"))
 				options.put("localDM", null);
 			else if (Main.isOption(arg, "remote", "r"))
-				options.put("remote", Main.getAddress(i.next()));
+				options.put("remote", Main.getAddress(l.get(++i)));
 			else if (Main.isOption(arg, "localhost", null))
-				parseIP(i.next(), "localhost", options);
+				parseIP(l.get(++i), "localhost", options);
 			else if (Main.isOption(arg, "localport", null))
-				options.put("localport", Integer.decode(i.next()));
+				options.put("localport", Integer.decode(l.get(++i)));
 			else if (Main.isOption(arg, "port", "p"))
-				options.put("port", Integer.decode(i.next()));
+				options.put("port", Integer.decode(l.get(++i)));
 			else if (Main.isOption(arg, "nat", "n"))
 				options.put("nat", null);
 			else if (Main.isOption(arg, "ft12", "f"))
@@ -579,15 +531,15 @@ public class IPConfig implements Runnable
 			else if (Main.isOption(arg, "tpuart", null))
 				options.put("tpuart", null);
 			else if (Main.isOption(arg, "medium", "m"))
-				options.put("medium", Main.getMedium(i.next()));
+				options.put("medium", Main.getMedium(l.get(++i)));
 			else if (Main.isOption(arg, "domain", null))
-				options.put("domain", Long.decode(i.next()));
+				options.put("domain", Long.decode(l.get(++i)));
 			else if (Main.isOption(arg, "knx-address", "k"))
-				options.put("knx-address", Main.getAddress(i.next()));
+				options.put("knx-address", Main.getAddress(l.get(++i)));
 			else if (Main.isOption(arg, "connect", "c"))
 				options.put("connect", null);
 			else if (Main.isOption(arg, "authorize", "a"))
-				options.put("authorize", getAuthorizeKey(i.next()));
+				options.put("authorize", getAuthorizeKey(l.get(++i)));
 			// IP configuration options
 			else if (arg.equalsIgnoreCase("manual"))
 				options.put("manual", null);
@@ -598,13 +550,15 @@ public class IPConfig implements Runnable
 			else if (arg.equalsIgnoreCase("auto"))
 				options.put("auto", null);
 			else if (arg.equalsIgnoreCase("ip"))
-				parseIP(i.next(), "ip", options);
+				parseIP(l.get(++i), "ip", options);
 			else if (arg.equalsIgnoreCase("subnet"))
-				parseIP(i.next(), "subnet", options);
+				parseIP(l.get(++i), "subnet", options);
 			else if (arg.equalsIgnoreCase("gateway"))
-				parseIP(i.next(), "gateway", options);
+				parseIP(l.get(++i), "gateway", options);
 			else if (arg.equalsIgnoreCase("multicast"))
-				parseIP(i.next(), "multicast", options);
+				parseIP(l.get(++i), "multicast", options);
+			else if (Main.parseSecureOption(args, i, options))
+				++i;
 			else if (!options.containsKey("host"))
 				options.put("host", arg);
 			else

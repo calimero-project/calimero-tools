@@ -41,15 +41,12 @@ import static tuwien.auto.calimero.tools.Main.setDomainAddress;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -84,10 +81,6 @@ import tuwien.auto.calimero.dptxlator.TranslatorTypes.MainType;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.link.KNXLinkClosedException;
 import tuwien.auto.calimero.link.KNXNetworkLink;
-import tuwien.auto.calimero.link.KNXNetworkLinkFT12;
-import tuwien.auto.calimero.link.KNXNetworkLinkIP;
-import tuwien.auto.calimero.link.KNXNetworkLinkTpuart;
-import tuwien.auto.calimero.link.KNXNetworkLinkUsb;
 import tuwien.auto.calimero.link.NetworkLinkListener;
 import tuwien.auto.calimero.link.medium.KNXMediumSettings;
 import tuwien.auto.calimero.link.medium.RFSettings;
@@ -450,41 +443,13 @@ public class ProcComm implements Runnable
 
 	/**
 	 * Creates the KNX network link to access the network specified in <code>options</code>.
-	 * <p>
 	 *
 	 * @return the KNX network link
 	 * @throws KNXException on problems on link creation
 	 * @throws InterruptedException on interrupted thread
 	 */
-	private KNXNetworkLink createLink() throws KNXException, InterruptedException
-	{
-		final String host = (String) options.get("host");
-		final KNXMediumSettings medium = (KNXMediumSettings) options.get("medium");
-		if (options.containsKey("ft12")) {
-			// create FT1.2 network link
-			try {
-				return new KNXNetworkLinkFT12(Integer.parseInt(host), medium);
-			}
-			catch (final NumberFormatException e) {
-				return new KNXNetworkLinkFT12(host, medium);
-			}
-		}
-		if (options.containsKey("usb")) {
-			// create USB network link
-			return new KNXNetworkLinkUsb(host, medium);
-		}
-		if (options.containsKey("tpuart")) {
-			// create TP-UART link
-			return new KNXNetworkLinkTpuart(host, medium, Collections.emptyList());
-		}
-		// create local and remote socket address for network link
-		final InetSocketAddress local = Main.createLocalSocket(
-				(InetAddress) options.get("localhost"), (Integer) options.get("localport"));
-		final InetAddress addr = Main.parseHost(host);
-		if (addr.isMulticastAddress())
-			return KNXNetworkLinkIP.newRoutingLink(local.getAddress(), addr, medium);
-		final InetSocketAddress remote = new InetSocketAddress(addr, ((Integer) options.get("port")).intValue());
-		return KNXNetworkLinkIP.newTunnelingLink(local, remote, options.containsKey("nat"), medium);
+	private KNXNetworkLink createLink() throws KNXException, InterruptedException {
+		return Main.newLink(options);
 	}
 
 	/**
@@ -911,6 +876,8 @@ public class ProcComm implements Runnable
 				options.put("knx-address", Main.getAddress(args[++i]));
 			else if (Main.isOption(arg, "timeout", "t"))
 				options.put("timeout", Integer.decode(args[++i]));
+			else if (Main.parseSecureOption(args, i, options))
+				++i;
 			else if (!options.containsKey("host"))
 				options.put("host", arg);
 			else

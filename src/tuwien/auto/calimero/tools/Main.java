@@ -40,15 +40,25 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import tuwien.auto.calimero.IndividualAddress;
+import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
+import tuwien.auto.calimero.link.KNXNetworkLink;
+import tuwien.auto.calimero.link.KNXNetworkLinkFT12;
+import tuwien.auto.calimero.link.KNXNetworkLinkIP;
+import tuwien.auto.calimero.link.KNXNetworkLinkTpuart;
+import tuwien.auto.calimero.link.KNXNetworkLinkUsb;
 import tuwien.auto.calimero.link.medium.KNXMediumSettings;
 import tuwien.auto.calimero.link.medium.KnxIPSettings;
 import tuwien.auto.calimero.link.medium.PLSettings;
@@ -223,6 +233,87 @@ final class Main
 		else
 			throw new KNXIllegalArgumentException(medium.getMediumString()
 					+ " networks don't use domain addresses, use --medium to specify KNX network medium");
+	}
+
+	static boolean parseSecureOption(final String[] args, final int i, final Map<String, Object> options) {
+		final String arg = args[i];
+		if (isOption(arg, "group-key", null))
+			options.put("group-key", fromHex(args[i + 1]));
+		else if (isOption(arg, "device-key", null))
+			options.put("device-key", fromHex(args[i + 1]));
+		else if (isOption(arg, "user", null))
+			options.put("user", Integer.decode(args[i + 1]));
+		else if (isOption(arg, "user-key", null))
+			options.put("user-key", fromHex(args[i + 1]));
+		else
+			return false;
+		return true;
+	}
+
+	static KNXNetworkLink newLink(final Map<String, Object> options) throws KNXException, InterruptedException {
+		final String host = (String) options.get("host");
+		final KNXMediumSettings medium = (KNXMediumSettings) options.get("medium");
+
+		// check for FT1.2 network link
+		if (options.containsKey("ft12")) {
+			try {
+				return new KNXNetworkLinkFT12(Integer.parseInt(host), medium);
+			}
+			catch (final NumberFormatException e) {
+				return new KNXNetworkLinkFT12(host, medium);
+			}
+		}
+
+		// check for USB network link
+		if (options.containsKey("usb"))
+			return new KNXNetworkLinkUsb(host, medium);
+
+		// check for TP-UART link
+		if (options.containsKey("tpuart")) {
+			final IndividualAddress device = (IndividualAddress) options.get("knx-address");
+			if (device != null)
+				medium.setDeviceAddress(device);
+			return new KNXNetworkLinkTpuart(host, medium, Collections.emptyList());
+		}
+
+		// we have an IP link
+		final InetSocketAddress local = Main.createLocalSocket((InetAddress) options.get("localhost"), (Integer) options.get("localport"));
+		final InetAddress addr = Main.parseHost(host);
+
+		// check for KNX IP routing
+		if (addr.isMulticastAddress()) {
+			if (options.containsKey("group-key")) {
+				try {
+					final byte[] groupKey = (byte[]) options.get("group-key");
+					final NetworkInterface nif = NetworkInterface.getByInetAddress(local.getAddress());
+					if (nif == null && !local.getAddress().isAnyLocalAddress())
+						throw new KNXIllegalArgumentException(local.getAddress() + " is not assigned to a network interface");
+					return KNXNetworkLinkIP.newSecureRoutingLink(nif, addr, groupKey, Duration.ofMillis(2000), medium);
+				}
+				catch (final SocketException e) {
+					throw new KNXIllegalArgumentException("getting network interface of " + local.getAddress(), e);
+				}
+			}
+			return KNXNetworkLinkIP.newRoutingLink(local.getAddress(), addr, medium);
+		}
+
+		// IP tunneling
+		final InetSocketAddress remote = new InetSocketAddress(addr, ((Integer) options.get("port")).intValue());
+		final boolean nat = options.containsKey("nat");
+		if (options.containsKey("user")) {
+			final byte[] devAuth = (byte[]) options.getOrDefault("device-key", new byte[0]);
+			final byte[] userKey = (byte[]) options.getOrDefault("user-key", new byte[0]);
+			return KNXNetworkLinkIP.newSecureTunnelingLink(local, remote, nat, devAuth, (int) options.get("user"), userKey, medium);
+		}
+		return KNXNetworkLinkIP.newTunnelingLink(local, remote, nat, medium);
+	}
+
+	private static byte[] fromHex(final String hex) {
+		final int len = hex.length();
+		final byte[] data = new byte[len / 2];
+		for (int i = 0; i < len; i += 2)
+			data[i / 2] = (byte) ((Character.digit(hex.charAt(i), 16) << 4) + Character.digit(hex.charAt(i + 1), 16));
+		return data;
 	}
 
 	static final class ShutdownHandler extends Thread
