@@ -38,6 +38,7 @@ package tuwien.auto.calimero.tools;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,7 +59,7 @@ import tuwien.auto.calimero.tools.Main.ShutdownHandler;
  * specific KNX individual address is currently assigned to a KNX device.
  * <p>
  * ScanDevices is a {@link Runnable} tool implementation allowing a user to scan for KNX devices in
- * a KNX network. It provides a list of existing KNX devices in the scanned
+ * a KNX network. It provides a list of existing KNX devices in the scanned <code>area</code> or
  * <code>area.line</code> of the network.<br>
  * Alternatively, ScanDevices allows to check whether a specific KNX individual address is currently
  * assigned to a device, i.e, occupied in the KNX network.<br>
@@ -87,7 +88,7 @@ public class ScanDevices implements Runnable
 	/**
 	 * Entry point for running ScanDevices.
 	 * <p>
-	 * Syntax: ScanDevices [options] &lt;host|port&gt; &lt;area.line[.device]&gt;
+	 * Syntax: ScanDevices [options] &lt;host|port&gt; &lt;area[.line[.device]]&gt;
 	 * <p>
 	 * The area and line are expected as numbers in the range [0..0x0F]; the (optional) device address part is in the
 	 * range [0..0x0FF]. Accepted are decimal, hexadecimal (0x), or octal (0) representations.<br>
@@ -175,17 +176,20 @@ public class ScanDevices implements Runnable
 
 				final String[] range = ((String) options.get("range")).split("\\.", -1);
 				final int area = Integer.decode(range[0]).intValue();
-				final int line = Integer.decode(range[1]).intValue();
+				final int[] lines = range.length > 1 ? new int[] { Integer.decode(range[1]).intValue() } : IntStream.range(0, 16).toArray();
+
 				if (range.length == 3) {
 					final int device = Integer.decode(range[2]).intValue();
-					final IndividualAddress addr = new IndividualAddress(area, line, device);
+					final IndividualAddress addr = new IndividualAddress(area, lines[0], device);
 					if (mp.isAddressOccupied(addr)) {
 						onDeviceFound(addr);
 					}
 				}
 				else {
-					out("start scan of " + area + "." + line + ".[0..255] ...");
-					mp.scanNetworkDevices(area, line, this::onDeviceFound);
+					for (final int line : lines) {
+						out("start scan of " + area + "." + line + ".[0..255] ...");
+						mp.scanNetworkDevices(area, line, this::onDeviceFound);
+					}
 				}
 			}
 		}
