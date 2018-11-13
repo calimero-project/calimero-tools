@@ -167,7 +167,7 @@ public class ProgMode implements Runnable
 	{
 		final String output = devices.length == 0 ? "none"
 				: new TreeSet<>(Arrays.asList(devices)).stream().map(Objects::toString).collect(Collectors.joining(", "));
-		System.out.print("\33[2K\rDevice(s) in programming mode: " + output);
+		System.out.print("\33[2K\rDevice(s) in programming mode: " + output + "\t\t");
 		System.out.flush();
 	}
 
