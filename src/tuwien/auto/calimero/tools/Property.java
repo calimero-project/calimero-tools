@@ -40,8 +40,6 @@ import static java.util.stream.Collectors.joining;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -399,28 +397,9 @@ public class Property implements Runnable
 		if (options.containsKey("local")) {
 			if (options.containsKey("usb"))
 				return createUsbAdapter(host);
-			// create local and remote socket address for use in adapter
-			return createLocalDMAdapter(host);
+			return Main.newLocalDeviceMgmtIP(options, this::adapterClosed);
 		}
 		return createRemoteAdapter(host);
-	}
-
-	/**
-	 * Creates a KNXnet/IP local device management adapter.
-	 *
-	 * @param host remote host
-	 * @return local device management adapter
-	 * @throws KNXException on adapter creation problem
-	 * @throws InterruptedException on interrupted thread
-	 */
-	private PropertyAdapter createLocalDMAdapter(final String host) throws KNXException,
-		InterruptedException
-	{
-		final InetSocketAddress local = Main.createLocalSocket(
-				(InetAddress) options.get("localhost"), (Integer) options.get("localport"));
-		return new LocalDeviceMgmtAdapter(local, new InetSocketAddress(Main.parseHost(host),
-				(Integer) options.get("port")), options.containsKey("nat"), this::adapterClosed,
-				options.containsKey("emulatewriteenable"));
 	}
 
 	/**

@@ -49,7 +49,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
+import tuwien.auto.calimero.CloseEvent;
 import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXFormatException;
@@ -64,6 +66,7 @@ import tuwien.auto.calimero.link.medium.KnxIPSettings;
 import tuwien.auto.calimero.link.medium.PLSettings;
 import tuwien.auto.calimero.link.medium.RFSettings;
 import tuwien.auto.calimero.link.medium.TPSettings;
+import tuwien.auto.calimero.mgmt.LocalDeviceMgmtAdapter;
 
 /**
  * @author B. Malinowsky
@@ -308,8 +311,24 @@ final class Main
 		return KNXNetworkLinkIP.newTunnelingLink(local, remote, nat, medium);
 	}
 
+	static LocalDeviceMgmtAdapter newLocalDeviceMgmtIP(final Map<String, Object> options, final Consumer<CloseEvent> adapterClosed)
+		throws KNXException, InterruptedException {
+		final InetSocketAddress local = Main.createLocalSocket((InetAddress) options.get("localhost"), (Integer) options.get("localport"));
+		final InetSocketAddress host = new InetSocketAddress((String) options.get("host"), ((Integer) options.get("port")).intValue());
+		final boolean nat = options.containsKey("nat");
+		if (options.containsKey("user-key")) {
+			final byte[] devAuth = (byte[]) options.getOrDefault("device-key", new byte[0]);
+			final byte[] userKey = (byte[]) options.getOrDefault("user-key", new byte[0]);
+			return LocalDeviceMgmtAdapter.newSecureAdapter(local, host, nat, devAuth, userKey);
+		}
+		return new LocalDeviceMgmtAdapter(local, host, nat, adapterClosed, options.containsKey("emulatewriteenable"));
+	}
+
 	private static byte[] fromHex(final String hex) {
 		final int len = hex.length();
+		if (len != 0 && len != 32)
+			throw new KNXIllegalArgumentException("wrong KNX key length, requires 16 bytes (32 hex chars)");
+
 		final byte[] data = new byte[len / 2];
 		for (int i = 0; i < len; i += 2)
 			data[i / 2] = (byte) ((Character.digit(hex.charAt(i), 16) << 4) + Character.digit(hex.charAt(i + 1), 16));

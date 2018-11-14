@@ -38,7 +38,6 @@ package tuwien.auto.calimero.tools;
 
 import java.io.ByteArrayOutputStream;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -75,7 +74,6 @@ import tuwien.auto.calimero.link.medium.TPSettings;
 import tuwien.auto.calimero.log.LogService;
 import tuwien.auto.calimero.mgmt.Destination;
 import tuwien.auto.calimero.mgmt.LocalDeviceManagementUsb;
-import tuwien.auto.calimero.mgmt.LocalDeviceMgmtAdapter;
 import tuwien.auto.calimero.mgmt.ManagementClient;
 import tuwien.auto.calimero.mgmt.PropertyAccess;
 import tuwien.auto.calimero.mgmt.PropertyAccess.PID;
@@ -393,14 +391,7 @@ public class DeviceInfo implements Runnable
 				}
 			}
 			else {
-				// setup for reading device info of knxnet/ip interface
-				final InetSocketAddress local = Main.createLocalSocket((InetAddress) options.get("localhost"),
-						(Integer) options.get("localport"));
-				final InetSocketAddress server = new InetSocketAddress(Main.parseHost((String) options.get("host")),
-						(Integer) options.get("port"));
-
-				try (PropertyAdapter adapter = new LocalDeviceMgmtAdapter(local, server, options.containsKey("nat"),
-						e -> {}, options.containsKey("emulatewriteenable"))) {
+				try (PropertyAdapter adapter = Main.newLocalDeviceMgmtIP(options, closed -> {})) {
 					pc = new PropertyClient(adapter);
 
 					out.info("Reading info of KNXnet/IP {}, might take some seconds ...", adapter.getName());
