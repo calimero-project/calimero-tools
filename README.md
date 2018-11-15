@@ -1,7 +1,7 @@
 Calimero Tools
 ==============
 
-A collection of KNX network tools based on Calimero.
+A collection of KNX network tools based on Calimero for process communication, monitoring, and management.
 
 Download
 --------
@@ -14,7 +14,7 @@ $ git clone https://github.com/calimero-project/calimero-tools.git
 $ hub clone calimero-project/calimero-tools
 ~~~
 
-Compile and execute the tools using your favorite Java IDE, e.g., import into Eclipse or NetBeans. Alternatively, with maven available on the terminal, execute
+Compile and execute the tools using your favorite Java IDE, e.g., import into Eclipse or NetBeans. Alternatively, with Maven available on the terminal, execute
 
 ~~~ sh
 $ mvn install
@@ -42,6 +42,18 @@ Currently, the following tools are provided:
 
 Examples
 -------------
+
+Note, using KNX IP Secure communication requires the following command-line options: 
+
+Secure Multicast 
+
+* `--group-key` _<16 bytes hex key>_
+
+Secure Unicast
+
+* (optional) `--device-key` _<16 bytes hex key>_
+* `--user` _< user ID >_
+* `--user-key` _<16 bytes hex key>_
 
 ### Using Gradle
 
