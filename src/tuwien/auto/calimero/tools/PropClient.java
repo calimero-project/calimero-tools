@@ -151,6 +151,7 @@ public class PropClient implements Runnable
 	 * <ul>
 	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|knxip|rf] (defaults to tp1)</li>
 	 * <li><code>--domain</code> <i>address</i> &nbsp;domain address on open KNX medium (PL or RF)</li>
+	 * <li><code>--knx-address -k</code> <i>KNX address</i> &nbsp;KNX device address of local endpoint</li>
 	 * <li><code>--connect -c</code> connection oriented mode</li>
 	 * <li><code>--authorize -a</code> <i>key</i> &nbsp;authorize key to access KNX device</li>
 	 * </ul>

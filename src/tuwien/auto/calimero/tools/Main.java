@@ -285,6 +285,10 @@ final class Main
 
 		// check for KNX IP routing
 		if (addr.isMulticastAddress()) {
+			final IndividualAddress device = (IndividualAddress) options.get("knx-address");
+			if (device != null)
+				medium.setDeviceAddress(device);
+
 			if (options.containsKey("group-key")) {
 				try {
 					final byte[] groupKey = (byte[]) options.get("group-key");
