@@ -52,7 +52,7 @@ Secure Multicast
 Secure Unicast
 
 * (optional) `--device-key` _<16 bytes hex key>_
-* `--user` _< user ID >_
+* `--user` _&lt;user ID>_
 * `--user-key` _<16 bytes hex key>_
 
 ### Using Gradle
@@ -95,9 +95,9 @@ $ mvn exec:java -Dexec.mainClass=tuwien.auto.calimero.tools.Discover -Dexec.args
 
 Start process communication for group monitoring (command `groupmon`), accessing a KNX power-line network (`--medium p110` or `-m p110`) using a USB interface with name `busch-jaeger` (or any other KNX vendor or product name, e.g., `siemens`).
 
-	mvn exec:java -Dexec.args="groupmon -v --usb busch-jaeger -m p110"
+	mvn exec:java -Dexec.args="groupmon --usb busch-jaeger -m p110"
 	
-The option `-v` sets logging to `--verbose`. With USB, you can also specify the USB interface using the vendor and product ID as `VendorID:ProductID`. If you don't know any identification yet, run the tool using a bogus ID and debug settings to print the available USB interfaces. 
+With USB, you can also specify the USB interface using the vendor and product ID as `VendorID:ProductID`. If you don't know any identification yet, run the tool using a bogus ID and debug settings to print the available USB interfaces. 
 
 Start process communication for group monitoring, accessing a RF network using a Weinzierl USB interface. Adjust the slf4 [Simple Logger](http://www.slf4j.org/api/org/slf4j/impl/SimpleLogger.html) logging level for `debug` output using `-Dorg.slf4j.simpleLogger.defaultLogLevel=debug`:
 
@@ -123,33 +123,33 @@ Once you enter the CLI of the property client, execute, e.g., `scan all` to scan
 
 ### Using Java
 
-Replace the version in the examples (2.4-SNAPSHOT) with the exact version you are running. Make sure all dependencies are available, either by relying on the Calimero Tools MANIFEST file or the [Java class path](https://docs.oracle.com/javase/8/docs/technotes/tools/windows/classpath.html) settings (using the `-classpath` option or the [CLASSPATH](https://docs.oracle.com/javase/tutorial/essential/environment/paths.html) environment variable). The simplest way is to have all required `.jar` files in the same directory.
+Replace the version in the examples (2.5-SNAPSHOT) with the exact version you are running. Make sure all dependencies are available, either by relying on the Calimero Tools MANIFEST file or the [Java class path](https://docs.oracle.com/javase/8/docs/technotes/tools/windows/classpath.html) settings (using the `-classpath` option or the [CLASSPATH](https://docs.oracle.com/javase/tutorial/essential/environment/paths.html) environment variable). The simplest way is to have all required `.jar` files in the same directory.
 
 For an overview of tools, run
 
-	java -jar calimero-tools-2.4-SNAPSHOT.jar
+	java -jar calimero-tools-2.5-SNAPSHOT.jar
 
 **Discover KNXnet/IP devices**
 
 Discover KNXnet/IP servers, with Network Address Translation (NAT) enabled:
 
-	java -jar calimero-tools-2.4-SNAPSHOT.jar discover -s --nat
+	java -jar calimero-tools-2.5-SNAPSHOT.jar discover -s --nat
 
 **Process Communication**
 
 Read a KNX datapoint value (switch button on/off) from a group address (`1/2/1`) using the FT1.2 protocol over the serial port `/dev/ttyS01`
 
-	java -jar calimero-tools-2.4-SNAPSHOT.jar read switch 1/2/1 --serial /dev/ttyS01
+	java -jar calimero-tools-2.5-SNAPSHOT.jar read switch 1/2/1 --ft12 /dev/ttyS01
 
 Start process communication group monitoring for a TP1 KNX network (the default) using KNXnet/IP Routing in the multicast group `224.0.23.12`, and a specific local host address (`--localhost`, useful in multihoming to specify the outgoing network interface)
 
-	java -jar calimero-tools-2.4-SNAPSHOT.jar groupmon --localhost 192.168.10.14 224.0.23.12
+	java -jar calimero-tools-2.5-SNAPSHOT.jar groupmon --localhost 192.168.10.14 224.0.23.12
 
 **Busmonitor**
 
 Start a KNX busmonitor on a KNX TP1 (Twisted Pair) network, using a compact (`-c` or `--compact`) busmonitor indication output format
 
-	java -jar calimero-tools-2.4-SNAPSHOT.jar monitor -c --usb busch-jaeger
+	java -jar calimero-tools-2.5-SNAPSHOT.jar monitor -c --usb busch-jaeger
 
 Calimero busmonitor output in compact mode looks like
 
@@ -166,7 +166,7 @@ Calimero busmonitor output in compact mode looks like
 
 Read device information of KNX device `1.1.4` in a TP1 network (default medium) using the KNXnet/IP server `192.168.10.12`
 
-	java -cp "calimero-tools-2.4-SNAPSHOT.jar" devinfo 192.168.10.12 1.1.4
+	java -cp "calimero-tools-2.5-SNAPSHOT.jar" devinfo 192.168.10.12 1.1.4
 
 
 Logging
