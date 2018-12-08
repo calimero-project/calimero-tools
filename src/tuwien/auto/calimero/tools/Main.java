@@ -56,6 +56,7 @@ import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
+import tuwien.auto.calimero.knxnetip.SecureConnection;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.KNXNetworkLinkFT12;
 import tuwien.auto.calimero.link.KNXNetworkLinkIP;
@@ -244,10 +245,14 @@ final class Main
 			options.put("group-key", fromHex(args[i + 1]));
 		else if (isOption(arg, "device-key", null))
 			options.put("device-key", fromHex(args[i + 1]));
+		else if (isOption(arg, "device-auth-code", null))
+			options.put("device-key", SecureConnection.hashDeviceAuthenticationCode(args[i + 1].toCharArray()));
 		else if (isOption(arg, "user", null))
 			options.put("user", Integer.decode(args[i + 1]));
 		else if (isOption(arg, "user-key", null))
 			options.put("user-key", fromHex(args[i + 1]));
+		else if (isOption(arg, "user-pwd", null))
+			options.put("user-key", SecureConnection.hashUserPassword(args[i + 1].toCharArray()));
 		else
 			return false;
 		return true;
