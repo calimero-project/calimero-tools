@@ -137,7 +137,7 @@ public class Discover implements Runnable
 	 * <li><code>--localport</code> <i>number</i> &nbsp;local UDP port (default system assigned)</li>
 	 * <li><code>--nat -n</code> enable Network Address Translation</li>
 	 * <li><code>--timeout -t</code> discovery/self description response timeout in seconds</li>
-	 * <li><code>--search -s</code> start a discovery search</li>
+	 * <li><code>--search -s</code> start a discovery search, pass \"sd\" to search with description"</li>
 	 * <li><code>--interface -i</code> <i>if-name</i> | <i>ip-address</i> &nbsp;local multicast
 	 * network interface for discovery or local host for self description (default system assigned)</li>
 	 * <li><code>--unicast -u</code> request unicast response
@@ -407,12 +407,15 @@ public class Discover implements Runnable
 				if (timeout.intValue() > 0)
 					options.put("timeout", timeout);
 			}
-			else if (Main.isOption(arg, "search", "s"))
-				options.put("search", null);
-			else if (Main.isOption(arg, "unicast", "u"))
+			else if (Main.isOption(arg, "search", "s")) {
+				if (i + 1 < args.length && args[i + 1].equals("sd")) {
+					++i; // advance counter to drop argument
+					options.put("searchWithDescription", null);
+				} else {
+					options.put("search", null);
+				}
+			} else if (Main.isOption(arg, "unicast", "u"))
 				options.put("mcastResponse", Boolean.FALSE);
-			else if (arg.equals("sd"))
-				options.put("searchWithDescription", null);
 			else if (Main.isOption(arg, "description", "d"))
 				options.put("host", Main.parseHost(args[++i]));
 			else if (Main.isOption(arg, "serverport", "p"))
@@ -467,7 +470,8 @@ public class Discover implements Runnable
 		sb.append(" --localport <number>     local UDP port (default system assigned)").append(sep);
 		sb.append(" --nat -n                 enable Network Address Translation").append(sep);
 		sb.append(" --timeout -t             discovery/description response timeout").append(sep);
-		sb.append(" --search -s              start a discovery search").append(sep);
+		sb.append(" --search -s              start a discovery search, pass \"sd\" to search with description")
+			.append(sep);
 		sb.append(" --unicast -u             request unicast response (default is multicast)").append(sep);
 		sb.append(" --interface -i <IF name | host name | IP address>").append(sep);
 		sb.append("      local multicast network interface for discovery or").append(sep);
