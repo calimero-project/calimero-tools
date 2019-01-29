@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2010, 2018 B. Malinowsky
+    Copyright (c) 2010, 2019 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -75,8 +75,8 @@ import tuwien.auto.calimero.mgmt.LocalDeviceMgmtAdapter;
 final class Main
 {
 	private static final String[][] cmds = new String[][] {
-		{ "discover", "Discover KNXnet/IP servers", "--search" },
-		{ "describe", "KNXnet/IP server self-description", "--description" },
+		{ "discover", "Discover KNXnet/IP servers", "search" },
+		{ "describe", "KNXnet/IP server self-description", "describe" },
 		{ "scan", "Determine the existing KNX devices on a KNX subnetwork" },
 		{ "ipconfig", "KNXnet/IP device address configuration" },
 		{ "monitor", "Open network monitor (passive) for KNX network traffic" },

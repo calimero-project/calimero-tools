@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2018 B. Malinowsky
+    Copyright (c) 2006, 2019 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -126,25 +126,35 @@ public class Discover implements Runnable
 	/**
 	 * Entry point for running Discover.
 	 * <p>
-	 * To show usage message of the tool on the console, supply the command line option --help (or
-	 * -h).<br>
-	 * Command line options are treated case sensitive. Available options for discovery/self
-	 * description:
+	 * To show usage message of the tool on the console, supply the command line option --help (or -h).<br>
+	 * Command line arguments are treated case sensitive; if no command is given, the tool only shows a short
+	 * description and version info. Available commands and options for discovery/self description:
 	 * <ul>
-	 * <li>no arguments: only show short description and version info</li>
+	 * <li><code>search</code> start a discovery search</li>
+	 * <li>
+	 * <ul>
+	 * <li><code>--withDescription</code> query self description for each search result</li>
+	 * <li><code>--interface -i</code> <i>interface name</i> | <i>IP address</i> &nbsp;local multicast network interface
+	 * <li><code>--unicast -u</code> request unicast responses</li>
+	 * </ul>
+	 * </li>
+	 * <li><code>describe <i>host</i></code> &nbsp;query self description from host</li>
+	 * <li>
+	 * <ul>
+	 * <li><code>--interface -i</code> <i>interface name</i> | <i>IP address</i> &nbsp;local network interface for
+	 * sending description request</li>
+	 * <li><code>--serverport -p</code> <i>number</i> &nbsp;server UDP port (defaults to port 3671)</li>
+	 * </ul>
+	 * </li>
+	 * <li><code>sd</code> &nbsp;shortcut for {@code search --withDescription}</li>
+	 * </ul>
+	 * Other options:
+	 * <ul>
 	 * <li><code>--help -h</code> show help message</li>
 	 * <li><code>--version</code> show tool/library version and exit</li>
 	 * <li><code>--localport</code> <i>number</i> &nbsp;local UDP port (default system assigned)</li>
 	 * <li><code>--nat -n</code> enable Network Address Translation</li>
 	 * <li><code>--timeout -t</code> discovery/self description response timeout in seconds</li>
-	 * <li><code>--search -s</code> start a discovery search</li>
-	 * <li><code>--searchWithDescription</code>start a discovery search and query description from host</li>
-	 * <li><code>--interface -i</code> <i>if-name</i> | <i>ip-address</i> &nbsp;local multicast
-	 * network interface for discovery or local host for self description (default system assigned)</li>
-	 * <li><code>--unicast -u</code> request unicast response
-	 * <li><code>--description -d <i>host</i></code> &nbsp;query description from host</li>
-	 * <li><code>--serverport -p</code> <i>number</i> &nbsp;server UDP port for description
-	 * (defaults to port 3671)</li>
 	 * </ul>
 	 *
 	 * @param args command line options for discovery or self description
@@ -168,21 +178,23 @@ public class Discover implements Runnable
 		Exception thrown = null;
 		boolean canceled = false;
 		try {
-			if (options.isEmpty()) {
+			if (options.containsKey("help"))
+				showUsage();
+			else if (options.containsKey("version"))
+				showVersion();
+			else if (options.containsKey("search")) {
+				if (options.containsKey("withDescription"))
+					searchWithDescription();
+				else
+					search();
+			}
+			else if (options.containsKey("host"))
+				description();
+			else {
 				out(tool + " - KNXnet/IP server discovery & self description");
 				showVersion();
 				out("Type --help for help message");
 			}
-			else if (options.containsKey("help"))
-				showUsage();
-			else if (options.containsKey("version"))
-				showVersion();
-			else if (options.containsKey("search"))
-				search();
-			else if (options.containsKey("searchWithDescription"))
-				searchWithDescription();
-			else
-				description();
 		}
 		catch (final KNXException e) {
 			thrown = e;
@@ -375,14 +387,14 @@ public class Discover implements Runnable
 	 */
 	private void parseOptions(final String[] args)
 	{
-		if (args.length == 0)
-			return;
-
 		// add defaults
 		options.put("localport", Integer.valueOf(0));
 		options.put("serverport", Integer.valueOf(KNXnetIPConnection.DEFAULT_PORT));
 		options.put("timeout", Integer.valueOf(3));
 		options.put("mcastResponse", Boolean.TRUE);
+
+		if (args.length == 0)
+			return;
 
 		int i = 0;
 		for (; i < args.length; i++) {
@@ -408,16 +420,21 @@ public class Discover implements Runnable
 				if (timeout.intValue() > 0)
 					options.put("timeout", timeout);
 			}
-			else if (Main.isOption(arg, "search", "s"))
+			else if ("search".equals(arg) || Main.isOption(arg, "search", "s"))
 				options.put("search", null);
 			else if (Main.isOption(arg, "unicast", "u"))
 				options.put("mcastResponse", Boolean.FALSE);
-			else if (arg.equals("sd")
-				|| Main.isOption(arg, "searchWithDescription", null)) {
-				options.put("searchWithDescription", null);
+			else if (Main.isOption(arg, "withDescription", null))
+				options.put("withDescription", Boolean.FALSE);
+			else if (arg.equals("sd")) {
+				options.put("search", null);
+				options.put("withDescription", null);
 			}
-			else if (Main.isOption(arg, "description", "d"))
+			else if ("describe".equals(arg) || Main.isOption(arg, "description", "d")) {
+				if (args.length <= i + 1)
+					throw new KNXIllegalArgumentException("specify remote host");
 				options.put("host", Main.parseHost(args[++i]));
+			}
 			else if (Main.isOption(arg, "serverport", "p"))
 				options.put("serverport", Integer.decode(args[++i]));
 			else
@@ -463,23 +480,25 @@ public class Discover implements Runnable
 	private static void showUsage()
 	{
 		final StringBuilder sb = new StringBuilder();
-		sb.append("Usage: ").append(tool).append(" [options]").append(sep);
-		sb.append("Options:").append(sep);
-		sb.append(" --help -h                show this help message").append(sep);
-		sb.append(" --version                show tool/library version and exit").append(sep);
-		sb.append(" --localport <number>     local UDP port (default system assigned)").append(sep);
-		sb.append(" --nat -n                 enable Network Address Translation").append(sep);
-		sb.append(" --timeout -t             discovery/description response timeout").append(sep);
-		sb.append(" --search -s              start a discovery search").append(sep);
-		sb.append(" --searchWithDescription  start a discovery search and query description from host")
-			.append(sep);
-		sb.append(" --unicast -u             request unicast response (default is multicast)").append(sep);
-		sb.append(" --interface -i <IF name | host name | IP address>").append(sep);
-		sb.append("      local multicast network interface for discovery or").append(sep);
-		sb.append("      local host for self description (default system assigned)").append(sep);
-		sb.append(" --description -d <host>  query description from host").append(sep);
-		sb.append(" --serverport -p <number> server UDP port for description (default ")
+		sb.append("Usage: ").append(tool).append(" {search | describe} [options]").append(sep);
+		sb.append("Supported commands:").append(sep);
+		sb.append("  search                     start a discovery search").append(sep);
+		sb.append("    --withDescription        query self description for each search result").append(sep);
+		sb.append("    --unicast -u             request unicast response (default is multicast)").append(sep);
+		sb.append("    --interface -i <interface/host name | IP address>"
+				+ "    local multicast network interface").append(sep);
+		sb.append("  describe <host>            query self description from host").append(sep);
+		sb.append("    --interface -i <interface/host name | IP address>"
+				+ "    local outgoing network interface").append(sep);
+		sb.append("    --serverport -p <number> server UDP port (default ")
 				.append(KNXnetIPConnection.DEFAULT_PORT).append(")").append(sep);
+		sb.append("  sd                         shortcut for 'search --withDescription'").append(sep);
+		sb.append("Other options:").append(sep);
+		sb.append("  --localport <number>       local UDP port (default system assigned)").append(sep);
+		sb.append("  --nat -n                   enable Network Address Translation").append(sep);
+		sb.append("  --timeout -t               discovery/description response timeout in seconds").append(sep);
+		sb.append("  --version                  show tool/library version and exit").append(sep);
+		sb.append("  --help -h                  show this help message").append(sep);
 		out(sb.toString());
 	}
 
