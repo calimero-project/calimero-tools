@@ -57,6 +57,7 @@
 					<executable>java</executable>
 					<longClasspath>true</longClasspath>
 					<mainClass>${exec.mainClass}</mainClass>
+					<cleanupDaemonThreads>false</cleanupDaemonThreads>
 				</configuration>
 			</plugin>
 		</plugins>
