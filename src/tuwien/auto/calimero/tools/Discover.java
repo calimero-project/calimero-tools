@@ -140,7 +140,7 @@ public class Discover implements Runnable
 	 * <li>
 	 * <ul>
 	 * <li><code>--withDescription</code> query self description for each search result</li>
-	 * <li><code>--interface -i</code> <i>interface name</i> | <i>IP address</i> &nbsp;local multicast network interface
+	 * <li><code>--interface -i</code> <i>interface name</i> | <i>IP address</i> &nbsp;local multicast network interface</li>
 	 * <li><code>--unicast -u</code> request unicast responses</li>
 	 * </ul>
 	 * </li>
@@ -298,7 +298,6 @@ public class Discover implements Runnable
 
 	/**
 	 * Starts a discovery search using the supplied options.
-	 * <p>
 	 *
 	 * @throws KNXException on problem during discovery
 	 * @throws InterruptedException on interrupted thread

@@ -59,7 +59,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import tuwien.auto.calimero.CloseEvent;
-import tuwien.auto.calimero.DataUnitBuilder;
 import tuwien.auto.calimero.DeviceDescriptor;
 import tuwien.auto.calimero.GroupAddress;
 import tuwien.auto.calimero.IndividualAddress;
@@ -338,8 +337,7 @@ public class Property implements Runnable
 		buf.append(" OT ").append(alignRight(d.getObjectType(), 3));
 		buf.append(", PID ").append(alignRight(d.getPID(), 3));
 		buf.append(" | ");
-		tuwien.auto.calimero.mgmt.PropertyClient.Property p = getPropertyDef(d.getObjectType(),
-				d.getPID());
+		tuwien.auto.calimero.mgmt.PropertyClient.Property p = getPropertyDef(d.getObjectType(), d.getPID());
 		if (p == null)
 			p = getPropertyDef(PropertyKey.GLOBAL_OBJTYPE, d.getPID());
 		if (p != null) {
@@ -371,7 +369,7 @@ public class Property implements Runnable
 	 */
 	protected void onPropertyValue(final int idx, final int pid, final String value, final List<byte[]> raw)
 	{
-		final String rawValue = raw.stream().map(e -> DataUnitBuilder.toHex(e, "")).collect(joining(", ", " (", ")"));
+		final String rawValue = raw.stream().map(e -> toHex(e, "")).collect(joining(delimiter, " (", ")"));
 		System.out.println(value + rawValue);
 	}
 
@@ -469,7 +467,7 @@ public class Property implements Runnable
 	{
 		if (definitions == null)
 			return null;
-		return definitions.get(new PropertyClient.PropertyKey(objType, pid));
+		return definitions.get(new PropertyKey(objType, pid));
 	}
 
 	private void parseOptions(final String[] args)

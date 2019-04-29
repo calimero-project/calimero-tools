@@ -1232,7 +1232,7 @@ public class DeviceInfo implements Runnable
 			return res.toByteArray();
 		}
 		catch (final KNXException e) {
-			out.info("error reading KNX property " + objectIndex + "|" + pid + ", " + e.getMessage());
+			out.debug("reading KNX property " + objectIndex + "|" + pid + ": " + e.getMessage());
 		}
 		return null;
 	}
