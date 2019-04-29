@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2010, 2018 B. Malinowsky
+    Copyright (c) 2010, 2019 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -37,14 +37,22 @@
 package tuwien.auto.calimero.tools;
 
 import static java.util.stream.Collectors.joining;
+import static tuwien.auto.calimero.DataUnitBuilder.toHex;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.StringJoiner;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -52,8 +60,11 @@ import org.slf4j.LoggerFactory;
 
 import tuwien.auto.calimero.CloseEvent;
 import tuwien.auto.calimero.DataUnitBuilder;
+import tuwien.auto.calimero.DeviceDescriptor;
+import tuwien.auto.calimero.GroupAddress;
 import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.KNXException;
+import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.Settings;
 import tuwien.auto.calimero.dptxlator.DPTXlator;
@@ -63,6 +74,7 @@ import tuwien.auto.calimero.link.medium.TPSettings;
 import tuwien.auto.calimero.mgmt.Description;
 import tuwien.auto.calimero.mgmt.LocalDeviceManagementUsb;
 import tuwien.auto.calimero.mgmt.LocalDeviceMgmtAdapter;
+import tuwien.auto.calimero.mgmt.PropertyAccess.PID;
 import tuwien.auto.calimero.mgmt.PropertyAdapter;
 import tuwien.auto.calimero.mgmt.PropertyClient;
 import tuwien.auto.calimero.mgmt.PropertyClient.PropertyKey;
@@ -104,6 +116,9 @@ public class Property implements Runnable
 	protected PropertyClient pc;
 	private KNXNetworkLink link;
 	private Map<PropertyKey, PropertyClient.Property> definitions;
+
+	// object index -> object type
+	private final Map<Integer, Integer> objIndexToType = new HashMap<>();
 
 	private final Thread interruptOnClose;
 
@@ -303,6 +318,11 @@ public class Property implements Runnable
 		catch (final KNXException | RuntimeException e) {
 			out.error(e.getMessage());
 		}
+	}
+
+	private void notifyDescription(final Description d) {
+		objIndexToType.put(d.getObjectIndex(), d.getObjectType());
+		onDescription(d);
 	}
 
 	/**
@@ -560,11 +580,18 @@ public class Property implements Runnable
 		else if (args.length == 3 || args.length == 5) {
 			final int oi = toInt(args[1]);
 			final int pid = toInt(args[2]);
+
 			// std.frame: max ASDU = 14 -> actual data = 10, we assume max. PDT size of 4 bytes -> max 2 elements
 			final int maxElements = 2;
 			String s = "";
 			final List<byte[]> raw = new ArrayList<>();
+
+			int objType = PropertyKey.GLOBAL_OBJTYPE;
 			try {
+				objType = objIndexToType.getOrDefault(oi, PropertyKey.GLOBAL_OBJTYPE);
+				if (customFormatter.containsKey(key(objType, pid)) || customFormatter.containsKey(key(pid)))
+					throw new KNXException();
+
 				if (args.length == 3) {
 					final DPTXlator x = pc.getPropertyTranslated(oi, pid, 1, 1);
 					s = x.getValue();
@@ -578,36 +605,46 @@ public class Property implements Runnable
 						final DPTXlator translator = pc.getPropertyTranslated(oi, pid, i, min);
 						final byte[] data = translator.getData();
 						final int size = data.length / min;
-						for (int from = 0; from < data.length; from += size)
-							raw.add(Arrays.copyOfRange(data, from, from + size));
 						final String[] allValues = translator.getAllValues();
 						if (!s.isEmpty())
 							s += ", ";
-						s += Arrays.asList(allValues).stream().collect(Collectors.joining(", "));
+						s += Arrays.asList(allValues).stream().collect(Collectors.joining(delimiter));
+						for (int from = 0; from < data.length; from += size)
+							raw.add(Arrays.copyOfRange(data, from, from + size));
 					}
 				}
 			}
-			catch (final KNXException e) {
-				s = "";
+			catch (KNXException | RuntimeException e) {
 				if (args.length == 3) {
 					final byte[] data = pc.getProperty(oi, pid, 1, 1);
-					s = "0x" + DataUnitBuilder.toHex(data, "");
+
+					s = customFormatter(objType, pid).map(f -> f.apply(data)).orElseGet(() -> "0x" + toHex(data, ""));
 					raw.add(data);
 				}
 				else {
 					final int start = toInt(args[3]);
 					final int elements = toInt(args[4]);
+					final var collect = new ByteArrayOutputStream();
 					for (int i = start; i <= elements; i += maxElements) {
 						final int min = Math.min(maxElements, (elements - i + 1));
-						final byte[] data = pc.getProperty(oi, pid, i, min);
-						final String hex = DataUnitBuilder.toHex(data, "");
-						final int chars = hex.length() / min;
-						for (int k = 0; k < min; ++k)
-							s += "0x" + hex.substring(k * chars, (k + 1) * chars) + " ";
-						final int size = data.length / min;
-						for (int from = 0; from < data.length; from += size)
-							raw.add(Arrays.copyOfRange(data, from, from + size));
+						final byte[] part = pc.getProperty(oi, pid, i, min);
+						collect.writeBytes(part);
 					}
+
+					final var data = collect.toByteArray();
+					s = customFormatter(objType, pid).map(f -> f.apply(data)).orElseGet(() -> {
+						String tmp = "";
+						final String hex = toHex(data, "");
+						final int chars = hex.length() / elements;
+						for (int k = 0; k < elements; ++k)
+							tmp += "0x" + hex.substring(k * chars, (k + 1) * chars) + " ";
+						return tmp;
+					});
+
+					final int size = data.length / elements;
+					for (int from = 0; from < data.length; from += size)
+						raw.add(Arrays.copyOfRange(data, from, from + size));
+
 					s = s.trim();
 				}
 			}
@@ -620,9 +657,9 @@ public class Property implements Runnable
 	private void getDescription(final String[] args) throws KNXException, InterruptedException
 	{
 		if (args.length == 3)
-			onDescription(pc.getDescription(toInt(args[1]), toInt(args[2])));
+			notifyDescription(pc.getDescription(toInt(args[1]), toInt(args[2])));
 		else if (args.length == 4 && args[2].equals("i"))
-			onDescription(pc.getDescriptionByIndex(toInt(args[1]), toInt(args[3])));
+			notifyDescription(pc.getDescriptionByIndex(toInt(args[1]), toInt(args[3])));
 		else if (args.length == 2 && args[1].equals("?"))
 			printHelp("desc object-idx pid" + sep + "desc object-idx \"i\" prop-idx");
 		else
@@ -670,17 +707,17 @@ public class Property implements Runnable
 		System.out.println("Object Index (OI), Property Index (PI), Object Type (OT), Property ID (PID)");
 		final int cnt = args.length;
 		if (cnt == 1)
-			pc.scanProperties(false, this::onDescription);
+			pc.scanProperties(false, this::notifyDescription);
 		else if (cnt == 2) {
 			if (args[1].equals("all"))
-				pc.scanProperties(true, this::onDescription);
+				pc.scanProperties(true, this::notifyDescription);
 			else if (args[1].equals("?"))
 				printHelp("scan [object-idx] [\"all\" for all object properties]");
 			else
-				pc.scanProperties(toInt(args[1]), false, this::onDescription);
+				pc.scanProperties(toInt(args[1]), false, this::notifyDescription);
 		}
 		else if (cnt == 3 && args[2].equals("all"))
-			pc.scanProperties(toInt(args[1]), true, this::onDescription);
+			pc.scanProperties(toInt(args[1]), true, this::notifyDescription);
 		else
 			out("sorry, wrong number of arguments");
 	}
@@ -800,5 +837,247 @@ public class Property implements Runnable
 	static void out(final String s)
 	{
 		System.out.println(s);
+	}
+
+	// custom formatter stuff
+
+	private Optional<Function<byte[], String>> customFormatter(final int objectType, final int pid) {
+		final var formatter = customFormatter.get(key(objectType, pid));
+		return Optional.ofNullable(formatter != null ? formatter : customFormatter.get(key(pid)));
+	}
+
+	private static PropertyKey key(final int pid) { return new PropertyKey(PropertyKey.GLOBAL_OBJTYPE, pid); }
+	private static PropertyKey key(final int objectType, final int pid) { return new PropertyKey(objectType, pid); }
+
+	private final Map<PropertyKey, Function<byte[], String>> customFormatter = new HashMap<>();
+
+	{
+		customFormatter.put(key(PID.DESCRIPTION), Property::string);
+		customFormatter.put(key(PID.PROGRAM_VERSION), Property::programVersion);
+		customFormatter.put(key(PID.OBJECT_NAME), Property::string);
+		customFormatter.put(key(PID.MANUFACTURER_ID),
+				data -> DeviceInfo.manufacturer((data[0] & 0xff) << 8 | data[1] & 0xff));
+		customFormatter.put(key(PID.LOAD_STATE_CONTROL), Property::loadState);
+		customFormatter.put(key(PID.VERSION), Property::version);
+		customFormatter.put(key(PID.TABLE), Property::groupAddresses);
+
+		customFormatter.put(key(0, PID.SERIAL_NUMBER), data -> toHex(data, "-"));
+		customFormatter.put(key(0, PID.DEVICE_DESCRIPTOR), Property::deviceDescriptor);
+		final int pidErrorFlags = 53;
+		customFormatter.put(key(0, pidErrorFlags), Property::errorFlags);
+
+		customFormatter.put(key(6, PID.MEDIUM_STATUS),
+				data -> "communication " + (bitSet(data[0], 0) ? "impossible" : "possible"));
+		customFormatter.put(key(6, PID.MAIN_LCCONFIG), Property::lineCouplerConfig);
+		customFormatter.put(key(6, PID.SUB_LCCONFIG), Property::lineCouplerConfig);
+		customFormatter.put(key(6, PID.SUB_LCGROUPCONFIG), Property::lineCouplerGroupConfig);
+		customFormatter.put(key(6, PID.MAIN_LCGROUPCONFIG), Property::lineCouplerGroupConfig);
+		final int pidCouplerServiceControl = 57;
+		customFormatter.put(key(6, pidCouplerServiceControl), Property::couplerServiceControl);
+
+		// at least jung devices have DD0 also in cEMI server and KNXnet/IP object
+		customFormatter.put(key(8, PID.DEVICE_DESCRIPTOR), Property::deviceDescriptor);
+		customFormatter.put(key(11, PID.DEVICE_DESCRIPTOR), Property::deviceDescriptor);
+
+		customFormatter.put(key(11, PID.MAC_ADDRESS), data -> toHex(data, ":"));
+		customFormatter.put(key(11, PID.KNXNETIP_DEVICE_CAPABILITIES), Property::deviceCapabilities);
+		customFormatter.put(key(11, PID.CURRENT_IP_ADDRESS), Property::ipAddress);
+		customFormatter.put(key(11, PID.CURRENT_SUBNET_MASK), Property::ipAddress);
+		customFormatter.put(key(11, PID.CURRENT_DEFAULT_GATEWAY), Property::ipAddress);
+		customFormatter.put(key(11, PID.DHCP_BOOTP_SERVER), Property::ipAddress);
+		customFormatter.put(key(11, PID.IP_ADDRESS), Property::ipAddress);
+		customFormatter.put(key(11, PID.SUBNET_MASK), Property::ipAddress);
+		customFormatter.put(key(11, PID.DEFAULT_GATEWAY), Property::ipAddress);
+		customFormatter.put(key(11, PID.ROUTING_MULTICAST_ADDRESS), Property::ipAddress);
+		customFormatter.put(key(11, PID.SYSTEM_SETUP_MULTICAST_ADDRESS), Property::ipAddress);
+		customFormatter.put(key(11, PID.FRIENDLY_NAME), Property::string);
+		customFormatter.put(key(11, PID.CURRENT_IP_ASSIGNMENT_METHOD), Property::ipAssignmentMethod);
+		customFormatter.put(key(11, PID.IP_ASSIGNMENT_METHOD), Property::ipAssignmentMethod); // ??? correct
+		customFormatter.put(key(11, PID.KNX_INDIVIDUAL_ADDRESS), Property::individualAddresses);
+		customFormatter.put(key(11, PID.ADDITIONAL_INDIVIDUAL_ADDRESSES), Property::individualAddresses);
+		customFormatter.put(key(11, PID.IP_CAPABILITIES),
+				data -> ipAssignmentMethod(new byte[] { (byte) ((data[0] << 1) | 0x01) }));
+	}
+
+	private static final String delimiter = ", ";
+
+	private static String couplerServiceControl(final byte[] data) {
+		final var v = data[0];
+		final var joiner = new StringJoiner(delimiter);
+		joiner.add("SNA inconsistency check: " + enabled(v, 0));
+		joiner.add("SNA heartbeat: " + enabled(v, 1));
+		joiner.add("Update SNA: " + enabled(v, 2));
+		joiner.add("SNA read: " + enabled(v, 3));
+		joiner.add("Distribute subline status: " + enabled(v, 4));
+		return joiner.toString();
+	}
+
+	private static String enabled(final byte v, final int bit) {
+		return bitSet(v, bit) ? "enabled" : "disabled";
+	}
+
+	private static String version(final byte[] data) {
+		final var magic = (data[0] & 0xff) >> 3;
+		final var version = ((data[0] & 0x07) << 2) | ((data[1] & 0x0c0) >> 6);
+		final var rev = data[1] & 0x3f;
+		return magic + "." + version + "." + rev;
+	}
+
+	private static String individualAddresses(final byte[] data) {
+		final var joiner = new StringJoiner(delimiter);
+		for (int i = 0; i < data.length; i += 2) {
+			final var address = ((data[i] & 0xff) << 8) | (data[i + 1] & 0xff);
+			joiner.add(new IndividualAddress(address).toString());
+		}
+		return joiner.toString();
+	}
+
+	private static String groupAddresses(final byte[] data) {
+		final var joiner = new StringJoiner(delimiter);
+		for (int i = 0; i < data.length; i += 2) {
+			final var address = ((data[i] & 0xff) << 8) | (data[i + 1] & 0xff);
+			joiner.add(new GroupAddress(address).toString());
+		}
+		return joiner.toString();
+	}
+
+	// same as BCU error flags located at 0x10d
+	private static String errorFlags(final byte[] data) {
+		if ((data[0] & 0xff) == 0xff)
+			return "everything OK";
+		final String[] description = { "System 1 internal system error", "illegal system state",
+			"checksum / CRC error in internal non-volatile memory", "stack overflow error",
+			"inconsistent system tables", "physical transceiver error", "System 2 internal system error",
+			"System 3 internal system error" };
+		final var joiner = new StringJoiner(delimiter);
+		for (int i = 0; i < 8; i++)
+			if ((data[0] & (1 << i)) == 0)
+				joiner.add(description[i]);
+		return joiner.toString();
+	}
+
+	private static String programVersion(final byte[] data) {
+		if (data.length != 5)
+			return toHex(data, "");
+		return String.format("%x%02x %02x%02x v%d.%d", data[0], data[1], data[2], data[3], (data[4] & 0xff) >> 4,
+				data[4] & 0xf);
+	}
+
+	private static String string(final byte[] data) {
+		return new String(data, StandardCharsets.ISO_8859_1);
+	}
+
+	private static String deviceCapabilities(final byte[] data) {
+		final var joiner = new StringJoiner(delimiter);
+		if ((data[1] & 0x01) == 0x01)
+			joiner.add("Device Management");
+		if ((data[1] & 0x02) == 0x02)
+			joiner.add("Tunneling");
+		if ((data[1] & 0x04) == 0x04)
+			joiner.add("Routing");
+		if ((data[1] & 0x08) == 0x08)
+			joiner.add("Remote Logging");
+		if ((data[1] & 0x10) == 0x10)
+			joiner.add("Remote Configuration & Diagnosis");
+		if ((data[1] & 0x20) == 0x20)
+			joiner.add("Object Server");
+		return joiner.toString();
+	}
+
+	private static String ipAddress(final byte[] data) {
+		try {
+			return InetAddress.getByAddress(data).getHostAddress();
+		}
+		catch (final UnknownHostException e) {}
+		return "n/a";
+	}
+
+	private static String ipAssignmentMethod(final byte[] data) {
+		final int bitset = data[0] & 0xff;
+		final var joiner = new StringJoiner(delimiter);
+		if ((bitset & 0x01) != 0)
+			joiner.add("manual");
+		if ((bitset & 0x02) != 0)
+			joiner.add("Bootstrap Protocol");
+		if ((bitset & 0x04) != 0)
+			joiner.add("DHCP");
+		if ((bitset & 0x08) != 0)
+			joiner.add("Auto IP");
+		return joiner.toString();
+	}
+
+	private static String deviceDescriptor(final byte[] data) {
+		try {
+			return DeviceDescriptor.from(data).toString();
+		}
+		catch (final KNXFormatException e) {
+			return toHex(data, "");
+		}
+	}
+
+	private static String lineCouplerConfig(final byte[] data) {
+		final var v = data[0];
+		final var joiner = new StringJoiner(delimiter);
+
+		// handling of received frames in p2p connectionless or CO communication mode
+		final var physFrame = v & 0x03;
+		joiner.add("P2P frames: " + (physFrame == 1 ? "route all"
+				: physFrame == 2 ? "don't route" : physFrame == 3 ? "normal mode" : "-"));
+		// repetition of frames in p2p connectionless or CO communication mode in case of tx errors
+		joiner.add((bitSet(v, 2) ? "repeat" : "don't repeat") + " on TX error");
+		// routing of frames in broadcast communication mode
+		joiner.add("BC frames: " + (bitSet(v, 3) ? "block" : "route"));
+		// repetition of frames in broadcast communication mode in case of tx errors
+		joiner.add((bitSet(v, 4) ? "repeat" : "don't repeat") + " on TX error");
+		// Layer-2 acknowledge of received frames in multicast communication mode
+		joiner.add("MC ACK: " + (bitSet(v, 5) ? "routed only" : "all"));
+		// Layer-2 acknowledge of received frames in p2p connectionless or CO communication mode
+		final var physIack = (v >> 6) & 0x03;
+		joiner.add("L2 P2P ACK: "
+				+ (physIack == 1 ? "normal mode" : physIack == 2 ? "all" : physIack == 3 ? "NACK all" : "-"));
+
+		return joiner.toString();
+	}
+
+	private static String lineCouplerGroupConfig(final byte[] data) {
+		final var v = data[0];
+		final var joiner = new StringJoiner(delimiter);
+
+		// handling of standard group addressed frames with address ≤ 0x6FFF
+		final var group6fff = v & 0x03;
+		joiner.add("group address ≤ 0x6fff (13/7/255): " + (group6fff == 1 ? "route all"
+				: group6fff == 2 ? "don't route" : group6fff == 3 ? "routing table" : "-"));
+		// handling of group addressed frames with address ≥ 0x7000
+		final var group7000 = (v >> 2) & 0x03;
+		joiner.add("group address ≥ 0x7000 (14/0/0): " + (group7000 == 1 ? "route all"
+				: group7000 == 2 ? "don't route" : group7000 == 3 ? "routing table" : "-"));
+		// repetition of group addressed frames in case of tx errors
+		joiner.add("TX error: " + (bitSet(v, 4) ? "repeat" : "don't repeat"));
+
+		return joiner.toString();
+	}
+
+	private static String loadState(final byte[] data) {
+		final int state = data[0] & 0xff;
+		switch (state) {
+		case 0:
+			return "unloaded";
+		case 1:
+			return "loaded";
+		case 2:
+			return "loading";
+		case 3:
+			return "error (during load process)";
+		case 4:
+			return "unloading";
+		case 5:
+			return "load completing";
+		default:
+			return "invalid load status " + state;
+		}
+	}
+
+	private static boolean bitSet(final byte value, final int bit) {
+		return (value & (1 << bit)) == (1 << bit);
 	}
 }
