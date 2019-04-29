@@ -40,15 +40,19 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.TimeoutException;
 
 import org.slf4j.Logger;
 
 import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
+import tuwien.auto.calimero.KNXTimeoutException;
 import tuwien.auto.calimero.Settings;
 import tuwien.auto.calimero.knxnetip.Discoverer;
 import tuwien.auto.calimero.knxnetip.Discoverer.Result;
@@ -59,6 +63,7 @@ import tuwien.auto.calimero.knxnetip.util.DIB;
 import tuwien.auto.calimero.knxnetip.util.DeviceDIB;
 import tuwien.auto.calimero.knxnetip.util.HPAI;
 import tuwien.auto.calimero.knxnetip.util.ServiceFamiliesDIB;
+import tuwien.auto.calimero.knxnetip.util.Srp;
 import tuwien.auto.calimero.log.LogService;
 import tuwien.auto.calimero.tools.Main.ShutdownHandler;
 
@@ -90,6 +95,7 @@ public class Discover implements Runnable
 
 	private final Discoverer d;
 	private final Map<String, Object> options = new HashMap<>();
+	private final List<Srp> searchParameters = new ArrayList<>();
 
 	/**
 	 * Creates a new Discover instance using the supplied options.
@@ -300,8 +306,22 @@ public class Discover implements Runnable
 	private void search() throws KNXException, InterruptedException
 	{
 		final int timeout = ((Integer) options.get("timeout")).intValue();
+
+		// see if we have an extended unicast search to a control endpoint
+		if (options.containsKey("host")) {
+			final InetAddress server = (InetAddress) options.get("host");
+			final var ctrlEndpoint = new InetSocketAddress(server, (int) options.get("serverport"));
+			try {
+				d.search(ctrlEndpoint, searchParameters.toArray(new Srp[0])).thenAccept(this::onEndpointReceived).join();
+			}
+			catch (final CompletionException e) {
+				if (TimeoutException.class.isAssignableFrom(e.getCause().getClass()))
+					throw new KNXTimeoutException("timeout waiting for response from " + ctrlEndpoint);
+			}
+			return;
+		}
 		// start the search, using a particular network interface if supplied
-		if (options.containsKey("if"))
+		else if (options.containsKey("if"))
 			d.startSearch(0, (NetworkInterface) options.get("if"), timeout, false);
 		else
 			d.startSearch(timeout, false);
@@ -430,6 +450,10 @@ public class Discover implements Runnable
 				options.put("search", null);
 				options.put("withDescription", null);
 			}
+			else if (Main.isOption(arg, "progmode", null))
+				searchParameters.add(Srp.withProgrammingMode());
+			else if (Main.isOption(arg, "mac", null))
+				searchParameters.add(Srp.withMacAddress(fromHex(args[++i])));
 			else if ("describe".equals(arg) || Main.isOption(arg, "description", "d")) {
 				if (args.length <= i + 1)
 					throw new KNXIllegalArgumentException("specify remote host");
@@ -437,6 +461,8 @@ public class Discover implements Runnable
 			}
 			else if (Main.isOption(arg, "serverport", "p"))
 				options.put("serverport", Integer.decode(args[++i]));
+			else if (options.containsKey("search"))
+				options.put("host", Main.parseHost(arg)); // update to unicast search with server control endpoint
 			else
 				throw new KNXIllegalArgumentException("unknown option " + arg);
 		}
@@ -510,5 +536,15 @@ public class Discover implements Runnable
 	private static void out(final String s)
 	{
 		System.out.println(s);
+	}
+
+	private static byte[] fromHex(final String hex) {
+		final String s = hex.replaceAll(" |:", "");
+		final int len = s.length();
+
+		final byte[] data = new byte[len / 2];
+		for (int i = 0; i < len; i += 2)
+			data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4) + Character.digit(s.charAt(i + 1), 16));
+		return data;
 	}
 }
