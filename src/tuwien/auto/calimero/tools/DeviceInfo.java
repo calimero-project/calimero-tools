@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2011, 2018 B. Malinowsky
+    Copyright (c) 2011, 2019 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -65,6 +65,7 @@ import tuwien.auto.calimero.KNXRemoteException;
 import tuwien.auto.calimero.Settings;
 import tuwien.auto.calimero.dptxlator.DPTXlator;
 import tuwien.auto.calimero.dptxlator.DPTXlatorBoolean;
+import tuwien.auto.calimero.dptxlator.DptXlator16BitSet;
 import tuwien.auto.calimero.dptxlator.TranslatorTypes;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.link.KNXLinkClosedException;
@@ -1451,19 +1452,8 @@ public class DeviceInfo implements Runnable
 		}
 	}
 
-	// DPT Media
-	private static String mediumTypes(final byte[] data) {
-		final long types = toUnsigned(data);
-		final List<String> supported = new ArrayList<>();
-		if ((types & 0x02) > 0)
-			supported.add("TP1");
-		if ((types & 0x04) > 0)
-			supported.add("PL110");
-		if ((types & 0x10) > 0)
-			supported.add("RF");
-		if ((types & 0x20) > 0)
-			supported.add("KNX IP");
-		return supported.stream().collect(Collectors.joining(", "));
+	private static String mediumTypes(final byte[] data) throws KNXException {
+		return TranslatorTypes.createTranslator(DptXlator16BitSet.DptMedia, data).getValue();
 	}
 
 	private static String toFirmwareTypeString(final int type)
