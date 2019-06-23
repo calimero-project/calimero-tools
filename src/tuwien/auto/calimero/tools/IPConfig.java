@@ -480,8 +480,8 @@ public class IPConfig implements Runnable
 		// connection oriented mode and tries to authenticate
 		final byte[] authKey = (byte[]) options.get("authorize");
 		if (authKey != null)
-			return new RemotePropertyServiceAdapter(lnk, remote, null, authKey);
-		return new RemotePropertyServiceAdapter(lnk, remote, null, options.containsKey("connect"));
+			return new RemotePropertyServiceAdapter(lnk, remote, close -> {}, authKey);
+		return new RemotePropertyServiceAdapter(lnk, remote, close -> {}, options.containsKey("connect"));
 	}
 
 	private void parseOptions(final String[] args)
