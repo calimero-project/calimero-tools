@@ -737,6 +737,9 @@ public class ProcComm implements Runnable
 					else
 						System.out.println("unknown command '" + cmd + "'");
 				}
+				catch (final KNXTimeoutException e) {
+					System.out.println(e.getMessage());
+				}
 				catch (KNXException | RuntimeException e) {
 					out.error("[{}] {}", line, e.toString());
 				}
