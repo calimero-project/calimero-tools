@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2018 B. Malinowsky
+    Copyright (c) 2006, 2019 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -508,7 +508,9 @@ public class IPConfig implements Runnable
 				options.put("version", null);
 				return;
 			}
-			if (Main.isOption(arg, "local", "l"))
+			if (Main.parseCommonOption(args, i, options))
+				;
+			else if (Main.isOption(arg, "local", "l"))
 				options.put("localDM", null);
 			else if (Main.isOption(arg, "remote", "r"))
 				options.put("remote", Main.getAddress(l.get(++i)));

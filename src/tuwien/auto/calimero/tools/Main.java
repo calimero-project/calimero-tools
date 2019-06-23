@@ -239,6 +239,17 @@ final class Main
 					+ " networks don't use domain addresses, use --medium to specify KNX network medium");
 	}
 
+	static boolean parseCommonOption(final String[] args, final int i, final Map<String, Object> options) {
+		final String arg = args[i];
+		if (Main.isOption(arg, "tcp", null))
+			options.put("tcp", null);
+		else if (Main.isOption(arg, "udp", null))
+			options.put("udp", null);
+		else
+			return false;
+		return true;
+	}
+
 	static boolean parseSecureOption(final String[] args, final int i, final Map<String, Object> options) {
 		final String arg = args[i];
 		if (isOption(arg, "group-key", null))

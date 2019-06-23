@@ -1323,7 +1323,9 @@ public class DeviceInfo implements Runnable
 				options.put("version", null);
 				return;
 			}
-			if (Main.isOption(arg, "verbose", "v"))
+			if (Main.parseCommonOption(args, i, options))
+				;
+			else if (Main.isOption(arg, "verbose", "v"))
 				options.put("verbose", null);
 			else if (Main.isOption(arg, "localhost", null))
 				options.put("localhost", Main.parseHost(args[++i]));

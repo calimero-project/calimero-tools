@@ -491,7 +491,9 @@ public class Property implements Runnable
 				options.put("version", null);
 				return;
 			}
-			if (Main.isOption(arg, "local", "l"))
+			if (Main.parseCommonOption(args, i, options))
+				;
+			else if (Main.isOption(arg, "local", "l"))
 				options.put("local", null);
 			else if (Main.isOption(arg, "remote", "r"))
 				options.put("remote", Main.getAddress(args[++i]));
