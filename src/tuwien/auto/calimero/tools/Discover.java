@@ -41,10 +41,13 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.StringJoiner;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeoutException;
 
@@ -228,7 +231,8 @@ public class Discover implements Runnable
 	protected void onEndpointReceived(final Result<SearchResponse> result)
 	{
 		final SearchResponse sr = result.getResponse();
-		System.out.println(formatResponse(result, sr.getControlEndpoint(), sr.getDevice(), sr.getServiceFamilies()));
+		System.out.println(formatResponse(result, sr.getControlEndpoint(), sr.getDevice(), sr.getServiceFamilies(),
+				sr.description()));
 	}
 
 	/**
@@ -247,25 +251,24 @@ public class Discover implements Runnable
 	private static void onDescriptionReceived(final Result<DescriptionResponse> result, final HPAI hpai)
 	{
 		final DescriptionResponse dr = result.getResponse();
-		String formatted = formatResponse(result, hpai, dr.getDevice(), dr.getServiceFamilies());
-		for (final DIB dib : dr.getDescription()) {
-			if (dib.getDescTypeCode() == DIB.KNX_ADDRESSES)
-				formatted += sep + "KNX addresses: " + dib;
-			else if (dib.getDescTypeCode() > DIB.SUPP_SVC_FAMILIES)
-				formatted += sep + dib;
-		}
-		System.out.println(formatted);
+		System.out.println(formatResponse(result, hpai, dr.getDevice(), dr.getServiceFamilies(), dr.getDescription()));
 	}
 
 	private static String formatResponse(final Result<?> r, final HPAI controlEp, final DeviceDIB device,
-		final ServiceFamiliesDIB serviceFamilies)
+		final ServiceFamiliesDIB serviceFamilies, final Collection<DIB> description)
 	{
 		final StringBuilder sb = new StringBuilder(sep);
-		sb.append("Using ").append(r.getAddress().getHostAddress()).append(" at ").append(nameOf(r.getNetworkInterface())).append(sep);
-		sb.append(new String(new char[sb.length() - 2]).replace('\0', '-')).append(sep);
+		sb.append("Using ").append(r.getAddress().getHostAddress()).append(" at ")
+				.append(nameOf(r.getNetworkInterface())).append(sep);
+		sb.append("-".repeat(sb.length() - 2)).append(sep);
 		sb.append("\"").append(device.getName()).append("\"");
-		if (controlEp != null)
-			sb.append(" endpoint ").append(controlEp);
+		if (controlEp != null) {
+			var endpoint = controlEp.toString();
+			final var tcp = serviceFamilies.getVersion(ServiceFamiliesDIB.CORE) > 1;
+			if (tcp)
+				endpoint = endpoint.replace("UDP", "UDP & TCP");
+			sb.append(" endpoint ").append(endpoint);
+		}
 		final String info = device.toString();
 		// device name is already there
 		final String withoutName = info.substring(info.indexOf(","));
@@ -274,8 +277,30 @@ public class Discover implements Runnable
 		final String formatted = search ? withoutName.substring(0, withoutName.lastIndexOf(",")) : withoutName;
 		sb.append(formatted).append(sep);
 		sb.append("Supported services: ");
-		final String s = sb.toString().replaceAll(", ", sep);
-		return s + serviceFamilies.toString();
+		final String basic = sb.toString().replaceAll(", ", sep) + serviceFamilies.toString();
+
+		final var joiner = new StringJoiner(sep);
+		joiner.add(basic);
+
+		final var desc = new ArrayList<>(description);
+		desc.remove(device);
+		desc.remove(serviceFamilies);
+
+		extractDib(DIB.SecureServiceFamilies, desc).map(dib -> " ".repeat(20) + dib).ifPresent(joiner::add);
+		extractDib(DIB.AdditionalDeviceInfo, desc).map(dib -> dib.toString().replace(", ", sep)).ifPresent(joiner::add);
+		extractDib(DIB.TunnelingInfo, desc).map(dib -> dib.toString().replaceFirst(", ", sep)).ifPresent(joiner::add);
+		desc.forEach(dib -> joiner.add(dib.toString()));
+		return joiner.toString();
+	}
+
+	private static Optional<DIB> extractDib(final int typeCode, final Collection<DIB> description) {
+		for (final DIB dib : description) {
+			if (dib.getDescTypeCode() == typeCode) {
+				description.remove(dib);
+				return Optional.of(dib);
+			}
+		}
+		return Optional.empty();
 	}
 
 	/**
