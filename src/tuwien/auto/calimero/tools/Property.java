@@ -71,8 +71,8 @@ import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.medium.TPSettings;
 import tuwien.auto.calimero.mgmt.Description;
+import tuwien.auto.calimero.mgmt.LocalDeviceManagementIp;
 import tuwien.auto.calimero.mgmt.LocalDeviceManagementUsb;
-import tuwien.auto.calimero.mgmt.LocalDeviceMgmtAdapter;
 import tuwien.auto.calimero.mgmt.PropertyAccess.PID;
 import tuwien.auto.calimero.mgmt.PropertyAdapter;
 import tuwien.auto.calimero.mgmt.PropertyClient;
@@ -231,9 +231,9 @@ public class Property implements Runnable
 
 			final PropertyAdapter adapter = createAdapter();
 
-			if (options.containsKey("reset") && adapter instanceof LocalDeviceMgmtAdapter) {
+			if (options.containsKey("reset") && adapter instanceof LocalDeviceManagementIp) {
 				out("send local device management reset request to " + options.get("host") + ":" + options.get("port"));
-				final LocalDeviceMgmtAdapter ldm = (LocalDeviceMgmtAdapter) adapter;
+				final LocalDeviceManagementIp ldm = (LocalDeviceManagementIp) adapter;
 				ldm.reset();
 				while (ldm.isOpen())
 					Thread.sleep(1000);
