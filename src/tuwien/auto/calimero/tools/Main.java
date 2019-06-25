@@ -56,6 +56,7 @@ import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
+import tuwien.auto.calimero.knxnetip.Connection;
 import tuwien.auto.calimero.knxnetip.SecureConnection;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.KNXNetworkLinkFT12;
@@ -67,6 +68,7 @@ import tuwien.auto.calimero.link.medium.KnxIPSettings;
 import tuwien.auto.calimero.link.medium.PLSettings;
 import tuwien.auto.calimero.link.medium.RFSettings;
 import tuwien.auto.calimero.link.medium.TPSettings;
+import tuwien.auto.calimero.mgmt.LocalDeviceManagementIp;
 import tuwien.auto.calimero.mgmt.LocalDeviceMgmtAdapter;
 
 /**
@@ -324,22 +326,46 @@ final class Main
 		final InetSocketAddress remote = new InetSocketAddress(addr, ((Integer) options.get("port")).intValue());
 		final boolean nat = options.containsKey("nat");
 		if (options.containsKey("user")) {
-			final byte[] devAuth = (byte[]) options.getOrDefault("device-key", new byte[0]);
+			final int user = (int) options.get("user");
 			final byte[] userKey = (byte[]) options.getOrDefault("user-key", new byte[0]);
-			return KNXNetworkLinkIP.newSecureTunnelingLink(local, remote, nat, devAuth, (int) options.get("user"), userKey, medium);
+			final byte[] devAuth = (byte[]) options.getOrDefault("device-key", new byte[0]);
+
+			final var tunnelingAddress = (IndividualAddress) options.get("knx-address");
+			if (tunnelingAddress != null)
+				medium.setDeviceAddress(tunnelingAddress);
+			if (options.containsKey("udp"))
+				return KNXNetworkLinkIP.newSecureTunnelingLink(local, remote, nat, devAuth, user, userKey, medium);
+
+			final var session = Connection.newTcpConnection(local, remote).new SecureSession(user, userKey, devAuth);
+			return KNXNetworkLinkIP.newSecureTunnelingLink(session, medium);
+		}
+		if (options.containsKey("tcp")) {
+			final var c = Connection.newTcpConnection(local, remote);
+			return KNXNetworkLinkIP.newTunnelingLink(c, medium);
 		}
 		return KNXNetworkLinkIP.newTunnelingLink(local, remote, nat, medium);
 	}
 
-	static LocalDeviceMgmtAdapter newLocalDeviceMgmtIP(final Map<String, Object> options, final Consumer<CloseEvent> adapterClosed)
-		throws KNXException, InterruptedException {
-		final InetSocketAddress local = Main.createLocalSocket((InetAddress) options.get("localhost"), (Integer) options.get("localport"));
-		final InetSocketAddress host = new InetSocketAddress((String) options.get("host"), ((Integer) options.get("port")).intValue());
+	static LocalDeviceManagementIp newLocalDeviceMgmtIP(final Map<String, Object> options,
+		final Consumer<CloseEvent> adapterClosed) throws KNXException, InterruptedException {
+		final InetSocketAddress local = Main.createLocalSocket((InetAddress) options.get("localhost"),
+				(Integer) options.get("localport"));
+		final InetSocketAddress host = new InetSocketAddress((String) options.get("host"),
+				((Integer) options.get("port")).intValue());
 		final boolean nat = options.containsKey("nat");
 		if (options.containsKey("user-key")) {
 			final byte[] devAuth = (byte[]) options.getOrDefault("device-key", new byte[0]);
 			final byte[] userKey = (byte[]) options.getOrDefault("user-key", new byte[0]);
-			return LocalDeviceMgmtAdapter.newSecureAdapter(local, host, nat, devAuth, userKey);
+
+			if (options.containsKey("udp"))
+				return LocalDeviceManagementIp.newSecureAdapter(local, host, nat, devAuth, userKey, adapterClosed);
+
+			final var session = Connection.newTcpConnection(local, host).new SecureSession(1, userKey, devAuth);
+			return LocalDeviceManagementIp.newSecureAdapter(session, adapterClosed);
+		}
+		if (options.containsKey("tcp")) {
+			final var c = Connection.newTcpConnection(local, host);
+			return LocalDeviceManagementIp.newAdapter(c, adapterClosed);
 		}
 		return new LocalDeviceMgmtAdapter(local, host, nat, adapterClosed, options.containsKey("emulatewriteenable"));
 	}
