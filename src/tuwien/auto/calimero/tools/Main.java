@@ -47,6 +47,7 @@ import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -97,6 +98,18 @@ final class Main
 			Property.class, Property.class, PropClient.class, DeviceInfo.class, ProgMode.class);
 
 	private static final String sep = System.getProperty("line.separator");
+
+	private static final Map<InetSocketAddress, Connection> tcpConnectionPool = new HashMap<>();
+
+	static synchronized Connection tcpConnection(final InetSocketAddress local, final InetSocketAddress server)
+		throws KNXException {
+		var connection = tcpConnectionPool.get(server);
+		if (connection == null || !connection.isConnected()) {
+			connection = Connection.newTcpConnection(local, server);
+			tcpConnectionPool.put(server, connection);
+		}
+		return connection;
+	}
 
 	private Main() {}
 
@@ -336,11 +349,11 @@ final class Main
 			if (options.containsKey("udp"))
 				return KNXNetworkLinkIP.newSecureTunnelingLink(local, remote, nat, devAuth, user, userKey, medium);
 
-			final var session = Connection.newTcpConnection(local, remote).new SecureSession(user, userKey, devAuth);
+			final var session = tcpConnection(local, remote).newSecureSession(user, userKey, devAuth);
 			return KNXNetworkLinkIP.newSecureTunnelingLink(session, medium);
 		}
 		if (options.containsKey("tcp")) {
-			final var c = Connection.newTcpConnection(local, remote);
+			final var c = tcpConnection(local, remote);
 			return KNXNetworkLinkIP.newTunnelingLink(c, medium);
 		}
 		return KNXNetworkLinkIP.newTunnelingLink(local, remote, nat, medium);
@@ -360,11 +373,11 @@ final class Main
 			if (options.containsKey("udp"))
 				return LocalDeviceManagementIp.newSecureAdapter(local, host, nat, devAuth, userKey, adapterClosed);
 
-			final var session = Connection.newTcpConnection(local, host).new SecureSession(1, userKey, devAuth);
+			final var session = tcpConnection(local, host).newSecureSession(1, userKey, devAuth);
 			return LocalDeviceManagementIp.newSecureAdapter(session, adapterClosed);
 		}
 		if (options.containsKey("tcp")) {
-			final var c = Connection.newTcpConnection(local, host);
+			final var c = tcpConnection(local, host);
 			return LocalDeviceManagementIp.newAdapter(c, adapterClosed);
 		}
 		return new LocalDeviceMgmtAdapter(local, host, nat, adapterClosed, options.containsKey("emulatewriteenable"));
