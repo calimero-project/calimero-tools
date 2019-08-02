@@ -122,7 +122,7 @@ final class Main
 	 */
 	public static void main(final String[] args)
 	{
-		final boolean help = args.length == 1 && (args[0].equals("--help") || args[0].equals("-h"));
+		final boolean help = args.length >= 1 && (args[0].equals("--help") || args[0].equals("-h"));
 		if (args.length == 0 || help) {
 			usage();
 			return;

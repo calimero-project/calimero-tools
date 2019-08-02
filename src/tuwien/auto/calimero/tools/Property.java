@@ -306,10 +306,10 @@ public class Property implements Runnable
 				scanProperties(cmd);
 			else if ("desc".equals(what))
 				getDescription(cmd);
-			else if ("?".equals(what))
+			else if ("?".equals(what) || "help".equals(what))
 				showCommandList();
 			else
-				out("unknown command, type ? for help");
+				out("unknown command ('?' or 'help' shows help)");
 		}
 		catch (final NumberFormatException e) {
 			out.error("invalid number (" + e.getMessage() + ")");
