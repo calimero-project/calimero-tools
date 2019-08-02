@@ -359,8 +359,8 @@ public class NetworkMonitor implements Runnable
 	{
 		final String host = (String) options.get("host");
 		final KNXMediumSettings medium = (KNXMediumSettings) options.get("medium");
+		// check for FT1.2 monitor link
 		if (options.containsKey("ft12")) {
-			// create FT1.2 monitor link
 			try {
 				return new KNXNetworkMonitorFT12(Integer.parseInt(host), medium);
 			}
@@ -368,6 +368,9 @@ public class NetworkMonitor implements Runnable
 				return new KNXNetworkMonitorFT12(host, medium);
 			}
 		}
+		if (options.containsKey("ft12-cemi"))
+			return KNXNetworkMonitorFT12.newCemiMonitor(host, medium);
+
 		if (options.containsKey("usb")) {
 			// create USB network monitor
 			return new KNXNetworkMonitorUsb(host, medium);

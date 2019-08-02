@@ -261,6 +261,8 @@ final class Main
 			options.put("tcp", null);
 		else if (Main.isOption(arg, "udp", null))
 			options.put("udp", null);
+		else if (Main.isOption(arg, "ft12-cemi", null))
+			options.put("ft12-cemi", null);
 		else
 			return false;
 		return true;
@@ -298,6 +300,9 @@ final class Main
 				return new KNXNetworkLinkFT12(host, medium);
 			}
 		}
+		// check for FT1.2 cEMI network link
+		if (options.containsKey("ft12-cemi"))
+			return KNXNetworkLinkFT12.newCemiLink(host, medium);
 
 		// check for USB network link
 		if (options.containsKey("usb"))
