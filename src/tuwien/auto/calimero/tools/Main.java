@@ -53,6 +53,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import tuwien.auto.calimero.CloseEvent;
+import tuwien.auto.calimero.DataUnitBuilder;
 import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXFormatException;
@@ -387,11 +388,7 @@ final class Main
 		final int len = hex.length();
 		if (len != 0 && len != 32)
 			throw new KNXIllegalArgumentException("wrong KNX key length, requires 16 bytes (32 hex chars)");
-
-		final byte[] data = new byte[len / 2];
-		for (int i = 0; i < len; i += 2)
-			data[i / 2] = (byte) ((Character.digit(hex.charAt(i), 16) << 4) + Character.digit(hex.charAt(i + 1), 16));
-		return data;
+		return DataUnitBuilder.fromHex(hex);
 	}
 
 	static final class ShutdownHandler extends Thread
