@@ -61,11 +61,11 @@ Secure Unicast
 	
 Run group monitor (using KNXnet/IP Routing)
 
-	./gradlew run -Dexec.args="groupmon 224.0.23.12"
+	./gradlew run --args="groupmon 224.0.23.12"
 
 Show help for a command (here, _scan_ for scanning devices)
 
-	./gradlew run -Dexec.args="scan -h"	
+	./gradlew run --args="scan -h"	
 
 ### Using Maven
 
