@@ -71,7 +71,6 @@ import tuwien.auto.calimero.link.medium.PLSettings;
 import tuwien.auto.calimero.link.medium.RFSettings;
 import tuwien.auto.calimero.link.medium.TPSettings;
 import tuwien.auto.calimero.mgmt.LocalDeviceManagementIp;
-import tuwien.auto.calimero.mgmt.LocalDeviceMgmtAdapter;
 
 /**
  * @author B. Malinowsky
@@ -386,7 +385,8 @@ final class Main
 			final var c = tcpConnection(local, host);
 			return LocalDeviceManagementIp.newAdapter(c, adapterClosed);
 		}
-		return new LocalDeviceMgmtAdapter(local, host, nat, adapterClosed, options.containsKey("emulatewriteenable"));
+		final boolean queryWriteEnable = options.containsKey("emulatewriteenable");
+		return LocalDeviceManagementIp.newAdapter(local, host, nat, queryWriteEnable, adapterClosed);
 	}
 
 	private static byte[] fromHex(final String hex) {
