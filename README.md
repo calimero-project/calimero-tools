@@ -1,24 +1,14 @@
 Calimero Tools
 ==============
+~~~ sh
+git clone https://github.com/calimero-project/calimero-tools.git
+~~~
 
 A collection of KNX network tools based on Calimero for process communication, monitoring, and management.
 
-Download
---------
+With Maven, execute
 
-~~~ sh
-# Either using git
-$ git clone https://github.com/calimero-project/calimero-tools.git
-
-# Or using hub
-$ hub clone calimero-project/calimero-tools
-~~~
-
-Compile and execute the tools using your favorite Java IDE, e.g., import into Eclipse or NetBeans. Alternatively, with Maven available on the terminal, execute
-
-~~~ sh
-$ mvn install
-~~~
+	$ mvn install
 
 With Gradle, execute
 
@@ -27,10 +17,8 @@ With Gradle, execute
 Available Tools
 ---------------
 
-Currently, the following tools are provided:
-
-* DeviceInfo - shows device information of a device in a KNX network (using the device's interface objects)
 * Discover - KNXnet/IP discovery and self description
+* DeviceInfo - shows device information of a device in a KNX network (using the device's interface objects)
 * IPConfig - read/write the IP configuration of a KNXnet/IP server using KNX properties
 * NetworkMonitor - busmonitor for KNX networks (monitor raw frames on the network, completely passive)
 * ProcComm - process communication, read or write a KNX datapoint, or group monitor KNX datapoints
@@ -39,40 +27,43 @@ Currently, the following tools are provided:
 * Property - get/set a single KNX device interface object property
 * ScanDevices - list KNX devices, or check whether a specific KNX individual address is currently assigned to a KNX device
 
+Use `./gradlew run` or `mvn exec:java` to list available tools.
 
 Examples
 -------------
 
-Note, using KNX IP Secure communication requires the following command-line options: 
+Note, KNX IP secure communication requires the following command-line options:
 
-Secure Multicast 
-
-* `--group-key` _<16 bytes hex key>_
-
-Secure Unicast
-
-* (optional) `--device-key` _<16 bytes hex key>_
-* `--user` _&lt;user ID>_
-* `--user-key` _<16 bytes hex key>_
+* Secure Multicast: `--group-key` _<16 bytes hex key>_
+* Secure Unicast:
+    * `--user` _&lt;user ID>_
+    * `--user-pwd` _&lt;pwd>_, or `--user-key` _<16 bytes hex key>_
+    * (optional) `--device-auth-code` _&lt;auth>_, or `--device-key` _<16 bytes hex key>_
 
 ### Using Gradle
 
-	./gradlew run
-	
+Show all supported tools
+
+    ./gradlew run
+
+Discover KNX IP devices
+
+    ./gradlew run --args discover
+
 Run group monitor (using KNXnet/IP Routing)
 
 	./gradlew run --args="groupmon 224.0.23.12"
 
-Show help for a command (here, _scan_ for scanning devices)
+Use `-h` or `--help` for help with a tool (here, _scan_ for scanning devices)
 
-	./gradlew run --args="scan -h"	
+	./gradlew run --args="scan -h"
 
 ### Using Maven
 
-Show all supported commands
+Show all supported tools
 
 	mvn exec:java
-	
+
 Run a command with option `--help` to show the help message for usage
 
 	mvn exec:java -Dexec.args="groupmon --help"
@@ -84,7 +75,7 @@ The equivalent of the above command using explicit invocation would be
 **Discover KNXnet/IP devices**
 
 ~~~ sh
-# Variant which executes the `discover` command 
+# Variant which executes the `discover` command
 $ mvn exec:java -Dexec.args=discover
 
 # Variant which specifically refers to the tool class
@@ -96,8 +87,8 @@ $ mvn exec:java -Dexec.mainClass=tuwien.auto.calimero.tools.Discover -Dexec.args
 Start process communication for group monitoring (command `groupmon`), accessing a KNX power-line network (`--medium p110` or `-m p110`) using a USB interface with name `busch-jaeger` (or any other KNX vendor or product name, e.g., `siemens`).
 
 	mvn exec:java -Dexec.args="groupmon --usb busch-jaeger -m p110"
-	
-With USB, you can also specify the USB interface using the vendor and product ID as `VendorID:ProductID`. If you don't know any identification yet, run the tool using a bogus ID and debug settings to print the available USB interfaces. 
+
+With USB, you can also specify the USB interface using the vendor and product ID as `VendorID:ProductID`. If you don't know any identification yet, run the tool using a bogus ID and debug settings to print the available USB interfaces.
 
 Start process communication for group monitoring, accessing a RF network using a Weinzierl USB interface. Adjust the slf4 [Simple Logger](http://www.slf4j.org/api/org/slf4j/impl/SimpleLogger.html) logging level for `debug` output using `-Dorg.slf4j.simpleLogger.defaultLogLevel=debug`:
 
@@ -105,15 +96,13 @@ Start process communication for group monitoring, accessing a RF network using a
 
 **Local Device Management**
 
-Open a client for _local_ device management of your KNXnet/IP server with control endpoint `192.168.10.10`
+Access the KNX properties of your KNXnet/IP server with control endpoint `192.168.10.10` using  _local_ device management
 
 	mvn exec:java -Dexec.args="properties 192.168.10.10"
 
 **Remote Device Management**
 
-Remote property services (this example only works if the KNX device implements _Interface Objects_): open a client to a 
-remote (`-r`) KNX device with the device address `1.1.5`, via KNXnet/IP tunneling to a KNXnet/IP server with control 
-endpoint `192.168.10.10`
+Remote property services (this example only works if the KNX device implements _Interface Objects_): open a client to a remote (`-r`) KNX device with the device address `1.1.5`, via KNXnet/IP tunneling to a KNXnet/IP server with control endpoint `192.168.10.10`
 
 	mvn exec:java -Dexec.args="properties 192.168.10.10 -r 1.1.5"
 
