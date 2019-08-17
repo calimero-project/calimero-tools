@@ -174,7 +174,7 @@ public class ScanDevices implements Runnable
 			try (KNXNetworkLink link = createLink();
 					ManagementProcedures mp = new ManagementProceduresImpl(link)) {
 
-				final String[] range = ((String) options.get("range")).split("\\.", -1);
+				final String[] range = ((String) options.get("range")).split("\\.", 0);
 				final int area = Integer.decode(range[0]).intValue();
 				final int[] lines = range.length > 1 ? new int[] { Integer.decode(range[1]).intValue() } : IntStream.range(0, 16).toArray();
 
