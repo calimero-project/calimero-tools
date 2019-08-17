@@ -1045,7 +1045,7 @@ public class DeviceInfo implements Runnable
 
 	private void readKnxipInfo() throws KNXException, InterruptedException
 	{
-		if (knxnetipObjectIdx == -1 || dd != DD0.TYPE_5705)
+		if (knxnetipObjectIdx == -1 || (dd != DD0.TYPE_5705 && dd != DD0.TYPE_091A))
 			return;
 
 		// Device Name (friendly)
