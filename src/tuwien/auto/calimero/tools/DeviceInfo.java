@@ -563,19 +563,24 @@ public class DeviceInfo implements Runnable
 	private void programmingMode() throws KNXFormatException, InterruptedException {
 		final DPTXlatorBoolean x = new DPTXlatorBoolean(DPTXlatorBoolean.DPT_SWITCH);
 		try {
-			x.setData(pc.getProperty(deviceObjectIdx, PID.PROGMODE, 1, 1));
+			if (deviceObjectIdx > -1) {
+				x.setData(pc.getProperty(deviceObjectIdx, PID.PROGMODE, 1, 1));
+				putResult(CommonParameter.ProgrammingMode, x.getValue(), x.getData());
+				return;
+			}
+		}
+		catch (final KNXException e) {}
+
+		// fall back and read memory location (remote device info only)
+		try {
+			if (mc != null) {
+				x.setData(mc.readMemory(d, 0x60, 1));
+				putResult(CommonParameter.ProgrammingMode, x.getValue(), x.getData());
+			}
 		}
 		catch (final KNXException e) {
-			// fall back and read memory location (remote device info only)
-			try {
-				if (mc != null)
-					x.setData(mc.readMemory(d, 0x60, 1));
-			}
-			catch (final KNXException e2) {
-				out.error("reading memory location 0x60", e2);
-			}
+			out.error("reading memory location 0x60", e);
 		}
-		putResult(CommonParameter.ProgrammingMode, x.getValue(), x.getData());
 	}
 
 	private DD0 deviceDescriptor(final byte[] data)
