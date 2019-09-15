@@ -65,6 +65,7 @@ import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
+import tuwien.auto.calimero.KnxRuntimeException;
 import tuwien.auto.calimero.Settings;
 import tuwien.auto.calimero.dptxlator.DPTXlator;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
@@ -416,7 +417,7 @@ public class Property implements Runnable
 			if (options.containsKey("usb"))
 				return createUsbAdapter(host);
 			if (!options.getOrDefault("user", 1).equals(1))
-				throw new RuntimeException("secure local device management requires user 1 (management user)");
+				throw new KnxRuntimeException("secure local device management requires user 1 (management user)");
 			return Main.newLocalDeviceMgmtIP(options, this::adapterClosed);
 		}
 		return createRemoteAdapter(host);
