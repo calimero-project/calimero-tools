@@ -609,10 +609,8 @@ public class DeviceInfo implements Runnable
 
 		// Serial Number
 		data = read(deviceObjectIdx, PropertyAccess.PID.SERIAL_NUMBER);
-		if (data != null) {
-			final String serialNo = DataUnitBuilder.toHex(data, "");
-			putResult(CommonParameter.SerialNumber, serialNo, data);
-		}
+		if (data != null)
+			putResult(CommonParameter.SerialNumber, knxSerialNumber(data), data);
 
 		// Physical PEI type, i.e., the currently connected PEI type
 		readUnsigned(deviceObjectIdx, PID.PEI_TYPE, false, CommonParameter.ActualPeiType);
@@ -1608,6 +1606,11 @@ public class DeviceInfo implements Runnable
 		if ((data[1] & 0x20) == 0x20)
 			sb.append(" Object Server,");
 		return sb.length() == 0 ? "" : sb.substring(0, sb.length() - 1);
+	}
+
+	private static String knxSerialNumber(final byte[] data) {
+		final var hex = DataUnitBuilder.toHex(data, "");
+		return hex.substring(0, 4) + ":" + hex.substring(4);
 	}
 
 	static String manufacturer(final int mf) {

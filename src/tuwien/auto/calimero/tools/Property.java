@@ -863,7 +863,7 @@ public class Property implements Runnable
 		customFormatter.put(key(PID.VERSION), Property::version);
 		customFormatter.put(key(PID.TABLE), Property::groupAddresses);
 
-		customFormatter.put(key(0, PID.SERIAL_NUMBER), data -> toHex(data, "-"));
+		customFormatter.put(key(0, PID.SERIAL_NUMBER), Property::knxSerialNumber);
 		customFormatter.put(key(0, PID.DEVICE_DESCRIPTOR), Property::deviceDescriptor);
 		final int pidErrorFlags = 53;
 		customFormatter.put(key(0, pidErrorFlags), Property::errorFlags);
@@ -902,6 +902,11 @@ public class Property implements Runnable
 	}
 
 	private static final String delimiter = ", ";
+
+	private static String knxSerialNumber(final byte[] data) {
+		final var hex = toHex(data, "");
+		return hex.substring(0, 4) + ":" + hex.substring(4);
+	}
 
 	private static String couplerServiceControl(final byte[] data) {
 		final var v = data[0];
