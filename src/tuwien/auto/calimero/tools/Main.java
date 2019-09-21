@@ -274,7 +274,7 @@ final class Main
 		else if (isOption(arg, "device-key", null))
 			options.put("device-key", fromHex(args[i + 1]));
 		else if (isOption(arg, "device-auth-code", null))
-			options.put("device-key", SecureConnection.hashDeviceAuthenticationCode(args[i + 1].toCharArray()));
+			options.put("device-key", SecureConnection.hashDeviceAuthenticationPassword(args[i + 1].toCharArray()));
 		else if (isOption(arg, "user", null))
 			options.put("user", Integer.decode(args[i + 1]));
 		else if (isOption(arg, "user-key", null))
