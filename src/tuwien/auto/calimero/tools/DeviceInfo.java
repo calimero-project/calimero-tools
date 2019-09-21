@@ -1063,7 +1063,7 @@ public class DeviceInfo implements Runnable
 
 		// MAC Address
 		data = read(knxnetipObjectIdx, PropertyAccess.PID.MAC_ADDRESS);
-		putResult(KnxipParameter.MacAddress, DataUnitBuilder.toHex(data, " "), toUnsigned(data));
+		putResult(KnxipParameter.MacAddress, DataUnitBuilder.toHex(data, ":"), toUnsigned(data));
 		// Current IP Assignment
 		data = read(knxnetipObjectIdx, PropertyAccess.PID.CURRENT_IP_ASSIGNMENT_METHOD);
 		putResult(KnxipParameter.CurrentIPAssignment, toIPAssignmentString(data), toUnsigned(data));
