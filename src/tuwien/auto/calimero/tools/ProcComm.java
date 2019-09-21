@@ -749,7 +749,7 @@ public class ProcComm implements Runnable
 
 	private void saveDatapoints()
 	{
-		if (!options.containsKey("monitor"))
+		if (((DatapointMap<?>) datapoints).getDatapoints().isEmpty() || !options.containsKey("monitor"))
 			return;
 		try (XmlWriter w = XmlOutputFactory.newInstance().createXMLWriter(toolDatapointsFile)) {
 			datapoints.save(w);
