@@ -828,8 +828,12 @@ public class ProcComm implements Runnable
 				catch (final KNXFormatException e) {
 					throw new KNXIllegalArgumentException("read DPT: " + e.getMessage(), e);
 				}
-				if ((i + 1 < args.length) && !"-".equals(args[++i]))
-					options.put("dpt", args[i]);
+				if ((i + 1 < args.length)) {
+					if ("-".equals(args[i + 1]))
+						i++;
+					else if (!args[i + 1].startsWith("-"))
+						options.put("dpt", args[++i]);
+				}
 			}
 			else if (arg.equals("write")) {
 				if (i + 3 >= args.length)
