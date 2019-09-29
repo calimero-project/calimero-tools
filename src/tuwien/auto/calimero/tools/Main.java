@@ -48,6 +48,7 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -58,6 +59,7 @@ import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
+import tuwien.auto.calimero.Settings;
 import tuwien.auto.calimero.knxnetip.Connection;
 import tuwien.auto.calimero.knxnetip.SecureConnection;
 import tuwien.auto.calimero.link.KNXNetworkLink;
@@ -91,11 +93,12 @@ final class Main
 		{ "properties", "Open KNX property client", },
 		{ "devinfo", "Read KNX device information" },
 		{ "progmode", "Check/set device(s) in programming mode" },
+		{ "restart", "Restart a KNX interface/device" },
 	};
 
 	private static final List<Class<? extends Runnable>> tools = Arrays.asList(Discover.class, Discover.class,
 			ScanDevices.class, IPConfig.class, NetworkMonitor.class, ProcComm.class, ProcComm.class, ProcComm.class,
-			Property.class, Property.class, PropClient.class, DeviceInfo.class, ProgMode.class);
+			Property.class, Property.class, PropClient.class, DeviceInfo.class, ProgMode.class, Restart.class);
 
 	private static final String sep = System.getProperty("line.separator");
 
@@ -166,6 +169,10 @@ final class Main
 			sb.append(cmds[i][0]).append(" - ").append(cmds[i][1]).append(sep);
 		}
 		System.out.println(sb);
+	}
+
+	static void showVersion() {
+		System.out.println(Settings.getLibraryHeader(false));
 	}
 
 	//
@@ -257,6 +264,38 @@ final class Main
 	static boolean parseCommonOption(final String[] args, final int i, final Map<String, Object> options) {
 		final String arg = args[i];
 		if (Main.isOption(arg, "tcp", null))
+			options.put("tcp", null);
+		else if (Main.isOption(arg, "udp", null))
+			options.put("udp", null);
+		else if (Main.isOption(arg, "ft12-cemi", null))
+			options.put("ft12-cemi", null);
+		else
+			return false;
+		return true;
+	}
+
+	static boolean parseCommonOption(final String arg, final Iterator<String> i, final Map<String, Object> options) {
+		if (Main.isOption(arg, "version", null))
+			options.put("about", (Runnable) Main::showVersion);
+		else if (Main.isOption(arg, "localhost", null))
+			options.put("localhost", Main.parseHost(i.next()));
+		else if (Main.isOption(arg, "localport", null))
+			options.put("localport", Integer.decode(i.next()));
+		else if (Main.isOption(arg, "port", "p"))
+			options.put("port", Integer.decode(i.next()));
+		else if (Main.isOption(arg, "nat", "n"))
+			options.put("nat", null);
+		else if (Main.isOption(arg, "ft12", "f"))
+			options.put("ft12", null);
+		else if (Main.isOption(arg, "usb", "u"))
+			options.put("usb", null);
+		else if (Main.isOption(arg, "tpuart", null))
+			options.put("tpuart", null);
+		else if (Main.isOption(arg, "medium", "m"))
+			options.put("medium", Main.getMedium(i.next()));
+		else if (Main.isOption(arg, "domain", null))
+			options.put("domain", Long.decode(i.next()));
+		else if (Main.isOption(arg, "tcp", null))
 			options.put("tcp", null);
 		else if (Main.isOption(arg, "udp", null))
 			options.put("udp", null);
