@@ -1483,7 +1483,7 @@ public class DeviceInfo implements Runnable
 
 	private static String toPeiTypeString(final int peitype)
 	{
-		if (peitype == -1)
+		if (peitype == -1 || peitype == 0xff)
 			return "n/a";
 		final String[] desc = new String[] {
 			"No adapter", // 0
