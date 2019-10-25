@@ -46,6 +46,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.StringJoiner;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -465,23 +466,39 @@ public class DeviceInfo implements Runnable
 	private void findInterfaceObjects() throws KNXException, InterruptedException
 	{
 		// check if there are any interface object at all, i.e., the Device Object
-		if (readElements(0, PID.OBJECT_TYPE) == 0)
+		if (readElements(0, PID.OBJECT_TYPE) <= 0)
 			return;
+
 		deviceObjectIdx = 0;
+
+		final List<Integer> objectTypes = new ArrayList<>();
 		final int objects = readElements(deviceObjectIdx, PropertyAccess.PID.IO_LIST);
-		if (objects == 0) {
-			// device only has device- and cEMI server-object
-			cemiServerObjectIdx = 1; // interface object type 8
-			out.info("Device implements only Device Object and cEMI Object");
-			return;
+		if (objects > 0) {
+			final byte[] data = read(deviceObjectIdx, PropertyAccess.PID.IO_LIST, 1, objects);
+			for (int i = 0; i < objects; ++i) {
+				final int type = (data[2 * i] & 0xff) << 8 | (data[2 * i + 1] & 0xff);
+				objectTypes.add(type);
+			}
+		}
+		else {
+			// device only has at least device- and cEMI server-object
+			objectTypes.add(deviceObjectIdx);
+			for (int i = 1; i < 100; ++i) {
+				int type = (int) toUnsigned(read(i, PID.OBJECT_TYPE));
+				if (type < 0)
+					break;
+				objectTypes.add(type);
+			}
+
+			if (objectTypes.size() == 1) {
+				cemiServerObjectIdx = 1; // interface object type 8
+				out.info("Device implements only Device Object and cEMI Object");
+			}
 		}
 
-		final byte[] data = read(deviceObjectIdx, PropertyAccess.PID.IO_LIST, 1, objects);
-		if (data == null)
-			return;
 		// TODO this will give us only the last object instance in case of several IO instances of the same type
-		for (int i = 0; i < objects; ++i) {
-			final int type = (data[2 * i] & 0xff) << 8 | (data[2 * i + 1] & 0xff);
+		for (int i = 0; i < objectTypes.size(); ++i) {
+			final int type = objectTypes.get(i);
 			if (type == addresstableObject)
 				addresstableObjectIdx = i;
 			else if (type == assoctableObject)
@@ -944,6 +961,7 @@ public class DeviceInfo implements Runnable
 	private static final int addrGroupObjTablePtr = 0x0112;
 //	private static final int addrProgramPtr = 0x0114;
 	private static final int addrGroupAddrTable = 0x0116; // max. length 233
+	private static final int addrGroupAddrTableMask5705 = 0x4000; // max. length impl. dependent
 
 	private void readPL110Bcu1() throws InterruptedException
 	{
@@ -1024,20 +1042,44 @@ public class DeviceInfo implements Runnable
 
 	private void readGroupAddresses() throws InterruptedException
 	{
+		final int memLocation;
+		// realization type 8
+		if (dd.equals(DD0.TYPE_5705))
+			memLocation = addrGroupAddrTableMask5705;
+		else if (addresstableObjectIdx != -1) {
+			int tableSize = readElements(addresstableObjectIdx, PID.TABLE);
+			if (tableSize > 0) {
+				StringJoiner joiner = new StringJoiner(", ");
+				for (int i = 0; i < tableSize; i++) {
+					GroupAddress group = new GroupAddress(read(addresstableObjectIdx, PID.TABLE, i + 1, 1));
+					joiner.add(group.toString());
+				}
+				putResult(CommonParameter.GroupAddresses, joiner.toString(), new byte[0]);
+				return;
+			}
+			memLocation = (int) toUnsigned(read(addresstableObjectIdx, PID.TABLE_REFERENCE));
+			if (memLocation <= 0)
+				return;
+		}
+		else
+			// realization type 1
+			memLocation = addrGroupAddrTable;
+
 		// realization type 1
-		final int entries = readMem(addrGroupAddrTable, 1, "Group address table entries ", false,
+		final int entries = readMem(memLocation, 1, "Group address table entries ", false,
 				CommonParameter.GroupAddrTableEntries);
+
 		// address of device address
-		int startAddr = addrGroupAddrTable + 1;
+		int startAddr = memLocation + 1;
 		readMem(startAddr, 2, "", v -> new IndividualAddress(v & 0x7fff).toString(), CommonParameter.DeviceAddress);
 
 		final StringBuilder sb = new StringBuilder();
-		for (int i = 0; i < entries; i++) {
+		for (int i = 1; i < entries; i++) {
 			startAddr += 2;
 			final int raw = readMem(startAddr, 2);
 			final KNXAddress group = new GroupAddress(raw & 0x7fff);
 			if (sb.length() > 0)
-				sb.append(" ");
+				sb.append(", ");
 			sb.append(group);
 			// are we the group responder
 			if ((raw & 0x8000) == 0x8000)
@@ -1214,7 +1256,7 @@ public class DeviceInfo implements Runnable
 	private int readElements(final int objectIndex, final int pid) throws InterruptedException
 	{
 		final byte[] elems = read(objectIndex, pid, 0, 1);
-		return elems == null ? 0 : (int) toUnsigned(elems);
+		return elems == null ? -1 : (int) toUnsigned(elems);
 	}
 
 	private byte[] read(final int objectIndex, final int pid) throws InterruptedException
