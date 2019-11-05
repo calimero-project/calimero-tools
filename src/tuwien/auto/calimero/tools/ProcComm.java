@@ -43,6 +43,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -51,6 +53,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -267,6 +270,7 @@ public class ProcComm implements Runnable
 			start(null);
 			if (options.containsKey("help") || options.containsKey("version"))
 				return;
+			loadDatapoints();
 			if (options.containsKey("monitor"))
 				runMonitorLoop();
 			else
@@ -460,10 +464,18 @@ public class ProcComm implements Runnable
 	 *
 	 * @return datapoint type identifier
 	 */
-	private String getDPT()
+	private String getDPT(final GroupAddress group)
 	{
 		final String dpt = (String) options.get("dpt");
-		return fromDptName(dpt);
+		final var datapoint = datapoints.get(group);
+		if (dpt == null)
+			return datapoint != null ? datapoint.getDPT() : null;
+		final var id = fromDptName(dpt);
+		if (datapoint != null)
+			datapoint.setDPT(0, id);
+		else
+			datapoints.add(new StateDP(group, "", 0, id));
+		return id;
 	}
 
 	private static String fromDptName(final String id)
@@ -514,7 +526,7 @@ public class ProcComm implements Runnable
 		// encapsulate information into a datapoint
 		// this is a convenient way to let the process communicator
 		// handle the DPT stuff, so an already formatted string will be returned
-		readWrite(new StateDP(main, "", 0, getDPT()), write, (String) options.get("value"));
+		readWrite(new StateDP(main, "", 0, getDPT(main)), write, (String) options.get("value"));
 	}
 
 	private void readWrite(final Datapoint dp, final boolean write, final String value)
@@ -690,12 +702,6 @@ public class ProcComm implements Runnable
 
 	private void runMonitorLoop() throws IOException, KNXException, InterruptedException
 	{
-		try (XmlReader r = XmlInputFactory.newInstance().createXMLReader(toolDatapointsFile)) {
-			datapoints.load(r);
-		}
-		catch (final KNXMLException e) {
-			out.trace("no monitor datapoint information loaded, " + e.getMessage());
-		}
 		final BufferedReader in = new BufferedReader(new InputStreamReader(System.in, Charset.defaultCharset()));
 		while (true) {
 			while (!in.ready() && !closed)
@@ -747,15 +753,27 @@ public class ProcComm implements Runnable
 		}
 	}
 
+	private void loadDatapoints() {
+		if (Files.exists(Path.of(toolDatapointsFile))) {
+			try (XmlReader r = XmlInputFactory.newInstance().createXMLReader(toolDatapointsFile)) {
+				datapoints.load(r);
+			}
+			catch (final KNXMLException e) {
+				out.info("failed to load datapoint information from {}: {}", toolDatapointsFile, e.getMessage());
+			}
+		}
+	}
+
 	private void saveDatapoints()
 	{
-		if (((DatapointMap<?>) datapoints).getDatapoints().isEmpty() || !options.containsKey("monitor"))
+		final boolean possiblyModified = options.containsKey("monitor") || options.containsKey("dpt");
+		if (((DatapointMap<?>) datapoints).getDatapoints().isEmpty() || !possiblyModified)
 			return;
 		try (XmlWriter w = XmlOutputFactory.newInstance().createXMLWriter(toolDatapointsFile)) {
 			datapoints.save(w);
 		}
 		catch (final KNXMLException e) {
-			out.warn("on saving monitor datapoint information to " + toolDatapointsFile, e);
+			out.warn("on saving datapoint information to " + toolDatapointsFile, e);
 		}
 	}
 
@@ -826,12 +844,12 @@ public class ProcComm implements Runnable
 					options.put("dst", new GroupAddress(args[++i]));
 				}
 				catch (final KNXFormatException e) {
-					throw new KNXIllegalArgumentException("read DPT: " + e.getMessage(), e);
+					throw new KNXIllegalArgumentException("read datapoint: " + e.getMessage());
 				}
 				if ((i + 1 < args.length)) {
 					if ("-".equals(args[i + 1]))
 						i++;
-					else if (!args[i + 1].startsWith("-"))
+					else if (isDpt(args[i + 1]))
 						options.put("dpt", args[++i]);
 				}
 			}
@@ -847,9 +865,12 @@ public class ProcComm implements Runnable
 					options.put("dst", new GroupAddress(args[++i]));
 				}
 				catch (final KNXFormatException e) {
-					throw new KNXIllegalArgumentException("write DPT: " + e.getMessage(), e);
+					throw new KNXIllegalArgumentException("write datapoint: " + e.getMessage());
 				}
-				options.put("dpt", args[++i]);
+				if ("-".equals(args[i + 1]))
+					i++;
+				else if (isDpt(args[i + 1]))
+					options.put("dpt", args[++i]);
 				options.put("value", args[++i]);
 			}
 			else if (arg.equals("info")) {
@@ -922,6 +943,14 @@ public class ProcComm implements Runnable
 		final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES).putLong(value).position(2);
 		buffer.get(sn);
 		options.put("medium", new RFSettings(device, rf.getDomainAddress(), sn, rf.isUnidirectional()));
+	}
+
+	private static boolean isDpt(final String s) {
+		if (s.startsWith("-"))
+			return false;
+		final var id = fromDptName(s);
+		final var regex = "[0-9][0-9]*\\.[0-9][0-9][0-9]";
+		return Pattern.matches(regex, id);
 	}
 
 	private static void showUsage()
