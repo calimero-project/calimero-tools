@@ -945,12 +945,12 @@ public class ProcComm implements Runnable
 		sb.append("  --domain <address>       domain address on KNX PL/RF medium (defaults to broadcast domain)")
 				.append(sep);
 		sb.append("Available commands for process communication:").append(sep);
-		sb.append("  read <DPT> <KNX address>           read from group address").append(sep);
-		sb.append("  write <DPT> <value> <KNX address>  write to group address").append(sep);
-		sb.append("  monitor                 enter group monitoring").append(sep);
-		sb.append("Name aliases for common DPT numbers:").append(sep);
-		sb.append("  switch (1.001) {off, on}, bool (1.002) {false, true}")
-				.append(sep)
+		sb.append("  (read/write: omitting the DPT might require a '-' placeholder to avoid ambiguity)").append(sep);
+		sb.append("  read  <KNX group address> [DPT]          read from datapoint (expecting the specified datapoint type)").append(sep);
+		sb.append("  write <KNX group address> [DPT] <value>  write to datapoint (formatting value with specified datapoint type)").append(sep);
+		sb.append("  monitor                                  enter group monitoring").append(sep);
+		sb.append("Name aliases for common datapoint types:").append(sep);
+		sb.append("  switch (1.001) {off, on}, bool (1.002) {false, true}").append(sep)
 				.append("  dimmer (3.007) {decrease 0..7, increase 0..7}, "
 						+ "blinds (3.008) {up 0..7, down 0..7}").append(sep)
 				.append("  percent (5.001) {1..100}, % (5.001) {1..100}").append(sep)
