@@ -62,17 +62,17 @@ sourceSets {
 }
 
 dependencies {
-	compile "com.github.calimero:calimero-core:${version}"
-	runtime "com.github.calimero:calimero-rxtx:${version}"
+	implementation "com.github.calimero:calimero-core:${version}"
+	runtimeOnly "com.github.calimero:calimero-rxtx:${version}"
 	implementation 'org.slf4j:slf4j-api:1.8.0-beta4'
-	runtime 'org.slf4j:slf4j-simple:1.8.0-beta4'
+	runtimeOnly 'org.slf4j:slf4j-simple:1.8.0-beta4'
 }
 
 jar {
 	manifest {
 		attributes(
 			'Main-Class': mainClassName,
-			'Class-Path': configurations.runtime.collect { it.getName() }.join(' ')
+			'Class-Path': configurations.runtimeClasspath.collect { it.getName() }.join(' ')
 		)
 	}
 }
