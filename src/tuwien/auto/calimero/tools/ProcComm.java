@@ -872,6 +872,8 @@ public class ProcComm implements Runnable
 				else if (isDpt(args[i + 1]))
 					options.put("dpt", args[++i]);
 				options.put("value", args[++i]);
+				if (isTwoPartValue(args[i]))
+					options.put("value", args[i] + " " + args[++i]);
 			}
 			else if (arg.equals("info")) {
 				if (i + 3 >= args.length)
@@ -951,6 +953,10 @@ public class ProcComm implements Runnable
 		final var id = fromDptName(s);
 		final var regex = "[0-9][0-9]*\\.[0-9][0-9][0-9]";
 		return Pattern.matches(regex, id);
+	}
+
+	private static boolean isTwoPartValue(final String value) {
+		return List.of("decrease", "increase", "up", "down").contains(value);
 	}
 
 	private static void showUsage()
