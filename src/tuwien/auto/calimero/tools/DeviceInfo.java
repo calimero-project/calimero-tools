@@ -1634,20 +1634,20 @@ public class DeviceInfo implements Runnable
 
 	private static String toCapabilitiesString(final byte[] data)
 	{
-		final StringBuilder sb = new StringBuilder();
+		final var joiner = new StringJoiner(", ");
 		if ((data[1] & 0x01) == 0x01)
-			sb.append(" Device Management,");
+			joiner.add("Device Management");
 		if ((data[1] & 0x02) == 0x02)
-			sb.append(" Tunneling,");
+			joiner.add("Tunneling");
 		if ((data[1] & 0x04) == 0x04)
-			sb.append(" Routing,");
+			joiner.add("Routing");
 		if ((data[1] & 0x08) == 0x08)
-			sb.append(" Remote Logging,");
+			joiner.add("Remote Logging");
 		if ((data[1] & 0x10) == 0x10)
-			sb.append(" Remote Configuration and Diagnosis,");
+			joiner.add("Remote Configuration and Diagnosis");
 		if ((data[1] & 0x20) == 0x20)
-			sb.append(" Object Server,");
-		return sb.length() == 0 ? "" : sb.substring(0, sb.length() - 1);
+			joiner.add("Object Server");
+		return joiner.toString();
 	}
 
 	private static String knxSerialNumber(final byte[] data) {
