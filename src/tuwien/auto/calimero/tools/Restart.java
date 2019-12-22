@@ -233,8 +233,8 @@ public class Restart implements Runnable {
 			}
 			if (Main.parseCommonOption(arg, i, options))
 				;
-//			else if (Main.parseSecureOption(args, i, options))
-//				++i;
+			else if (Main.parseSecureOption(arg, i, options))
+				;
 			else if (Main.isOption(arg, "knx-address", "k"))
 				options.put("knx-address", Main.getAddress(i.next()));
 			else if (restartType == -1 && (restartType = restartType(arg)) >= 0) {

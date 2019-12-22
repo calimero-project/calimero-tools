@@ -312,7 +312,7 @@ final class Main
 			options.put("group-key", fromHex(args[i + 1]));
 		else if (isOption(arg, "device-key", null))
 			options.put("device-key", fromHex(args[i + 1]));
-		else if (isOption(arg, "device-auth-code", null))
+		else if (isOption(arg, "device-pwd", null))
 			options.put("device-key", SecureConnection.hashDeviceAuthenticationPassword(args[i + 1].toCharArray()));
 		else if (isOption(arg, "user", null))
 			options.put("user", Integer.decode(args[i + 1]));
@@ -320,6 +320,24 @@ final class Main
 			options.put("user-key", fromHex(args[i + 1]));
 		else if (isOption(arg, "user-pwd", null))
 			options.put("user-key", SecureConnection.hashUserPassword(args[i + 1].toCharArray()));
+		else
+			return false;
+		return true;
+	}
+
+	static boolean parseSecureOption(final String arg, final Iterator<String> i, final Map<String, Object> options) {
+		if (isOption(arg, "group-key", null))
+			options.put("group-key", fromHex(i.next()));
+		else if (isOption(arg, "device-key", null))
+			options.put("device-key", fromHex(i.next()));
+		else if (isOption(arg, "device-pwd", null))
+			options.put("device-key", SecureConnection.hashDeviceAuthenticationPassword(i.next().toCharArray()));
+		else if (isOption(arg, "user", null))
+			options.put("user", Integer.decode(i.next()));
+		else if (isOption(arg, "user-key", null))
+			options.put("user-key", fromHex(i.next()));
+		else if (isOption(arg, "user-pwd", null))
+			options.put("user-key", SecureConnection.hashUserPassword(i.next().toCharArray()));
 		else
 			return false;
 		return true;
