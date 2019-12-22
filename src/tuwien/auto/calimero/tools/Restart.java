@@ -181,6 +181,9 @@ public class Restart implements Runnable {
 	private void localDeviceMgmtReset()
 			throws KNXConnectionClosedException, KNXTimeoutException, InterruptedException, KNXException {
 		try (final var mgmt = Main.newLocalDeviceMgmtIP(options, __ -> {})) {
+			final int restartType = (Integer) options.get("restart-type");
+			if (restartType != 0)
+				System.out.println("Using local device management, ignore restart type");
 			mgmt.reset();
 		}
 	}
@@ -297,7 +300,7 @@ public class Restart implements Runnable {
 		sb.append("  --domain <address>       domain address on KNX PL/RF medium (defaults to broadcast domain)")
 				.append(sep);
 		sb.append("  --yes -y                 automatic yes to reset confirmation").append(sep);
-		sb.append("The supported restart types are (select at most one):").append(sep);
+		sb.append("If a device address is supplied, the supported restart types are (select at most one):").append(sep);
 		sb.append("  --basic                  basic restart without confirmation [default]").append(sep);
 		sb.append("  --confirmed              basic restart with confirmation").append(sep);
 		sb.append("  --factory-reset          factory reset (used with channel)").append(sep);
