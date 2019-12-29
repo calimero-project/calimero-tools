@@ -42,6 +42,7 @@ import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.StringJoiner;
 
 import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.KNXException;
@@ -283,35 +284,22 @@ public class Restart implements Runnable {
 	}
 
 	private static void showUsage() {
-		final StringBuilder sb = new StringBuilder();
-		sb.append("Usage: ").append(tool).append(" [options] <host|port> [<device address>]").append(sep);
-		sb.append("Options:").append(sep);
-		sb.append("  --help -h                show this help message").append(sep);
-		sb.append("  --version                show tool/library version and exit").append(sep);
-		sb.append("  --localhost <id>         local IP/host name").append(sep);
-		sb.append("  --localport <number>     local UDP port (default system assigned)").append(sep);
-		sb.append("  --port -p <number>       UDP port on <host> (default ").append(KNXnetIPConnection.DEFAULT_PORT)
-				.append(")").append(sep);
-		sb.append("  --nat -n                 enable Network Address Translation").append(sep);
-		sb.append("  --ft12 -f                use FT1.2 serial communication").append(sep);
-		sb.append("  --usb -u                 use KNX USB communication").append(sep);
-		sb.append("  --tpuart                 use TP-UART communication").append(sep);
-		sb.append("  --medium -m <id>         KNX medium [tp1|p110|rf|knxip] (default tp1)").append(sep);
-		sb.append("  --domain <address>       domain address on KNX PL/RF medium (defaults to broadcast domain)")
-				.append(sep);
-		sb.append("  --yes -y                 automatic yes to reset confirmation").append(sep);
-		sb.append("If a device address is supplied, the supported restart types are (select at most one):").append(sep);
-		sb.append("  --basic                  basic restart without confirmation [default]").append(sep);
-		sb.append("  --confirmed              basic restart with confirmation").append(sep);
-		sb.append("  --factory-reset          factory reset (used with channel)").append(sep);
-		sb.append("  --reset-address          reset device address to its default").append(sep);
-		sb.append("  --reset-app              reset application program memory to default application").append(sep);
-		sb.append("  --reset-params           reset application parameter memory (used with channel)").append(sep);
-		sb.append("  --reset-links            reset links (used with channel)").append(sep);
-		sb.append("  --factory-keep-addr      factory reset without resetting device addresses (used with channel)")
-				.append(sep);
+		final var joiner = new StringJoiner(sep);
+		joiner.add("Usage: " + tool + " [options] <host|port> [<KNX device address>]");
+		Main.printCommonOptions(joiner);
+		joiner.add("  --yes -y                 automatic yes to reset confirmation");
+		joiner.add("If a device address is supplied, the supported restart types are (select at most one):");
+		joiner.add("  --basic                  basic restart without confirmation [default]");
+		joiner.add("  --confirmed              basic restart with confirmation");
+		joiner.add("  --factory-reset          factory reset (used with channel)");
+		joiner.add("  --reset-address          reset device address to its default");
+		joiner.add("  --reset-app              reset application program memory to default application");
+		joiner.add("  --reset-params           reset application parameter memory (used with channel)");
+		joiner.add("  --reset-links            reset links (used with channel)");
+		joiner.add("  --factory-keep-addr      factory reset without resetting device addresses (used with channel)");
+		Main.printSecureOptions(joiner);
 
-		out(sb);
+		out(joiner.toString());
 	}
 
 	private static void out(final CharSequence s, final Throwable... t) {

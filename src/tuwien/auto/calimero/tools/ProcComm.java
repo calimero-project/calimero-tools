@@ -53,6 +53,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.StringJoiner;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -70,7 +71,6 @@ import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.KNXTimeoutException;
 import tuwien.auto.calimero.Priority;
-import tuwien.auto.calimero.Settings;
 import tuwien.auto.calimero.cemi.CEMI;
 import tuwien.auto.calimero.cemi.CEMILData;
 import tuwien.auto.calimero.cemi.CEMILDataEx;
@@ -303,7 +303,7 @@ public class ProcComm implements Runnable
 	{
 		if (options.isEmpty()) {
 			out(tool + " - KNX process communication & group monitor");
-			showVersion();
+			Main.showVersion();
 			out("Type --help for help message");
 			return;
 		}
@@ -312,7 +312,7 @@ public class ProcComm implements Runnable
 			return;
 		}
 		if (options.containsKey("version")) {
-			showVersion();
+			Main.showVersion();
 			return;
 		}
 
@@ -961,48 +961,31 @@ public class ProcComm implements Runnable
 
 	private static void showUsage()
 	{
-		final StringBuilder sb = new StringBuilder();
-		sb.append("Usage: ").append(tool + " [options] <host|port>").append(sep);
-		sb.append("Options:").append(sep);
-		sb.append("  --help -h                show this help message").append(sep);
-		sb.append("  --version                show tool/library version and exit").append(sep);
-		sb.append("  --verbose -v             enable verbose status output").append(sep);
-		sb.append("  --localhost <id>         local IP/host name").append(sep);
-		sb.append("  --localport <number>     local UDP port (default system assigned)")
-				.append(sep);
-		sb.append("  --port -p <number>       UDP port on <host> (default ")
-				.append(KNXnetIPConnection.DEFAULT_PORT + ")").append(sep);
-		sb.append("  --nat -n                 enable Network Address Translation").append(sep);
-		sb.append("  --ft12 -f                use FT1.2 serial communication").append(sep);
-		sb.append("  --usb -u                 use KNX USB communication").append(sep);
-		sb.append("  --tpuart                 use TP-UART communication").append(sep);
-		sb.append("  --medium -m <id>         KNX medium [tp1|p110|knxip|rf] (default tp1)").append(sep);
-		sb.append("  --domain <address>       domain address on KNX PL/RF medium (defaults to broadcast domain)")
-				.append(sep);
-		sb.append("Available commands for process communication:").append(sep);
-		sb.append("  (read/write: omitting the DPT might require a '-' placeholder to avoid ambiguity)").append(sep);
-		sb.append("  read  <KNX group address> [DPT]          read from datapoint (expecting the specified datapoint type)").append(sep);
-		sb.append("  write <KNX group address> [DPT] <value>  write to datapoint (formatting value with specified datapoint type)").append(sep);
-		sb.append("  monitor                                  enter group monitoring").append(sep);
-		sb.append("Name aliases for common datapoint types:").append(sep);
-		sb.append("  switch (1.001) {off, on}, bool (1.002) {false, true}").append(sep)
-				.append("  dimmer (3.007) {decrease 0..7, increase 0..7}, "
-						+ "blinds (3.008) {up 0..7, down 0..7}").append(sep)
-				.append("  percent (5.001) {1..100}, % (5.001) {1..100}").append(sep)
-				.append("  angle (5.003) {0..360}, ucount (5.010) {0..255}").append(sep)
-				.append("  temp (9.001) {-273..+670760}, float/float2 (9.002)").append(sep)
-				.append("  int (13.001), float4 (14.005), string (16.001)");
-		out(sb.toString());
+		final var joiner = new StringJoiner(sep);
+		joiner.add("Usage: " + tool + " [options] <host|port> <command>");
+		Main.printCommonOptions(joiner);
+		joiner.add("  --compact -c               show incoming indications in compact format");
+		joiner.add("  --lte                      enable LTE commands, decode LTE messages");
+		Main.printSecureOptions(joiner);
+		joiner.add("Available commands for process communication:");
+		joiner.add("  (read/write: omitting the DPT might require a '-' placeholder to avoid ambiguity)");
+		joiner.add("  read  <KNX group address> [DPT]          read from datapoint (expecting the specified datapoint type)");
+		joiner.add("  write <KNX group address> [DPT] <value>  write to datapoint (formatting value with specified datapoint type)");
+		joiner.add("  monitor                                  enter group monitoring");
+		joiner.add("Name aliases for common datapoint types:");
+		joiner.add("  1.001: switch {off, on}                         1.002: bool {false, true}")
+			  .add("  3.007: dimmer {decrease 0..7, increase 0..7}    3.008: blinds {up 0..7, down 0..7}")
+			  .add("  5.001: percent {1..100} or % {1..100}")
+			  .add("  5.003: angle {0..360}                           5.010: ucount {0..255}")
+			  .add("  9.001: temp {-273..+670760}                    13.001: int (2-byte integer)")
+			  .add("  9.002: float/float2 (2-byte float)             14.005: float4 (4-byte float)")
+			  .add(" 16.001: string (ISO-8859-1, max. length 14)");
+		out(joiner.toString());
 	}
 
 	//
 	// utility methods
 	//
-
-	private static void showVersion()
-	{
-		out(Settings.getLibraryHeader(false));
-	}
 
 	private static void out(final String s)
 	{

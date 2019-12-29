@@ -66,7 +66,6 @@ import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.KnxRuntimeException;
-import tuwien.auto.calimero.Settings;
 import tuwien.auto.calimero.dptxlator.DPTXlator;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.link.KNXNetworkLink;
@@ -217,7 +216,7 @@ public class Property implements Runnable
 		try {
 			if (options.isEmpty()) {
 				out(tool + " - Access KNX properties");
-				showVersion();
+				Main.showVersion();
 				out("Type --help for help message");
 				return;
 			}
@@ -226,7 +225,7 @@ public class Property implements Runnable
 				return;
 			}
 			if (options.containsKey("version")) {
-				showVersion();
+				Main.showVersion();
 				return;
 			}
 
@@ -743,60 +742,36 @@ public class Property implements Runnable
 
 	private static void showUsage()
 	{
-		final StringBuilder sb = new StringBuilder();
-		sb.append("Usage: ").append(tool).append(" [options] <host|port> <command>").append(sep);
-		sb.append("Options:").append(sep);
-		sb.append("  --help -h                show this help message").append(sep);
-		sb.append("  --version                show tool/library version and exit").append(sep);
-		sb.append("  --verbose -v             enable verbose status output").append(sep);
-		sb.append("  --local -l               local device management").append(sep);
-		sb.append("  --remote -r <KNX addr>   remote property service").append(sep);
-		sb.append("  --definitions -d <file>  use property definition file").append(sep);
-		sb.append("  --localhost <id>         local IP/host name").append(sep);
-		sb.append("  --localport <number>     local UDP port (default system assigned)")
-				.append(sep);
-		sb.append("  --port -p <number>       UDP port on <host> (default ")
-				.append(KNXnetIPConnection.DEFAULT_PORT).append(")").append(sep);
-		sb.append("  --nat -n                 enable Network Address Translation").append(sep);
-		sb.append("  --ft12 -f                use FT1.2 serial communication").append(sep);
-		sb.append("  --usb -u                 use KNX USB communication").append(sep);
-		sb.append("  --tpuart                 use TP-UART communication").append(sep);
-		sb.append("Options for local device management mode only:").append(sep);
-		sb.append("  --emulatewriteenable -e  check write-enable of a property").append(sep);
-		sb.append("Options for remote property service mode only:").append(sep);
-		sb.append("  --medium -m <id>         KNX medium [tp1|p110|knxip|rf] (default tp1)").append(sep);
-		sb.append("  --domain <address>       domain address on KNX PL/RF medium (defaults to broadcast domain)")
-				.append(sep);
-		sb.append("  --connect -c             connection oriented mode").append(sep);
-		sb.append("  --authorize -a <key>     authorize key to access KNX device").append(sep);
-		sb.append("Available commands:").append(sep);
-		sb.append("  get <object-idx> <pid> [<start-idx> <elements>]  get the property value(s)")
-				.append(sep);
-		sb.append("  set <object-idx> <pid> [start-idx] <string-value>   "
-				+ "set the formatted property value (according to PDT)").append(sep);
-		sb.append("  set <object-idx> <pid> <start-idx> <elements> [\"0x\"|\"0\"|\"b\"]<data>    "
-				+ "set the property data").append(sep);
-		sb.append("  desc <object-idx> <pid>                "
-				+ "get the property description of the property ID").append(sep);
-		sb.append("  desc <object-idx> \"i\" <prop-idx>       "
-				+ "get the property description of the property index").append(sep);
-		sb.append("  scan [<object-idx>]"
-				+ "                    list interface object type descriptions").append(sep);
-		sb.append("  scan [<object-idx>] \"all\"              list all property descriptions")
-				.append(sep);
-		sb.append("  ?                                      show command help").append(sep);
+		final var joiner = new StringJoiner(sep);
+		joiner.add("Usage: " + tool + " [options] <host|port> <command>");
+		Main.printCommonOptions(joiner);
+		joiner.add("  --local -l                 local device management");
+		joiner.add("  --remote -r <KNX addr>     remote property service");
+		joiner.add("  --definitions -d <file>    use property definition file");
+		joiner.add("Options for local device management only:");
+		joiner.add("  --emulatewriteenable -e    check write-enable of a property");
+		joiner.add("Options for remote property services only:");
+		joiner.add("  --connect -c               connection oriented mode");
+		joiner.add("  --authorize -a <key>       authorize key to access KNX device");
+		Main.printSecureOptions(joiner);
+		joiner.add("Available commands:");
+		joiner.add("  get <object-idx> <pid> [<start-idx> <elements>]     get the property value(s)");
+		joiner.add("  set <object-idx> <pid> [start-idx] <string-value>   "
+				+ "set the formatted property value (according to PDT)");
+		joiner.add("  set <object-idx> <pid> <start-idx> <elements> [\"0x\"|\"0\"|\"b\"]<data>    "
+				+ "set the property data");
+		joiner.add("  desc <object-idx> <pid>                get the property description of the property ID");
+		joiner.add("  desc <object-idx> \"i\" <prop-idx>       get the property description of the property index");
+		joiner.add("  scan [<object-idx>]                    list interface object type descriptions");
+		joiner.add("  scan [<object-idx>] \"all\"              list all property descriptions");
+		joiner.add("  ?                                      show command help");
 
-		out(sb.toString());
+		out(joiner.toString());
 	}
 
 	//
 	// utility methods
 	//
-
-	private static void showVersion()
-	{
-		out(Settings.getLibraryHeader(false));
-	}
 
 	private static byte[] getAuthorizeKey(final String key)
 	{

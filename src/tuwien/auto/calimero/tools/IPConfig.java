@@ -46,6 +46,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.StringJoiner;
 
 import org.slf4j.Logger;
 
@@ -53,7 +54,6 @@ import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.KNXRemoteException;
-import tuwien.auto.calimero.Settings;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.medium.TPSettings;
@@ -194,7 +194,7 @@ public class IPConfig implements Runnable
 		try {
 			if (options.isEmpty()) {
 				out(tool + " - KNXnet/IP address configuration");
-				showVersion();
+				Main.showVersion();
 				out("Type --help for help message");
 				return;
 			}
@@ -203,7 +203,7 @@ public class IPConfig implements Runnable
 				return;
 			}
 			if (options.containsKey("version")) {
-				showVersion();
+				Main.showVersion();
 				return;
 			}
 
@@ -576,46 +576,26 @@ public class IPConfig implements Runnable
 
 	private static void showUsage()
 	{
-		final StringBuilder sb = new StringBuilder();
-		sb.append("Usage: ").append(tool).append(" [options] <host|port>").append(sep);
-		sb.append("Options:").append(sep);
-		sb.append("  --help -h                show this help message and exit").append(sep);
-		sb.append("  --version                show tool/library version and exit").append(sep);
-		sb.append("  --local -l               local device management (default)").append(sep);
-		sb.append("  --remote -r <KNX addr>   remote property service").append(sep);
-		sb.append("  --localhost <id>         local IP/host name").append(sep);
-		sb.append("  --localport <number>     local UDP port (default system assigned)").append(sep);
-		sb.append("  --port -p <number>       remote UDP port (default ").append(KNXnetIPConnection.DEFAULT_PORT)
-				.append(")").append(sep);
-		sb.append("  --nat -n                 enable Network Address Translation").append(sep);
-		sb.append("Options for remote property service only:").append(sep);
-		sb.append("  --ft12 -f                use FT1.2 serial communication").append(sep);
-		sb.append("  --usb -u                 use KNX USB communication").append(sep);
-		sb.append("  --tpuart                 use TP-UART communication").append(sep);
-		sb.append("  --medium -m <id>         KNX medium [tp1|p110|knxip|rf] (default tp1)").append(sep);
-		sb.append("  --domain <address>       domain address on KNX PL/RF medium (defaults to broadcast domain)")
-				.append(sep);
-		sb.append("  --connect -c             connection oriented mode").append(sep);
-		sb.append("  --authorize -a <key>     authorize key to access KNX device").append(sep);
-		sb.append("To change the IP configuration, supply one or more commands:").append(sep);
-		sb.append("  ip <address>             set the configured fixed IP address").append(sep);
-		sb.append("  subnet <address>         set the configured IP subnet mask").append(sep);
-		sb.append("  gateway <address>        set the configured IP address of the default gateway").append(sep);
-		sb.append("  multicast <address>      set the routing multicast address").append(sep);
-		sb.append("  manual                   enable manual IP assignment for current IP address").append(sep);
-		sb.append("  bootp                    enable Bootstrap Protocol IP assignment for current IP address")
-				.append(sep);
-		sb.append("  dhcp                     enable DHCP IP assignment for current IP address").append(sep);
-		sb.append("  auto                     enable automatic IP (AutoIP) assignment for current IP address")
-				.append(sep)
-				.append("                                           (address range 169.254.1.0 to 169.254.254.255)")
-				.append(sep);
-		out(sb.toString());
-	}
-
-	private static void showVersion()
-	{
-		out(Settings.getLibraryHeader(false));
+		final var joiner = new StringJoiner(sep);
+		joiner.add("Usage: " + tool + " [options] <host|port>");
+		Main.printCommonOptions(joiner);
+		joiner.add("  --local -l               local device management (default)");
+		joiner.add("  --remote -r <KNX addr>   remote property service");
+		joiner.add("Options for remote property services only:");
+		joiner.add("  --connect -c             connection oriented mode");
+		joiner.add("  --authorize -a <key>     authorize key to access KNX device");
+		Main.printSecureOptions(joiner);
+		joiner.add("Commands to change the IP configuration:");
+		joiner.add("  ip <address>             set the configured fixed IP address");
+		joiner.add("  subnet <address>         set the configured IP subnet mask");
+		joiner.add("  gateway <address>        set the configured IP address of the default gateway");
+		joiner.add("  multicast <address>      set the routing multicast address");
+		joiner.add("  manual                   enable manual IP assignment for current IP address");
+		joiner.add("  bootp                    enable Bootstrap Protocol IP assignment for current IP address");
+		joiner.add("  dhcp                     enable DHCP IP assignment for current IP address");
+		joiner.add("  auto                     enable automatic IP (AutoIP) assignment for current IP address")
+			  .add("                                           (address range 169.254.1.0 to 169.254.254.255)");
+		out(joiner.toString());
 	}
 
 	private static void out(final String s)

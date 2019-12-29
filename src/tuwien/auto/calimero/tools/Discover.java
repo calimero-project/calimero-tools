@@ -56,7 +56,6 @@ import org.slf4j.Logger;
 import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.KNXTimeoutException;
-import tuwien.auto.calimero.Settings;
 import tuwien.auto.calimero.knxnetip.Discoverer;
 import tuwien.auto.calimero.knxnetip.Discoverer.Result;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
@@ -190,7 +189,7 @@ public class Discover implements Runnable
 			if (options.containsKey("help"))
 				showUsage();
 			else if (options.containsKey("version"))
-				showVersion();
+				Main.showVersion();
 			else if (options.containsKey("search")) {
 				if (options.containsKey("withDescription"))
 					searchWithDescription();
@@ -201,7 +200,7 @@ public class Discover implements Runnable
 				description();
 			else {
 				out(tool + " - KNXnet/IP server discovery & self description");
-				showVersion();
+				Main.showVersion();
 				out("Type --help for help message");
 			}
 		}
@@ -550,11 +549,6 @@ public class Discover implements Runnable
 		sb.append("  --version                  show tool/library version and exit").append(sep);
 		sb.append("  --help -h                  show this help message").append(sep);
 		out(sb.toString());
-	}
-
-	private static void showVersion()
-	{
-		out(Settings.getLibraryHeader(false));
 	}
 
 	private static void out(final String s)

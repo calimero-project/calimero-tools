@@ -40,6 +40,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
@@ -47,7 +48,6 @@ import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
-import tuwien.auto.calimero.Settings;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.medium.TPSettings;
@@ -212,7 +212,7 @@ public class ProgMode implements Runnable
 				return;
 			}
 			if (Main.isOption(arg, "version", null)) {
-				options.put("about", (Runnable) ProgMode::showVersion);
+				options.put("about", (Runnable) Main::showVersion);
 				return;
 			}
 			if (Main.parseCommonOption(args, i, options))
@@ -264,37 +264,20 @@ public class ProgMode implements Runnable
 	private static void showToolInfo()
 	{
 		out(tool + " - Check/set device(s) in programming mode");
-		showVersion();
+		Main.showVersion();
 		out("Use --help for help message");
 	}
 
 	private static void showUsage()
 	{
-		final StringBuilder sb = new StringBuilder();
-		sb.append("Usage: ").append(tool).append(" [options] <host|port> [on|off <device address>]").append(sep);
-		sb.append("Options:").append(sep);
-		sb.append("  --help -h                show this help message").append(sep);
-		sb.append("  --version                show tool/library version and exit").append(sep);
-		sb.append("  --localhost <id>         local IP/host name").append(sep);
-		sb.append("  --localport <number>     local UDP port (default system assigned)").append(sep);
-		sb.append("  --port -p <number>       UDP port on <host> (default ").append(KNXnetIPConnection.DEFAULT_PORT)
-				.append(")").append(sep);
-		sb.append("  --nat -n                 enable Network Address Translation").append(sep);
-		sb.append("  --ft12 -f                use FT1.2 serial communication").append(sep);
-		sb.append("  --usb -u                 use KNX USB communication").append(sep);
-		sb.append("  --tpuart                 use TP-UART communication").append(sep);
-		sb.append("  --medium -m <id>         KNX medium [tp1|p110|rf|knxip] (default tp1)").append(sep);
-		sb.append("  --domain <address>       domain address on KNX PL/RF medium (defaults to broadcast domain)")
-				.append(sep);
-		sb.append("Commands:").append(sep);
-		sb.append("  on  <device address>    switch programming mode on").append(sep);
-		sb.append("  off <device address>    switch programming mode off").append(sep);
-		out(sb);
-	}
-
-	private static void showVersion()
-	{
-		out(Settings.getLibraryHeader(false));
+		final var joiner = new StringJoiner(sep);
+		joiner.add("Usage: " + tool + " [options] <host|port> [on|off <device address>]");
+		Main.printCommonOptions(joiner);
+		Main.printSecureOptions(joiner);
+		joiner.add("Commands:");
+		joiner.add("  on  <device address>    switch programming mode on");
+		joiner.add("  off <device address>    switch programming mode off");
+		out(joiner.toString());
 	}
 
 	private static void out(final CharSequence s, final Throwable... t)

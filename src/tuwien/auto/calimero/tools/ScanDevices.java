@@ -38,6 +38,7 @@ package tuwien.auto.calimero.tools;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.StringJoiner;
 import java.util.stream.IntStream;
 
 import org.slf4j.Logger;
@@ -46,7 +47,6 @@ import org.slf4j.LoggerFactory;
 import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
-import tuwien.auto.calimero.Settings;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.medium.TPSettings;
@@ -158,7 +158,7 @@ public class ScanDevices implements Runnable
 		try {
 			if (options.isEmpty()) {
 				out(tool + " - Determine existing KNX devices on a KNX subnetwork");
-				showVersion();
+				Main.showVersion();
 				out("Type --help for help message");
 				return;
 			}
@@ -167,7 +167,7 @@ public class ScanDevices implements Runnable
 				return;
 			}
 			if (options.containsKey("version")) {
-				showVersion();
+				Main.showVersion();
 				return;
 			}
 
@@ -313,32 +313,13 @@ public class ScanDevices implements Runnable
 
 	private static void showUsage()
 	{
-		final StringBuilder sb = new StringBuilder();
-		// ??? accept several line requests
-		sb.append("Usage: ").append(tool).append(" [options] <host|port> <area.line[.device]>").append(sep);
-		sb.append("Options:").append(sep);
-		sb.append(" --help -h                show this help message").append(sep);
-		sb.append(" --version                show tool/library version and exit").append(sep);
-		sb.append(" --verbose -v             enable verbose status output").append(sep);
-		sb.append(" --localhost <id>         local IP/host name").append(sep);
-		sb.append(" --localport <port>       local UDP port (default system assigned)").append(sep);
-		sb.append(" --port -p <port>         UDP port on <host> (default ")
-				.append(KNXnetIPConnection.DEFAULT_PORT).append(")").append(sep);
-		sb.append(" --nat -n                 enable Network Address Translation").append(sep);
-		sb.append(" --ft12 -f                use FT1.2 serial communication").append(sep);
-		sb.append(" --usb -u                 use KNX USB communication").append(sep);
-		sb.append(" --tpuart                 use TP-UART communication").append(sep);
-		sb.append(" --medium -m <id>         KNX medium [tp1|p110|knxip|rf] (default tp1)").append(sep);
-		sb.append(" --domain <address>       domain address on KNX PL/RF medium (defaults to broadcast domain)")
-				.append(sep);
-		sb.append("The area and line are given as numbers in the range [0..15], e.g., 3.1").append(sep);
-		sb.append("The (optional) device address part is in the range [0..255]").append(sep);
-		out(sb.toString());
-	}
-
-	private static void showVersion()
-	{
-		out(Settings.getLibraryHeader(false));
+		final var joiner = new StringJoiner(sep);
+		joiner.add("Usage: " + tool + " [options] <host|port> <area[.line[.device]]>");
+		joiner.add("The area and line are given as numbers in the range [0..15], e.g., 3.1");
+		joiner.add("The (optional) device address part is in the range [0..255], e.g., 1.1.209");
+		Main.printCommonOptions(joiner);
+		Main.printSecureOptions(joiner);
+		out(joiner.toString());
 	}
 
 	private static void out(final String s)

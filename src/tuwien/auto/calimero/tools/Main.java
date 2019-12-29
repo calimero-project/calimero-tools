@@ -51,6 +51,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.StringJoiner;
 import java.util.function.Consumer;
 
 import tuwien.auto.calimero.CloseEvent;
@@ -61,6 +62,7 @@ import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.Settings;
 import tuwien.auto.calimero.knxnetip.Connection;
+import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.knxnetip.SecureConnection;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.KNXNetworkLinkFT12;
@@ -341,6 +343,36 @@ final class Main
 		else
 			return false;
 		return true;
+	}
+
+	static void printCommonOptions(final StringJoiner joiner) {
+		joiner.add("Options:");
+		joiner.add("  --help -h                  show this help message");
+		joiner.add("  --version                  show tool/library version and exit");
+		joiner.add("  --localhost <id>           local IP/host name");
+		joiner.add("  --localport <number>       local UDP port (default system assigned)");
+		joiner.add("  --port -p <number>         UDP port on <host> (default " + KNXnetIPConnection.DEFAULT_PORT + ")");
+		joiner.add("  --nat -n                   enable Network Address Translation");
+		joiner.add("  --ft12 -f                  use FT1.2 serial communication");
+		joiner.add("  --usb -u                   use KNX USB communication");
+		joiner.add("  --tpuart                   use TP-UART communication");
+		joiner.add("  --medium -m <id>           KNX medium [tp1|p110|knxip|rf] (default tp1)");
+		joiner.add("  --domain <address>         domain address on KNX PL/RF medium (defaults to broadcast domain)");
+	}
+
+	static void printSecureOptions(final StringJoiner joiner, final boolean printGroupKey) {
+		joiner.add("KNX IP Secure:");
+		if (printGroupKey)
+			joiner.add("  --group-key <key>          multicast group key (backbone key, 32 hexadecimal digits)");
+		joiner.add("  --user <id>                tunneling user identifier (1..127)");
+		joiner.add("  --user-pwd <password>      tunneling user password");
+		joiner.add("  --user-key <key>           tunneling user password hash (32 hexadecimal digits)");
+		joiner.add("  --device-pwd <password>    device authentication password");
+		joiner.add("  --device-key <key>         device authentication code (32 hexadecimal digits)");
+	}
+
+	static void printSecureOptions(final StringJoiner joiner) {
+		printSecureOptions(joiner, true);
 	}
 
 	static KNXNetworkLink newLink(final Map<String, Object> options) throws KNXException, InterruptedException {
