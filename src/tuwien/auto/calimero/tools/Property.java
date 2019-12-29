@@ -80,6 +80,7 @@ import tuwien.auto.calimero.mgmt.PropertyClient.PropertyKey;
 import tuwien.auto.calimero.mgmt.PropertyClient.XmlPropertyDefinitions;
 import tuwien.auto.calimero.mgmt.RemotePropertyServiceAdapter;
 import tuwien.auto.calimero.serial.usb.UsbConnection;
+import tuwien.auto.calimero.tools.Main.PeekingIterator;
 import tuwien.auto.calimero.xml.KNXMLException;
 import tuwien.auto.calimero.xml.XmlInputFactory;
 import tuwien.auto.calimero.xml.XmlReader;
@@ -220,12 +221,8 @@ public class Property implements Runnable
 				out("Type --help for help message");
 				return;
 			}
-			if (options.containsKey("help")) {
-				showUsage();
-				return;
-			}
-			if (options.containsKey("version")) {
-				Main.showVersion();
+			if (options.containsKey("about")) {
+				((Runnable) options.get("about")).run();
 				return;
 			}
 
@@ -480,72 +477,36 @@ public class Property implements Runnable
 		// default subnetwork address for TP1 and unregistered device
 		options.put("knx-address", new IndividualAddress(0, 0x02, 0xff));
 
-		int i = 0;
-		for (; i < args.length; i++) {
-			final String arg = args[i];
+		for (final var i = new Main.PeekingIterator<>(List.of(args).iterator()); i.hasNext(); ) {
+			final String arg = i.next();
 			if (Main.isOption(arg, "help", "h")) {
-				options.put("help", null);
+				options.put("about", (Runnable) Property::showUsage);
 				return;
 			}
-			if (Main.isOption(arg, "version", null)) {
-				options.put("version", null);
-				return;
-			}
-			if (Main.parseCommonOption(args, i, options))
+			if (Main.parseCommonOption(arg, i, options))
+				;
+			else if (Main.parseSecureOption(arg, i, options))
 				;
 			else if (Main.isOption(arg, "local", "l"))
 				options.put("local", null);
 			else if (Main.isOption(arg, "remote", "r"))
-				options.put("remote", Main.getAddress(args[++i]));
+				options.put("remote", Main.getAddress(i.next()));
 			else if (Main.isOption(arg, "definitions", "d"))
-				options.put("definitions", args[++i]);
-			else if (Main.isOption(arg, "verbose", "v"))
-				options.put("verbose", null);
-			else if (Main.isOption(arg, "localhost", null))
-				options.put("localhost", Main.parseHost(args[++i]));
-			else if (Main.isOption(arg, "localport", null))
-				options.put("localport", Integer.decode(args[++i]));
-			else if (Main.isOption(arg, "port", "p"))
-				options.put("port", Integer.decode(args[++i]));
-			else if (Main.isOption(arg, "nat", "n"))
-				options.put("nat", null);
-			else if (Main.isOption(arg, "ft12", "f"))
-				options.put("ft12", null);
-			else if (Main.isOption(arg, "usb", "u"))
-				options.put("usb", null);
-			else if (Main.isOption(arg, "tpuart", null))
-				options.put("tpuart", null);
-			else if (Main.isOption(arg, "medium", "m"))
-				options.put("medium", Main.getMedium(args[++i]));
-			else if (Main.isOption(arg, "domain", null))
-				options.put("domain", Long.decode(args[++i]));
+				options.put("definitions", i.next());
 			else if (Main.isOption(arg, "knx-address", "k"))
-				options.put("knx-address", Main.getAddress(args[++i]));
+				options.put("knx-address", Main.getAddress(i.next()));
 			else if (Main.isOption(arg, "emulatewriteenable", "e"))
 				options.put("emulatewriteenable", null);
 			else if (Main.isOption(arg, "connect", "c"))
 				options.put("connect", null);
 			else if (Main.isOption(arg, "authorize", "a"))
-				options.put("authorize", getAuthorizeKey(args[++i]));
+				options.put("authorize", getAuthorizeKey(i.next()));
 			else if (arg.equals("reset"))
 				options.put("reset", null);
-			else if (arg.equals("get") || arg.equals("set") || arg.equals("desc") || arg.equals("scan")) {
-				final List<String> cmd = new ArrayList<>();
-				cmd.add(arg);
-				while (addOptionIfInteger(cmd, args, i + 1))
-					++i;
-				if (arg.equals("desc") && i + 1 < args.length && args[i + 1].equals("i")) {
-					cmd.add(args[++i]);
-					cmd.add(args[++i]);
-				}
-				if (arg.equals("scan") && i + 1 < args.length && args[i + 1].equals("all"))
-					cmd.add(args[++i]);
-				options.put("command", cmd.toArray(new String[0]));
-			}
+			else if (parseCommand(i, arg))
+				;
 			else if (arg.equals("?"))
 				options.put("command", new String[] { "?" });
-			else if (Main.parseSecureOption(args, i, options))
-				++i;
 			else if (!options.containsKey("host"))
 				options.put("host", arg);
 			else
@@ -560,20 +521,33 @@ public class Property implements Runnable
 		Main.setDomainAddress(options);
 	}
 
+	private boolean parseCommand(final PeekingIterator<String> i, final String arg) {
+		if (!arg.equals("get") && !arg.equals("set") && !arg.equals("desc") && !arg.equals("scan"))
+			return false;
+		final List<String> cmd = new ArrayList<>();
+		cmd.add(arg);
+		try {
+			while (i.hasNext()) {
+				Integer.decode(i.peek());
+				cmd.add(i.next());
+			}
+		}
+		catch (final NumberFormatException expected) {}
+
+		if (arg.equals("desc") && i.hasNext() && "i".equals(i.peek())) {
+			cmd.add(i.next());
+			cmd.add(i.next());
+		}
+		else if (arg.equals("scan") && "all".equals(i.peek()))
+			cmd.add(i.next());
+
+		options.put("command", cmd.toArray(new String[0]));
+		return true;
+	}
+
 	//
 	// utility methods
 	//
-
-	private static boolean addOptionIfInteger(final List<String> cmd, final String[] args, final int index)
-	{
-		if (index < args.length) try {
-			final String arg = args[index];
-			Integer.decode(arg);
-			return cmd.add(arg);
-		}
-		catch (final NumberFormatException expected) {}
-		return false;
-	}
 
 	private void getProperty(final String[] args) throws KNXException, InterruptedException
 	{

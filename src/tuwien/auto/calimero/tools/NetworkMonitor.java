@@ -41,6 +41,7 @@ import java.net.InetSocketAddress;
 import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
 
@@ -251,12 +252,8 @@ public class NetworkMonitor implements Runnable
 			out("Type --help for help message");
 			return;
 		}
-		if (options.containsKey("help")) {
-			showUsage();
-			return;
-		}
-		if (options.containsKey("version")) {
-			Main.showVersion();
+		if (options.containsKey("about")) {
+			((Runnable) options.get("about")).run();
 			return;
 		}
 
@@ -416,43 +413,18 @@ public class NetworkMonitor implements Runnable
 		options.put("port", KNXnetIPConnection.DEFAULT_PORT);
 		options.put("medium", TPSettings.TP1);
 
-		int i = 0;
-		for (; i < args.length; i++) {
-			final String arg = args[i];
+		for (final var i = List.of(args).iterator(); i.hasNext(); ) {
+			final String arg = i.next();
 			if (Main.isOption(arg, "help", "h")) {
-				options.put("help", null);
+				options.put("about", (Runnable) NetworkMonitor::showUsage);
 				return;
 			}
-			if (Main.isOption(arg, "version", null)) {
-				options.put("version", null);
-				return;
-			}
-			if (Main.parseCommonOption(args, i, options))
+			if (Main.parseCommonOption(arg, i, options))
 				;
-			else if (Main.isOption(arg, "verbose", "v"))
-				options.put("verbose", null);
+			else if (Main.parseSecureOption(arg, i, options))
+				;
 			else if (Main.isOption(arg, "compact", "c"))
 				options.put("compact", null);
-			else if (Main.isOption(arg, "localhost", null))
-				options.put("localhost", Main.parseHost(args[++i]));
-			else if (Main.isOption(arg, "localport", null))
-				options.put("localport", Integer.decode(args[++i]));
-			else if (Main.isOption(arg, "port", "p"))
-				options.put("port", Integer.decode(args[++i]));
-			else if (Main.isOption(arg, "nat", "n"))
-				options.put("nat", null);
-			else if (Main.isOption(arg, "ft12", "f"))
-				options.put("ft12", null);
-			else if (Main.isOption(arg, "usb", "u"))
-				options.put("usb", null);
-			else if (Main.isOption(arg, "tpuart", null))
-				options.put("tpuart", null);
-			else if (Main.isOption(arg, "medium", "m"))
-				options.put("medium", Main.getMedium(args[++i]));
-			else if (Main.isOption(arg, "domain", null))
-				options.put("domain", Long.decode(args[++i]));
-			else if (Main.parseSecureOption(args, i, options))
-				++i;
 			else if (!options.containsKey("host"))
 				options.put("host", arg);
 			else

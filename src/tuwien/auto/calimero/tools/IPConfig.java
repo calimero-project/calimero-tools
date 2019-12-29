@@ -198,12 +198,8 @@ public class IPConfig implements Runnable
 				out("Type --help for help message");
 				return;
 			}
-			if (options.containsKey("help")) {
-				showUsage();
-				return;
-			}
-			if (options.containsKey("version")) {
-				Main.showVersion();
+			if (options.containsKey("about")) {
+				((Runnable) options.get("about")).run();
 				return;
 			}
 
@@ -498,46 +494,26 @@ public class IPConfig implements Runnable
 		// default subnetwork address for TP1 and unregistered device
 		options.put("knx-address", new IndividualAddress(0, 0x02, 0xff));
 
-		for (int i = 0; i < l.size(); i++) {
-			final String arg = l.get(i);
+		for (final var i = l.iterator(); i.hasNext(); ) {
+			final String arg = i.next();
 			if (Main.isOption(arg, "help", "h")) {
-				options.put("help", null);
+				options.put("about", (Runnable) IPConfig::showUsage);
 				return;
 			}
-			if (Main.isOption(arg, "version", null)) {
-				options.put("version", null);
-				return;
-			}
-			if (Main.parseCommonOption(args, i, options))
+			if (Main.parseCommonOption(arg, i, options))
+				;
+			else if (Main.parseSecureOption(arg, i, options))
 				;
 			else if (Main.isOption(arg, "local", "l"))
 				options.put("localDM", null);
 			else if (Main.isOption(arg, "remote", "r"))
-				options.put("remote", Main.getAddress(l.get(++i)));
-			else if (Main.isOption(arg, "localhost", null))
-				parseIP(l.get(++i), "localhost", options);
-			else if (Main.isOption(arg, "localport", null))
-				options.put("localport", Integer.decode(l.get(++i)));
-			else if (Main.isOption(arg, "port", "p"))
-				options.put("port", Integer.decode(l.get(++i)));
-			else if (Main.isOption(arg, "nat", "n"))
-				options.put("nat", null);
-			else if (Main.isOption(arg, "ft12", "f"))
-				options.put("ft12", null);
-			else if (Main.isOption(arg, "usb", "u"))
-				options.put("usb", null);
-			else if (Main.isOption(arg, "tpuart", null))
-				options.put("tpuart", null);
-			else if (Main.isOption(arg, "medium", "m"))
-				options.put("medium", Main.getMedium(l.get(++i)));
-			else if (Main.isOption(arg, "domain", null))
-				options.put("domain", Long.decode(l.get(++i)));
+				options.put("remote", Main.getAddress(i.next()));
 			else if (Main.isOption(arg, "knx-address", "k"))
-				options.put("knx-address", Main.getAddress(l.get(++i)));
+				options.put("knx-address", Main.getAddress(i.next()));
 			else if (Main.isOption(arg, "connect", "c"))
 				options.put("connect", null);
 			else if (Main.isOption(arg, "authorize", "a"))
-				options.put("authorize", getAuthorizeKey(l.get(++i)));
+				options.put("authorize", getAuthorizeKey(i.next()));
 			// IP configuration options
 			else if (arg.equalsIgnoreCase("manual"))
 				options.put("manual", null);
@@ -548,15 +524,13 @@ public class IPConfig implements Runnable
 			else if (arg.equalsIgnoreCase("auto"))
 				options.put("auto", null);
 			else if (arg.equalsIgnoreCase("ip"))
-				parseIP(l.get(++i), "ip", options);
+				parseIP(i.next(), "ip", options);
 			else if (arg.equalsIgnoreCase("subnet"))
-				parseIP(l.get(++i), "subnet", options);
+				parseIP(i.next(), "subnet", options);
 			else if (arg.equalsIgnoreCase("gateway"))
-				parseIP(l.get(++i), "gateway", options);
+				parseIP(i.next(), "gateway", options);
 			else if (arg.equalsIgnoreCase("multicast"))
-				parseIP(l.get(++i), "multicast", options);
-			else if (Main.parseSecureOption(args, i, options))
-				++i;
+				parseIP(i.next(), "multicast", options);
 			else if (!options.containsKey("host"))
 				options.put("host", arg);
 			else

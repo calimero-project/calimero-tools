@@ -38,6 +38,7 @@ package tuwien.auto.calimero.tools;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.StringJoiner;
@@ -204,49 +205,24 @@ public class ProgMode implements Runnable
 		options.put("command", "status");
 
 		boolean setmode = false;
-		int i = 0;
-		for (; i < args.length; i++) {
-			final String arg = args[i];
+		for (final var i = List.of(args).iterator(); i.hasNext(); ) {
+			final String arg = i.next();
 			if (Main.isOption(arg, "help", "h")) {
 				options.put("about", (Runnable) ProgMode::showUsage);
 				return;
 			}
-			if (Main.isOption(arg, "version", null)) {
-				options.put("about", (Runnable) Main::showVersion);
-				return;
-			}
-			if (Main.parseCommonOption(args, i, options))
+			if (Main.parseCommonOption(arg, i, options))
 				;
-			else if (Main.isOption(arg, "verbose", "v"))
-				options.put("verbose", null);
-			else if (Main.isOption(arg, "localhost", null))
-				options.put("localhost", Main.parseHost(args[++i]));
-			else if (Main.isOption(arg, "localport", null))
-				options.put("localport", Integer.decode(args[++i]));
-			else if (Main.isOption(arg, "port", "p"))
-				options.put("port", Integer.decode(args[++i]));
-			else if (Main.isOption(arg, "nat", "n"))
-				options.put("nat", null);
-			else if (Main.isOption(arg, "ft12", "f"))
-				options.put("ft12", null);
-			else if (Main.isOption(arg, "usb", "u"))
-				options.put("usb", null);
-			else if (Main.isOption(arg, "tpuart", null))
-				options.put("tpuart", null);
-			else if (Main.isOption(arg, "medium", "m"))
-				options.put("medium", Main.getMedium(args[++i]));
-			else if (Main.isOption(arg, "domain", null))
-				options.put("domain", Long.decode(args[++i]));
+			else if (Main.parseSecureOption(arg, i, options))
+				;
 			else if (Main.isOption(arg, "knx-address", "k"))
-				options.put("knx-address", Main.getAddress(args[++i]));
+				options.put("knx-address", Main.getAddress(i.next()));
 			else if (arg.equals("on") || arg.equals("off")) {
 				options.put("command", arg);
 				setmode = true;
 			}
 			else if (setmode)
 				options.put("device", new IndividualAddress(arg));
-			else if (Main.parseSecureOption(args, i, options))
-				++i;
 			else if (!options.containsKey("host"))
 				options.put("host", arg);
 			else

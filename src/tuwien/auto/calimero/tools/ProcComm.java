@@ -268,7 +268,7 @@ public class ProcComm implements Runnable
 		boolean canceled = false;
 		try {
 			start(null);
-			if (options.containsKey("help") || options.containsKey("version"))
+			if (options.containsKey("about"))
 				return;
 			loadDatapoints();
 			if (options.containsKey("monitor"))
@@ -301,18 +301,8 @@ public class ProcComm implements Runnable
 	 */
 	public void start(final ProcessListener l) throws KNXException, InterruptedException
 	{
-		if (options.isEmpty()) {
-			out(tool + " - KNX process communication & group monitor");
-			Main.showVersion();
-			out("Type --help for help message");
-			return;
-		}
-		if (options.containsKey("help")) {
-			showUsage();
-			return;
-		}
-		if (options.containsKey("version")) {
-			Main.showVersion();
+		if (options.containsKey("about")) {
+			((Runnable) options.get("about")).run();
 			return;
 		}
 
@@ -790,28 +780,25 @@ public class ProcComm implements Runnable
 	 */
 	private void parseOptions(final String[] args)
 	{
-		if (args.length == 0)
+		if (args.length == 0) {
+			options.put("about", (Runnable) ProcComm::showToolInfo);
 			return;
+		}
 
 		// add defaults
 		options.put("port", KNXnetIPConnection.DEFAULT_PORT);
 		options.put("medium", TPSettings.TP1);
 
-		int i = 0;
-		for (; i < args.length; i++) {
-			final String arg = args[i];
+		for (final var i = new Main.PeekingIterator<>(List.of(args).iterator()); i.hasNext(); ) {
+			final String arg = i.next();
 			if (Main.isOption(arg, "help", "h")) {
-				options.put("help", null);
+				options.put("about", (Runnable) ProcComm::showUsage);
 				return;
 			}
-			if (Main.isOption(arg, "version", null)) {
-				options.put("version", null);
-				return;
-			}
-			if (Main.parseCommonOption(args, i, options))
+			if (Main.parseCommonOption(arg, i, options))
 				;
-			else if (Main.isOption(arg, "verbose", "v"))
-				options.put("verbose", null);
+			else if (Main.parseSecureOption(arg, i, options))
+				;
 			else if (Main.isOption(arg, "compact", "c"))
 				options.put("compact", null);
 			else if (Main.isOption(arg, "lte", null)) {
@@ -819,97 +806,81 @@ public class ProcComm implements Runnable
 				if (options.containsKey("tag")) {
 					final List<String> list = new ArrayList<>();
 					list.add(options.containsKey("read") ? "read" : options.containsKey("write") ? "write" : "info");
-					list.add(args[++i]); // tag
-					list.add(args[++i]); // IOT
-					list.add(args[++i]); // OI
-					if ("company".equals(args[i + 1])) {
-						list.add(args[++i]);
-						list.add(args[++i]);
+					list.add(i.next()); // tag
+					list.add(i.next()); // IOT
+					list.add(i.next()); // OI
+					if ("company".equals(i.peek())) {
+						list.add(i.next());
+						list.add(i.next());
 					}
-					list.add(args[++i]); // PID
+					list.add(i.next()); // PID
 					if (options.containsKey("write") || options.containsKey("info"))
-						list.add(args[++i]); // data
+						list.add(i.next()); // data
 					options.put("lte-cmd", list.toArray(new String[0]));
 				}
 			}
 			else if (arg.equals("read")) {
-				if (i + 1 >= args.length)
+				if (!i.hasNext())
 					break;
 				options.put("read", null);
-				if ("--lte".equals(args[i + 1])) {
-					options.put("tag", args[i + 2]);
+				if ("--lte".equals(i.peek())) {
+					i.next();
+					options.put("tag", i.next());
 					continue;
 				}
 				try {
-					options.put("dst", new GroupAddress(args[++i]));
+					options.put("dst", new GroupAddress(i.next()));
 				}
 				catch (final KNXFormatException e) {
 					throw new KNXIllegalArgumentException("read datapoint: " + e.getMessage());
 				}
-				if ((i + 1 < args.length)) {
-					if ("-".equals(args[i + 1]))
-						i++;
-					else if (isDpt(args[i + 1]))
-						options.put("dpt", args[++i]);
+				if (i.hasNext()) {
+					if ("-".equals(i.peek()))
+						i.next();
+					else if (isDpt(i.peek()))
+						options.put("dpt", i.next());
 				}
 			}
 			else if (arg.equals("write")) {
-				if (i + 3 >= args.length)
+				if (!i.hasNext())
 					break;
 				options.put("write", null);
-				if ("--lte".equals(args[i + 1])) {
-					options.put("tag", args[i + 2]);
+				if ("--lte".equals(i.peek())) {
+					i.next();
+					options.put("tag", i.next());
 					continue;
 				}
 				try {
-					options.put("dst", new GroupAddress(args[++i]));
+					options.put("dst", new GroupAddress(i.next()));
 				}
 				catch (final KNXFormatException e) {
 					throw new KNXIllegalArgumentException("write datapoint: " + e.getMessage());
 				}
-				if ("-".equals(args[i + 1]))
-					i++;
-				else if (isDpt(args[i + 1]))
-					options.put("dpt", args[++i]);
-				options.put("value", args[++i]);
-				if (isTwoPartValue(args[i]))
-					options.put("value", args[i] + " " + args[++i]);
+				if ("-".equals(i.peek()))
+					i.next();
+				else if (isDpt(i.peek()))
+					options.put("dpt", i.next());
+				final var value = i.next();
+				options.put("value", value);
+				if (isTwoPartValue(value))
+					options.put("value", value + " " + i.next());
 			}
 			else if (arg.equals("info")) {
-				if (i + 3 >= args.length)
+				if (!i.hasNext())
 					break;
 				options.put("info", null);
-				options.put("tag", args[i + 2]);
+				i.next();
+				options.put("tag", i.next());
 				continue;
 			}
 			else if (arg.equals("monitor"))
 				options.put("monitor", null);
-			else if (Main.isOption(arg, "localhost", null))
-				options.put("localhost", Main.parseHost(args[++i]));
-			else if (Main.isOption(arg, "localport", null))
-				options.put("localport", Integer.decode(args[++i]));
-			else if (Main.isOption(arg, "port", "p"))
-				options.put("port", Integer.decode(args[++i]));
-			else if (Main.isOption(arg, "nat", "n"))
-				options.put("nat", null);
-			else if (Main.isOption(arg, "ft12", "f"))
-				options.put("ft12", null);
-			else if (Main.isOption(arg, "usb", "u"))
-				options.put("usb", null);
-			else if (Main.isOption(arg, "tpuart", null))
-				options.put("tpuart", null);
-			else if (Main.isOption(arg, "medium", "m"))
-				options.put("medium", Main.getMedium(args[++i]));
-			else if (Main.isOption(arg, "domain", null))
-				options.put("domain", Long.decode(args[++i]));
 			else if (Main.isOption(arg, "sn", null))
-				options.put("sn", Long.decode(args[++i]));
+				options.put("sn", Long.decode(i.next()));
 			else if (Main.isOption(arg, "knx-address", null))
-				options.put("knx-address", Main.getAddress(args[++i]));
+				options.put("knx-address", Main.getAddress(i.next()));
 			else if (Main.isOption(arg, "timeout", "t"))
-				options.put("timeout", Integer.decode(args[++i]));
-			else if (Main.parseSecureOption(args, i, options))
-				++i;
+				options.put("timeout", Integer.decode(i.next()));
 			else if (!options.containsKey("host"))
 				options.put("host", arg);
 			else
@@ -957,6 +928,12 @@ public class ProcComm implements Runnable
 
 	private static boolean isTwoPartValue(final String value) {
 		return List.of("decrease", "increase", "up", "down").contains(value);
+	}
+
+	private static void showToolInfo() {
+		out(tool + " - KNX process communication & group monitor");
+		Main.showVersion();
+		out("Type --help for help message");
 	}
 
 	private static void showUsage()

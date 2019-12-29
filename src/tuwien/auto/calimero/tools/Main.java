@@ -263,65 +263,35 @@ final class Main
 					+ " networks don't use domain addresses, use --medium to specify KNX network medium");
 	}
 
-	static boolean parseCommonOption(final String[] args, final int i, final Map<String, Object> options) {
-		final String arg = args[i];
-		if (Main.isOption(arg, "tcp", null))
-			options.put("tcp", null);
-		else if (Main.isOption(arg, "udp", null))
-			options.put("udp", null);
-		else if (Main.isOption(arg, "ft12-cemi", null))
-			options.put("ft12-cemi", null);
-		else
-			return false;
-		return true;
-	}
-
 	static boolean parseCommonOption(final String arg, final Iterator<String> i, final Map<String, Object> options) {
-		if (Main.isOption(arg, "version", null))
+		if (isOption(arg, "version", null))
 			options.put("about", (Runnable) Main::showVersion);
-		else if (Main.isOption(arg, "localhost", null))
-			options.put("localhost", Main.parseHost(i.next()));
-		else if (Main.isOption(arg, "localport", null))
+		else if (isOption(arg, "localhost", null))
+			options.put("localhost", parseHost(i.next()));
+		else if (isOption(arg, "localport", null))
 			options.put("localport", Integer.decode(i.next()));
-		else if (Main.isOption(arg, "port", "p"))
+		else if (isOption(arg, "port", "p"))
 			options.put("port", Integer.decode(i.next()));
-		else if (Main.isOption(arg, "nat", "n"))
+		else if (isOption(arg, "nat", "n"))
 			options.put("nat", null);
-		else if (Main.isOption(arg, "ft12", "f"))
+		else if (isOption(arg, "ft12", "f"))
 			options.put("ft12", null);
-		else if (Main.isOption(arg, "usb", "u"))
+		else if (isOption(arg, "usb", "u"))
 			options.put("usb", null);
-		else if (Main.isOption(arg, "tpuart", null))
+		else if (isOption(arg, "tpuart", null))
 			options.put("tpuart", null);
-		else if (Main.isOption(arg, "medium", "m"))
-			options.put("medium", Main.getMedium(i.next()));
-		else if (Main.isOption(arg, "domain", null))
+		else if (isOption(arg, "medium", "m"))
+			options.put("medium", getMedium(i.next()));
+		else if (isOption(arg, "domain", null))
 			options.put("domain", Long.decode(i.next()));
-		else if (Main.isOption(arg, "tcp", null))
+		else if (isOption(arg, "tcp", null))
 			options.put("tcp", null);
-		else if (Main.isOption(arg, "udp", null))
+		else if (isOption(arg, "udp", null))
 			options.put("udp", null);
-		else if (Main.isOption(arg, "ft12-cemi", null))
+		else if (isOption(arg, "ft12-cemi", null))
 			options.put("ft12-cemi", null);
-		else
-			return false;
-		return true;
-	}
-
-	static boolean parseSecureOption(final String[] args, final int i, final Map<String, Object> options) {
-		final String arg = args[i];
-		if (isOption(arg, "group-key", null))
-			options.put("group-key", fromHex(args[i + 1]));
-		else if (isOption(arg, "device-key", null))
-			options.put("device-key", fromHex(args[i + 1]));
-		else if (isOption(arg, "device-pwd", null))
-			options.put("device-key", SecureConnection.hashDeviceAuthenticationPassword(args[i + 1].toCharArray()));
-		else if (isOption(arg, "user", null))
-			options.put("user", Integer.decode(args[i + 1]));
-		else if (isOption(arg, "user-key", null))
-			options.put("user-key", fromHex(args[i + 1]));
-		else if (isOption(arg, "user-pwd", null))
-			options.put("user-key", SecureConnection.hashUserPassword(args[i + 1].toCharArray()));
+		else if (isOption(arg, "verbose", null)) // TODO remove, still used by the gui
+			;
 		else
 			return false;
 		return true;
@@ -405,8 +375,8 @@ final class Main
 		}
 
 		// we have an IP link
-		final InetSocketAddress local = Main.createLocalSocket((InetAddress) options.get("localhost"), (Integer) options.get("localport"));
-		final InetAddress addr = Main.parseHost(host);
+		final InetSocketAddress local = createLocalSocket((InetAddress) options.get("localhost"), (Integer) options.get("localport"));
+		final InetAddress addr = parseHost(host);
 
 		// check for KNX IP routing
 		if (addr.isMulticastAddress()) {
@@ -455,7 +425,7 @@ final class Main
 
 	static LocalDeviceManagementIp newLocalDeviceMgmtIP(final Map<String, Object> options,
 		final Consumer<CloseEvent> adapterClosed) throws KNXException, InterruptedException {
-		final InetSocketAddress local = Main.createLocalSocket((InetAddress) options.get("localhost"),
+		final InetSocketAddress local = createLocalSocket((InetAddress) options.get("localhost"),
 				(Integer) options.get("localport"));
 		final InetSocketAddress host = new InetSocketAddress((String) options.get("host"),
 				((Integer) options.get("port")).intValue());
@@ -504,6 +474,25 @@ final class Main
 		public void run()
 		{
 			t.interrupt();
+		}
+	}
+
+	static final class PeekingIterator<E> implements Iterator<E> {
+		private final Iterator<E> i;
+		private E next;
+
+		public PeekingIterator(final Iterator<E> i) { this.i = i; }
+
+		public E peek() { return next != null ? next : (next = next()); }
+
+		@Override
+		public boolean hasNext() { return next != null || i.hasNext(); }
+
+		@Override
+		public E next() {
+			final E e = next != null ? next : i.next();
+			next = null;
+			return e;
 		}
 	}
 }
