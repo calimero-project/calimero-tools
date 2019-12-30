@@ -154,7 +154,6 @@ public class Property implements Runnable
 	 * <ul>
 	 * <li><code>--help -h</code> show help message</li>
 	 * <li><code>--version</code> show tool/library version and exit</li>
-	 * <li><code>--verbose -v</code> enable verbose status output</li>
 	 * <li><code>--local -l</code> local device management (default)</li>
 	 * <li><code>--remote -r</code> <i>KNX addr</i> &nbsp;remote property service</li>
 	 * <li><code>--definitions -d</code> <i>file</i> &nbsp;use property definition file</li>

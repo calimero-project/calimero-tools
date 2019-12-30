@@ -200,7 +200,6 @@ public class ProcComm implements Runnable
 	 * <ul>
 	 * <li><code>--help -h</code> show help message</li>
 	 * <li><code>--version</code> show tool/library version and exit</li>
-	 * <li><code>--verbose -v</code> enable verbose status output</li>
 	 * <li><code>--compact -c</code> show incoming process communication data in compact format</li>
 	 * <li><code>--localhost</code> <i>id</i> &nbsp;local IP/host name</li>
 	 * <li><code>--localport</code> <i>number</i> &nbsp;local UDP port (default system assigned)</li>

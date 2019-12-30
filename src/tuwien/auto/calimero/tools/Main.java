@@ -290,8 +290,6 @@ final class Main
 			options.put("udp", null);
 		else if (isOption(arg, "ft12-cemi", null))
 			options.put("ft12-cemi", null);
-		else if (isOption(arg, "verbose", null)) // TODO remove, still used by the gui
-			;
 		else
 			return false;
 		return true;

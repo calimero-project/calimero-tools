@@ -99,7 +99,6 @@ public class ScanDevices implements Runnable
 	 * <li>no arguments: only show short description and version info</li>
 	 * <li><code>--help -h</code> show help message</li>
 	 * <li><code>--version</code> show tool/library version and exit</li>
-	 * <li><code>--verbose -v</code> enable verbose status output</li>
 	 * <li><code>--localhost</code> <i>id</i> &nbsp;local IP/host name</li>
 	 * <li><code>--localport</code> <i>port</i> &nbsp;local UDP port (default system assigned)</li>
 	 * <li><code>--port -p</code> <i>port</i> &nbsp;UDP port on host (default 3671)</li>

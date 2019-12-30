@@ -312,7 +312,6 @@ public class DeviceInfo implements Runnable
 	 * <li>no arguments: only show short description and version info</li>
 	 * <li><code>--help -h</code> show help message</li>
 	 * <li><code>--version</code> show tool/library version and exit</li>
-	 * <li><code>--verbose -v</code> enable verbose status output</li>
 	 * <li><code>--localhost</code> <i>id</i> &nbsp;local IP/host name</li>
 	 * <li><code>--localport</code> <i>number</i> &nbsp;local UDP port (default system assigned)</li>
 	 * <li><code>--port -p</code> <i>number</i> &nbsp;UDP port on host (default 3671)</li>
@@ -447,7 +446,7 @@ public class DeviceInfo implements Runnable
 	}
 
 	private void out(final Parameter p, final String value, final byte[] raw) {
-		final boolean verbose = options.containsKey("verbose");
+		final boolean verbose = false; // TODO create option 'raw/unformatted'
 		// create human readable name from parameter by inserting some spaces
 		final String name = p.name().replaceAll("([A-Z])", " $1").replace("I P", "IP").trim();
 		final String s = name + " = " + value;
