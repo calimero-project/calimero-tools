@@ -96,11 +96,13 @@ final class Main
 		{ "devinfo", "Read KNX device information" },
 		{ "progmode", "Check/set device(s) in programming mode" },
 		{ "restart", "Restart a KNX interface/device" },
+		{ "import", "Import ETS group addresses from csv or xml format" },
 	};
 
 	private static final List<Class<? extends Runnable>> tools = Arrays.asList(Discover.class, Discover.class,
 			ScanDevices.class, IPConfig.class, NetworkMonitor.class, ProcComm.class, ProcComm.class, ProcComm.class,
-			Property.class, Property.class, PropClient.class, DeviceInfo.class, ProgMode.class, Restart.class);
+			Property.class, Property.class, PropClient.class, DeviceInfo.class, ProgMode.class, Restart.class,
+			GroupAddressImporter.class);
 
 	private static final String sep = System.getProperty("line.separator");
 
