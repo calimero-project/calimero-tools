@@ -233,7 +233,6 @@ public class DeviceInfo implements Runnable
 	}
 
 	private static final String tool = "DeviceInfo";
-	private static final String sep = System.getProperty("line.separator");
 
 	// Interface Object "Addresstable Object" in interface object server
 	private static final int addresstableObject = 1;
@@ -1399,7 +1398,7 @@ public class DeviceInfo implements Runnable
 
 	private static void showUsage()
 	{
-		final var joiner = new StringJoiner(sep);
+		final var joiner = new StringJoiner(System.lineSeparator());
 		joiner.add("Usage: " + tool + " [options] <host|port> <KNX device address>");
 		Main.printCommonOptions(joiner);
 		Main.printSecureOptions(joiner);
