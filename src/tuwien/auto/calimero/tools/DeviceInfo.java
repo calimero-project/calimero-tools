@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2011, 2019 B. Malinowsky
+    Copyright (c) 2011, 2020 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -40,7 +40,7 @@ import java.io.ByteArrayOutputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -1221,7 +1221,7 @@ public class DeviceInfo implements Runnable
 		try {
 			out.debug("read {} ...", p);
 			final String s = c.call();
-			putResult(p, s, s.getBytes(Charset.forName("ISO-8859-1")));
+			putResult(p, s, s.getBytes(StandardCharsets.ISO_8859_1));
 		}
 		catch (InterruptedException | KNXLinkClosedException e) {
 			throw e;
