@@ -147,7 +147,7 @@ public class DeviceInfo implements Runnable
 		SystemState,
 		RoutingCount,
 		GroupObjTableLocation,
-		GroupAddrTableEntries,
+		GroupAddressTableEntries,
 		DeviceAddress,
 		GroupAddresses,
 		ProgramVersion,
@@ -1061,7 +1061,7 @@ public class DeviceInfo implements Runnable
 
 		// realization type 1
 		final int entries = readMem(memLocation, 1, "Group address table entries ", false,
-				CommonParameter.GroupAddrTableEntries);
+				CommonParameter.GroupAddressTableEntries);
 
 		// address of device address
 		int startAddr = memLocation + 1;
