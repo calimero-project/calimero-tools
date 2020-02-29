@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2010, 2019 B. Malinowsky
+    Copyright (c) 2010, 2020 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -832,6 +832,7 @@ public class Property implements Runnable
 
 		customFormatter.put(key(11, PID.MAC_ADDRESS), data -> toHex(data, ":"));
 		customFormatter.put(key(11, PID.KNXNETIP_DEVICE_CAPABILITIES), Property::deviceCapabilities);
+		customFormatter.put(key(11, PID.KNXNETIP_ROUTING_CAPABILITIES), Property::routingCapabilities);
 		customFormatter.put(key(11, PID.CURRENT_IP_ADDRESS), Property::ipAddress);
 		customFormatter.put(key(11, PID.CURRENT_SUBNET_MASK), Property::ipAddress);
 		customFormatter.put(key(11, PID.CURRENT_DEFAULT_GATEWAY), Property::ipAddress);
@@ -937,6 +938,22 @@ public class Property implements Runnable
 			joiner.add("Remote Configuration & Diagnosis");
 		if ((data[1] & 0x20) == 0x20)
 			joiner.add("Object Server");
+		return joiner.toString();
+	}
+
+	private static String routingCapabilities(final byte[] data) {
+		final var joiner = new StringJoiner(delimiter);
+		final byte b = data[0];
+		if ((b & 0x01) == 0x01)
+			joiner.add("Queue overflow error count");
+		if ((b & 0x02) == 0x02)
+			joiner.add("Transmitted telegram count");
+		if ((b & 0x04) == 0x04)
+			joiner.add("Priority/FIFO");
+		if ((b & 0x08) == 0x08)
+			joiner.add("Multiple KNX installations");
+		if ((b & 0x10) == 0x10)
+			joiner.add("Group address mapping between installations");
 		return joiner.toString();
 	}
 
