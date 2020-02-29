@@ -1130,7 +1130,7 @@ public class DeviceInfo implements Runnable
 			final int elements = readElements(objectIndex, pid);
 			final StringBuilder sb = new StringBuilder();
 			for (int i = 0; i < elements; i++) {
-				data = read(objectIndex, pid);
+				data = read(objectIndex, pid, i + 1, 1);
 				sb.append(new IndividualAddress(data)).append(" ");
 			}
 			putResult(KnxipParameter.AdditionalIndividualAddresses, sb.toString(), new byte[0]);
