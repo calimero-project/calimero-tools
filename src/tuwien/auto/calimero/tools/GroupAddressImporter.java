@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2019 B. Malinowsky
+    Copyright (c) 2019, 2020 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -57,7 +57,7 @@ public class GroupAddressImporter implements Runnable {
 	 *
 	 * @param args command line options for running this tool
 	 */
-	public static void main(final String... args) throws IOException {
+	public static void main(final String... args) {
 		if (args.length == 0) {
 			showToolInfo();
 			return;
