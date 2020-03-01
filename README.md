@@ -16,6 +16,7 @@ With Gradle, execute
 
 Available Tools
 ---------------
+Use `./gradlew run` or `mvn exec:java` to list available commands.
 
 * Discover - KNXnet/IP discovery and self description
 * DeviceInfo - shows device information of a device in a KNX network (using the device's interface objects)
@@ -29,7 +30,6 @@ Available Tools
 * Restart - performs a basic restart or master reset of a KNX interface or KNX device
 * GroupAddressImporter - import ETS group addresses in XML or CSV format for use with Calimero 
 
-Use `./gradlew run` or `mvn exec:java` to list available commands.
 
 Examples
 -------------
@@ -40,7 +40,7 @@ Note, KNX IP secure communication requires the following command-line options:
 * Secure Unicast:
     * `--user` _&lt;user ID>_
     * `--user-pwd` _&lt;pwd>_, or `--user-key` _<16 bytes hex key>_
-    * (optional) `--device-auth-code` _&lt;auth>_, or `--device-key` _<16 bytes hex key>_
+    * (optional) `--device-pwd` _&lt;auth>_, or `--device-key` _<16 bytes hex key>_
 
 ### Using Gradle
 
