@@ -321,7 +321,9 @@ final class Main
 		joiner.add("  --version                  show tool/library version and exit");
 		joiner.add("  --localhost <id>           local IP/host name");
 		joiner.add("  --localport <number>       local UDP port (default system assigned)");
-		joiner.add("  --port -p <number>         UDP port on <host> (default " + KNXnetIPConnection.DEFAULT_PORT + ")");
+		joiner.add("  --port -p <number>         UDP/TCP port on <host> (default " + KNXnetIPConnection.DEFAULT_PORT + ")");
+		joiner.add("  --udp                      use UDP (default for unsecure communication)");
+		joiner.add("  --tcp                      use TCP (default for KNX IP secure)");
 		joiner.add("  --nat -n                   enable Network Address Translation");
 		joiner.add("  --ft12 -f                  use FT1.2 serial communication");
 		joiner.add("  --usb -u                   use KNX USB communication");
