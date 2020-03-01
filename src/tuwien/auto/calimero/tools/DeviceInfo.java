@@ -46,9 +46,11 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -63,7 +65,6 @@ import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.KNXRemoteException;
-import tuwien.auto.calimero.dptxlator.DPTXlator;
 import tuwien.auto.calimero.dptxlator.DPTXlatorBoolean;
 import tuwien.auto.calimero.dptxlator.DptXlator16BitSet;
 import tuwien.auto.calimero.dptxlator.TranslatorTypes;
@@ -115,6 +116,8 @@ public class DeviceInfo implements Runnable
 		 * @return unique parameter name
 		 */
 		String name();
+
+		default String friendlyName() { return name().replaceAll("([A-Z])", " $1").replace("I P", "IP").trim(); }
 	}
 
 	/**
@@ -583,19 +586,9 @@ public class DeviceInfo implements Runnable
 
 	private void readDeviceObject(int objectIdx) throws InterruptedException
 	{
-		// Manufacturer ID (Device Object)
-		byte[] data = read(objectIdx, PID.MANUFACTURER_ID);
-		if (data != null) {
-			final int mfId = (int) toUnsigned(data);
-			putResult(CommonParameter.Manufacturer, manufacturer(mfId), data);
-		}
-		// Order Info
+		read(CommonParameter.Manufacturer, objectIdx, PID.MANUFACTURER_ID, data -> manufacturer((int) toUnsigned(data)));
 		readUnsigned(objectIdx, PID.ORDER_INFO, true, CommonParameter.OrderInfo);
-
-		// Serial Number
-		data = read(objectIdx, PropertyAccess.PID.SERIAL_NUMBER);
-		if (data != null)
-			putResult(CommonParameter.SerialNumber, knxSerialNumber(data), data);
+		read(CommonParameter.SerialNumber, objectIdx, PropertyAccess.PID.SERIAL_NUMBER, DeviceInfo::knxSerialNumber);
 
 		// Physical PEI type, i.e., the currently connected PEI type
 		readUnsigned(objectIdx, PID.PEI_TYPE, false, CommonParameter.ActualPeiType);
@@ -612,20 +605,22 @@ public class DeviceInfo implements Runnable
 		// it to our other DD. If they match, we can assume a stand-alone device (no other profile).
 		// Also, if there is another profile, the KNX individual address has to be different to
 		// the cEMI server one (as provided by the cEMI server object)
-		data = read(objectIdx, PID.DEVICE_DESCRIPTOR, 1, 1);
-		if (data != null) {
-			final DD0 profile = DeviceDescriptor.DD0.from(data);
-			if (dd == null)
-				dd = deviceDescriptor(data);
-			// device with additional profile?
-			else if (!profile.equals(dd))
-				putResult(InternalParameter.AdditionalProfile, profile.toString(), data);
+		{
+			byte[] data = read(CommonParameter.DeviceDescriptor, objectIdx, PID.DEVICE_DESCRIPTOR);
+			if (data != null) {
+				final DD0 profile = DeviceDescriptor.DD0.from(data);
+				if (dd == null)
+					dd = deviceDescriptor(data);
+				// device with additional profile?
+				else if (!profile.equals(dd))
+					putResult(InternalParameter.AdditionalProfile, profile.toString(), data);
+			}
 		}
 
 		// Info about possible additional profile in device
 		try {
-			final byte[] profileSna = read(objectIdx, PID.SUBNET_ADDRESS, 1, 1);
-			final byte[] profileDev = read(objectIdx, PID.DEVICE_ADDRESS, 1, 1);
+			final byte[] profileSna = read(CommonParameter.DeviceAddress, objectIdx, PID.SUBNET_ADDRESS);
+			final byte[] profileDev = read(objectIdx, PID.DEVICE_ADDRESS);
 			final byte[] profileAddr = new byte[] { profileSna[0], profileDev[0] };
 			final IndividualAddress ia = new IndividualAddress(profileAddr);
 			putResult(CommonParameter.DeviceAddress, "Additional profile address " + ia, ia.toByteArray());
@@ -634,7 +629,7 @@ public class DeviceInfo implements Runnable
 
 		// read device service control
 		try {
-			final byte[] svcCtrl = read(objectIdx, PID.SERVICE_CONTROL, 1, 1);
+			final byte[] svcCtrl = read(InternalParameter.IndividualAddressWriteEnabled, objectIdx, PID.SERVICE_CONTROL);
 			final boolean indAddrWriteEnabled = (svcCtrl[1] & 0x04) == 0x04;
 			putResult(InternalParameter.IndividualAddressWriteEnabled, indAddrWriteEnabled ? "yes" : "no", svcCtrl[1] & 0x04);
 			final int services = svcCtrl[0] & 0xff;
@@ -650,52 +645,34 @@ public class DeviceInfo implements Runnable
 		// With mask 0x2311, the RF domain address is mandatory in the RF medium object (PID 56) and
 		// optional in the device object (PID 82). At least the Weinzierl USB stores it only in the device object.
 		try {
-			final byte[] doaAddr = read(objectIdx, PID.RF_DOMAIN_ADDRESS, 1, 1);
-			if (doaAddr != null)
-				putResult(CommonParameter.DomainAddress, DataUnitBuilder.toHex(doaAddr, ""), toUnsigned(doaAddr));
+			read(CommonParameter.DomainAddress, objectIdx, PID.RF_DOMAIN_ADDRESS,
+					data -> DataUnitBuilder.toHex(data, ""));
 		}
 		catch (final Exception e) {}
 
 		readUnsigned(objectIdx, PID.MAX_APDULENGTH, false, CommonParameter.MaxApduLength);
 
 		final int pidErrorFlags = 53;
-		final byte[] flags = read(objectIdx, pidErrorFlags);
-		if (flags != null)
-			putResult(InternalParameter.ErrorFlags, errorFlags(flags), toUnsigned(data));
+		read(InternalParameter.ErrorFlags, objectIdx, pidErrorFlags, DeviceInfo::errorFlags);
 	}
 
 	private static final int legacyPidFilteringModeSelect = 62;
 	private static final int legacyPidFilteringModeSupport = 63;
 
 	private void readCemiServerObject(int objectIndex) throws InterruptedException {
-		try {
-			final byte[] d = read(objectIndex, PropertyAccess.PID.MEDIUM_TYPE, 1, 1);
-			if (d != null)
-				putResult(CemiParameter.MediumType, mediumTypes(d), toUnsigned(d));
-		}
-		catch (final Exception e) {}
+		read(CemiParameter.MediumType, objectIndex, PropertyAccess.PID.MEDIUM_TYPE, DeviceInfo::mediumTypes);
 
 		// Get supported cEMI communication modes, DLL is mandatory for any cEMI server
 		// communication mode can then be set using PID_COMM_MODE
-		try {
-			final byte[] commModes = read(objectIndex, PID.COMM_MODES_SUPPORTED, 1, 1);
-			putResult(CemiParameter.SupportedCommModes, supportedCommModes(commModes), toUnsigned(commModes));
-		}
-		catch (final Exception e) {}
-
-		try {
-			final byte[] d = read(objectIndex, PID.COMM_MODE, 1, 1);
-			if (d != null)
-				putResult(CemiParameter.SelectedCommMode, commMode(d), toUnsigned(d));
-		}
-		catch (final Exception e) {}
+		read(CemiParameter.SupportedCommModes, objectIndex, PID.COMM_MODES_SUPPORTED, DeviceInfo::supportedCommModes);
+		read(CemiParameter.SelectedCommMode, objectIndex, PID.COMM_MODE, DeviceInfo::commMode);
 
 		// if we deal with a USB stand-alone device, the Device Object stores the IA of the USB interface
 		// if we deal with a USB device that is embedded with another end device profile, the Device Object stores
 		// the IA of the end device. In that case, the cEMI Server Object holds the IA of the USB interface
 		try {
-			final byte[] dev = read(objectIndex, PID.CLIENT_DEVICE_ADDRESS, 1, 1);
-			final byte[] sna = read(objectIndex, PID.CLIENT_SNA, 1, 1);
+			final byte[] dev = read(CemiParameter.ClientAddress, objectIndex, PID.CLIENT_DEVICE_ADDRESS);
+			final byte[] sna = read(objectIndex, PID.CLIENT_SNA);
 
 			final byte[] addr = new byte[] { sna[0], dev[0] };
 			final IndividualAddress ia = new IndividualAddress(addr);
@@ -718,7 +695,7 @@ public class DeviceInfo implements Runnable
 		catch (final Exception e) {}
 
 		try {
-			final byte[] data = read(objectIndex, PID.RF_MODE_SELECT, 1, 1);
+			final byte[] data = read(objectIndex, PID.RF_MODE_SELECT);
 			final int selected = data[0] & 0xff;
 			final boolean slave = (data[0] & 0x04) == 0x04;
 			final boolean master = (data[0] & 0x02) == 0x02;
@@ -737,15 +714,15 @@ public class DeviceInfo implements Runnable
 	//      ------------------------------------------------------
 	private void readSupportedFilteringModes(int objectIndex, final int pid) {
 		try {
-			final byte[] filters = read(objectIndex, pid, 1, 1);
-			final int filter = filters[1] & 0xff;
-			final boolean grp = (filter & 0x08) == 0x08;
-			final boolean doa = (filter & 0x04) == 0x04;
-			final boolean rep = (filter & 0x02) == 0x02;
-			final boolean ownIa = (filter & 0x01) == 0x01;
-			putResult(CemiParameter.SupportedFilteringModes, "ext. group addresses " + grp
-					+ ", domain address " + doa + ", repeated frames " + rep + ", own individual address " + ownIa,
-					filters);
+			read(CemiParameter.SupportedFilteringModes, objectIndex, pid, filters -> {
+				final int filter = filters[1] & 0xff;
+				final boolean grp = (filter & 0x08) == 0x08;
+				final boolean doa = (filter & 0x04) == 0x04;
+				final boolean rep = (filter & 0x02) == 0x02;
+				final boolean ownIa = (filter & 0x01) == 0x01;
+				return "ext. group addresses " + grp + ", domain address " + doa + ", repeated frames " + rep
+						+ ", own individual address " + ownIa;
+			});
 		}
 		catch (final Exception e) {}
 	}
@@ -754,30 +731,29 @@ public class DeviceInfo implements Runnable
 	// A set bit (1) indicates a disabled filter, by default all filters are active
 	private void readSelectedFilteringMode(int objectIndex, final int pid) {
 		try {
-			final byte[] filters = read(objectIndex, pid, 1, 1);
-			final int selected = filters[1] & 0xff;
-			final boolean grp = (selected & 0x08) == 0x08;
-			final boolean doa = (selected & 0x04) == 0x04;
-			final boolean rep = (selected & 0x02) == 0x02;
-			final boolean ownIa = (selected & 0x01) == 0x01;
-			if (selected == 0)
-				putResult(CemiParameter.SelectedFilteringModes, "all supported filters active", selected);
-			else
-				putResult(CemiParameter.SelectedFilteringModes, "disabled frame filters: ext. group addresses " + grp
-						+ ", domain address " + doa + ", repeated frames " + rep + ", own individual address " + ownIa,
-						selected);
+			read(CemiParameter.SelectedFilteringModes, objectIndex, pid, filters -> {
+				final int selected = filters[1] & 0xff;
+				final boolean grp = (selected & 0x08) == 0x08;
+				final boolean doa = (selected & 0x04) == 0x04;
+				final boolean rep = (selected & 0x02) == 0x02;
+				final boolean ownIa = (selected & 0x01) == 0x01;
+				if (selected == 0)
+					return "all supported filters active";
+				return "disabled frame filters: ext. group addresses " + grp + ", domain address " + doa
+						+ ", repeated frames " + rep + ", own individual address " + ownIa;
+			});
 		}
 		catch (final Exception e) {}
 	}
 
 	private void cEmiExtensionRfBiBat(int objectIndex) throws KNXException, InterruptedException {
-		final byte[] support = read(objectIndex, PID.RF_MODE_SUPPORT, 1, 1);
-		final boolean slave = (support[0] & 0x04) == 0x04;
-		final boolean master = (support[0] & 0x02) == 0x02;
-		final boolean async = (support[0] & 0x01) == 0x01;
+		read(CemiParameter.SupportedRfModes, objectIndex, PID.RF_MODE_SUPPORT, support -> {
+			final boolean slave = (support[0] & 0x04) == 0x04;
+			final boolean master = (support[0] & 0x02) == 0x02;
+			final boolean async = (support[0] & 0x01) == 0x01;
 
-		final String formatted = "BiBat slave " + slave + ", BiBat master " + master + ", Async " + async;
-		putResult(CemiParameter.SupportedRfModes, formatted, support);
+			return "BiBat slave " + slave + ", BiBat master " + master + ", Async " + async;
+		});
 	}
 
 	//      --------------------------------------
@@ -789,7 +765,7 @@ public class DeviceInfo implements Runnable
 	// RAW: Data link layer, RAW mode (receive L-Raw.req, L-Raw.ind from the bus)
 	// BM: Data link layer, busmonitor mode
 	// DLL: Data link layer, normal mode
-	private String supportedCommModes(final byte[] commModes) {
+	private static String supportedCommModes(final byte[] commModes) {
 		final int modes = commModes[1] & 0xff;
 		final boolean tll = (modes & 0x08) == 0x08;
 		final boolean raw = (modes & 0x04) == 0x04;
@@ -800,7 +776,7 @@ public class DeviceInfo implements Runnable
 		return s;
 	}
 
-	private String commMode(final byte[] data) {
+	private static String commMode(final byte[] data) {
 		final int commMode = data[0] & 0xff;
 		switch (commMode) {
 		case 0:
@@ -821,9 +797,7 @@ public class DeviceInfo implements Runnable
 		try {
 			// different PID as in Device Object !!!
 			final int pidRfDomainAddress = 56;
-			final byte[] doaAddr = read(objectIndex, pidRfDomainAddress, 1, 1);
-			if (doaAddr != null)
-				putResult(RfParameter.DomainAddress, "0x" + DataUnitBuilder.toHex(doaAddr, ""), doaAddr);
+			read(RfParameter.DomainAddress, objectIndex, pidRfDomainAddress, doa -> "0x" + DataUnitBuilder.toHex(doa, ""));
 		}
 		catch (final Exception e) {}
 	}
@@ -879,7 +853,7 @@ public class DeviceInfo implements Runnable
 	}
 
 	// same as BCU error flags located at 0x10d
-	private String errorFlags(final byte[] data) {
+	private static String errorFlags(final byte[] data) {
 		if ((data[0] & 0xff) == 0xff)
 			return "everything OK";
 		final String[] description = { "System 1 internal system error", "Illegal system state",
@@ -891,11 +865,6 @@ public class DeviceInfo implements Runnable
 			if ((data[0] & (1 << i)) == 0)
 				errors.add(description[i]);
 		return errors.stream().collect(Collectors.joining(", "));
-	}
-
-	private void putResult(final Parameter p, final long raw)
-	{
-		putResult(p, "" + raw, raw);
 	}
 
 	private void putResult(final Parameter p, final String formatted, final long raw)
@@ -1054,71 +1023,54 @@ public class DeviceInfo implements Runnable
 
 	private void readKnxipInfo(int objectIndex) throws KNXException, InterruptedException
 	{
-		// Device Name (friendly)
 		read(KnxipParameter.DeviceName, () -> readFriendlyName(objectIndex));
 
 		// Device Capabilities Device State
-		byte[] data = read(objectIndex, PropertyAccess.PID.KNXNETIP_DEVICE_CAPABILITIES);
-		if (data == null)
-			return;
-		putResult(KnxipParameter.Capabilities, toCapabilitiesString(data), data);
+		byte[] data = read(KnxipParameter.Capabilities, objectIndex, PropertyAccess.PID.KNXNETIP_DEVICE_CAPABILITIES,
+				DeviceInfo::toCapabilitiesString).orElse(new byte[2]);
 		final boolean supportsTunneling = (data[1] & 0x01) == 0x01;
 
 		// MAC Address
-		data = read(objectIndex, PropertyAccess.PID.MAC_ADDRESS);
-		putResult(KnxipParameter.MacAddress, DataUnitBuilder.toHex(data, ":"), toUnsigned(data));
+		read(KnxipParameter.MacAddress, objectIndex, PropertyAccess.PID.MAC_ADDRESS, mac -> DataUnitBuilder.toHex(mac, ":"));
 		// Current IP Assignment
-		data = read(objectIndex, PropertyAccess.PID.CURRENT_IP_ASSIGNMENT_METHOD);
-		putResult(KnxipParameter.CurrentIPAssignment, toIPAssignmentString(data), toUnsigned(data));
+		data = read(KnxipParameter.CurrentIPAssignment, objectIndex, PropertyAccess.PID.CURRENT_IP_ASSIGNMENT_METHOD,
+				DeviceInfo::toIPAssignmentString).orElse(new byte[1]);
 		final int currentIPAssignment = data[0] & 0x0f;
 		// Bits (from LSB): Manual=0, BootP=1, DHCP=2, AutoIP=3
 		final boolean dhcpOrBoot = (data[0] & 0x06) != 0;
 
 		// Read currently set IP parameters
-		// IP Address
-		final byte[] currentIP = read(objectIndex, PropertyAccess.PID.CURRENT_IP_ADDRESS);
-		putResult(KnxipParameter.CurrentIPAddress, toIP(currentIP), toUnsigned(currentIP));
-		// Subnet Mask
-		final byte[] currentMask = read(objectIndex, PropertyAccess.PID.CURRENT_SUBNET_MASK);
-		putResult(KnxipParameter.CurrentSubnetMask, toIP(currentMask), toUnsigned(currentMask));
-		// Default Gateway
-		final byte[] currentGw = read(objectIndex, PropertyAccess.PID.CURRENT_DEFAULT_GATEWAY);
-		putResult(KnxipParameter.CurrentDefaultGateway, toIP(currentGw), toUnsigned(currentGw));
+		var currentIP = readIp(KnxipParameter.CurrentIPAddress, objectIndex, PropertyAccess.PID.CURRENT_IP_ADDRESS);
+		var currentMask = readIp(KnxipParameter.CurrentSubnetMask, objectIndex, PropertyAccess.PID.CURRENT_SUBNET_MASK);
+		var currentGw = readIp(KnxipParameter.CurrentDefaultGateway, objectIndex, PropertyAccess.PID.CURRENT_DEFAULT_GATEWAY);
 		// DHCP Server (show only if current assignment method is DHCP or BootP)
 		if (dhcpOrBoot) {
-			data = read(objectIndex, PropertyAccess.PID.DHCP_BOOTP_SERVER);
-			putResult(KnxipParameter.DhcpServer, toIP(data), toUnsigned(data));
+			readIp(KnxipParameter.DhcpServer, objectIndex, PropertyAccess.PID.DHCP_BOOTP_SERVER);
 		}
 
 		// IP Assignment Method (shown only if different from current IP assign. method)
-		data = read(objectIndex, PropertyAccess.PID.IP_ASSIGNMENT_METHOD);
-		final int ipAssignment = data[0] & 0x0f;
-		if (ipAssignment != currentIPAssignment) {
-			putResult(KnxipParameter.ConfiguredIPAssignment, ipAssignment);
-		}
+		data = read(KnxipParameter.ConfiguredIPAssignment, objectIndex, PropertyAccess.PID.IP_ASSIGNMENT_METHOD,
+				config -> {
+					final int ipAssignment = config[0] & 0x0f;
+					return ipAssignment != currentIPAssignment ? toIPAssignmentString(config) : "";
+				}).orElse(new byte[1]);
 		// Read IP parameters for manual assignment
 		// the following info is only shown if manual assignment method is enabled, and parameter
 		// is different from current one
-		final boolean manual = (ipAssignment & 0x01) == 0x01;
+		final boolean manual = (data[0] & 0x01) == 0x01;
 		if (manual) {
-//			info.append("Differing manual configuration:\n");
 			// Manual IP Address
-			final byte[] ip = read(objectIndex, PropertyAccess.PID.IP_ADDRESS);
-			if (!Arrays.equals(currentIP, ip))
-				putResult(KnxipParameter.IPAddress, toIP(ip), toUnsigned(ip));
+			read(KnxipParameter.IPAddress, objectIndex, PropertyAccess.PID.IP_ADDRESS,
+					ip -> Arrays.equals(currentIP, ip) ? "" : toIP(ip));
 			// Manual Subnet Mask
-			final byte[] mask = read(objectIndex, PropertyAccess.PID.SUBNET_MASK);
-			if (!Arrays.equals(currentMask, mask))
-				putResult(KnxipParameter.SubnetMask, toIP(mask), toUnsigned(mask));
+			read(KnxipParameter.SubnetMask, objectIndex, PropertyAccess.PID.SUBNET_MASK,
+					mask -> Arrays.equals(currentMask, mask) ? "" : toIP(mask));
 			// Manual Default Gateway
-			final byte[] gw = read(objectIndex, PropertyAccess.PID.DEFAULT_GATEWAY);
-			if (!Arrays.equals(currentGw, gw))
-				putResult(KnxipParameter.DefaultGateway, toIP(gw), toUnsigned(gw));
+			read(KnxipParameter.DefaultGateway, objectIndex, PropertyAccess.PID.DEFAULT_GATEWAY,
+					gw -> Arrays.equals(currentGw, gw) ? "" : toIP(gw));
 		}
 
-		// Routing Multicast Address
-		data = read(objectIndex, PropertyAccess.PID.ROUTING_MULTICAST_ADDRESS);
-		putResult(KnxipParameter.RoutingMulticast, toIP(data), toUnsigned(data));
+		readIp(KnxipParameter.RoutingMulticast, objectIndex, PropertyAccess.PID.ROUTING_MULTICAST_ADDRESS);
 		// Multicast TTL
 		readUnsigned(objectIndex, PropertyAccess.PID.TTL, false, KnxipParameter.TimeToLive);
 		// Messages to Multicast Address
@@ -1130,7 +1082,7 @@ public class DeviceInfo implements Runnable
 			final int elements = readElements(objectIndex, pid);
 			final StringBuilder sb = new StringBuilder();
 			for (int i = 0; i < elements; i++) {
-				data = read(objectIndex, pid, i + 1, 1);
+				data = read(objectIndex, pid, i + 1, 1, false);
 				sb.append(new IndividualAddress(data)).append(" ");
 			}
 			putResult(KnxipParameter.AdditionalIndividualAddresses, sb.toString(), new byte[0]);
@@ -1139,14 +1091,9 @@ public class DeviceInfo implements Runnable
 
 	private void readProgram(final int objectIdx) throws InterruptedException
 	{
-		byte[] data = read(objectIdx, PID.PROGRAM_VERSION);
-		if (data != null)
-			putResult(CommonParameter.ProgramVersion, programVersion(data), data);
+		read(CommonParameter.ProgramVersion, objectIdx, PID.PROGRAM_VERSION, DeviceInfo::programVersion);
 		readLoadState(objectIdx);
-
-		data = read(objectIdx, PropertyAccess.PID.RUN_STATE_CONTROL);
-		if (data != null)
-			putResult(CommonParameter.RunStateControl, getRunState(data), data);
+		read(CommonParameter.RunStateControl, objectIdx, PropertyAccess.PID.RUN_STATE_CONTROL, DeviceInfo::getRunState);
 	}
 
 	private static String programVersion(final byte[] data) {
@@ -1158,31 +1105,34 @@ public class DeviceInfo implements Runnable
 
 	private void readLoadState(final int objectIdx) throws InterruptedException
 	{
-		final boolean hasErrorCode = isSystemB;
-
-		byte[] data = read(objectIdx, PropertyAccess.PID.LOAD_STATE_CONTROL);
-		final String ls = getLoadState(data);
-		putResult(CommonParameter.LoadStateControl, ls, data == null ? new byte[0] : data);
+		var data = read(CommonParameter.LoadStateControl, objectIdx, PropertyAccess.PID.LOAD_STATE_CONTROL,
+				DeviceInfo::getLoadState);
 		// System B contains error code for load state "Error" (optional, but usually yes)
-		if (data != null && data[0] == 3 && hasErrorCode) {
-			data = read(objectIdx, PropertyAccess.PID.ERROR_CODE);
-			if (data != null) {
+		final boolean hasErrorCode = isSystemB;
+		if (hasErrorCode && data.isPresent() && data.get()[0] == 3) {
+			read(CommonParameter.LoadStateError, objectIdx, PropertyAccess.PID.ERROR_CODE, error -> {
 				try {
 					// enum ErrorClassSystem
-					final DPTXlator t = TranslatorTypes.createTranslator(0, "20.011");
-					t.setData(data);
-					putResult(CommonParameter.LoadStateError, t.getValue(), data);
+					return TranslatorTypes.createTranslator("20.011", error).getValue();
 				}
 				catch (final KNXException e) {
-					// no translator
+					return "";
 				}
-			}
+			});
 		}
+	}
+
+	private Optional<byte[]> read(final Parameter p, int objectIndex, int pid,
+		final Function<byte[], String> representation) throws InterruptedException {
+		var data = Optional.ofNullable(read(p, objectIndex, pid));
+		data.map(representation).filter(Predicate.not(String::isEmpty))
+				.ifPresent(formatted -> putResult(p, formatted, data.get()));
+		return data;
 	}
 
 	private void read(final Parameter p, final Callable<String> c) throws KNXLinkClosedException, InterruptedException {
 		try {
-			out.debug("read {} ...", p);
+			out.debug("read {} ...", p.friendlyName());
 			final String s = c.call();
 			putResult(p, s, s.getBytes(StandardCharsets.ISO_8859_1));
 		}
@@ -1195,6 +1145,10 @@ public class DeviceInfo implements Runnable
 		catch (final Exception e) {
 			out.error("error reading {}", p, e);
 		}
+	}
+
+	private byte[] readIp(final Parameter p, int objectIndex, int pid) throws InterruptedException {
+		return read(p, objectIndex, pid, DeviceInfo::toIP).orElse(new byte[4]);
 	}
 
 	private String readFriendlyName(int objectIndex) throws KNXException, InterruptedException
@@ -1218,12 +1172,25 @@ public class DeviceInfo implements Runnable
 
 	private byte[] read(final int objectIndex, final int pid) throws InterruptedException
 	{
-		return read(objectIndex, pid, 1, 1);
+		return read(objectIndex, pid, 1, 1, true);
+	}
+
+	private byte[] read(Parameter p, final int objectIndex, final int pid) throws InterruptedException
+	{
+		out.debug("read {}|{} {}", objectIndex, pid, p.friendlyName());
+		return read(objectIndex, pid, 1, 1, false);
 	}
 
 	private byte[] read(final int objectIndex, final int pid, final int start, final int elements)
+			throws InterruptedException {
+		return read(objectIndex, pid, start, elements, true);
+	}
+
+	private byte[] read(final int objectIndex, final int pid, final int start, final int elements, boolean log)
 		throws InterruptedException
 	{
+		if (log)
+			out.debug("read {}|{}", objectIndex, pid);
 		try {
 			// since we don't know the max. allowed APDU length, play it safe
 			final ByteArrayOutputStream res = new ByteArrayOutputStream();
@@ -1242,7 +1209,7 @@ public class DeviceInfo implements Runnable
 	private void readUnsigned(final int objectIndex, final int pid, final boolean hex, final Parameter p)
 		throws InterruptedException
 	{
-		final byte[] data = read(objectIndex, pid);
+		final byte[] data = read(p, objectIndex, pid);
 		if (data == null) {
 			result.formatted.put(p, "-");
 			result.raw.put(p, new byte[0]);
@@ -1256,6 +1223,7 @@ public class DeviceInfo implements Runnable
 	private int readMem(final int startAddr, final int bytes, final String prefix, final boolean hex, final Parameter p)
 		throws InterruptedException
 	{
+		out.debug("read 0x{}..0x{} {}", Long.toHexString(startAddr), Long.toHexString(startAddr + bytes), p.friendlyName());
 		final long v = readMemLong(startAddr, bytes);
 		putResult(p, hex ? Long.toHexString(v) : Long.toString(v), v);
 		return (int) v;
@@ -1412,8 +1380,13 @@ public class DeviceInfo implements Runnable
 		}
 	}
 
-	private static String mediumTypes(final byte[] data) throws KNXException {
-		return TranslatorTypes.createTranslator(DptXlator16BitSet.DptMedia, data).getValue();
+	private static String mediumTypes(final byte[] data) {
+		try {
+			return TranslatorTypes.createTranslator(DptXlator16BitSet.DptMedia, data).getValue();
+		}
+		catch (Exception e) {
+			return "";
+		}
 	}
 
 	private static String toFirmwareTypeString(final int type)
@@ -1532,17 +1505,16 @@ public class DeviceInfo implements Runnable
 	private static String toIPAssignmentString(final byte[] data)
 	{
 		final int bitset = data[0] & 0xff;
-		String s = "";
-		final String div = ", ";
+		final var joiner = new StringJoiner(", ");
 		if ((bitset & 0x01) != 0)
-			s = "manual";
+			joiner.add("manual");
 		if ((bitset & 0x02) != 0)
-			s += (s.length() == 0 ? "" : div) + "Bootstrap Protocol";
+			joiner.add("Bootstrap Protocol");
 		if ((bitset & 0x04) != 0)
-			s += (s.length() == 0 ? "" : div) + "DHCP";
+			joiner.add("DHCP");
 		if ((bitset & 0x08) != 0)
-			s += (s.length() == 0 ? "" : div) + "Auto IP";
-		return s;
+			joiner.add("Auto IP");
+		return joiner.toString();
 	}
 
 	private static String toCapabilitiesString(final byte[] data)
