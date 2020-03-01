@@ -703,6 +703,8 @@ public class ProcComm implements Runnable
 			final String[] s = line.trim().split(" +");
 			if (s.length == 1 && "exit".equalsIgnoreCase(s[0]))
 				return;
+			if (s.length == 1 && ("?".equals(s[0]) || "help".equals(s[0])))
+				out(listCommandsAndDptAliases(new StringJoiner(System.lineSeparator()), false));
 			if (s.length > 1) {
 				// expected order: <cmd> <addr> [<dpt>] [<value>]
 				// cmd = ("r"|"read") | ("w"|"write")
@@ -730,10 +732,10 @@ public class ProcComm implements Runnable
 								.collect(Collectors.joining(" ")) : null);
 					}
 					else
-						System.out.println("unknown command '" + cmd + "'");
+						out("unknown command '" + cmd + "'");
 				}
 				catch (final KNXTimeoutException e) {
-					System.out.println(e.getMessage());
+					out(e.getMessage());
 				}
 				catch (KNXException | RuntimeException e) {
 					out.error("[{}] {}", line, e.toString());
@@ -943,27 +945,33 @@ public class ProcComm implements Runnable
 		joiner.add("  --compact -c               show incoming indications in compact format");
 		joiner.add("  --lte                      enable LTE commands, decode LTE messages");
 		Main.printSecureOptions(joiner);
+		listCommandsAndDptAliases(joiner, true);
+		out(joiner);
+	}
+
+	private static StringJoiner listCommandsAndDptAliases(final StringJoiner joiner, final boolean showMonitor) {
 		joiner.add("Available commands for process communication:");
 		joiner.add("  (read/write: omitting the DPT might require a '-' placeholder to avoid ambiguity)");
 		joiner.add("  read  <KNX group address> [DPT]          read from datapoint (expecting the specified datapoint type)");
-		joiner.add("  write <KNX group address> [DPT] <value>  write to datapoint (formatting value with specified datapoint type)");
-		joiner.add("  monitor                                  enter group monitoring");
+		joiner.add("  write <KNX group address> [DPT] <value>  write to datapoint (value formatted for specified datapoint type)");
+		if (showMonitor)
+			joiner.add("  monitor                                  enter group monitoring");
 		joiner.add("Name aliases for common datapoint types:");
-		joiner.add("  1.001: switch {off, on}                         1.002: bool {false, true}")
-			  .add("  3.007: dimmer {decrease 0..7, increase 0..7}    3.008: blinds {up 0..7, down 0..7}")
-			  .add("  5.001: percent {1..100} or % {1..100}")
-			  .add("  5.003: angle {0..360}                           5.010: ucount {0..255}")
-			  .add("  9.001: temp {-273..+670760}                    13.001: int (2-byte integer)")
-			  .add("  9.002: float/float2 (2-byte float)             14.005: float4 (4-byte float)")
-			  .add(" 16.001: string (ISO-8859-1, max. length 14)");
-		out(joiner.toString());
+		joiner  .add("  1.001: switch {off, on}                         1.002: bool {false, true}")
+				.add("  3.007: dimmer {decrease 0..7, increase 0..7}    3.008: blinds {up 0..7, down 0..7}")
+				.add("  5.001: percent {1..100} or % {1..100}")
+				.add("  5.003: angle {0..360}                           5.010: ucount {0..255}")
+				.add("  9.001: temp {-273..+670760}                    13.001: int (2-byte integer)")
+				.add("  9.002: float/float2 (2-byte float)             14.005: float4 (4-byte float)")
+				.add(" 16.001: string (ISO-8859-1, max. length 14)");
+		return joiner;
 	}
 
 	//
 	// utility methods
 	//
 
-	private static void out(final String s)
+	private static void out(final Object s)
 	{
 		System.out.println(s);
 	}
