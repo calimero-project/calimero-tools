@@ -70,6 +70,7 @@ import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.KNXTimeoutException;
+import tuwien.auto.calimero.KnxRuntimeException;
 import tuwien.auto.calimero.Priority;
 import tuwien.auto.calimero.cemi.CEMI;
 import tuwien.auto.calimero.cemi.CEMILData;
@@ -497,6 +498,8 @@ public class ProcComm implements Runnable
 			return "5.001";
 		if ("%".equals(id))
 			return "5.001";
+		if (!"-".equals(id) && !Character.isDigit(id.charAt(0)))
+			throw new KnxRuntimeException("unrecognized DPT '" + id + "'");
 		return id;
 	}
 
