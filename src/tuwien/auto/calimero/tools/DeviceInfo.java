@@ -465,7 +465,9 @@ public class DeviceInfo implements Runnable
 		final int objects = readElements(deviceObjectIdx, PropertyAccess.PID.IO_LIST);
 		if (objects > 0) {
 			final byte[] data = read(deviceObjectIdx, PropertyAccess.PID.IO_LIST, 1, objects);
-			for (int i = 0; i < objects; ++i) {
+			if (data == null)
+				return;
+			for (int i = 0; i < data.length / 2; ++i) {
 				final int type = (data[2 * i] & 0xff) << 8 | (data[2 * i + 1] & 0xff);
 				ifObjects.compute(type, (__, v) -> v == null ? new ArrayList<Integer>() : v).add(i);
 			}
@@ -936,7 +938,7 @@ public class DeviceInfo implements Runnable
 
 		readMem(addrManufactData, 3, "KNX manufacturer data ", true, CommonParameter.ManufacturerData);
 		final long appId = readMemLong(addrAppId, 5);
-		final String appMf = manufacturer.get((int) appId >> (3 * 8));
+		final String appMf = manufacturer((int) appId >> (3 * 8));
 		final long swDev = (appId >> 8) & 0xff;
 		final long swVersion = appId & 0xff;
 
@@ -1002,9 +1004,11 @@ public class DeviceInfo implements Runnable
 		final int entries = readMem(memLocation, 1, "Group address table entries ", false,
 				CommonParameter.GroupAddressTableEntries);
 
-		// address of device address
 		int startAddr = memLocation + 1;
-		readMem(startAddr, 2, "", v -> new IndividualAddress(v & 0x7fff).toString(), CommonParameter.DeviceAddress);
+		if (entries > 0) {
+			// address of device address
+			readMem(startAddr, 2, "", v -> new IndividualAddress(v & 0x7fff).toString(), CommonParameter.DeviceAddress);
+		}
 
 		final StringBuilder sb = new StringBuilder();
 		for (int i = 1; i < entries; i++) {
@@ -1225,7 +1229,8 @@ public class DeviceInfo implements Runnable
 	{
 		out.debug("read 0x{}..0x{} {}", Long.toHexString(startAddr), Long.toHexString(startAddr + bytes), p.friendlyName());
 		final long v = readMemLong(startAddr, bytes);
-		putResult(p, hex ? Long.toHexString(v) : Long.toString(v), v);
+		if (v != -1)
+			putResult(p, hex ? Long.toHexString(v) : Long.toString(v), v);
 		return (int) v;
 	}
 
