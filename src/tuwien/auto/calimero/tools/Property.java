@@ -813,6 +813,7 @@ public class Property implements Runnable
 		customFormatter.put(key(PID.TABLE), Property::groupAddresses);
 
 		customFormatter.put(key(0, PID.SERIAL_NUMBER), Property::knxSerialNumber);
+		customFormatter.put(key(0, 52), Property::maxRetryCount);
 		customFormatter.put(key(0, PID.DEVICE_DESCRIPTOR), Property::deviceDescriptor);
 		final int pidErrorFlags = 53;
 		customFormatter.put(key(0, pidErrorFlags), Property::errorFlags);
@@ -856,6 +857,10 @@ public class Property implements Runnable
 	private static String knxSerialNumber(final byte[] data) {
 		final var hex = toHex(data, "");
 		return hex.substring(0, 4) + ":" + hex.substring(4);
+	}
+
+	private static String maxRetryCount(final byte[] data) {
+		return "Busy: " + (data[0] >> 4) + ", NAK: " + (data[0] & 0x7);
 	}
 
 	private static String couplerServiceControl(final byte[] data) {
