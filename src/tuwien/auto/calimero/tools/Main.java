@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2010, 2019 B. Malinowsky
+    Copyright (c) 2010, 2020 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -36,6 +36,7 @@
 
 package tuwien.auto.calimero.tools;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
@@ -44,6 +45,8 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
@@ -51,6 +54,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
 
@@ -60,7 +64,9 @@ import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
+import tuwien.auto.calimero.Keyring;
 import tuwien.auto.calimero.Settings;
+import tuwien.auto.calimero.internal.Security;
 import tuwien.auto.calimero.knxnetip.Connection;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.knxnetip.SecureConnection;
@@ -310,6 +316,10 @@ final class Main
 			options.put("user-key", fromHex(i.next()));
 		else if (isOption(arg, "user-pwd", null))
 			options.put("user-key", SecureConnection.hashUserPassword(i.next().toCharArray()));
+		else if (isOption(arg, "keyring", null))
+			options.put("keyring", Keyring.load(i.next()));
+		else if (isOption(arg, "keyring-pwd", null))
+			options.put("keyring-pwd", i.next().toCharArray());
 		else
 			return false;
 		return true;
@@ -348,6 +358,11 @@ final class Main
 	}
 
 	static KNXNetworkLink newLink(final Map<String, Object> options) throws KNXException, InterruptedException {
+		// if we got a keyring password, check for user-supplied keyring or any keyring in current working directory
+		if (options.containsKey("keyring-pwd"))
+			Optional.ofNullable((Keyring) options.get("keyring")).or(Main::cwdKeyring)
+					.ifPresent(keyring -> Security.useKeyring(keyring, (char[]) options.get("keyring-pwd")));
+
 		final String host = (String) options.get("host");
 		final KNXMediumSettings medium = (KNXMediumSettings) options.get("medium");
 
@@ -448,6 +463,16 @@ final class Main
 		}
 		final boolean queryWriteEnable = options.containsKey("emulatewriteenable");
 		return LocalDeviceManagementIp.newAdapter(local, host, nat, queryWriteEnable, adapterClosed);
+	}
+
+	private static Optional<Keyring> cwdKeyring() {
+		final String knxkeys = ".knxkeys";
+		try (final var list = Files.list(Path.of(""))) {
+			return list.map(Path::toString).filter(path -> path.endsWith(knxkeys)).findAny().map(Keyring::load);
+		}
+		catch (final IOException ignore) {
+			return Optional.empty();
+		}
 	}
 
 	private static byte[] fromHex(final String hex) {
