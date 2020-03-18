@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2019 B. Malinowsky
+    Copyright (c) 2006, 2020 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -45,6 +45,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -342,7 +343,7 @@ public class ProcComm implements Runnable
 		// user might specify a response timeout for KNX message
 		// answers from the KNX network
 		if (options.containsKey("timeout"))
-			pc.setResponseTimeout(((Integer) options.get("timeout")).intValue());
+			pc.responseTimeout(((Duration) options.get("timeout")));
 	}
 
 	/**
@@ -508,7 +509,7 @@ public class ProcComm implements Runnable
 		if (options.containsKey("lte")) {
 			issueLteCommand((String) options.get("tag"), (String[]) options.get("lte-cmd"));
 			if (options.containsKey("read"))
-				Thread.sleep(pc.getResponseTimeout() * 1000);
+				Thread.sleep(pc.responseTimeout().toMillis());
 			return;
 		}
 		final boolean write = options.containsKey("write");
@@ -884,7 +885,7 @@ public class ProcComm implements Runnable
 			else if (Main.isOption(arg, "knx-address", null))
 				options.put("knx-address", Main.getAddress(i.next()));
 			else if (Main.isOption(arg, "timeout", "t"))
-				options.put("timeout", Integer.decode(i.next()));
+				options.put("timeout", Duration.ofSeconds(Integer.decode(i.next())));
 			else if (!options.containsKey("host"))
 				options.put("host", arg);
 			else
