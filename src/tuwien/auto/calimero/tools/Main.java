@@ -108,7 +108,7 @@ final class Main
 	private static final List<Class<? extends Runnable>> tools = Arrays.asList(Discover.class, Discover.class,
 			ScanDevices.class, IPConfig.class, NetworkMonitor.class, ProcComm.class, ProcComm.class, ProcComm.class,
 			Property.class, Property.class, PropClient.class, DeviceInfo.class, ProgMode.class, Restart.class,
-			GroupAddressImporter.class);
+			DatapointImporter.class);
 
 	private static final String sep = System.getProperty("line.separator");
 

@@ -28,7 +28,7 @@ Use `./gradlew run` or `mvn exec:java` to list available commands.
 * Property - get/set a single KNX device interface object property
 * ScanDevices - list KNX devices, or check whether a specific KNX individual address is currently assigned to a KNX device
 * Restart - performs a basic restart or master reset of a KNX interface or KNX device
-* GroupAddressImporter - import ETS group addresses in XML or CSV format for use with Calimero 
+* DatapointImporter - import datapoint information from a KNX project (.knxproj) or group addresses file (.xml or .csv) for use with Calimero 
 
 
 Examples

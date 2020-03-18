@@ -41,7 +41,7 @@ import tuwien.auto.calimero.xml.XmlReader;
  * Imports datapoint information from a KNX project (.knxproj) or group addresses file (in XML or CSV format) and stores
  * it as Calimero datapoint model in XML format.
  */
-public class GroupAddressImporter implements Runnable {
+public class DatapointImporter implements Runnable {
 
 	private final DatapointMap<StateDP> datapoints = new DatapointMap<>();
 
@@ -75,10 +75,10 @@ public class GroupAddressImporter implements Runnable {
 		else if (args.length < 2)
 			showToolInfo();
 		else
-			new GroupAddressImporter(args).run();
+			new DatapointImporter(args).run();
 	}
 
-	public GroupAddressImporter(final String... args) {
+	public DatapointImporter(final String... args) {
 		int i = 0;
 		while (args[i].startsWith("--")) {
 			if ("--freestyle".equals(args[i])) {
@@ -136,7 +136,7 @@ public class GroupAddressImporter implements Runnable {
 
 	private void importAddressesFromCsv(final String file) throws IOException {
 		Files.lines(Path.of(file), StandardCharsets.UTF_8).map(line -> line.split("\"[\t;]\""))
-				.map(GroupAddressImporter::parseDatapoint).flatMap(Optional::stream).forEach(datapoints::add);
+				.map(DatapointImporter::parseDatapoint).flatMap(Optional::stream).forEach(datapoints::add);
 	}
 
 	private void importAddressesFromXml(final String uri) {
