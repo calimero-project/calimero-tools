@@ -37,7 +37,10 @@ import tuwien.auto.calimero.xml.XmlInputFactory;
 import tuwien.auto.calimero.xml.XmlOutputFactory;
 import tuwien.auto.calimero.xml.XmlReader;
 
-/** Imports ETS group addresses in XML or CSV format and stores them as Calimero datapoint model in XML format. */
+/**
+ * Imports datapoint information from a KNX project (.knxproj) or group addresses file (in XML or CSV format) and stores
+ * it as Calimero datapoint model in XML format.
+ */
 public class GroupAddressImporter implements Runnable {
 
 	private final DatapointMap<StateDP> datapoints = new DatapointMap<>();
@@ -45,6 +48,7 @@ public class GroupAddressImporter implements Runnable {
 	private final String input;
 	private final String output;
 	private boolean freeStyle;
+	private char[] projectPwd = {};
 
 	/**
 	 * Entry point for running importer.
@@ -52,6 +56,7 @@ public class GroupAddressImporter implements Runnable {
 	 * <ul>
 	 * <li><code>--help -h</code> show help message</li>
 	 * <li><code>--version</code> show tool/library version and exit</li>
+	 * <li><code>--pwd</code> password for encrypted KNX projects</li>
 	 * <li><code>--freestyle</code> use unformatted KNX address presentation in the output</li>
 	 * </ul>
 	 *
@@ -75,9 +80,17 @@ public class GroupAddressImporter implements Runnable {
 
 	public GroupAddressImporter(final String... args) {
 		int i = 0;
-		if ("--freestyle".equals(args[0])) {
-			freeStyle = true;
-			i++;
+		while (args[i].startsWith("--")) {
+			if ("--freestyle".equals(args[i])) {
+				freeStyle = true;
+				i++;
+			}
+			else if ("--pwd".equals(args[i])) {
+				projectPwd = args[i + 1].toCharArray();
+				i += 2;
+			}
+			else
+				break;
 		}
 		input = args[i++];
 		output = args[i++];
@@ -88,6 +101,17 @@ public class GroupAddressImporter implements Runnable {
 		final String ext = input.substring(input.lastIndexOf('.') + 1);
 		if (ext.equalsIgnoreCase("xml"))
 			importAddressesFromXml(input);
+		else if (ext.equals("knxproj")) {
+			final var project = KnxProject.from(Path.of(input));
+			if (project.encrypted())
+				project.decrypt(projectPwd);
+			try {
+				project.datapoints().getDatapoints().forEach(datapoints::add);
+			}
+			catch (final KNXFormatException e) {
+				e.printStackTrace();
+			}
+		}
 		else {
 			try {
 				importAddressesFromCsv(input);
@@ -168,7 +192,7 @@ public class GroupAddressImporter implements Runnable {
 
 	private static void showToolInfo() {
 		final var name = MethodHandles.lookup().lookupClass().getSimpleName();
-		out(name + " - Import ETS group addresses from csv or xml format");
+		out(name + " - Import datapoints from a KNX project (.knxproj) or group addresses file (.xml|.csv)");
 		Main.showVersion();
 		out("Use --help for help message");
 	}
@@ -176,10 +200,11 @@ public class GroupAddressImporter implements Runnable {
 	private static void showUsage() {
 		final var name = MethodHandles.lookup().lookupClass().getSimpleName();
 		final var joiner = new StringJoiner(System.getProperty("line.separator"));
-		joiner.add("Usage: " + name + " [options] <group addresses file [.xml|csv]> <output file (xml)>");
+		joiner.add("Usage: " + name + " [options] <project.knxproj or group addresses file [.xml|.csv]> <output file (xml)>");
 		joiner.add("Options:");
 		joiner.add("  -h --help                  show this help and exit");
 		joiner.add("  --version                  show tool/library version and exit");
+		joiner.add("  --pwd                      password for encrypted KNX projects");
 		joiner.add("  --freestyle                use unformatted KNX address presentation in the output");
 		System.out.println(joiner);
 	}

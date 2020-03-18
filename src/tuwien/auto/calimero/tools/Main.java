@@ -102,7 +102,7 @@ final class Main
 		{ "devinfo", "Read KNX device information" },
 		{ "progmode", "Check/set device(s) in programming mode" },
 		{ "restart", "Restart a KNX interface/device" },
-		{ "import", "Import ETS group addresses from csv or xml format" },
+		{ "import", "Import datapoints from a KNX project (.knxproj) or group addresses file (.xml|.csv)" },
 	};
 
 	private static final List<Class<? extends Runnable>> tools = Arrays.asList(Discover.class, Discover.class,
