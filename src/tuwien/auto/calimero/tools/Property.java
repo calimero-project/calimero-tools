@@ -921,8 +921,9 @@ public class Property implements Runnable
 	private static String programVersion(final byte[] data) {
 		if (data.length != 5)
 			return toHex(data, "");
-		return String.format("%x%02x %02x%02x v%d.%d", data[0], data[1], data[2], data[3], (data[4] & 0xff) >> 4,
-				data[4] & 0xf);
+		final int mfr = (data[0] & 0xff) << 8 | data[1] & 0xff;
+		return String.format("%s %02x%02x v%d.%d", DeviceInfo.manufacturer(mfr), data[2], data[3],
+				(data[4] & 0xff) >> 4, data[4] & 0xf);
 	}
 
 	private static String string(final byte[] data) {
