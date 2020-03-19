@@ -634,7 +634,7 @@ public class ProcComm implements Runnable
 	protected static final class LteProcessEvent extends ProcessEvent {
 		private static final long serialVersionUID = 1L;
 
-		public final int extFrameFormat;
+		final int extFrameFormat;
 		private final byte[] tpdu;
 
 		LteProcessEvent(final ProcessCommunicator source, final IndividualAddress src, final int eff,
@@ -794,7 +794,7 @@ public class ProcComm implements Runnable
 		options.put("port", KNXnetIPConnection.DEFAULT_PORT);
 		options.put("medium", TPSettings.TP1);
 
-		for (final var i = new Main.PeekingIterator<>(List.of(args).iterator()); i.hasNext(); ) {
+		for (final var i = new Main.PeekingIterator<>(List.of(args).iterator()); i.hasNext();) {
 			final String arg = i.next();
 			if (Main.isOption(arg, "help", "h")) {
 				options.put("about", (Runnable) ProcComm::showUsage);

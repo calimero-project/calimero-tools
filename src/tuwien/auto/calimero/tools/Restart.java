@@ -166,7 +166,8 @@ public class Restart implements Runnable {
 	}
 
 	private void remoteDeviceRestart(final IndividualAddress remote) throws KNXException, InterruptedException {
-		try (final var link = Main.newLink(options); final var mgmt = new ManagementClientImpl(link)) {
+		try (var link = Main.newLink(options);
+			 var mgmt = new ManagementClientImpl(link)) {
 			final var destination = mgmt.createDestination(remote, false);
 
 			final int restartType = (Integer) options.get("restart-type");
@@ -185,7 +186,7 @@ public class Restart implements Runnable {
 
 	private void localDeviceMgmtReset()
 			throws KNXConnectionClosedException, KNXTimeoutException, InterruptedException, KNXException {
-		try (final var mgmt = Main.newLocalDeviceMgmtIP(options, __ -> {})) {
+		try (var mgmt = Main.newLocalDeviceMgmtIP(options, __ -> {})) {
 			final int restartType = (Integer) options.get("restart-type");
 			if (restartType != 0)
 				System.out.println("Using local device management, ignore restart type");
@@ -230,7 +231,7 @@ public class Restart implements Runnable {
 		options.put("restart-type", 0); // basic restart
 
 		int restartType = -1;
-		for (final var i = List.of(args).iterator(); i.hasNext(); ) {
+		for (final var i = List.of(args).iterator(); i.hasNext();) {
 			final String arg = i.next();
 			if (Main.isOption(arg, "help", "h")) {
 				options.put("about", (Runnable) Restart::showUsage);

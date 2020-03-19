@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2019 B. Malinowsky
+    Copyright (c) 2006, 2020 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -494,7 +494,7 @@ public class IPConfig implements Runnable
 		// default subnetwork address for TP1 and unregistered device
 		options.put("knx-address", new IndividualAddress(0, 0x02, 0xff));
 
-		for (final var i = l.iterator(); i.hasNext(); ) {
+		for (final var i = l.iterator(); i.hasNext();) {
 			final String arg = i.next();
 			if (Main.isOption(arg, "help", "h")) {
 				options.put("about", (Runnable) IPConfig::showUsage);

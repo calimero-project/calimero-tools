@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2019 B. Malinowsky
+    Copyright (c) 2006, 2020 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -412,7 +412,7 @@ public class NetworkMonitor implements Runnable
 		options.put("port", KNXnetIPConnection.DEFAULT_PORT);
 		options.put("medium", TPSettings.TP1);
 
-		for (final var i = List.of(args).iterator(); i.hasNext(); ) {
+		for (final var i = List.of(args).iterator(); i.hasNext();) {
 			final String arg = i.next();
 			if (Main.isOption(arg, "help", "h")) {
 				options.put("about", (Runnable) NetworkMonitor::showUsage);

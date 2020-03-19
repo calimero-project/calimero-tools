@@ -83,8 +83,6 @@ import tuwien.auto.calimero.mgmt.PropertyAdapter;
 import tuwien.auto.calimero.mgmt.PropertyClient;
 import tuwien.auto.calimero.mgmt.RemotePropertyServiceAdapter;
 import tuwien.auto.calimero.serial.usb.UsbConnection;
-import tuwien.auto.calimero.tools.DeviceInfo.CommonParameter;
-import tuwien.auto.calimero.tools.DeviceInfo.KnxipParameter;
 import tuwien.auto.calimero.tools.Main.ShutdownHandler;
 
 /**
@@ -476,7 +474,7 @@ public class DeviceInfo implements Runnable
 			// device only has at least device- and cEMI server-object
 			ifObjects.put(0, List.of(deviceObjectIdx));
 			for (int i = 1; i < 100; ++i) {
-				int type = (int) toUnsigned(read(i, PID.OBJECT_TYPE));
+				final int type = (int) toUnsigned(read(i, PID.OBJECT_TYPE));
 				if (type < 0)
 					break;
 				ifObjects.compute(type, (__, v) -> v == null ? new ArrayList<Integer>() : v).add(i);
@@ -521,36 +519,36 @@ public class DeviceInfo implements Runnable
 
 		readActualPeiType();
 		// Required PEI Type (Application Program Object)
-		for (var idx : objectIndices(appProgramObject))
+		for (final var idx : objectIndices(appProgramObject))
 			readUnsigned(idx, PID.PEI_TYPE, false, CommonParameter.RequiredPeiType);
 
 		programmingMode();
 
 		// Application Program (Application Program Object)
-		for (var idx : objectIndices(appProgramObject))
+		for (final var idx : objectIndices(appProgramObject))
 			readProgram(idx);
 
 		// PEI Program (Interface Program Object)
-		for (var idx : objectIndices(interfaceProgramObject))
+		for (final var idx : objectIndices(interfaceProgramObject))
 			readProgram(idx);
 
 		// Group Communication
-		for (var idx : objectIndices(addresstableObject))
+		for (final var idx : objectIndices(addresstableObject))
 			readLoadState(idx);
-		for (var idx : objectIndices(assoctableObject))
+		for (final var idx : objectIndices(assoctableObject))
 			readLoadState(idx);
 		if (mc != null && !result.formatted.containsKey(CommonParameter.GroupAddresses))
 			readGroupAddresses();
 
-		for (var idx : objectIndices(cemiServerObject))
+		for (final var idx : objectIndices(cemiServerObject))
 			readCemiServerObject(idx);
-		for (var idx : objectIndices(rfMediumObject))
+		for (final var idx : objectIndices(rfMediumObject))
 			readRFMediumObject(idx);
-		for (var idx : objectIndices(knxnetipObject))
+		for (final var idx : objectIndices(knxnetipObject))
 			readKnxipInfo(idx);
 	}
 
-	private List<Integer> objectIndices(int objectType) { return ifObjects.getOrDefault(objectType, List.of()); }
+	private List<Integer> objectIndices(final int objectType) { return ifObjects.getOrDefault(objectType, List.of()); }
 
 	// is device in programming mode
 	private void programmingMode() throws KNXFormatException, InterruptedException {
@@ -586,7 +584,7 @@ public class DeviceInfo implements Runnable
 		return dd;
 	}
 
-	private void readDeviceObject(int objectIdx) throws InterruptedException
+	private void readDeviceObject(final int objectIdx) throws InterruptedException
 	{
 		read(CommonParameter.Manufacturer, objectIdx, PID.MANUFACTURER_ID, data -> manufacturer((int) toUnsigned(data)));
 		readUnsigned(objectIdx, PID.ORDER_INFO, true, CommonParameter.OrderInfo);
@@ -608,7 +606,7 @@ public class DeviceInfo implements Runnable
 		// Also, if there is another profile, the KNX individual address has to be different to
 		// the cEMI server one (as provided by the cEMI server object)
 		{
-			byte[] data = read(CommonParameter.DeviceDescriptor, objectIdx, PID.DEVICE_DESCRIPTOR);
+			final byte[] data = read(CommonParameter.DeviceDescriptor, objectIdx, PID.DEVICE_DESCRIPTOR);
 			if (data != null) {
 				final DD0 profile = DeviceDescriptor.DD0.from(data);
 				if (dd == null)
@@ -661,7 +659,7 @@ public class DeviceInfo implements Runnable
 	private static final int legacyPidFilteringModeSelect = 62;
 	private static final int legacyPidFilteringModeSupport = 63;
 
-	private void readCemiServerObject(int objectIndex) throws InterruptedException {
+	private void readCemiServerObject(final int objectIndex) throws InterruptedException {
 		read(CemiParameter.MediumType, objectIndex, PropertyAccess.PID.MEDIUM_TYPE, DeviceInfo::mediumTypes);
 
 		// Get supported cEMI communication modes, DLL is mandatory for any cEMI server
@@ -714,7 +712,7 @@ public class DeviceInfo implements Runnable
 	// Name |  Reserved  | Ext. Grp  | DoA | Repeated | Own Ind. |
 	//      |            | Addresses |     |  Frames  | Address  |
 	//      ------------------------------------------------------
-	private void readSupportedFilteringModes(int objectIndex, final int pid) {
+	private void readSupportedFilteringModes(final int objectIndex, final int pid) {
 		try {
 			read(CemiParameter.SupportedFilteringModes, objectIndex, pid, filters -> {
 				final int filter = filters[1] & 0xff;
@@ -731,7 +729,7 @@ public class DeviceInfo implements Runnable
 
 	// Check disabled frame filters in the device
 	// A set bit (1) indicates a disabled filter, by default all filters are active
-	private void readSelectedFilteringMode(int objectIndex, final int pid) {
+	private void readSelectedFilteringMode(final int objectIndex, final int pid) {
 		try {
 			read(CemiParameter.SelectedFilteringModes, objectIndex, pid, filters -> {
 				final int selected = filters[1] & 0xff;
@@ -748,7 +746,7 @@ public class DeviceInfo implements Runnable
 		catch (final Exception e) {}
 	}
 
-	private void cEmiExtensionRfBiBat(int objectIndex) throws KNXException, InterruptedException {
+	private void cEmiExtensionRfBiBat(final int objectIndex) throws KNXException, InterruptedException {
 		read(CemiParameter.SupportedRfModes, objectIndex, PID.RF_MODE_SUPPORT, support -> {
 			final boolean slave = (support[0] & 0x04) == 0x04;
 			final boolean master = (support[0] & 0x02) == 0x02;
@@ -795,7 +793,7 @@ public class DeviceInfo implements Runnable
 		return "unknown/unspecified (" + commMode + ")";
 	}
 
-	private void readRFMediumObject(int objectIndex) {
+	private void readRFMediumObject(final int objectIndex) {
 		try {
 			// different PID as in Device Object !!!
 			final int pidRfDomainAddress = 56;
@@ -981,12 +979,12 @@ public class DeviceInfo implements Runnable
 		if (dd.equals(DD0.TYPE_5705))
 			memLocation = addrGroupAddrTableMask5705;
 		else if (ifObjects.containsKey(addresstableObject)) {
-			int addresstableObjectIdx = ifObjects.get(addresstableObject).get(0);
-			int tableSize = readElements(addresstableObjectIdx, PID.TABLE);
+			final int addresstableObjectIdx = ifObjects.get(addresstableObject).get(0);
+			final int tableSize = readElements(addresstableObjectIdx, PID.TABLE);
 			if (tableSize > 0) {
-				StringJoiner joiner = new StringJoiner(", ");
+				final StringJoiner joiner = new StringJoiner(", ");
 				for (int i = 0; i < tableSize; i++) {
-					GroupAddress group = new GroupAddress(read(addresstableObjectIdx, PID.TABLE, i + 1, 1));
+					final GroupAddress group = new GroupAddress(read(addresstableObjectIdx, PID.TABLE, i + 1, 1));
 					joiner.add(group.toString());
 				}
 				putResult(CommonParameter.GroupAddresses, joiner.toString(), new byte[0]);
@@ -1025,7 +1023,7 @@ public class DeviceInfo implements Runnable
 		putResult(CommonParameter.GroupAddresses, sb.toString(), new byte[0]);
 	}
 
-	private void readKnxipInfo(int objectIndex) throws KNXException, InterruptedException
+	private void readKnxipInfo(final int objectIndex) throws KNXException, InterruptedException
 	{
 		read(KnxipParameter.DeviceName, () -> readFriendlyName(objectIndex));
 
@@ -1044,9 +1042,9 @@ public class DeviceInfo implements Runnable
 		final boolean dhcpOrBoot = (data[0] & 0x06) != 0;
 
 		// Read currently set IP parameters
-		var currentIP = readIp(KnxipParameter.CurrentIPAddress, objectIndex, PropertyAccess.PID.CURRENT_IP_ADDRESS);
-		var currentMask = readIp(KnxipParameter.CurrentSubnetMask, objectIndex, PropertyAccess.PID.CURRENT_SUBNET_MASK);
-		var currentGw = readIp(KnxipParameter.CurrentDefaultGateway, objectIndex, PropertyAccess.PID.CURRENT_DEFAULT_GATEWAY);
+		final var currentIP = readIp(KnxipParameter.CurrentIPAddress, objectIndex, PropertyAccess.PID.CURRENT_IP_ADDRESS);
+		final var currentMask = readIp(KnxipParameter.CurrentSubnetMask, objectIndex, PropertyAccess.PID.CURRENT_SUBNET_MASK);
+		final var currentGw = readIp(KnxipParameter.CurrentDefaultGateway, objectIndex, PropertyAccess.PID.CURRENT_DEFAULT_GATEWAY);
 		// DHCP Server (show only if current assignment method is DHCP or BootP)
 		if (dhcpOrBoot) {
 			readIp(KnxipParameter.DhcpServer, objectIndex, PropertyAccess.PID.DHCP_BOOTP_SERVER);
@@ -1109,7 +1107,7 @@ public class DeviceInfo implements Runnable
 
 	private void readLoadState(final int objectIdx) throws InterruptedException
 	{
-		var data = read(CommonParameter.LoadStateControl, objectIdx, PropertyAccess.PID.LOAD_STATE_CONTROL,
+		final var data = read(CommonParameter.LoadStateControl, objectIdx, PropertyAccess.PID.LOAD_STATE_CONTROL,
 				DeviceInfo::getLoadState);
 		// System B contains error code for load state "Error" (optional, but usually yes)
 		final boolean hasErrorCode = isSystemB;
@@ -1126,9 +1124,9 @@ public class DeviceInfo implements Runnable
 		}
 	}
 
-	private Optional<byte[]> read(final Parameter p, int objectIndex, int pid,
+	private Optional<byte[]> read(final Parameter p, final int objectIndex, final int pid,
 		final Function<byte[], String> representation) throws InterruptedException {
-		var data = Optional.ofNullable(read(p, objectIndex, pid));
+		final var data = Optional.ofNullable(read(p, objectIndex, pid));
 		data.map(representation).filter(Predicate.not(String::isEmpty))
 				.ifPresent(formatted -> putResult(p, formatted, data.get()));
 		return data;
@@ -1151,11 +1149,11 @@ public class DeviceInfo implements Runnable
 		}
 	}
 
-	private byte[] readIp(final Parameter p, int objectIndex, int pid) throws InterruptedException {
+	private byte[] readIp(final Parameter p, final int objectIndex, final int pid) throws InterruptedException {
 		return read(p, objectIndex, pid, DeviceInfo::toIP).orElse(new byte[4]);
 	}
 
-	private String readFriendlyName(int objectIndex) throws KNXException, InterruptedException
+	private String readFriendlyName(final int objectIndex) throws KNXException, InterruptedException
 	{
 		final char[] name = new char[30];
 		int start = 0;
@@ -1179,7 +1177,7 @@ public class DeviceInfo implements Runnable
 		return read(objectIndex, pid, 1, 1, true);
 	}
 
-	private byte[] read(Parameter p, final int objectIndex, final int pid) throws InterruptedException
+	private byte[] read(final Parameter p, final int objectIndex, final int pid) throws InterruptedException
 	{
 		out.debug("read {}|{} {}", objectIndex, pid, p.friendlyName());
 		return read(objectIndex, pid, 1, 1, false);
@@ -1190,7 +1188,7 @@ public class DeviceInfo implements Runnable
 		return read(objectIndex, pid, start, elements, true);
 	}
 
-	private byte[] read(final int objectIndex, final int pid, final int start, final int elements, boolean log)
+	private byte[] read(final int objectIndex, final int pid, final int start, final int elements, final boolean log)
 		throws InterruptedException
 	{
 		if (log)
@@ -1287,7 +1285,7 @@ public class DeviceInfo implements Runnable
 		// default subnetwork address for TP1 and unregistered device
 		options.put("knx-address", new IndividualAddress(0, 0x02, 0xff));
 
-		for (final var i = List.of(args).iterator(); i.hasNext(); ) {
+		for (final var i = List.of(args).iterator(); i.hasNext();) {
 			final String arg = i.next();
 			if (Main.isOption(arg, "help", "h")) {
 				options.put("about", (Runnable) DeviceInfo::showUsage);
@@ -1389,7 +1387,7 @@ public class DeviceInfo implements Runnable
 		try {
 			return TranslatorTypes.createTranslator(DptXlator16BitSet.DptMedia, data).getValue();
 		}
-		catch (Exception e) {
+		catch (final Exception e) {
 			return "";
 		}
 	}

@@ -93,7 +93,7 @@ final class KnxProject {
 				root = to;
 			}
 
-			try (final var stream = Files.list(root)) {
+			try (var stream = Files.list(root)) {
 				final var name = root.getFileName().toString();
 
 				final var path = stream.filter(p -> p.getFileName().toString().startsWith("P-"))

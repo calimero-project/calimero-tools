@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2015, 2019 B. Malinowsky
+    Copyright (c) 2015, 2020 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -205,7 +205,7 @@ public class ProgMode implements Runnable
 		options.put("command", "status");
 
 		boolean setmode = false;
-		for (final var i = List.of(args).iterator(); i.hasNext(); ) {
+		for (final var i = List.of(args).iterator(); i.hasNext();) {
 			final String arg = i.next();
 			if (Main.isOption(arg, "help", "h")) {
 				options.put("about", (Runnable) ProgMode::showUsage);

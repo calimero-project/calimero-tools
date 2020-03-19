@@ -476,7 +476,7 @@ public class Property implements Runnable
 		// default subnetwork address for TP1 and unregistered device
 		options.put("knx-address", new IndividualAddress(0, 0x02, 0xff));
 
-		for (final var i = new Main.PeekingIterator<>(List.of(args).iterator()); i.hasNext(); ) {
+		for (final var i = new Main.PeekingIterator<>(List.of(args).iterator()); i.hasNext();) {
 			final String arg = i.next();
 			if (Main.isOption(arg, "help", "h")) {
 				options.put("about", (Runnable) Property::showUsage);
@@ -882,7 +882,7 @@ public class Property implements Runnable
 		final var magic = (data[0] & 0xff) >> 3;
 		final var version = ((data[0] & 0x07) << 2) | ((data[1] & 0x0c0) >> 6);
 		final var rev = data[1] & 0x3f;
-		return magic + "." + version + "." + rev;
+		return "[" + magic + "] " + version + "." + rev;
 	}
 
 	private static String individualAddresses(final byte[] data) {

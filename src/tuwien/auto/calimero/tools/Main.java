@@ -467,7 +467,7 @@ final class Main
 
 	private static Optional<Keyring> cwdKeyring() {
 		final String knxkeys = ".knxkeys";
-		try (final var list = Files.list(Path.of(""))) {
+		try (var list = Files.list(Path.of(""))) {
 			return list.map(Path::toString).filter(path -> path.endsWith(knxkeys)).findAny().map(Keyring::load);
 		}
 		catch (final IOException ignore) {
@@ -508,7 +508,7 @@ final class Main
 		private final Iterator<E> i;
 		private E next;
 
-		public PeekingIterator(final Iterator<E> i) { this.i = i; }
+		PeekingIterator(final Iterator<E> i) { this.i = i; }
 
 		public E peek() { return next != null ? next : (next = next()); }
 
