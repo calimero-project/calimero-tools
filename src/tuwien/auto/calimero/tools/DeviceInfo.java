@@ -650,6 +650,8 @@ public class DeviceInfo implements Runnable
 		}
 		catch (final Exception e) {}
 
+		read(CommonParameter.SoftwareVersion, objectIdx, PID.VERSION, DeviceInfo::version);
+
 		readUnsigned(objectIdx, PID.MAX_APDULENGTH, false, CommonParameter.MaxApduLength);
 
 		final int pidErrorFlags = 53;
@@ -953,7 +955,7 @@ public class DeviceInfo implements Runnable
 	{
 		readMem(addrManufact, 1, "KNX manufacturer ID ", DeviceInfo::manufacturer, CommonParameter.Manufacturer);
 		readMem(addrDevType, 2, "Device type number ", true, CommonParameter.DeviceTypeNumber);
-		readMem(addrVersion, 1, "SW version ", v -> (v >> 4) + "." + (v & 0xf), CommonParameter.SoftwareVersion);
+		readMem(addrVersion, 1, "SW version ", i -> version(new byte[] { (byte) (int) i }), CommonParameter.SoftwareVersion);
 		// mechanical PEI type required by the application SW
 		readMem(addrPeiType, 1, "Hardware PEI type ", DeviceInfo::toPeiTypeString, CommonParameter.RequiredPeiType);
 		readMem(addrRunError, 1, "Run error 0x", DeviceInfo::decodeRunError, CommonParameter.RunError);
@@ -1541,6 +1543,13 @@ public class DeviceInfo implements Runnable
 	private static String knxSerialNumber(final byte[] data) {
 		final var hex = DataUnitBuilder.toHex(data, "");
 		return hex.substring(0, 4) + ":" + hex.substring(4);
+	}
+
+	private static String version(final byte[] data) {
+		final int magic = (data[0] & 0xff) >> 3;
+		final int version = ((data[0] & 0x07) << 2) | ((data[1] & 0x0c0) >> 6);
+		final int rev = data[1] & 0x3f;
+		return "[" + magic + "] " + version + "." + rev;
 	}
 
 	static String manufacturer(final int mf) {
