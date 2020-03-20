@@ -634,7 +634,7 @@ public class ProcComm implements Runnable
 	protected static final class LteProcessEvent extends ProcessEvent {
 		private static final long serialVersionUID = 1L;
 
-		final int extFrameFormat;
+		public final int extFrameFormat;
 		private final byte[] tpdu;
 
 		LteProcessEvent(final ProcessCommunicator source, final IndividualAddress src, final int eff,
