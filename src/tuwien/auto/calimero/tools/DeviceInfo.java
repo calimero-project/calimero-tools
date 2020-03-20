@@ -197,6 +197,13 @@ public class DeviceInfo implements Runnable
 		DomainAddress
 	}
 
+	public enum SecurityParameter implements Parameter {
+		SecurityMode,
+		SecurityFailure,
+		SecurityFailureCounters,
+		LastSecurityFailure
+	}
+
 	// not in a category yet
 	public enum InternalParameter implements Parameter {
 		IndividualAddressWriteEnabled, ServiceControl, AdditionalProfile, ErrorFlags
@@ -247,6 +254,8 @@ public class DeviceInfo implements Runnable
 	private static final int cemiServerObject = 8;
 	// Interface Object "KNXnet/IP Parameter Object" in interface object server
 	private static final int knxnetipObject = 11;
+	// Interface Object "Security" in interface object server
+	private static final int securityObject = 17;
 	// Interface Object "RF Medium Object" in interface object server
 	private static final int rfMediumObject = 19;
 
@@ -546,6 +555,8 @@ public class DeviceInfo implements Runnable
 			readRFMediumObject(idx);
 		for (final var idx : objectIndices(knxnetipObject))
 			readKnxipInfo(idx);
+		for (final var idx : objectIndices(securityObject))
+			readSecurityObject(idx);
 	}
 
 	private List<Integer> objectIndices(final int objectType) { return ifObjects.getOrDefault(objectType, List.of()); }
@@ -854,6 +865,68 @@ public class DeviceInfo implements Runnable
 		}
 	}
 
+	private void readSecurityObject(final int objectIndex) throws InterruptedException {
+		final int pidSecurityMode = 51;
+		final byte[] empty = {};
+		readFunctionPropertyState(SecurityParameter.SecurityMode, securityObject, pidSecurityMode, 0, empty,
+				DeviceInfo::toOnOff);
+
+		final int pidSecurityReport = 57;
+		read(SecurityParameter.SecurityFailure, objectIndex, pidSecurityReport, DeviceInfo::toYesNo);
+
+		final int pidSecurityFailuresLog = 55;
+		final byte[] readFailureCounters = { 0 };
+		readFunctionPropertyState(SecurityParameter.SecurityFailureCounters, securityObject, pidSecurityFailuresLog, 0,
+				readFailureCounters, DeviceInfo::securityFailureCounters);
+
+		for (int i = 0; i < 5; i++) {
+			final byte[] failure = { (byte) i };
+			final var result = readFunctionPropertyState(SecurityParameter.LastSecurityFailure, securityObject,
+					pidSecurityFailuresLog, 1, failure, DeviceInfo::latestSecurityFailure);
+			if (result.isEmpty())
+				break;
+		}
+	}
+
+	// for function property response only
+	private static String toOnOff(final byte[] data) {
+		return (data[2] & 0x01) != 0 ? "on" : "off";
+	}
+
+	private static String toYesNo(final byte[] data) {
+		return (data[0] & 0x01) != 0 ? "yes" : "no";
+	}
+
+	private static String securityFailureCounters(final byte[] data) {
+		final var counters = ByteBuffer.wrap(data, 3, data.length - 3);
+		final int scfErrors = counters.getShort() & 0xffff;
+		final int seqNoErrors = counters.getShort() & 0xffff;
+		final int cryptoErrors = counters.getShort() & 0xffff;
+		final int accessRoleErrors = counters.getShort() & 0xffff;
+		return "control field " + scfErrors + ", sequence " + seqNoErrors + ", cryptographic " + cryptoErrors
+				+ ", access " + accessRoleErrors;
+	}
+
+	private static String latestSecurityFailure(final byte[] data) {
+		final var msgInfo = ByteBuffer.wrap(data, 3, data.length - 3);
+
+		final var src = new IndividualAddress(msgInfo.getShort() & 0xffff);
+		final var dstRaw = msgInfo.getShort() & 0xffff;
+		final int ctrl2 = msgInfo.get() & 0xff;
+		final boolean group = (ctrl2 & 0x80) != 0;
+		final var dst = group ? new GroupAddress(dstRaw) : new IndividualAddress(dstRaw);
+
+		final var seqData = new byte[6];
+		msgInfo.get(seqData);
+		final long seqNo = toUnsigned(seqData);
+
+		final String[] errorTypes = { "reserved", "invalid SCF", "sequence error", "cryptographic error",
+			"error against access & roles" };
+		final var error = errorTypes[msgInfo.get() & 0xff];
+
+		return String.format("%s->%s seq %d: %s", src, dst, seqNo, error);
+	}
+
 	// same as BCU error flags located at 0x10d
 	private static String errorFlags(final byte[] data) {
 		if ((data[0] & 0xff) == 0xff)
@@ -1124,6 +1197,30 @@ public class DeviceInfo implements Runnable
 				}
 			});
 		}
+	}
+
+	private Optional<byte[]> readFunctionPropertyState(final Parameter p, final int objectType, final int propertyId,
+			final int service, final byte[] info, final Function<byte[], String> representation) throws InterruptedException {
+		final var data = Optional.ofNullable(readFunctionPropertyState(p, objectType, propertyId, service, info));
+		data.map(representation).filter(Predicate.not(String::isEmpty))
+				.ifPresent(formatted -> putResult(p, formatted, data.get()));
+		return data;
+	}
+
+	private byte[] readFunctionPropertyState(final Parameter p, final int objectType, final int propertyId,
+		final int service, final byte... info) throws InterruptedException {
+		if (mc == null)
+			return null;
+
+		final int oinstance = 1;
+		out.debug("read function property state {}({})|{} service {}", objectType, oinstance, propertyId, service);
+		try {
+			return mc.readFunctionPropertyState(d, objectType, oinstance, propertyId, service, info);
+		}
+		catch (final KNXException e) {
+			out.debug(e.getMessage());
+		}
+		return null;
 	}
 
 	private Optional<byte[]> read(final Parameter p, final int objectIndex, final int pid,
