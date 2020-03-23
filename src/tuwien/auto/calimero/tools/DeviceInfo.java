@@ -44,9 +44,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
@@ -115,6 +117,7 @@ public class DeviceInfo implements Runnable
 		 */
 		String name();
 
+		// create human readable name from parameter by inserting some spaces
 		default String friendlyName() { return name().replaceAll("([A-Z])", " $1").replace("I P", "IP").trim(); }
 	}
 
@@ -210,8 +213,9 @@ public class DeviceInfo implements Runnable
 	}
 
 	/**
-	 * Result container of reading the device information.
+	 * @deprecated
 	 */
+	@Deprecated
 	public static final class Result
 	{
 		private final Map<Parameter, String> formatted = new HashMap<>();
@@ -238,6 +242,25 @@ public class DeviceInfo implements Runnable
 		{
 			return raw.get(p);
 		}
+	}
+
+	public static final class Item {
+		private final String category;
+		private final Parameter parameter;
+		private final String value;
+		private final byte[] raw;
+
+		Item(final String category, final Parameter parameter, final String value, final byte[] raw) {
+			this.category = category;
+			this.parameter = parameter;
+			this.value = value;
+			this.raw = raw;
+		}
+
+		public String category() { return category; }
+		public Parameter parameter() { return parameter; }
+		public String value() { return value; }
+		public byte[] raw() { return raw; }
 	}
 
 	private static final String tool = "DeviceInfo";
@@ -279,6 +302,9 @@ public class DeviceInfo implements Runnable
 	private DeviceDescriptor dd;
 	// System B has mask version 0x07B0 or 0x17B0 and provides error code property
 	private boolean isSystemB;
+
+	private final Set<String> categories = new HashSet<>();
+	private String category = "General";
 
 	/**
 	 * Creates a new DeviceInfo instance using the supplied options.
@@ -421,6 +447,7 @@ public class DeviceInfo implements Runnable
 	 * @param info holds the result of reading KNX device information; depending on the device, not all available
 	 *        parameters might be set
 	 */
+	@Deprecated
 	protected void onDeviceInformation(final IndividualAddress device, final Result info) {}
 
 	/**
@@ -431,8 +458,11 @@ public class DeviceInfo implements Runnable
 	 * @param value formatted value of that parameter
 	 * @param raw raw value of that parameter
 	 */
-	protected void onDeviceInformation(final Parameter parameter, final String value, final byte[] raw) {
-		out(parameter, value, raw);
+	protected void onDeviceInformation(final Parameter parameter, final String value, final byte[] raw) {}
+
+	protected void onDeviceInformation(final Item item) {
+		out(item);
+		onDeviceInformation(item.parameter(), item.value(), item.raw());
 	}
 
 	/**
@@ -450,16 +480,27 @@ public class DeviceInfo implements Runnable
 			out.error("completed", thrown);
 	}
 
-	private void out(final Parameter p, final String value, final byte[] raw) {
-		final boolean verbose = false; // TODO create option 'raw/unformatted'
-		// create human readable name from parameter by inserting some spaces
-		final String name = p.name().replaceAll("([A-Z])", " $1").replace("I P", "IP").trim();
-		final String s = name + " = " + value;
-		final String hex = raw.length > 0 ? "0x" + DataUnitBuilder.toHex(raw, "") : "n/a";
-		// left-pad verbose output
+	private void out(final Item item) {
+		final boolean printUnformatted = false; // TODO create option 'raw/unformatted'
+
+		final boolean printCategory = categories.add(item.category());
+		if (printCategory && !"General".equals(item.category()))
+			out(System.lineSeparator() + item.category());
+
+		final String s = item.parameter().friendlyName() + " = " + item.value();
+		final String hex = item.raw().length > 0 ? "0x" + DataUnitBuilder.toHex(item.raw(), "") : "n/a";
+		// left-pad unformatted output
 		final int n = Math.max(1, 60 - s.length());
-		final String detail = verbose ? String.format("%" + n + "s%s]", "[raw=", hex) : "";
-		System.out.println(s + detail);
+		final String detail = printUnformatted ? String.format(" %" + n + "s%s]", "[", hex) : "";
+		out(s + detail);
+	}
+
+	private String interfaceObjectName(final int objectIndex) {
+		for (final var entry : ifObjects.entrySet()) {
+			if (entry.getValue().contains(objectIndex))
+				return PropertyClient.getObjectTypeName(entry.getKey());
+		}
+		return "";
 	}
 
 	private void findInterfaceObjects() throws KNXException, InterruptedException
@@ -527,36 +568,46 @@ public class DeviceInfo implements Runnable
 			readDeviceObject(0);
 
 		readActualPeiType();
-		// Required PEI Type (Application Program Object)
-		for (final var idx : objectIndices(appProgramObject))
-			readUnsigned(idx, PID.PEI_TYPE, false, CommonParameter.RequiredPeiType);
-
 		programmingMode();
 
 		// Application Program (Application Program Object)
-		for (final var idx : objectIndices(appProgramObject))
+		iterate(appProgramObject, idx -> {
+			readUnsigned(idx, PID.PEI_TYPE, false, CommonParameter.RequiredPeiType);
 			readProgram(idx);
+		});
 
 		// PEI Program (Interface Program Object)
-		for (final var idx : objectIndices(interfaceProgramObject))
-			readProgram(idx);
+		iterate(interfaceProgramObject, this::readProgram);
 
 		// Group Communication
-		for (final var idx : objectIndices(addresstableObject))
-			readLoadState(idx);
-		for (final var idx : objectIndices(assoctableObject))
-			readLoadState(idx);
+		iterate(addresstableObject, this::readLoadState);
+		iterate(assoctableObject, this::readLoadState);
 		if (mc != null && !result.formatted.containsKey(CommonParameter.GroupAddresses))
 			readGroupAddresses();
 
-		for (final var idx : objectIndices(cemiServerObject))
-			readCemiServerObject(idx);
-		for (final var idx : objectIndices(rfMediumObject))
-			readRFMediumObject(idx);
-		for (final var idx : objectIndices(knxnetipObject))
-			readKnxipInfo(idx);
-		for (final var idx : objectIndices(securityObject))
-			readSecurityObject(idx);
+		iterate(cemiServerObject, this::readCemiServerObject);
+		iterate(rfMediumObject, this::readRFMediumObject);
+		try {
+			iterate(knxnetipObject, this::readKnxipInfo);
+		}
+		catch (InterruptedException | KNXException e) { throw e; }
+		catch (final Exception e) { e.printStackTrace(); }
+
+		iterate(securityObject, this::readSecurityObject);
+	}
+
+	@FunctionalInterface
+	private interface ThrowingConsumer<T, E extends Exception> {
+		void accept(T t) throws E;
+	}
+
+	private <E extends Exception> void iterate(final int objectType, final ThrowingConsumer<Integer, E> consumer)
+			throws E {
+		int i = 0;
+		for (final var idx : objectIndices(objectType)) {
+			category = interfaceObjectName(idx) + (++i > 1 ? " " + i : "");
+			consumer.accept(idx);
+		}
 	}
 
 	private List<Integer> objectIndices(final int objectType) { return ifObjects.getOrDefault(objectType, List.of()); }
@@ -956,7 +1007,8 @@ public class DeviceInfo implements Runnable
 	{
 		result.formatted.put(p, formatted);
 		result.raw.put(p, raw);
-		onDeviceInformation(p, formatted, raw);
+		final var item = new Item(category, p, formatted, raw);
+		onDeviceInformation(item);
 	}
 
 	private static final int addrManufact = 0x0104;
