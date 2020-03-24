@@ -69,7 +69,7 @@ import tuwien.auto.calimero.xml.KNXMLException;
 /**
  * Represents a KNX project resource.
  */
-final class KnxProject {
+public final class KnxProject {
 	private static final String knxproj = ".knxproj";
 
 	private final Path project;
