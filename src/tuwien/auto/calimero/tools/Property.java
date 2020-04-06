@@ -44,6 +44,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -67,6 +68,7 @@ import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.KnxRuntimeException;
 import tuwien.auto.calimero.dptxlator.DPTXlator;
+import tuwien.auto.calimero.dptxlator.PropertyTypes;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.medium.TPSettings;
@@ -121,6 +123,8 @@ public class Property implements Runnable
 	private final Map<Integer, Integer> objIndexToType = new HashMap<>();
 
 	private final Thread interruptOnClose;
+
+	private boolean associationTableFormat1;
 
 	/**
 	 * Constructs a new Property object.
@@ -590,6 +594,13 @@ public class Property implements Runnable
 				}
 			}
 			catch (KNXException | RuntimeException e) {
+				// if we're reading association table content, figure out table format size before
+				if ((objType == 2 || objType == 9) && pid == PID.TABLE) {
+					final var desc = pc.getDescription(oi, PID.TABLE);
+					final int pdt = desc.getPDT();
+					associationTableFormat1 = pdt == PropertyTypes.PDT_GENERIC_04;
+				}
+
 				if (args.length == 3) {
 					final byte[] data = pc.getProperty(oi, pid, 1, 1);
 
@@ -810,13 +821,15 @@ public class Property implements Runnable
 				data -> DeviceInfo.manufacturer((data[0] & 0xff) << 8 | data[1] & 0xff));
 		customFormatter.put(key(PID.LOAD_STATE_CONTROL), Property::loadState);
 		customFormatter.put(key(PID.VERSION), Property::version);
-		customFormatter.put(key(PID.TABLE), Property::groupAddresses);
+		customFormatter.put(key(1, PID.TABLE), Property::groupAddresses);
 
 		customFormatter.put(key(0, PID.SERIAL_NUMBER), Property::knxSerialNumber);
 		customFormatter.put(key(0, 52), Property::maxRetryCount);
 		customFormatter.put(key(0, PID.DEVICE_DESCRIPTOR), Property::deviceDescriptor);
 		final int pidErrorFlags = 53;
 		customFormatter.put(key(0, pidErrorFlags), Property::errorFlags);
+
+		customFormatter.put(key(2, PID.TABLE), this::associationTable);
 
 		customFormatter.put(key(6, PID.MEDIUM_STATUS),
 				data -> "communication " + (bitSet(data[0], 0) ? "impossible" : "possible"));
@@ -826,6 +839,8 @@ public class Property implements Runnable
 		customFormatter.put(key(6, PID.MAIN_LCGROUPCONFIG), Property::lineCouplerGroupConfig);
 		final int pidCouplerServiceControl = 57;
 		customFormatter.put(key(6, pidCouplerServiceControl), Property::couplerServiceControl);
+
+		customFormatter.put(key(9, PID.TABLE), this::associationTable);
 
 		// at least jung devices have DD0 also in cEMI server and KNXnet/IP object
 		customFormatter.put(key(8, PID.DEVICE_DESCRIPTOR), Property::deviceDescriptor);
@@ -899,6 +914,19 @@ public class Property implements Runnable
 		for (int i = 0; i < data.length; i += 2) {
 			final var address = ((data[i] & 0xff) << 8) | (data[i + 1] & 0xff);
 			joiner.add(new GroupAddress(address).toString());
+		}
+		return joiner.toString();
+	}
+
+	// Group Object Association Table: connection number (TSAP) -> group object number (ASAP)
+	private String associationTable(final byte[] data) {
+		final var joiner = new StringJoiner(delimiter);
+		final var buffer = ByteBuffer.wrap(data);
+		while (buffer.hasRemaining()) {
+			final int first = associationTableFormat1 ? buffer.getShort() & 0xffff : buffer.get() & 0xff;
+			final int second = associationTableFormat1 ? buffer.getShort() & 0xffff : buffer.get() & 0xff;
+			final var assoc = first + "=" + second;
+			joiner.add(assoc);
 		}
 		return joiner.toString();
 	}
