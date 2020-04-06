@@ -337,7 +337,7 @@ public class Property implements Runnable
 		buf.append(" OT ").append(alignRight(d.getObjectType(), 3));
 		buf.append(", PID ").append(alignRight(d.getPID(), 3));
 		buf.append(" | ");
-		tuwien.auto.calimero.mgmt.PropertyClient.Property p = getPropertyDef(d.getObjectType(), d.getPID());
+		PropertyClient.Property p = getPropertyDef(d.getObjectType(), d.getPID());
 		if (p == null)
 			p = getPropertyDef(PropertyKey.GLOBAL_OBJTYPE, d.getPID());
 		if (p != null) {
@@ -462,8 +462,7 @@ public class Property implements Runnable
 		return String.format("%1$" + width + "s", Integer.toString(value));
 	}
 
-	private tuwien.auto.calimero.mgmt.PropertyClient.Property getPropertyDef(final int objType,
-		final int pid)
+	private PropertyClient.Property getPropertyDef(final int objType, final int pid)
 	{
 		if (definitions == null)
 			return null;
