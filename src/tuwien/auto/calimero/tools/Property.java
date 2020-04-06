@@ -559,8 +559,7 @@ public class Property implements Runnable
 			final int oi = toInt(args[1]);
 			final int pid = toInt(args[2]);
 
-			// std.frame: max ASDU = 14 -> actual data = 10, we assume max. PDT size of 4 bytes -> max 2 elements
-			final int maxElements = 2;
+			final int maxElements = 15;
 			String s = "";
 			final List<byte[]> raw = new ArrayList<>();
 
@@ -578,9 +577,9 @@ public class Property implements Runnable
 				else {
 					final int start = toInt(args[3]);
 					final int elements = toInt(args[4]);
-					for (int i = start; i <= elements; i += maxElements) {
-						final int min = Math.min(maxElements, (elements - i + 1));
-						final DPTXlator translator = pc.getPropertyTranslated(oi, pid, i, min);
+					for (int i = 0; i < elements; i += maxElements) {
+						final int min = Math.min(maxElements, elements - i);
+						final DPTXlator translator = pc.getPropertyTranslated(oi, pid, start + i, min);
 						final byte[] data = translator.getData();
 						final int size = data.length / min;
 						final String[] allValues = translator.getAllValues();
@@ -610,27 +609,29 @@ public class Property implements Runnable
 					final int start = toInt(args[3]);
 					final int elements = toInt(args[4]);
 					final var collect = new ByteArrayOutputStream();
-					for (int i = start; i <= elements; i += maxElements) {
-						final int min = Math.min(maxElements, (elements - i + 1));
-						final byte[] part = pc.getProperty(oi, pid, i, min);
+					for (int i = 0; i < elements; i += maxElements) {
+						final int min = Math.min(maxElements, elements - i);
+						final byte[] part = pc.getProperty(oi, pid, start + i, min);
 						collect.writeBytes(part);
 					}
 
 					final var data = collect.toByteArray();
-					s = customFormatter(objType, pid).map(f -> f.apply(data)).orElseGet(() -> {
-						String tmp = "";
-						final String hex = toHex(data, "");
-						final int chars = hex.length() / elements;
-						for (int k = 0; k < elements; ++k)
-							tmp += "0x" + hex.substring(k * chars, (k + 1) * chars) + " ";
-						return tmp;
-					});
+					if (data.length > 0) {
+						s = customFormatter(objType, pid).map(f -> f.apply(data)).orElseGet(() -> {
+							String tmp = "";
+							final String hex = toHex(data, "");
+							final int chars = hex.length() / elements;
+							for (int k = 0; k < elements; ++k)
+								tmp += "0x" + hex.substring(k * chars, (k + 1) * chars) + " ";
+							return tmp;
+						});
 
-					final int size = data.length / elements;
-					for (int from = 0; from < data.length; from += size)
-						raw.add(Arrays.copyOfRange(data, from, from + size));
+						final int size = data.length / elements;
+						for (int from = 0; from < data.length; from += size)
+							raw.add(Arrays.copyOfRange(data, from, from + size));
 
-					s = s.trim();
+						s = s.trim();
+					}
 				}
 			}
 			onPropertyValue(oi, pid, s, raw);
