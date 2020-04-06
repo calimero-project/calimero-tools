@@ -292,16 +292,16 @@ public class Restart implements Runnable {
 		final var joiner = new StringJoiner(sep);
 		joiner.add("Usage: " + tool + " [options] <host|port> [<KNX device address>]");
 		Main.printCommonOptions(joiner);
-		joiner.add("  --yes -y                 automatic yes to reset confirmation");
+		joiner.add("  --yes -y                   automatic yes to reset confirmation");
 		joiner.add("If a device address is supplied, the supported restart types are (select at most one):");
-		joiner.add("  --basic                  basic restart without confirmation [default]");
-		joiner.add("  --confirmed              basic restart with confirmation");
-		joiner.add("  --factory-reset          factory reset (used with channel)");
-		joiner.add("  --reset-address          reset device address to its default");
-		joiner.add("  --reset-app              reset application program memory to default application");
-		joiner.add("  --reset-params           reset application parameter memory (used with channel)");
-		joiner.add("  --reset-links            reset links (used with channel)");
-		joiner.add("  --factory-keep-addr      factory reset without resetting device addresses (used with channel)");
+		joiner.add("  --basic                    basic restart without confirmation [default]");
+		joiner.add("  --confirmed                basic restart with confirmation");
+		joiner.add("  --factory-reset            factory reset (used with channel)");
+		joiner.add("  --reset-address            reset device address to its default");
+		joiner.add("  --reset-app                reset application program memory to default application");
+		joiner.add("  --reset-params             reset application parameter memory (used with channel)");
+		joiner.add("  --reset-links              reset links (used with channel)");
+		joiner.add("  --factory-keep-addr        factory reset without resetting device addresses (used with channel)");
 		Main.printSecureOptions(joiner);
 
 		out(joiner.toString());
