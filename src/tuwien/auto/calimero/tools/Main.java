@@ -383,11 +383,13 @@ final class Main
 		if (options.containsKey("usb"))
 			return new KNXNetworkLinkUsb(host, medium);
 
+		// rest of connections can have a specific local knx address
+		final IndividualAddress device = (IndividualAddress) options.get("knx-address");
+		if (device != null)
+			medium.setDeviceAddress(device);
+
 		// check for TP-UART link
 		if (options.containsKey("tpuart")) {
-			final IndividualAddress device = (IndividualAddress) options.get("knx-address");
-			if (device != null)
-				medium.setDeviceAddress(device);
 			return new KNXNetworkLinkTpuart(host, medium, Collections.emptyList());
 		}
 
@@ -397,10 +399,6 @@ final class Main
 
 		// check for KNX IP routing
 		if (addr.isMulticastAddress()) {
-			final IndividualAddress device = (IndividualAddress) options.get("knx-address");
-			if (device != null)
-				medium.setDeviceAddress(device);
-
 			if (options.containsKey("group-key")) {
 				try {
 					final byte[] groupKey = (byte[]) options.get("group-key");
@@ -424,9 +422,6 @@ final class Main
 			final byte[] userKey = (byte[]) options.getOrDefault("user-key", new byte[0]);
 			final byte[] devAuth = (byte[]) options.getOrDefault("device-key", new byte[0]);
 
-			final var tunnelingAddress = (IndividualAddress) options.get("knx-address");
-			if (tunnelingAddress != null)
-				medium.setDeviceAddress(tunnelingAddress);
 			if (options.containsKey("udp"))
 				return KNXNetworkLinkIP.newSecureTunnelingLink(local, remote, nat, devAuth, user, userKey, medium);
 
