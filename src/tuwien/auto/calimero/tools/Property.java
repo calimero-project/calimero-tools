@@ -476,8 +476,6 @@ public class Property implements Runnable
 		// add defaults
 		options.put("port", KNXnetIPConnection.DEFAULT_PORT);
 		options.put("medium", TPSettings.TP1);
-		// default subnetwork address for TP1 and unregistered device
-		options.put("knx-address", new IndividualAddress(0, 0x02, 0xff));
 
 		for (final var i = new Main.PeekingIterator<>(List.of(args).iterator()); i.hasNext();) {
 			final String arg = i.next();
