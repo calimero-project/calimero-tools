@@ -66,7 +66,7 @@ dependencies {
 	runtimeOnly "com.github.calimero:calimero-rxtx:${version}"
 	implementation 'org.slf4j:slf4j-api:2.0.0-alpha1'
 	runtimeOnly 'org.slf4j:slf4j-simple:2.0.0-alpha1'
-	implementation 'net.lingala.zip4j:zip4j:2.4.0'
+	implementation 'net.lingala.zip4j:zip4j:2.6.1'
 }
 
 jar {
