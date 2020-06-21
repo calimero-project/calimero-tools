@@ -1705,7 +1705,7 @@ public class DeviceInfo implements Runnable
 		return manufacturer.getOrDefault(mf, "Unknown");
 	}
 
-	// KNX manufacturer IDs as of 2015
+	// KNX manufacturer IDs as of 2020
 	private static final Map<Integer, String> manufacturer = new HashMap<>();
 	static {
 		manufacturer.put(1, "Siemens");
@@ -1716,10 +1716,10 @@ public class DeviceInfo implements Runnable
 		manufacturer.put(7, "Busch-Jaeger Elektro");
 		manufacturer.put(8, "GIRA Giersiepen");
 		manufacturer.put(9, "Hager Electro");
-		manufacturer.put(10, "INSTA ELEKTRO");
+		manufacturer.put(10, "Insta GmbH");
 		manufacturer.put(11, "LEGRAND Appareillage électrique");
 		manufacturer.put(12, "Merten");
-		manufacturer.put(14, "ABB SpA – SACE Division");
+		manufacturer.put(14, "ABB SpA-SACE Division");
 		manufacturer.put(22, "Siedle & Söhne");
 		manufacturer.put(24, "Eberle");
 		manufacturer.put(25, "GEWISS");
@@ -1730,6 +1730,7 @@ public class DeviceInfo implements Runnable
 		manufacturer.put(31, "Glamox AS");
 		manufacturer.put(32, "DEHN & SÖHNE");
 		manufacturer.put(33, "CRABTREE");
+		manufacturer.put(34, "eVoKNX");
 		manufacturer.put(36, "Paul Hochköpper");
 		manufacturer.put(37, "Altenburger Electronic");
 		manufacturer.put(41, "Grässlin");
@@ -1743,6 +1744,7 @@ public class DeviceInfo implements Runnable
 		manufacturer.put(55, "ZUMTOBEL");
 		manufacturer.put(57, "Phoenix Contact");
 		manufacturer.put(61, "WAGO Kontakttechnik");
+		manufacturer.put(62, "knXpresso");
 		manufacturer.put(66, "Wieland Electric");
 		manufacturer.put(67, "Hermann Kleinhuis");
 		manufacturer.put(69, "Stiebel Eltron");
@@ -1754,7 +1756,7 @@ public class DeviceInfo implements Runnable
 		manufacturer.put(78, "Somfy");
 		manufacturer.put(80, "Woertz");
 		manufacturer.put(81, "Viessmann Werke");
-		manufacturer.put(82, "Theodor HEIMEIER Metallwerk");
+		manufacturer.put(82, "IMI Hydronic Engineering");
 		manufacturer.put(83, "Joh. Vaillant");
 		manufacturer.put(85, "AMP Deutschland");
 		manufacturer.put(89, "Bosch Thermotechnik GmbH");
@@ -1772,7 +1774,7 @@ public class DeviceInfo implements Runnable
 		manufacturer.put(104, "JEPAZ");
 		manufacturer.put(105, "RTS Automation");
 		manufacturer.put(106, "EIBMARKT GmbH");
-		manufacturer.put(107, "WAREMA electronic GmbH");
+		manufacturer.put(107, "WAREMA Renkhoff SE");
 		manufacturer.put(108, "Eelectron");
 		manufacturer.put(109, "Belden Wire & Cable B.V.");
 		manufacturer.put(110, "Becker-Antriebe GmbH");
@@ -1786,7 +1788,7 @@ public class DeviceInfo implements Runnable
 		manufacturer.put(118, "Arcus-eds");
 		manufacturer.put(119, "Intesis");
 		manufacturer.put(120, "Herholdt Controls srl");
-		manufacturer.put(121, "Zublin AG");
+		manufacturer.put(121, "Niko-Zublin");
 		manufacturer.put(122, "Durable Technologies");
 		manufacturer.put(123, "Innoteam");
 		manufacturer.put(124, "ise GmbH");
@@ -1821,9 +1823,9 @@ public class DeviceInfo implements Runnable
 		manufacturer.put(153, "Cisco");
 		manufacturer.put(154, "Dinuy");
 		manufacturer.put(155, "iKNiX");
-		manufacturer.put(156, "Rademacher Geräte-Elektronik GmbH & Co. KG");
+		manufacturer.put(156, "Rademacher Geräte-Elektronik GmbH");
 		manufacturer.put(157, "EGi Electroacustica General Iberica");
-		manufacturer.put(158, "Ingenium");
+		manufacturer.put(158, "Bes – Ingenium");
 		manufacturer.put(159, "ElabNET");
 		manufacturer.put(160, "Blumotix");
 		manufacturer.put(161, "Hunter Douglas");
@@ -1847,9 +1849,9 @@ public class DeviceInfo implements Runnable
 		manufacturer.put(179, "Philips Controls");
 		manufacturer.put(180, "VELUX A/S");
 		manufacturer.put(181, "LOYTEC");
-		manufacturer.put(182, "SBS S.p.A.");
+		manufacturer.put(182, "Ekinex S.p.A.");
 		manufacturer.put(183, "SIRLAN Technologies");
-		manufacturer.put(184, "Bleu Comm' Azur");
+		manufacturer.put(184, "ProKNX SAS");
 		manufacturer.put(185, "IT GmbH");
 		manufacturer.put(186, "RENSON");
 		manufacturer.put(187, "HEP Group");
@@ -1857,7 +1859,7 @@ public class DeviceInfo implements Runnable
 		manufacturer.put(189, "GFS GmbH");
 		manufacturer.put(190, "Schenker Storen AG");
 		manufacturer.put(191, "Algodue Elettronica S.r.L.");
-		manufacturer.put(192, "Newron System");
+		manufacturer.put(192, "ABB France");
 		manufacturer.put(193, "maintronic");
 		manufacturer.put(194, "Vantage");
 		manufacturer.put(195, "Foresis");
@@ -1914,7 +1916,7 @@ public class DeviceInfo implements Runnable
 		manufacturer.put(260, "ABUS Security-Center");
 		manufacturer.put(261, "Lite-Puter");
 		manufacturer.put(262, "Tantron Electronic");
-		manufacturer.put(263, "Yönnet");
+		manufacturer.put(263, "Interra");
 		manufacturer.put(264, "DKX Tech");
 		manufacturer.put(265, "Viatron");
 		manufacturer.put(266, "Nautibus");
@@ -1922,7 +1924,7 @@ public class DeviceInfo implements Runnable
 		manufacturer.put(268, "Longchuang");
 		manufacturer.put(269, "Air-On AG");
 		manufacturer.put(270, "ib-company GmbH");
-		manufacturer.put(271, "SATION");
+		manufacturer.put(271, "Sation Factory");
 		manufacturer.put(272, "Agentilo GmbH");
 		manufacturer.put(273, "Makel Elektrik");
 		manufacturer.put(274, "Helios Ventilatoren");
@@ -1959,7 +1961,7 @@ public class DeviceInfo implements Runnable
 		manufacturer.put(305, "ISER Tech");
 		manufacturer.put(306, "Fineline");
 		manufacturer.put(307, "CP Electronics Ltd");
-		manufacturer.put(308, "Servodan A/S");
+		manufacturer.put(308, "Niko-Servodan A/S");
 		manufacturer.put(309, "Simon");
 		manufacturer.put(310, "GM modular pvt. Ltd.");
 		manufacturer.put(311, "FU CHENG Intelligence");
@@ -2080,7 +2082,7 @@ public class DeviceInfo implements Runnable
 		manufacturer.put(427, "FEELSMART.");
 		manufacturer.put(428, "SUPCON");
 		manufacturer.put(429, "MANIC");
-		manufacturer.put(430, "Träum deutsche Elektronik GmbH");
+		manufacturer.put(430, "TDE GmbH");
 		manufacturer.put(431, "Nanjing Shufan Information technology Co.,Ltd.");
 		manufacturer.put(432, "EWTech");
 		manufacturer.put(433, "Kluger Automation GmbH");
@@ -2093,7 +2095,7 @@ public class DeviceInfo implements Runnable
 		manufacturer.put(440, "3S-Smart Software Solutions GmbH");
 		manufacturer.put(441, "Moorgen Deutschland GmbH");
 		manufacturer.put(442, "CULLMANN TECH");
-		manufacturer.put(443, "Merck Window Technologies B.V. ");
+		manufacturer.put(443, "Merck Window Technologies B.V.");
 		manufacturer.put(444, "ABEGO");
 		manufacturer.put(445, "myGEKKO");
 		manufacturer.put(446, "Ergo3 Sarl");
@@ -2125,5 +2127,65 @@ public class DeviceInfo implements Runnable
 		manufacturer.put(473, "BETA CAVI");
 		manufacturer.put(474, "EaseMore");
 		manufacturer.put(475, "Vivaldi srl");
+		manufacturer.put(476, "Gree Electric Appliances,Inc. of Zhuhai");
+		manufacturer.put(477, "HWISCON");
+		manufacturer.put(478, "Shanghai ELECON Intelligent Technology Co., Ltd.");
+		manufacturer.put(479, "Kampmann");
+		manufacturer.put(480, "Impolux GmbH / LEDIMAX");
+		manufacturer.put(481, "Evaux");
+		manufacturer.put(482, "Webro Cables & Connectors Limited");
+		manufacturer.put(483, "Shanghai E-tech Solution");
+		manufacturer.put(484, "Guangzhou HOKO Electric Co.,Ltd.");
+		manufacturer.put(485, "LAMMIN HIGH TECH CO.,LTD");
+		manufacturer.put(486, "Shenzhen Merrytek Technology Co., Ltd");
+		manufacturer.put(487, "I-Luxus");
+		manufacturer.put(488, "Elmos Semiconductor AG");
+		manufacturer.put(489, "EmCom Technology Inc");
+		manufacturer.put(490, "project innovations GmbH");
+		manufacturer.put(491, "Itc");
+		manufacturer.put(492, "ABB LV Installation Materials Company Ltd, Beijing");
+		manufacturer.put(493, "Maico ");
+		manufacturer.put(494, "Total Solution GmbH");
+		manufacturer.put(495, "ELAN SRL");
+		manufacturer.put(496, "MinhHa Technology co.,Ltd");
+		manufacturer.put(497, "Zhejiang Tianjie Industrial CORP.");
+		manufacturer.put(498, "iAutomation Pty Limited");
+		manufacturer.put(499, "Extron");
+		manufacturer.put(500, "Freedompro");
+		manufacturer.put(501, "Voxior Inc.");
+		manufacturer.put(502, "EOS Saunatechnik GmbH");
+		manufacturer.put(503, "KUSATEK GmbH");
+		manufacturer.put(504, "EisBär Scada");
+		manufacturer.put(505, "AUTOMATISMI BENINCA S.P.A.");
+		manufacturer.put(506, "Blendom");
+		manufacturer.put(507, "Madel Air Technical diffusion");
+		manufacturer.put(508, "NIKO");
+		manufacturer.put(509, "Bosch Rexroth AG");
+		manufacturer.put(512, "C&M Products");
+		manufacturer.put(513, "Hörmann KG Verkaufsgesellschaft");
+		manufacturer.put(514, "Shanghai Rajayasa co.,LTD");
+		manufacturer.put(515, "SUZUKI");
+		manufacturer.put(516, "Silent Gliss International Ltd.");
+		manufacturer.put(517, "BEE Controls (ADGSC Group)");
+		manufacturer.put(518, "xDTecGmbH");
+		manufacturer.put(519, "OSRAM");
+		manufacturer.put(520, "Lebenor");
+		manufacturer.put(521, "automaneng");
+		manufacturer.put(522, "Honeywell Automation Solution control (China)");
+		manufacturer.put(523, "Hangzhou binthen Intelligence Technology Co.,Ltd");
+		manufacturer.put(524, "ETA Heiztechnik");
+		manufacturer.put(525, "DIVUS GmbH");
+		manufacturer.put(526, "Nanjing Taijiesai Intelligent Technology Co. Ltd.");
+		manufacturer.put(527, "Lunatone");
+		manufacturer.put(528, "ZHEJIANG SCTECH BUILDING INTELLIGENT");
+		manufacturer.put(529, "Foshan Qite Technology Co., Ltd.");
+		manufacturer.put(530, "NOKE");
+		manufacturer.put(531, "LANDCOM");
+		manufacturer.put(532, "Stork AS");
+		manufacturer.put(533, "Hangzhou Shendu Technology Co., Ltd.");
+		manufacturer.put(534, "CoolAutomation");
+		manufacturer.put(535, "Aprstern");
+		manufacturer.put(536, "sonnen");
+		manufacturer.put(537, "DNAKE");
 	}
 }
