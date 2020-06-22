@@ -99,6 +99,7 @@ final class Main
 		{ "get", "Read a KNX property", "get" },
 		{ "set", "Write a KNX property", "set" },
 		{ "properties", "Open KNX property client", },
+		{ "baos", "Communicate with a KNX BAOS device" },
 		{ "devinfo", "Read KNX device information" },
 		{ "progmode", "Check/set device(s) in programming mode" },
 		{ "restart", "Restart a KNX interface/device" },
@@ -107,8 +108,8 @@ final class Main
 
 	private static final List<Class<? extends Runnable>> tools = Arrays.asList(Discover.class, Discover.class,
 			ScanDevices.class, IPConfig.class, NetworkMonitor.class, ProcComm.class, ProcComm.class, ProcComm.class,
-			Property.class, Property.class, PropClient.class, DeviceInfo.class, ProgMode.class, Restart.class,
-			DatapointImporter.class);
+			Property.class, Property.class, PropClient.class, BaosClient.class, DeviceInfo.class, ProgMode.class,
+			Restart.class, DatapointImporter.class);
 
 	private static final String sep = System.getProperty("line.separator");
 

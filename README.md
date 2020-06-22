@@ -26,6 +26,7 @@ Use `./gradlew run` or `mvn exec:java` to list available commands.
 * ProgMode - shows the KNX devices currently in programming mode
 * PropClient - a property client for KNX device property descriptions, get or set KNX device properties
 * Property - get/set a single KNX device interface object property
+* BaosClient - communicate with a KNX BAOS device
 * ScanDevices - list KNX devices, or check whether a specific KNX individual address is currently assigned to a KNX device
 * Restart - performs a basic restart or master reset of a KNX interface or KNX device
 * DatapointImporter - import datapoint information from a KNX project (.knxproj) or group addresses file (.xml or .csv) for use with Calimero 
