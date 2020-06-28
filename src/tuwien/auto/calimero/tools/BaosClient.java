@@ -58,6 +58,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
@@ -66,6 +70,7 @@ import tuwien.auto.calimero.CloseEvent;
 import tuwien.auto.calimero.DataUnitBuilder;
 import tuwien.auto.calimero.FrameEvent;
 import tuwien.auto.calimero.KNXException;
+import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.KNXTimeoutException;
 import tuwien.auto.calimero.KnxRuntimeException;
@@ -106,7 +111,9 @@ public class BaosClient implements Runnable
 	private final Map<String, Object> options = new HashMap<>();
 
 	private KnxBaosLink link;
-	private final Map<Integer, DPT> dpIdToDpt = new HashMap<>();
+	private final BlockingQueue<BaosService> rcvQueue = new LinkedBlockingQueue<>();
+
+	private final Map<Integer, DPT> dpIdToDpt = new ConcurrentHashMap<>();
 
 	private volatile boolean closed;
 
@@ -237,7 +244,7 @@ public class BaosClient implements Runnable
 			public void confirmation(final FrameEvent e) {}
 
 			@LinkEvent
-			void baosService(final BaosService svc) { onBaosEvent(svc); }
+			void baosService(final BaosService svc) { rcvQueue.offer(svc); onBaosEvent(svc); }
 		});
 	}
 
@@ -251,6 +258,14 @@ public class BaosClient implements Runnable
 			lnk.close();
 	}
 
+	public static String manufacturer(final int mf) {
+		return DeviceInfo.manufacturer(mf);
+	}
+
+	protected void executeBaosCommand(final String cmd) throws KNXException, InterruptedException {
+		issueBaosService(cmd.split(" +"));
+	}
+
 	/**
 	 * Called by this tool on receiving a BAOS communication event.
 	 *
@@ -262,15 +277,16 @@ public class BaosClient implements Runnable
 			return;
 
 		final int subService = svc.subService();
-		if (subService == 0x05 || subService == 0xc1 || subService == 0x0a || subService == 0x09) {
+		if (subService == BaosService.GetDatapointValue || subService == BaosService.DatapointValueIndication
+				|| subService == BaosService.GetDatapointHistory || subService == BaosService.GetDatapointHistoryState) {
 			try {
 				for (final var item : svc.items()) {
-					if (subService == 0x0a) {
+					if (subService == BaosService.GetDatapointHistory) {
 						final var instant = item.info();
 						final var value = translate(item.id(), item.data());
 						out(instant + " DP #" + item.id() + " = " + value);
 					}
-					else if (subService == 0x09) {
+					else if (subService == BaosService.GetDatapointHistoryState) {
 						final String state = datapointHistoryState((int) item.info());
 						final int entries = ByteBuffer.wrap(item.data()).getInt() & 0xffff_ffff;
 						out("DP #" + item.id() + " history " + state + ", " + entries + " entries");
@@ -322,24 +338,33 @@ public class BaosClient implements Runnable
 		if (dpt != null)
 			return TranslatorTypes.createTranslator(dpt);
 
-		final byte[] data = datapointDescription(dpId);
-		final int mainNumber = data[10] & 0xff;
+		final var desc = datapointDescription(dpId);
+		if (desc.items().isEmpty())
+			throw new KNXFormatException("no datapoint description for DP #" + dpId);
+		final byte[] data = desc.items().get(0).data();
+		final int mainNumber = data[2] & 0xff;
 		final var xlator = TranslatorTypes.createTranslator(mainNumber, 0);
 		dpIdToDpt.put(dpId, xlator.getType());
 		return xlator;
 	}
 
-	private byte[] datapointDescription(final int dpId) throws KNXTimeoutException, KNXLinkClosedException,
+	private BaosService datapointDescription(final int dpId) throws KNXTimeoutException, KNXLinkClosedException,
 			InterruptedException {
 		final var desc = BaosService.getDatapointDescription(dpId, 1);
 		link.send(desc);
-		return waitForResponse();
+		return waitForResponse(desc.subService());
 	}
 
-	private byte[] waitForResponse() throws InterruptedException {
-		final long end = System.nanoTime() + ((Duration) options.get("timeout")).toNanos();
-		while (System.nanoTime() < end) {
-			Thread.sleep(1000);
+	private BaosService waitForResponse(final int subService) throws InterruptedException {
+		final long start = System.nanoTime();
+		final long end = start + ((Duration) options.get("timeout")).toNanos();
+
+		long remaining = end - start;
+		while (remaining > 0) {
+			final var svc = rcvQueue.poll(remaining, TimeUnit.NANOSECONDS);
+			if (svc != null && svc.subService() == subService)
+				return svc;
+			remaining = end - System.nanoTime();
 		}
 		return null;
 	}
@@ -362,7 +387,7 @@ public class BaosClient implements Runnable
 		switch (svc) {
 			case "property": return BaosService.getServerItem(Property.of(id), items);
 			case "value":
-				final var filter = args.length > 4 ? ValueFilter.of(unsigned(args[4])) : ValueFilter.All;
+				final var filter = args.length > 4 ? valueFilter(args[4]) : ValueFilter.All;
 				return BaosService.getDatapointValue(id, items, filter);
 			case "timer": return BaosService.getTimer(id, items);
 			case "desc":
@@ -390,6 +415,15 @@ public class BaosClient implements Runnable
 				final String cmd = args[4] + (args.length > 5 ? args[5] : "");
 				return BaosService.setDatapointHistoryCommand(id, unsigned(args[3]), HistoryCommand.of(cmd));
 			default: throw new KNXIllegalArgumentException("unsupported BAOS service '" + svc + "'");
+		}
+	}
+
+	private static ValueFilter valueFilter(final String arg) {
+		switch (arg) {
+		case "all": return ValueFilter.All;
+		case "valid": return ValueFilter.ValidOnly;
+		case "updated": return ValueFilter.UpdatedOnly;
+		default: throw new IllegalArgumentException("unknown value filter " + arg);
 		}
 	}
 
@@ -517,18 +551,16 @@ public class BaosClient implements Runnable
 
 	private void issueBaosService() throws KNXException, InterruptedException
 	{
-		final boolean get = options.containsKey("get");
-		if (!get && !options.containsKey("set"))
+		if (!options.containsKey("cmd"))
 			return;
-		issueBaosService(get, (String[]) options.get("get"));
-		Thread.sleep(2000);
+		issueBaosService((String[]) options.get("cmd"));
 	}
 
-	private void issueBaosService(final boolean get, final String[] args)
-			throws KNXException, InterruptedException {
+	private void issueBaosService(final String[] args) throws KNXException, InterruptedException {
 		final var svc = parse(args);
 		out(svc);
 		link.send(svc);
+		waitForResponse(svc.subService());
 	}
 
 	private void runRepl() throws IOException, KNXException, InterruptedException {
@@ -557,7 +589,7 @@ public class BaosClient implements Runnable
 				final boolean set = cmd.equals("set");
 				try {
 					if (get || set)
-						issueBaosService(set, s);
+						issueBaosService(s);
 					else
 						out("unknown command '" + cmd + "'");
 				}
@@ -565,7 +597,7 @@ public class BaosClient implements Runnable
 					out(e.getMessage());
 				}
 				catch (KNXException | RuntimeException e) {
-					out.error("[{}] {}", line, e.toString());
+					out.error("[{}]", line, e);
 				}
 			}
 		}
@@ -596,12 +628,12 @@ public class BaosClient implements Runnable
 			else if (arg.equals("get")) {
 				if (!i.hasNext())
 					break;
-				options.put("get", remainingOptions(arg, i));
+				options.put("cmd", remainingOptions(arg, i));
 			}
 			else if (arg.equals("set")) {
 				if (!i.hasNext())
 					break;
-				options.put("get", remainingOptions(arg, i));
+				options.put("cmd", remainingOptions(arg, i));
 			}
 			else if (Main.isOption(arg, "timeout", "t"))
 				options.put("timeout", Duration.ofSeconds(Integer.decode(i.next())));
@@ -616,9 +648,7 @@ public class BaosClient implements Runnable
 
 		if (!options.containsKey("host") || (options.containsKey("ft12") && options.containsKey("usb")))
 			throw new KNXIllegalArgumentException("specify either IP host, serial port, or device");
-		if (options.containsKey("get") && options.containsKey("set"))
-			throw new KNXIllegalArgumentException("either get or set - not both");
-		if (!options.containsKey("get") && !options.containsKey("set"))
+		if (!options.containsKey("cmd"))
 			options.put("repl", null);
 	}
 
