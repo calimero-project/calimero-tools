@@ -96,6 +96,7 @@ final class Main
 		{ "read", "Read a value using KNX process communication", "read" },
 		{ "write", "Write a value using KNX process communication", "write" },
 		{ "groupmon", "Open group monitor for KNX process communication", "monitor" },
+		{ "trafficmon", "KNX link-layer traffic & link status monitor" },
 		{ "get", "Read a KNX property", "get" },
 		{ "set", "Write a KNX property", "set" },
 		{ "properties", "Open KNX property client", },
@@ -108,10 +109,9 @@ final class Main
 
 	private static final List<Class<? extends Runnable>> tools = Arrays.asList(Discover.class, Discover.class,
 			ScanDevices.class, IPConfig.class, NetworkMonitor.class, ProcComm.class, ProcComm.class, ProcComm.class,
+			TrafficMonitor.class,
 			Property.class, Property.class, PropClient.class, BaosClient.class, DeviceInfo.class, ProgMode.class,
 			Restart.class, DatapointImporter.class);
-
-	private static final String sep = System.getProperty("line.separator");
 
 	private static final Map<InetSocketAddress, Connection> tcpConnectionPool = new HashMap<>();
 
@@ -175,6 +175,7 @@ final class Main
 	private static void usage()
 	{
 		final StringBuilder sb = new StringBuilder();
+		final String sep = System.lineSeparator();
 		sb.append("Supported commands (always safe without further options, use -h for help):").append(sep);
 		for (int i = 0; i < cmds.length; i++) {
 			sb.append(cmds[i][0]).append(" - ").append(cmds[i][1]).append(sep);
