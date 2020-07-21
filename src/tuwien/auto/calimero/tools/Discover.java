@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2019 B. Malinowsky
+    Copyright (c) 2006, 2020 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -37,6 +37,7 @@
 package tuwien.auto.calimero.tools;
 
 import java.io.IOException;
+import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
@@ -126,7 +127,7 @@ public class Discover implements Runnable
 		final Integer lp = ((Integer) options.get("localport"));
 		// if a network interface was specified, use an assigned IP for local host
 		final NetworkInterface nif = (NetworkInterface) options.get("if");
-		final InetAddress local = nif != null ? nif.getInetAddresses().nextElement() : null;
+		final InetAddress local = nif != null ? inetAddress(nif) : null;
 		final boolean mcast = (boolean) options.get("mcastResponse");
 		d = new Discoverer(local, lp != null ? lp.intValue() : 0, options.containsKey("nat"), mcast);
 	}
@@ -498,6 +499,13 @@ public class Discover implements Runnable
 		if (friendly != null && !name.equals(friendly))
 			return name + " (" + friendly + ")";
 		return name;
+	}
+
+	private InetAddress inetAddress(final NetworkInterface nif) {
+		if (options.containsKey("nat"))
+			return nif.getInetAddresses().nextElement();
+		return nif.inetAddresses().filter(Inet4Address.class::isInstance).findAny().orElseThrow(
+				() -> new KNXIllegalArgumentException("no IPv4 address bound to interface " + nif.getName()));
 	}
 
 	/**
