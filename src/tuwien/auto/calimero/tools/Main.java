@@ -76,10 +76,8 @@ import tuwien.auto.calimero.link.KNXNetworkLinkIP;
 import tuwien.auto.calimero.link.KNXNetworkLinkTpuart;
 import tuwien.auto.calimero.link.KNXNetworkLinkUsb;
 import tuwien.auto.calimero.link.medium.KNXMediumSettings;
-import tuwien.auto.calimero.link.medium.KnxIPSettings;
 import tuwien.auto.calimero.link.medium.PLSettings;
 import tuwien.auto.calimero.link.medium.RFSettings;
-import tuwien.auto.calimero.link.medium.TPSettings;
 import tuwien.auto.calimero.mgmt.LocalDeviceManagementIp;
 
 /**
@@ -214,22 +212,9 @@ final class Main
 	 * @return medium settings object
 	 * @throws KNXIllegalArgumentException on unknown medium identifier
 	 */
-	static KNXMediumSettings getMedium(final String id)
-	{
-		// for now, the local device address is always left 0 in the
-		// created medium setting, since there is no user cmd line option for this
-		// so KNXnet/IP server will supply address
-
+	static KNXMediumSettings getMedium(final String id) {
 		final int medium = KNXMediumSettings.getMedium(id);
-		if (medium == KNXMediumSettings.MEDIUM_TP1)
-			return TPSettings.TP1;
-		if (medium == KNXMediumSettings.MEDIUM_PL110)
-			return new PLSettings();
-		if (medium == KNXMediumSettings.MEDIUM_RF)
-			return new RFSettings(KNXMediumSettings.BackboneRouter);
-		if (medium == KNXMediumSettings.MEDIUM_KNXIP)
-			return new KnxIPSettings(KNXMediumSettings.BackboneRouter);
-		throw new KNXIllegalArgumentException("unsupported KNX medium " + id);
+		return KNXMediumSettings.create(medium, KNXMediumSettings.BackboneRouter);
 	}
 
 	static IndividualAddress getAddress(final String address)

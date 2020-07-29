@@ -1478,7 +1478,7 @@ public class DeviceInfo implements Runnable
 				throw new KNXIllegalArgumentException("missing remote KNX device address");
 		}
 		if (!options.containsKey("medium"))
-			options.put("medium", TPSettings.TP1);
+			options.put("medium", new TPSettings());
 		Main.setDomainAddress(options);
 	}
 

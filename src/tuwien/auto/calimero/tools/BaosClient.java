@@ -612,7 +612,7 @@ public class BaosClient implements Runnable
 
 		// add defaults
 		options.put("port", KNXnetIPConnection.DEFAULT_PORT);
-		options.put("medium", TPSettings.TP1);
+		options.put("medium", new TPSettings());
 		options.put("timeout", defaultTimeout);
 
 		for (final var i = new Main.PeekingIterator<>(List.of(args).iterator()); i.hasNext();) {
