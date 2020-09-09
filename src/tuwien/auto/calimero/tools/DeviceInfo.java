@@ -441,7 +441,7 @@ public class DeviceInfo implements Runnable
 	}
 
 	/**
-	 * Invoked on successfully finishing reading the device information of a KNX device.
+	 * @deprecated Use {@link #onDeviceInformation(Item)}.
 	 *
 	 * @param device KNX device address
 	 * @param info holds the result of reading KNX device information; depending on the device, not all available
@@ -460,6 +460,11 @@ public class DeviceInfo implements Runnable
 	 */
 	protected void onDeviceInformation(final Parameter parameter, final String value, final byte[] raw) {}
 
+	/**
+	 * Invoked on each successfully read device parameter of a KNX device.
+	 *
+	 * @param item device parameter and value
+	 */
 	protected void onDeviceInformation(final Item item) {
 		out(item);
 		onDeviceInformation(item.parameter(), item.value(), item.raw());
@@ -667,16 +672,14 @@ public class DeviceInfo implements Runnable
 		// it to our other DD. If they match, we can assume a stand-alone device (no other profile).
 		// Also, if there is another profile, the KNX individual address has to be different to
 		// the cEMI server one (as provided by the cEMI server object)
-		{
-			final byte[] data = read(CommonParameter.DeviceDescriptor, objectIdx, PID.DEVICE_DESCRIPTOR);
-			if (data != null) {
-				final DD0 profile = DeviceDescriptor.DD0.from(data);
-				if (dd == null)
-					dd = deviceDescriptor(data);
-				// device with additional profile?
-				else if (!profile.equals(dd))
-					putResult(InternalParameter.AdditionalProfile, profile.toString(), data);
-			}
+		final byte[] data = read(CommonParameter.DeviceDescriptor, objectIdx, PID.DEVICE_DESCRIPTOR);
+		if (data != null) {
+			final DD0 profile = DeviceDescriptor.DD0.from(data);
+			if (dd == null)
+				dd = deviceDescriptor(data);
+			// device with additional profile?
+			else if (!profile.equals(dd))
+				putResult(InternalParameter.AdditionalProfile, profile.toString(), data);
 		}
 
 		// Info about possible additional profile in device
@@ -708,7 +711,7 @@ public class DeviceInfo implements Runnable
 		// optional in the device object (PID 82). At least the Weinzierl USB stores it only in the device object.
 		try {
 			read(CommonParameter.DomainAddress, objectIdx, PID.RF_DOMAIN_ADDRESS,
-					data -> DataUnitBuilder.toHex(data, ""));
+					bytes -> DataUnitBuilder.toHex(bytes, ""));
 		}
 		catch (final Exception e) {}
 

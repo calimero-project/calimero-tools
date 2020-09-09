@@ -172,7 +172,8 @@ public class ScanDevices implements Runnable
 
 				final String[] range = ((String) options.get("range")).split("\\.", 0);
 				final int area = Integer.decode(range[0]).intValue();
-				final int[] lines = range.length > 1 ? new int[] { Integer.decode(range[1]).intValue() } : IntStream.range(0, 16).toArray();
+				final int[] lines = range.length > 1 ? new int[] { Integer.decode(range[1]).intValue() }
+													 : IntStream.range(0, 16).toArray();
 
 				if (range.length == 3) {
 					final int device = Integer.decode(range[2]).intValue();

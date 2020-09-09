@@ -383,7 +383,7 @@ public class ProcComm implements Runnable
 				if ((e.getServiceCode() & 0b1111111100) == 0b1111101000) {
 					// group property service
 					final LteProcessEvent lteEvent = (LteProcessEvent) e;
-					sb.append(decodeLteFrame(lteEvent.extFrameFormat, e.getDestination(), lteEvent.tpdu()));
+					sb.append(decodeLteFrame(lteEvent.extFrameFormat(), e.getDestination(), lteEvent.tpdu()));
 				}
 				else {
 					final Datapoint dp = datapoints.get(e.getDestination());
@@ -529,7 +529,8 @@ public class ProcComm implements Runnable
 			System.out.println("read " + dp.getMainAddress() + " value: " + pc.read(dp));
 		else {
 			if (dp.getDPT() == null) {
-				System.out.println("cannot write to " + dp.getMainAddress() + " because DPT is not known yet, retry and specify DPT once");
+				System.out.println("cannot write to " + dp.getMainAddress()
+						+ " because DPT is not known yet, retry and specify DPT once");
 				return;
 			}
 			// note, a write to a non existing datapoint might finish successfully,
@@ -634,7 +635,7 @@ public class ProcComm implements Runnable
 	protected static final class LteProcessEvent extends ProcessEvent {
 		private static final long serialVersionUID = 1L;
 
-		public final int extFrameFormat;
+		private final int extFrameFormat;
 		private final byte[] tpdu;
 
 		LteProcessEvent(final ProcessCommunicator source, final IndividualAddress src, final int eff,
@@ -644,6 +645,8 @@ public class ProcComm implements Runnable
 			this.extFrameFormat = eff;
 			this.tpdu = tpdu;
 		}
+
+		public int extFrameFormat() { return extFrameFormat; }
 
 		public byte[] tpdu() {
 			return tpdu.clone();
