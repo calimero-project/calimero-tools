@@ -217,7 +217,7 @@ public final class KnxProject {
 
 		final var builderFactory = DocumentBuilderFactory.newInstance();
 		final var builder = builderFactory.newDocumentBuilder();
-		return builder.parse(parse.toString());
+		return builder.parse(parse.toFile());
 	}
 
 	private static String attribute(final NamedNodeMap attributes, final String name, final String defaultValue) {
