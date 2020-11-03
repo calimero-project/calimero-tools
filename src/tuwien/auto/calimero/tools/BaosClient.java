@@ -292,9 +292,8 @@ public class BaosClient implements Runnable
 						out("DP #" + item.id() + " history " + state + ", " + entries + " entries");
 					}
 					else {
-						final String state = datapointValueState((int) item.info());
 						final var value = translate(item.id(), item.data());
-						out("DP #" + item.id() + " (" + state + ") = " + value);
+						out("DP #" + item.id() + " (" + item.info() + ") = " + value);
 					}
 				}
 			}
@@ -486,22 +485,6 @@ public class BaosClient implements Runnable
 		final byte[] data = value.data();
 		return ByteBuffer.allocate(2 + 2 + data.length).putShort((short) value.id()).put((byte) value.info().ordinal())
 				.put((byte) data.length).put(data).array();
-	}
-
-	private static String datapointValueState(final int state) {
-		final boolean valid =   (state & 0b10000) != 0;
-		final boolean updated = (state & 0b01000) != 0;
-		final boolean readReq = (state & 0b00100) != 0;
-		final int txStatus =    (state & 0b00011);
-
-		final var joiner = new StringJoiner(" ");
-		if (!valid)
-			joiner.add("invalid");
-		if (!updated)
-			joiner.add("no update");
-		if (txStatus > 0)
-			joiner.add(txStatus == 1 ? "tx error" : txStatus == 2 ? "tx" : ((readReq ? "read" : "write") + ".req"));
-		return joiner.toString();
 	}
 
 	private static String datapointHistoryState(final int state) {
