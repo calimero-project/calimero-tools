@@ -215,7 +215,7 @@ public class DeviceInfo implements Runnable
 	/**
 	 * @deprecated
 	 */
-	@Deprecated
+	@Deprecated(forRemoval = true)
 	public static final class Result
 	{
 		private final Map<Parameter, String> formatted = new HashMap<>();
@@ -447,7 +447,7 @@ public class DeviceInfo implements Runnable
 	 * @param info holds the result of reading KNX device information; depending on the device, not all available
 	 *        parameters might be set
 	 */
-	@Deprecated
+	@Deprecated(forRemoval = true)
 	protected void onDeviceInformation(final IndividualAddress device, final Result info) {}
 
 	/**
