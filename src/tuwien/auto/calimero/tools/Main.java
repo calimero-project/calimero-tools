@@ -348,7 +348,7 @@ final class Main
 		// if we got a keyring password, check for user-supplied keyring or any keyring in current working directory
 		if (options.containsKey("keyring-pwd"))
 			Optional.ofNullable((Keyring) options.get("keyring")).or(Main::cwdKeyring)
-					.ifPresent(keyring -> Security.useKeyring(keyring, (char[]) options.get("keyring-pwd")));
+					.ifPresent(keyring -> Security.defaultInstallation().useKeyring(keyring, (char[]) options.get("keyring-pwd")));
 
 		final String host = (String) options.get("host");
 		final KNXMediumSettings medium = (KNXMediumSettings) options.get("medium");
