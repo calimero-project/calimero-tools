@@ -386,6 +386,10 @@ final class Main
 
 		// check for KNX IP routing
 		if (addr.isMulticastAddress()) {
+			if (medium.getDeviceAddress().equals(KNXMediumSettings.BackboneRouter)) {
+				// default subnetwork and device address for unregistered device
+				medium.setDeviceAddress(new IndividualAddress(0x0f, 0x0f, 0xff));
+			}
 			if (options.containsKey("group-key")) {
 				try {
 					final byte[] groupKey = (byte[]) options.get("group-key");

@@ -200,8 +200,6 @@ public class ProgMode implements Runnable
 		// add defaults
 		options.put("port", KNXnetIPConnection.DEFAULT_PORT);
 		options.put("medium", new TPSettings());
-		// default subnetwork address for TP1 and unregistered device
-		options.put("knx-address", new IndividualAddress(0, 0x02, 0xff));
 		options.put("command", "status");
 
 		boolean setmode = false;
