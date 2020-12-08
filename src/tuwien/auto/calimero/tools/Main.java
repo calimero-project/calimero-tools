@@ -390,9 +390,10 @@ final class Main
 				// default subnetwork and device address for unregistered device
 				medium.setDeviceAddress(new IndividualAddress(0x0f, 0x0f, 0xff));
 			}
-			if (options.containsKey("group-key")) {
+			final var optGroupKey = groupKey(addr, options);
+			if (optGroupKey.isPresent()) {
+				final byte[] groupKey = optGroupKey.get();
 				try {
-					final byte[] groupKey = (byte[]) options.get("group-key");
 					final NetworkInterface nif = NetworkInterface.getByInetAddress(local.getAddress());
 					if (nif == null && !local.getAddress().isAnyLocalAddress())
 						throw new KNXIllegalArgumentException(local.getAddress() + " is not assigned to a network interface");
@@ -490,6 +491,10 @@ final class Main
 		return Optional.ofNullable((byte[]) options.get("user-key")).or(() -> keyringDeviceMgmtKey(options));
 	}
 
+	private static Optional<byte[]> groupKey(final InetAddress multicastGroup, final Map<String, Object> options) {
+		return Optional.ofNullable((byte[]) options.get("group-key")).or(() -> keyringGroupKey(multicastGroup, options));
+	}
+
 	private static byte[] deviceAuthentication(final Map<String, Object> options) {
 		return Optional.ofNullable((byte[]) options.get("device-key"))
 				.or(() -> keyringDeviceAuthentication(options))
@@ -515,6 +520,15 @@ final class Main
 	private static Optional<byte[]> keyringDeviceMgmtKey(final Map<String, Object> options) {
 		final var ifAddr = (IndividualAddress) options.get("interface");
 		return keyringDeviceForInterface(ifAddr).flatMap(Keyring.Device::password).map(decryptAndHashUserPwd(options));
+	}
+
+	private static Optional<byte[]> keyringGroupKey(final InetAddress multicastGroup,
+			final Map<String, Object> options) {
+		if (toolKeyring == null)
+			return Optional.empty();
+		return toolKeyring.backbone().filter(bb -> bb.multicastGroup().equals(multicastGroup))
+				.map(Keyring.Backbone::groupKey)
+				.map(key -> toolKeyring.decryptKey(key, (char[]) options.get("keyring-pwd")));
 	}
 
 	private static Optional<byte[]> keyringDeviceAuthentication(final Map<String, Object> options) {
