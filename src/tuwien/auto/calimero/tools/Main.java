@@ -57,6 +57,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import tuwien.auto.calimero.CloseEvent;
 import tuwien.auto.calimero.DataUnitBuilder;
@@ -307,6 +308,8 @@ final class Main
 			options.put("keyring", Keyring.load(i.next()));
 		else if (isOption(arg, "keyring-pwd", null))
 			options.put("keyring-pwd", i.next().toCharArray());
+		else if (isOption(arg, "interface", null))
+			options.put("interface", getAddress(i.next()));
 		else
 			return false;
 		return true;
@@ -345,10 +348,7 @@ final class Main
 	}
 
 	static KNXNetworkLink newLink(final Map<String, Object> options) throws KNXException, InterruptedException {
-		// if we got a keyring password, check for user-supplied keyring or any keyring in current working directory
-		if (options.containsKey("keyring-pwd"))
-			Optional.ofNullable((Keyring) options.get("keyring")).or(Main::cwdKeyring)
-					.ifPresent(keyring -> Security.defaultInstallation().useKeyring(keyring, (char[]) options.get("keyring-pwd")));
+		lookupKeyring(options);
 
 		final String host = (String) options.get("host");
 		final KNXMediumSettings medium = (KNXMediumSettings) options.get("medium");
@@ -408,10 +408,16 @@ final class Main
 		// IP tunneling
 		final InetSocketAddress remote = new InetSocketAddress(addr, ((Integer) options.get("port")).intValue());
 		final boolean nat = options.containsKey("nat");
-		if (options.containsKey("user")) {
-			final int user = (int) options.get("user");
-			final byte[] userKey = (byte[]) options.getOrDefault("user-key", new byte[0]);
-			final byte[] devAuth = (byte[]) options.getOrDefault("device-key", new byte[0]);
+
+		// supported combination of options for secure connection:
+		// 1.) user and user key
+		// 2.) interface address and user
+		// 3.) single keyring interface and (tunneling address or user)
+		final var optUserKey = userKey(options);
+		if (optUserKey.isPresent()) {
+			final byte[] userKey = optUserKey.get();
+			final byte[] devAuth = deviceAuthentication(options);
+			final int user = (int) options.getOrDefault("user", 0);
 
 			if (options.containsKey("udp"))
 				return KNXNetworkLinkIP.newSecureTunnelingLink(local, remote, nat, devAuth, user, userKey, medium);
@@ -427,15 +433,18 @@ final class Main
 	}
 
 	static LocalDeviceManagementIp newLocalDeviceMgmtIP(final Map<String, Object> options,
-		final Consumer<CloseEvent> adapterClosed) throws KNXException, InterruptedException {
+			final Consumer<CloseEvent> adapterClosed) throws KNXException, InterruptedException {
+		lookupKeyring(options);
+
 		final InetSocketAddress local = createLocalSocket((InetAddress) options.get("localhost"),
 				(Integer) options.get("localport"));
 		final InetSocketAddress host = new InetSocketAddress((String) options.get("host"),
 				((Integer) options.get("port")).intValue());
 		final boolean nat = options.containsKey("nat");
-		if (options.containsKey("user-key")) {
-			final byte[] devAuth = (byte[]) options.getOrDefault("device-key", new byte[0]);
-			final byte[] userKey = (byte[]) options.getOrDefault("user-key", new byte[0]);
+		final Optional<byte[]> optUserKey = deviceMgmtKey(options);
+		if (optUserKey.isPresent()) {
+			final byte[] userKey = optUserKey.get();
+			final byte[] devAuth = deviceAuthentication(options);
 
 			if (options.containsKey("udp"))
 				return LocalDeviceManagementIp.newSecureAdapter(local, host, nat, devAuth, userKey, adapterClosed);
@@ -451,6 +460,18 @@ final class Main
 		return LocalDeviceManagementIp.newAdapter(local, host, nat, queryWriteEnable, adapterClosed);
 	}
 
+	private static Keyring toolKeyring;
+
+	private static void lookupKeyring(final Map<String, Object> options) {
+		// if we got a keyring password, check for user-supplied keyring or any keyring in current working directory
+		if (options.containsKey("keyring-pwd"))
+			Optional.ofNullable((Keyring) options.get("keyring")).or(Main::cwdKeyring)
+					.ifPresent(keyring -> {
+						toolKeyring = keyring;
+						Security.defaultInstallation().useKeyring(keyring, (char[]) options.get("keyring-pwd"));
+					});
+	}
+
 	private static Optional<Keyring> cwdKeyring() {
 		final String knxkeys = ".knxkeys";
 		try (var list = Files.list(Path.of(""))) {
@@ -459,6 +480,69 @@ final class Main
 		catch (final IOException ignore) {
 			return Optional.empty();
 		}
+	}
+
+	private static Optional<byte[]> userKey(final Map<String, Object> options) {
+		return Optional.ofNullable((byte[]) options.get("user-key")).or(() -> keyringUserKey(options));
+	}
+
+	private static Optional<byte[]> deviceMgmtKey(final Map<String, Object> options) {
+		return Optional.ofNullable((byte[]) options.get("user-key")).or(() -> keyringDeviceMgmtKey(options));
+	}
+
+	private static byte[] deviceAuthentication(final Map<String, Object> options) {
+		return Optional.ofNullable((byte[]) options.get("device-key"))
+				.or(() -> keyringDeviceAuthentication(options))
+				.orElse(new byte[0]);
+	}
+
+	private static Optional<byte[]> keyringUserKey(final Map<String, Object> options) {
+		if (toolKeyring == null)
+			return Optional.empty();
+		final var ifAddr = (IndividualAddress) options.get("interface");
+		final int user = (int) options.getOrDefault("user", 0);
+		final var interfaces = interfaceAddress(ifAddr).map(toolKeyring.interfaces()::get).orElse(List.of());
+		for (final var i : interfaces) {
+			if (i.user() == user || i.address().equals(ifAddr)) {
+				if (user == 0)
+					options.put("user", i.user());
+				return i.password().map(decryptAndHashUserPwd(options));
+			}
+		}
+		return Optional.empty();
+	}
+
+	private static Optional<byte[]> keyringDeviceMgmtKey(final Map<String, Object> options) {
+		final var ifAddr = (IndividualAddress) options.get("interface");
+		return keyringDeviceForInterface(ifAddr).flatMap(Keyring.Device::password).map(decryptAndHashUserPwd(options));
+	}
+
+	private static Optional<byte[]> keyringDeviceAuthentication(final Map<String, Object> options) {
+		final var ifAddr = (IndividualAddress) options.get("interface");
+		return keyringDeviceForInterface(ifAddr).flatMap(Keyring.Device::authentication).map(pwd -> SecureConnection
+				.hashDeviceAuthenticationPassword(toolKeyring.decryptPassword(pwd, (char[]) options.get("keyring-pwd"))));
+	}
+
+	private static Optional<Keyring.Device> keyringDeviceForInterface(final IndividualAddress host) {
+		return interfaceAddress(host).map(deviceAddr -> toolKeyring.devices().get(deviceAddr));
+	}
+
+	private static Optional<IndividualAddress> interfaceAddress(final IndividualAddress ifAddr) {
+		if (toolKeyring == null)
+			return Optional.empty();
+		final var interfaces = toolKeyring.interfaces();
+		var deviceAddr = ifAddr;
+		if (deviceAddr == null || !interfaces.containsKey(deviceAddr)) {
+			if (interfaces.size() != 1)
+				return Optional.empty();
+			deviceAddr = interfaces.keySet().iterator().next();
+		}
+		return Optional.of(deviceAddr);
+	}
+
+	private static Function<byte[], byte[]> decryptAndHashUserPwd(final Map<String, Object> options) {
+		return pwd -> SecureConnection
+				.hashUserPassword(toolKeyring.decryptPassword(pwd, (char[]) options.get("keyring-pwd")));
 	}
 
 	private static byte[] fromHex(final String hex) {
