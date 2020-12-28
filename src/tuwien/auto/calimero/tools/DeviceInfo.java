@@ -396,8 +396,7 @@ public class DeviceInfo implements Runnable
 			if (device != null) {
 				// setup for reading device info of remote device
 				try (KNXNetworkLink link = createLink();
-						RemotePropertyServiceAdapter adapter = new RemotePropertyServiceAdapter(link, device, e -> {},
-								true)) {
+						var adapter = new RemotePropertyServiceAdapter(link, device, e -> {}, true)) {
 					mc = adapter.managementClient();
 					d = adapter.destination();
 					pc = new PropertyClient(adapter);
@@ -1603,10 +1602,10 @@ public class DeviceInfo implements Runnable
 		final int bits = ~runError & 0xff;
 		if (bits == 0)
 			return "OK";
-		final StringBuilder sb = new StringBuilder();
+		final var sb = new StringJoiner(", ");
 		for (int i = 0; i < flags.length; i++) {
 			if ((bits & (1 << i)) != 0)
-				sb.append(flags[i]);
+				sb.add(flags[i]);
 		}
 		return sb.toString();
 	}
