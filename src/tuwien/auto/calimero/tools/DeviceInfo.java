@@ -557,6 +557,8 @@ public class DeviceInfo implements Runnable
 				readTP1Bcu1();
 			else if (dd == DD0.TYPE_0020 || dd == DD0.TYPE_0021 || dd == DD0.TYPE_0025)
 				readTP1Bcu2();
+			else if (dd == DD0.TYPE_0700 || dd == DD0.TYPE_0701)
+				readTP1Bcu1();
 			else {
 				findInterfaceObjects();
 			}
