@@ -5,6 +5,10 @@ buildscript {
 	}
 }
 
+plugins {
+  id "com.github.ben-manes.versions" version "0.36.0"
+}
+
 repositories {
 	mavenLocal()
 	jcenter()
@@ -15,6 +19,7 @@ repositories {
 apply plugin:'java'
 apply plugin: 'maven'
 apply plugin:'application'
+apply plugin: 'com.github.ben-manes.versions'
 
 group = 'com.github.calimero'
 version = '2.5-SNAPSHOT'
