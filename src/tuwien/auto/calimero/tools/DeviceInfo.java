@@ -1696,6 +1696,10 @@ public class DeviceInfo implements Runnable
 	}
 
 	private static String version(final byte[] data) {
+		if (data.length == 1) { // BCU1
+			return ((data[0] & 0xff) >> 4) + "." + (data[0] & 0x0f);
+		}
+
 		final int magic = (data[0] & 0xff) >> 3;
 		final int version = ((data[0] & 0x07) << 2) | ((data[1] & 0x0c0) >> 6);
 		final int rev = data[1] & 0x3f;
