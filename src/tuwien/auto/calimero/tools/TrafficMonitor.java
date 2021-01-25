@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2019, 2020 B. Malinowsky
+    Copyright (c) 2019, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -42,7 +42,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -50,7 +49,6 @@ import java.time.Duration;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
@@ -67,6 +65,7 @@ import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.KnxRuntimeException;
+import tuwien.auto.calimero.SerialNumber;
 import tuwien.auto.calimero.cemi.CEMILData;
 import tuwien.auto.calimero.cemi.CEMILDataEx;
 import tuwien.auto.calimero.datapoint.Datapoint;
@@ -155,7 +154,6 @@ public class TrafficMonitor implements Runnable {
 	 * <li><code>--tpuart</code> use TP-UART communication</li>
 	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|knxip|rf] (defaults to tp1)</li>
 	 * <li><code>--domain</code> <i>address</i> &nbsp;domain address on open KNX medium (PL or RF)</li>
-	 * <li><code>--sn</code> <i>number</i> &nbsp;device serial number to use in RF multicasts &amp; broadcasts</li>
 	 * </ul>
 	 * <p>
 	 * For common datapoint types (DPTs) the following name aliases can be used instead of the general DPT number
@@ -363,19 +361,18 @@ public class TrafficMonitor implements Runnable {
 
 	// shows one DPT of each matching main type based on the length of the supplied ASDU
 	private static String decodeAsduByLength(final byte[] asdu, final boolean optimized) throws KNXFormatException {
-		final StringBuilder sb = new StringBuilder();
+		final var joiner = new StringJoiner(", ");
 		final List<MainType> typesBySize = TranslatorTypes.getMainTypesBySize(optimized ? 0 : asdu.length);
-		for (final Iterator<MainType> i = typesBySize.iterator(); i.hasNext();) {
-			final MainType main = i.next();
+		for (final var mainType : typesBySize) {
 			try {
-				final String dptid = main.getSubTypes().keySet().iterator().next();
-				final DPTXlator t = TranslatorTypes.createTranslator(main.getMainNumber(), dptid);
+				final String dptid = mainType.getSubTypes().keySet().iterator().next();
+				final DPTXlator t = TranslatorTypes.createTranslator(mainType.getMainNumber(), dptid);
 				t.setData(asdu);
-				sb.append(t.getValue()).append(" [").append(dptid).append("]").append(i.hasNext() ? ", " : "");
+				joiner.add(t.getValue() + " [" + dptid + "]");
 			}
 			catch (final KNXException | KNXIllegalArgumentException ignore) {}
 		}
-		return sb.toString();
+		return joiner.toString();
 	}
 
 	private void runMonitorLoop() throws IOException, KNXException, InterruptedException {
@@ -469,8 +466,8 @@ public class TrafficMonitor implements Runnable {
 	}
 
 	private void setRfDeviceSettings() {
-		final Long value = (Long) options.get("sn");
-		if (value == null)
+		final var sn = (SerialNumber) options.get("sn");
+		if (sn == null)
 			return;
 		final KNXMediumSettings medium = (KNXMediumSettings) options.get("medium");
 		if (medium.getMedium() != KNXMediumSettings.MEDIUM_RF)
@@ -479,9 +476,6 @@ public class TrafficMonitor implements Runnable {
 		final RFSettings rf = ((RFSettings) medium);
 		final IndividualAddress device = (IndividualAddress) options.getOrDefault("knx-address", rf.getDeviceAddress());
 
-		final byte[] sn = new byte[6];
-		final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES).putLong(value).position(2);
-		buffer.get(sn);
 		options.put("medium", new RFSettings(device, rf.getDomainAddress(), sn, rf.isUnidirectional()));
 	}
 

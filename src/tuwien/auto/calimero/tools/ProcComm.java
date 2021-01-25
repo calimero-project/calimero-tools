@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2020 B. Malinowsky
+    Copyright (c) 2006, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -41,7 +41,6 @@ import static tuwien.auto.calimero.tools.Main.setDomainAddress;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -73,6 +72,7 @@ import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.KNXTimeoutException;
 import tuwien.auto.calimero.KnxRuntimeException;
 import tuwien.auto.calimero.Priority;
+import tuwien.auto.calimero.SerialNumber;
 import tuwien.auto.calimero.cemi.CEMI;
 import tuwien.auto.calimero.cemi.CEMILData;
 import tuwien.auto.calimero.cemi.CEMILDataEx;
@@ -884,7 +884,7 @@ public class ProcComm implements Runnable
 			else if (arg.equals("monitor"))
 				options.put("monitor", null);
 			else if (Main.isOption(arg, "sn", null))
-				options.put("sn", Long.decode(i.next()));
+				options.put("sn", SerialNumber.of(Long.decode(i.next())));
 			else if (Main.isOption(arg, "knx-address", null))
 				options.put("knx-address", Main.getAddress(i.next()));
 			else if (Main.isOption(arg, "timeout", "t"))
@@ -910,8 +910,8 @@ public class ProcComm implements Runnable
 	}
 
 	private void setRfDeviceSettings() {
-		final Long value = (Long) options.get("sn");
-		if (value == null)
+		final var sn = (SerialNumber) options.get("sn");
+		if (sn == null)
 			return;
 		final KNXMediumSettings medium = (KNXMediumSettings) options.get("medium");
 		if (medium.getMedium() != KNXMediumSettings.MEDIUM_RF)
@@ -920,9 +920,6 @@ public class ProcComm implements Runnable
 		final RFSettings rf = ((RFSettings) medium);
 		final IndividualAddress device = (IndividualAddress) options.getOrDefault("knx-address", rf.getDeviceAddress());
 
-		final byte[] sn = new byte[6];
-		final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES).putLong(value).position(2);
-		buffer.get(sn);
 		options.put("medium", new RFSettings(device, rf.getDomainAddress(), sn, rf.isUnidirectional()));
 	}
 
