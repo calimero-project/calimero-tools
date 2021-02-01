@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2020 B. Malinowsky
+    Copyright (c) 2006, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -66,6 +66,7 @@ import tuwien.auto.calimero.knxnetip.util.DIB;
 import tuwien.auto.calimero.knxnetip.util.DeviceDIB;
 import tuwien.auto.calimero.knxnetip.util.HPAI;
 import tuwien.auto.calimero.knxnetip.util.ServiceFamiliesDIB;
+import tuwien.auto.calimero.knxnetip.util.ServiceFamiliesDIB.ServiceFamily;
 import tuwien.auto.calimero.knxnetip.util.Srp;
 import tuwien.auto.calimero.log.LogService;
 import tuwien.auto.calimero.tools.Main.ShutdownHandler;
@@ -264,7 +265,7 @@ public class Discover implements Runnable
 		sb.append("\"").append(device.getName()).append("\"");
 		if (controlEp != null) {
 			var endpoint = controlEp.toString();
-			final var tcp = serviceFamilies.getVersion(ServiceFamiliesDIB.CORE) > 1;
+			final var tcp = serviceFamilies.families().getOrDefault(ServiceFamily.Core, 0) > 1;
 			if (tcp)
 				endpoint = endpoint.replace("UDP", "UDP & TCP");
 			sb.append(" endpoint ").append(endpoint);
