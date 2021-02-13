@@ -333,7 +333,11 @@ final class Main
 	}
 
 	static void printSecureOptions(final StringJoiner joiner, final boolean printGroupKey) {
-		joiner.add("KNX IP Secure:");
+		joiner.add("KNX Secure:");
+		joiner.add("  --keyring <path>           *.knxkeys file for secure communication (defaults to keyring in current working directory)");
+		joiner.add("  --keyring-pwd <password>   keyring password");
+
+		joiner.add("KNX IP Secure specific:");
 		if (printGroupKey)
 			joiner.add("  --group-key <key>          multicast group key (backbone key, 32 hexadecimal digits)");
 		joiner.add("  --user <id>                tunneling user identifier (1..127)");
@@ -464,14 +468,14 @@ final class Main
 	private static Keyring toolKeyring;
 
 	private static void lookupKeyring(final Map<String, Object> options) {
-		// if we got a keyring password, check for user-supplied keyring or any keyring in current working directory
+		// check for keyring password, and user-supplied keyring or any keyring in current working directory
 		final boolean gotPwd = options.containsKey("keyring-pwd");
 		final Optional<Keyring> optKeyring = Optional.ofNullable((Keyring) options.get("keyring")).or(Main::cwdKeyring);
 		if (gotPwd && optKeyring.isPresent()) {
 			toolKeyring = optKeyring.get();
 			Security.defaultInstallation().useKeyring(toolKeyring, (char[]) options.get("keyring-pwd"));
 		}
-		if (gotPwd ^ optKeyring.isPresent())
+		else if (gotPwd ^ optKeyring.isPresent()) // should maybe make this an exception, too
 			System.out.println("both keyring and keyring password are required, secure communication won't be available!");
 	}
 

@@ -4,7 +4,7 @@ Calimero Tools
 git clone https://github.com/calimero-project/calimero-tools.git
 ~~~
 
-A collection of KNX network tools based on Calimero for process communication, monitoring, and management.
+A collection of KNX network tools based on Calimero for (secure) process communication, monitoring, and management.
 
 With Maven, execute
 
@@ -35,7 +35,7 @@ Use `./gradlew run` or `mvn exec:java` to list available commands.
 Examples
 -------------
 
-Note, KNX IP secure communication requires the following command-line options:
+Note, using KNX Secure requires a keyring (`--keyring`) and keyring password (`--keyring-pwd`); by default the keyring in the current working directory is used. Alternatively, for KNX IP Secure, the following command-line options are supported:
 
 * Secure Multicast: `--group-key` _<16 bytes hex key>_
 * Secure Unicast:
@@ -60,6 +60,10 @@ Run group monitor (using KNXnet/IP Routing)
 Use `-h` or `--help` for help with a tool (here, _scan_ for scanning devices)
 
 	./gradlew run --args="scan -h"
+	
+KNX IP Secure multicast group monitor using a keyring
+
+	./gradlew run --args="groupmon 224.0.23.12 --keyring mykeys.knxkeys --keyring-pwd quack"
 
 ### Using Maven
 
