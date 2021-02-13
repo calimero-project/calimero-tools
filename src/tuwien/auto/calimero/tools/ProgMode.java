@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2015, 2020 B. Malinowsky
+    Copyright (c) 2015, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -200,7 +200,6 @@ public class ProgMode implements Runnable
 		// add defaults
 		options.put("port", KNXnetIPConnection.DEFAULT_PORT);
 		options.put("medium", new TPSettings());
-		options.put("command", "status");
 
 		boolean setmode = false;
 		for (final var i = List.of(args).iterator(); i.hasNext();) {
@@ -219,8 +218,10 @@ public class ProgMode implements Runnable
 				options.put("command", arg);
 				setmode = true;
 			}
-			else if (setmode)
+			else if (setmode) {
 				options.put("device", new IndividualAddress(arg));
+				setmode = false;
+			}
 			else if (!options.containsKey("host"))
 				options.put("host", arg);
 			else
@@ -230,8 +231,9 @@ public class ProgMode implements Runnable
 			throw new KNXIllegalArgumentException("no communication device/host specified");
 		if (options.containsKey("ft12") && !options.containsKey("remote"))
 			throw new KNXIllegalArgumentException("--remote option is mandatory with --ft12");
-		if (setmode != options.containsKey("device"))
+		if (options.containsKey("command") != options.containsKey("device"))
 			throw new KNXIllegalArgumentException("setting programming mode requires mode and KNX device address");
+		options.putIfAbsent("command", "status");
 		Main.setDomainAddress(options);
 	}
 
