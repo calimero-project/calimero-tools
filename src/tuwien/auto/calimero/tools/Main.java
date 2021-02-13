@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2010, 2020 B. Malinowsky
+    Copyright (c) 2010, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -465,12 +465,14 @@ final class Main
 
 	private static void lookupKeyring(final Map<String, Object> options) {
 		// if we got a keyring password, check for user-supplied keyring or any keyring in current working directory
-		if (options.containsKey("keyring-pwd"))
-			Optional.ofNullable((Keyring) options.get("keyring")).or(Main::cwdKeyring)
-					.ifPresent(keyring -> {
-						toolKeyring = keyring;
-						Security.defaultInstallation().useKeyring(keyring, (char[]) options.get("keyring-pwd"));
-					});
+		final boolean gotPwd = options.containsKey("keyring-pwd");
+		final Optional<Keyring> optKeyring = Optional.ofNullable((Keyring) options.get("keyring")).or(Main::cwdKeyring);
+		if (gotPwd && optKeyring.isPresent()) {
+			toolKeyring = optKeyring.get();
+			Security.defaultInstallation().useKeyring(toolKeyring, (char[]) options.get("keyring-pwd"));
+		}
+		if (gotPwd ^ optKeyring.isPresent())
+			System.out.println("both keyring and keyring password are required, secure communication won't be available!");
 	}
 
 	private static Optional<Keyring> cwdKeyring() {
