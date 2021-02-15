@@ -259,7 +259,7 @@ public class Discover implements Runnable
 		final ServiceFamiliesDIB serviceFamilies, final Collection<DIB> description)
 	{
 		final StringBuilder sb = new StringBuilder(sep);
-		sb.append("Using ").append(r.getAddress().getHostAddress()).append(" at ")
+		sb.append("Using ").append(r.localEndpoint().getAddress().getHostAddress()).append(" at ")
 				.append(nameOf(r.getNetworkInterface())).append(sep);
 		sb.append("-".repeat(sb.length() - 2)).append(sep);
 		sb.append("\"").append(device.getName()).append("\"");
@@ -410,12 +410,12 @@ public class Discover implements Runnable
 
 		final int timeout = 2;
 		try {
-			final Result<DescriptionResponse> dr = new Discoverer(r.getAddress(), 0,
+			final Result<DescriptionResponse> dr = new Discoverer(r.localEndpoint().getAddress(), 0,
 					options.containsKey("nat"), false).getDescription(server, timeout);
 			onDescriptionReceived(dr, new HPAI(hpai.getHostProtocol(), server));
 		}
 		catch (final KNXException e) {
-			System.out.println("description failed for server " + server + " using " + r.getAddress()
+			System.out.println("description failed for server " + server + " using " + r.localEndpoint().getAddress()
 					+ " at " + r.getNetworkInterface().getName() + ": " + e.getMessage());
 		}
 	}
