@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2019, 2020 B. Malinowsky
+    Copyright (c) 2019, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -61,9 +61,9 @@ import org.w3c.dom.Node;
 import net.lingala.zip4j.ZipFile;
 import tuwien.auto.calimero.GroupAddress;
 import tuwien.auto.calimero.KNXFormatException;
-import tuwien.auto.calimero.KnxSecureException;
 import tuwien.auto.calimero.datapoint.DatapointMap;
 import tuwien.auto.calimero.datapoint.StateDP;
+import tuwien.auto.calimero.secure.KnxSecureException;
 import tuwien.auto.calimero.xml.KNXMLException;
 
 /**

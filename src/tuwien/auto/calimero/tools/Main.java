@@ -65,9 +65,7 @@ import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
-import tuwien.auto.calimero.Keyring;
 import tuwien.auto.calimero.Settings;
-import tuwien.auto.calimero.internal.Security;
 import tuwien.auto.calimero.knxnetip.Connection;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.knxnetip.SecureConnection;
@@ -80,6 +78,8 @@ import tuwien.auto.calimero.link.medium.KNXMediumSettings;
 import tuwien.auto.calimero.link.medium.PLSettings;
 import tuwien.auto.calimero.link.medium.RFSettings;
 import tuwien.auto.calimero.mgmt.LocalDeviceManagementIp;
+import tuwien.auto.calimero.secure.Keyring;
+import tuwien.auto.calimero.secure.Security;
 
 /**
  * @author B. Malinowsky
