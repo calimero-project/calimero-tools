@@ -59,7 +59,6 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 
-import tuwien.auto.calimero.CloseEvent;
 import tuwien.auto.calimero.DataUnitBuilder;
 import tuwien.auto.calimero.DetachEvent;
 import tuwien.auto.calimero.FrameEvent;
@@ -332,11 +331,7 @@ public class ProcComm implements Runnable
 		if (options.containsKey("lte")) {
 			link.addLinkListener(new NetworkLinkListener(){
 				@Override
-				public void linkClosed(final CloseEvent e) {}
-				@Override
 				public void indication(final FrameEvent e) { checkForLteFrame(e); }
-				@Override
-				public void confirmation(final FrameEvent e) {}
 			});
 		}
 

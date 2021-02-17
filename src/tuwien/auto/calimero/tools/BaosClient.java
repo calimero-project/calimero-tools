@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2019, 2020 B. Malinowsky
+    Copyright (c) 2019, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -66,9 +66,7 @@ import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 
-import tuwien.auto.calimero.CloseEvent;
 import tuwien.auto.calimero.DataUnitBuilder;
-import tuwien.auto.calimero.FrameEvent;
 import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
@@ -234,15 +232,6 @@ public class BaosClient implements Runnable
 		}
 		link = newBaosLink();
 		link.addLinkListener(new NetworkLinkListener(){
-			@Override
-			public void linkClosed(final CloseEvent e) {}
-
-			@Override
-			public void indication(final FrameEvent e) {}
-
-			@Override
-			public void confirmation(final FrameEvent e) {}
-
 			@LinkEvent
 			void baosService(final BaosService svc) { rcvQueue.offer(svc); onBaosEvent(svc); }
 		});

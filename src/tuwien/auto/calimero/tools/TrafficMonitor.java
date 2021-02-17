@@ -55,7 +55,6 @@ import java.util.StringJoiner;
 
 import org.slf4j.Logger;
 
-import tuwien.auto.calimero.CloseEvent;
 import tuwien.auto.calimero.DataUnitBuilder;
 import tuwien.auto.calimero.FrameEvent;
 import tuwien.auto.calimero.GroupAddress;
@@ -220,8 +219,6 @@ public class TrafficMonitor implements Runnable {
 
 		link = Main.newLink(options);
 		link.addLinkListener(new NetworkLinkListener(){
-			@Override
-			public void linkClosed(final CloseEvent e) {}
 			@Override
 			public void indication(final FrameEvent e) { onFrameEvent(e); }
 			@Override
