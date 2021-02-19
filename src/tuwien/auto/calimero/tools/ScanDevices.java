@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2013, 2020 B. Malinowsky
+    Copyright (c) 2013, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -45,6 +45,7 @@ import java.util.stream.IntStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import tuwien.auto.calimero.DeviceDescriptor;
 import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
@@ -185,7 +186,7 @@ public class ScanDevices implements Runnable
 				else {
 					for (final int line : lines) {
 						out("start scan of " + area + "." + line + ".[0..255] ...");
-						mp.scanNetworkDevices(area, line, this::onDeviceFound);
+						mp.scanNetworkDevices(area, line, this::onDeviceFound, this::onDeviceFound);
 					}
 				}
 			}
@@ -220,7 +221,15 @@ public class ScanDevices implements Runnable
 	 */
 	protected void onDeviceFound(final IndividualAddress device)
 	{
+		if (options.containsKey("requireDD0"))
+			return;
 		System.out.println(device);
+	}
+
+	protected void onDeviceFound(final IndividualAddress device, final DeviceDescriptor.DD0 dd0) {
+		if (!options.containsKey("requireDD0"))
+			return;
+		System.out.println(device + " (DD0 " + dd0 + (")"));
 	}
 
 	/**
@@ -265,6 +274,8 @@ public class ScanDevices implements Runnable
 				;
 			else if (Main.isOption(arg, "knx-address", "k"))
 				options.put("knx-address", Main.getAddress(i.next()));
+			else if (Main.isOption(arg, "dd", null))
+				options.put("requireDD0", arg);
 			else if (!options.containsKey("host"))
 				// otherwise add a host key with argument as host
 				options.put("host", arg);
