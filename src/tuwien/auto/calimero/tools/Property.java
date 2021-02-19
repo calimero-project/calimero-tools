@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2010, 2020 B. Malinowsky
+    Copyright (c) 2010, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -826,6 +826,7 @@ public class Property implements Runnable
 		customFormatter.put(key(0, PID.DEVICE_DESCRIPTOR), Property::deviceDescriptor);
 		final int pidErrorFlags = 53;
 		customFormatter.put(key(0, pidErrorFlags), Property::errorFlags);
+		customFormatter.put(key(0, PID.SUBNET_ADDRESS), Property::subnetAddress);
 
 		customFormatter.put(key(2, PID.TABLE), this::associationTable);
 
@@ -942,6 +943,11 @@ public class Property implements Runnable
 			if ((data[0] & (1 << i)) == 0)
 				joiner.add(description[i]);
 		return joiner.toString();
+	}
+
+	private static String subnetAddress(final byte[] data) {
+		final int i = data[0] & 0xff;
+		return (i >> 4) + "." + (i & 0x0f);
 	}
 
 	private static String programVersion(final byte[] data) {
