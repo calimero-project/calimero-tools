@@ -545,6 +545,9 @@ public class Discover implements Runnable
 		sb.append("    --unicast -u             request unicast response (default is multicast)").append(sep);
 		sb.append("    --interface -i <interface/host name | IP address>"
 				+ "    local multicast network interface").append(sep);
+		sb.append("    --mac <address>          extended search requesting the specified MAC address").append(sep);
+		sb.append("    --progmode               extended search requesting devices in programming mode").append(sep);
+
 		sb.append("  describe <host>            query self description from host").append(sep);
 		sb.append("    --interface -i <interface/host name | IP address>"
 				+ "    local outgoing network interface").append(sep);
