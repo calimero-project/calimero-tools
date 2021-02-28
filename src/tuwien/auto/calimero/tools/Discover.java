@@ -356,7 +356,7 @@ public class Discover implements Runnable
 	 */
 	private void search() throws KNXException, InterruptedException
 	{
-		final int timeout = ((Integer) options.get("timeout")).intValue();
+		final var timeout = ((Duration) options.get("timeout"));
 
 		// see if we have an extended unicast search to a control endpoint
 		if (options.containsKey("host")) {
@@ -365,7 +365,7 @@ public class Discover implements Runnable
 
 			final Srp[] srps = searchParameters.toArray(new Srp[0]);
 			try {
-				final var result = d.timeout(Duration.ofSeconds(timeout)).search(ctrlEndpoint, srps);
+				final var result = d.timeout(timeout).search(ctrlEndpoint, srps);
 				result.thenAccept(this::onEndpointReceived).join();
 			}
 			catch (final CompletionException e) {
@@ -376,9 +376,9 @@ public class Discover implements Runnable
 		}
 		// start the search, using a particular network interface if supplied
 		else if (options.containsKey("if"))
-			d.startSearch(0, (NetworkInterface) options.get("if"), timeout, false);
+			d.startSearch(0, (NetworkInterface) options.get("if"), (int) timeout.toSeconds(), false);
 		else
-			d.startSearch(timeout, false);
+			d.startSearch((int) timeout.toSeconds(), false);
 		int displayed = 0;
 		// wait until search finished, and update console 4 times/second with
 		// received search responses
@@ -391,7 +391,7 @@ public class Discover implements Runnable
 			}
 		}
 		finally {
-			out.info("search stopped after " + timeout + " seconds with " + displayed + " responses");
+			out.info("search stopped after " + timeout.toSeconds() + " seconds with " + displayed + " responses");
 		}
 	}
 
@@ -406,21 +406,21 @@ public class Discover implements Runnable
 		// create socket address of server to request self description from
 		final InetSocketAddress host = new InetSocketAddress((InetAddress) options.get("host"),
 				((Integer) options.get("serverport")).intValue());
-		final int timeout = ((Integer) options.get("timeout")).intValue();
+		final var timeout = ((Duration) options.get("timeout"));
 		// request description
-		final Result<DescriptionResponse> res = d.getDescription(host, timeout);
+		final Result<DescriptionResponse> res = d.getDescription(host, (int) timeout.toSeconds());
 		onDescriptionReceived(res);
 	}
 
 	// implements search combined with description as done by ETS
 	private void searchWithDescription() throws KNXException, InterruptedException
 	{
-		final int timeout = ((Integer) options.get("timeout"));
+		final var timeout = ((Duration) options.get("timeout"));
 		// start the search, using a particular network interface if supplied
 		if (options.containsKey("if"))
-			d.startSearch(0, (NetworkInterface) options.get("if"), timeout, true);
+			d.startSearch(0, (NetworkInterface) options.get("if"), (int) timeout.toSeconds(), true);
 		else
-			d.startSearch(timeout, true);
+			d.startSearch((int) timeout.toSeconds(), true);
 		final List<Result<SearchResponse>> res = d.getSearchResponses();
 		new HashSet<>(res).parallelStream().forEach(this::description);
 	}
@@ -464,7 +464,7 @@ public class Discover implements Runnable
 		// add defaults
 		options.put("localport", Integer.valueOf(0));
 		options.put("serverport", Integer.valueOf(KNXnetIPConnection.DEFAULT_PORT));
-		options.put("timeout", Integer.valueOf(3));
+		options.put("timeout", Duration.ofSeconds(3));
 		options.put("mcastResponse", true);
 
 		if (args.length == 0)
@@ -492,9 +492,9 @@ public class Discover implements Runnable
 			else if (Main.isOption(arg, "interface", "i"))
 				options.put("if", getNetworkIF(i.next()));
 			else if (Main.isOption(arg, "timeout", "t")) {
-				final Integer timeout = Integer.valueOf(i.next());
+				final var timeout = Duration.ofSeconds(Long.valueOf(i.next()));
 				// a value of 0 means infinite timeout
-				if (timeout.intValue() > 0)
+				if (timeout.toMillis() > 0)
 					options.put("timeout", timeout);
 			}
 			else if (Main.isOption(arg, "tcp", null))
