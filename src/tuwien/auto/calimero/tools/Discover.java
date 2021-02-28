@@ -38,9 +38,11 @@ package tuwien.auto.calimero.tools;
 
 import java.io.IOException;
 import java.net.Inet4Address;
+import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -130,7 +132,28 @@ public class Discover implements Runnable
 		final NetworkInterface nif = (NetworkInterface) options.get("if");
 		final InetAddress local = nif != null ? inetAddress(nif) : null;
 		final boolean mcast = (boolean) options.get("mcastResponse");
-		d = new Discoverer(local, lp != null ? lp.intValue() : 0, options.containsKey("nat"), mcast);
+		final boolean tcpSearch = options.containsKey("search") && options.containsKey("host") && !options.containsKey("udp");
+		if (tcpSearch || options.containsKey("tcp")) {
+			final InetAddress server = (InetAddress) options.get("host");
+			final var ctrlEndpoint = new InetSocketAddress(server, (int) options.get("serverport"));
+			final var localEp = new InetSocketAddress(local, lp != null ? lp.intValue() : 0);
+			final var connection = Main.tcpConnection(localEp, ctrlEndpoint);
+
+			Main.lookupKeyring(options);
+			final var optUserKey = Main.userKey(options);
+			if (optUserKey.isPresent()) {
+				final byte[] userKey = optUserKey.get();
+				final byte[] devAuth = Main.deviceAuthentication(options);
+				final int user = (int) options.getOrDefault("user", 0);
+
+				final var session = connection.newSecureSession(user, userKey, devAuth);
+				d = Discoverer.secure(session);
+			}
+			else
+				d = Discoverer.tcp(connection);
+		}
+		else
+			d = new Discoverer(local, lp != null ? lp.intValue() : 0, options.containsKey("nat"), mcast);
 	}
 
 	/**
@@ -140,31 +163,31 @@ public class Discover implements Runnable
 	 * Command line arguments are treated case sensitive; if no command is given, the tool only shows a short
 	 * description and version info. Available commands and options for discovery/self description:
 	 * <ul>
-	 * <li><code>search</code> start a discovery search</li>
-	 * <li>
+	 * <li><code>search [<i>host</i>]</code> start a discovery search</li>
 	 * <ul>
 	 * <li><code>--withDescription</code> query self description for each search result</li>
 	 * <li><code>--interface -i</code> <i>interface name</i> | <i>IP address</i> &nbsp;local multicast network interface</li>
 	 * <li><code>--unicast -u</code> request unicast responses</li>
+	 * <li><code>--mac</code> <i>address</i> &nbsp;extended search requesting the specified MAC address</li>
+	 * <li><code>--progmode</code> &nbsp;extended search requesting devices in programming mode</li>
 	 * </ul>
-	 * </li>
 	 * <li><code>describe <i>host</i></code> &nbsp;query self description from host</li>
-	 * <li>
 	 * <ul>
 	 * <li><code>--interface -i</code> <i>interface name</i> | <i>IP address</i> &nbsp;local network interface for
 	 * sending description request</li>
-	 * <li><code>--serverport -p</code> <i>number</i> &nbsp;server UDP port (defaults to port 3671)</li>
+	 * <li><code>--serverport -p</code> <i>number</i> &nbsp;server UDP/TCP port (defaults to port 3671)</li>
 	 * </ul>
-	 * </li>
 	 * <li><code>sd</code> &nbsp;shortcut for {@code search --withDescription}</li>
 	 * </ul>
 	 * Other options:
 	 * <ul>
 	 * <li><code>--help -h</code> show help message</li>
 	 * <li><code>--version</code> show tool/library version and exit</li>
-	 * <li><code>--localport</code> <i>number</i> &nbsp;local UDP port (default system assigned)</li>
+	 * <li><code>--localport</code> <i>number</i> &nbsp;local UDP/TCP port (default system assigned)</li>
 	 * <li><code>--nat -n</code> enable Network Address Translation</li>
 	 * <li><code>--timeout -t</code> discovery/self description response timeout in seconds</li>
+	 * <li><code>--tcp</code> request TCP communication</li>
+	 * <li><code>--udp</code> request UDP communication</li>
 	 * </ul>
 	 *
 	 * @param args command line options for discovery or self description
@@ -256,11 +279,14 @@ public class Discover implements Runnable
 	}
 
 	private static String formatResponse(final Result<?> r, final HPAI controlEp, final DeviceDIB device,
-		final ServiceFamiliesDIB serviceFamilies, final Collection<DIB> description)
-	{
+			final ServiceFamiliesDIB serviceFamilies, final Collection<DIB> description) {
 		final StringBuilder sb = new StringBuilder(sep);
-		sb.append("Using ").append(r.localEndpoint().getAddress().getHostAddress()).append(" at ")
-				.append(nameOf(r.getNetworkInterface())).append(sep);
+
+		final var addr = r.localEndpoint().getAddress();
+		final var localEndpoint = addr instanceof Inet6Address ? addr.toString()
+				: addr.getHostAddress() + " (" + nameOf(r.getNetworkInterface()) + ")";
+
+		sb.append("Using ").append(localEndpoint).append(sep);
 		sb.append("-".repeat(sb.length() - 2)).append(sep);
 		sb.append("\"").append(device.getName()).append("\"");
 		if (controlEp != null) {
@@ -336,8 +362,11 @@ public class Discover implements Runnable
 		if (options.containsKey("host")) {
 			final InetAddress server = (InetAddress) options.get("host");
 			final var ctrlEndpoint = new InetSocketAddress(server, (int) options.get("serverport"));
+
+			final Srp[] srps = searchParameters.toArray(new Srp[0]);
 			try {
-				d.search(ctrlEndpoint, searchParameters.toArray(new Srp[0])).thenAccept(this::onEndpointReceived).join();
+				final var result = d.timeout(Duration.ofSeconds(timeout)).search(ctrlEndpoint, srps);
+				result.thenAccept(this::onEndpointReceived).join();
 			}
 			catch (final CompletionException e) {
 				if (TimeoutException.class.isAssignableFrom(e.getCause().getClass()))
@@ -436,14 +465,13 @@ public class Discover implements Runnable
 		options.put("localport", Integer.valueOf(0));
 		options.put("serverport", Integer.valueOf(KNXnetIPConnection.DEFAULT_PORT));
 		options.put("timeout", Integer.valueOf(3));
-		options.put("mcastResponse", Boolean.TRUE);
+		options.put("mcastResponse", true);
 
 		if (args.length == 0)
 			return;
 
-		int i = 0;
-		for (; i < args.length; i++) {
-			final String arg = args[i];
+		for (final var i = List.of(args).iterator(); i.hasNext();) {
+			final String arg = i.next();
 			if (Main.isOption(arg, "help", "h")) {
 				options.put("help", null);
 				return;
@@ -453,18 +481,26 @@ public class Discover implements Runnable
 				return;
 			}
 
-			if (Main.isOption(arg, "localport", null))
-				options.put("localport", Integer.decode(args[++i]));
+			if (Main.parseSecureOption(arg, i, options)) {
+				if (options.containsKey("group-key"))
+					throw new KNXIllegalArgumentException("secure multicast is not specified for search & description");
+			}
+			else if (Main.isOption(arg, "localport", null))
+				options.put("localport", Integer.decode(i.next()));
 			else if (Main.isOption(arg, "nat", "n"))
 				options.put("nat", null);
 			else if (Main.isOption(arg, "interface", "i"))
-				options.put("if", getNetworkIF(args[++i]));
+				options.put("if", getNetworkIF(i.next()));
 			else if (Main.isOption(arg, "timeout", "t")) {
-				final Integer timeout = Integer.valueOf(args[++i]);
+				final Integer timeout = Integer.valueOf(i.next());
 				// a value of 0 means infinite timeout
 				if (timeout.intValue() > 0)
 					options.put("timeout", timeout);
 			}
+			else if (Main.isOption(arg, "tcp", null))
+				options.put("tcp", null);
+			else if (Main.isOption(arg, "udp", null))
+				options.put("udp", null);
 			else if ("search".equals(arg) || Main.isOption(arg, "search", "s"))
 				options.put("search", null);
 			else if (Main.isOption(arg, "unicast", "u"))
@@ -478,14 +514,14 @@ public class Discover implements Runnable
 			else if (Main.isOption(arg, "progmode", null))
 				searchParameters.add(Srp.withProgrammingMode());
 			else if (Main.isOption(arg, "mac", null))
-				searchParameters.add(Srp.withMacAddress(fromHex(args[++i])));
+				searchParameters.add(Srp.withMacAddress(fromHex(i.next())));
 			else if ("describe".equals(arg) || Main.isOption(arg, "description", "d")) {
-				if (args.length <= i + 1)
+				if (!i.hasNext())
 					throw new KNXIllegalArgumentException("specify remote host");
-				options.put("host", Main.parseHost(args[++i]));
+				options.put("host", Main.parseHost(i.next()));
 			}
 			else if (Main.isOption(arg, "serverport", "p"))
-				options.put("serverport", Integer.decode(args[++i]));
+				options.put("serverport", Integer.decode(i.next()));
 			else if (options.containsKey("search"))
 				options.put("host", Main.parseHost(arg)); // update to unicast search with server control endpoint
 			else
@@ -495,6 +531,8 @@ public class Discover implements Runnable
 
 	private static String nameOf(final NetworkInterface nif)
 	{
+		if (nif == null)
+			return "default";
 		final String name = nif.getName();
 		final String friendly = nif.getDisplayName();
 		if (friendly != null && !name.equals(friendly))
@@ -535,31 +573,30 @@ public class Discover implements Runnable
 		}
 	}
 
-	private static void showUsage()
-	{
-		final StringBuilder sb = new StringBuilder();
-		sb.append("Usage: ").append(tool).append(" {search | describe} [options]").append(sep);
-		sb.append("Supported commands:").append(sep);
-		sb.append("  search                     start a discovery search").append(sep);
-		sb.append("    --withDescription        query self description for each search result").append(sep);
-		sb.append("    --unicast -u             request unicast response (default is multicast)").append(sep);
-		sb.append("    --interface -i <interface/host name | IP address>"
-				+ "    local multicast network interface").append(sep);
-		sb.append("    --mac <address>          extended search requesting the specified MAC address").append(sep);
-		sb.append("    --progmode               extended search requesting devices in programming mode").append(sep);
+	private static void showUsage() {
+		final var sb = new StringJoiner(sep);
+		sb.add("Usage: " + tool + " {search | describe} [options]");
+		sb.add("Supported commands:");
+		sb.add("  search [<host>]            start a discovery search");
+		sb.add("    --withDescription        query self description for each search result");
+		sb.add("    --unicast -u             request unicast response (where multicast would be used)");
+		sb.add("    --interface -i <interface/host name | IP address>    local multicast network interface");
+		sb.add("    --mac <address>          extended search requesting the specified MAC address");
+		sb.add("    --progmode               extended search requesting devices in programming mode");
 
-		sb.append("  describe <host>            query self description from host").append(sep);
-		sb.append("    --interface -i <interface/host name | IP address>"
-				+ "    local outgoing network interface").append(sep);
-		sb.append("    --serverport -p <number> server UDP port (default ")
-				.append(KNXnetIPConnection.DEFAULT_PORT).append(")").append(sep);
-		sb.append("  sd                         shortcut for 'search --withDescription'").append(sep);
-		sb.append("Other options:").append(sep);
-		sb.append("  --localport <number>       local UDP port (default system assigned)").append(sep);
-		sb.append("  --nat -n                   enable Network Address Translation").append(sep);
-		sb.append("  --timeout -t               discovery/description response timeout in seconds").append(sep);
-		sb.append("  --version                  show tool/library version and exit").append(sep);
-		sb.append("  --help -h                  show this help message").append(sep);
+		sb.add("  describe <host>            query self description from host");
+		sb.add("    --interface -i <interface/host name | IP address>    local outgoing network interface");
+		sb.add("    --serverport -p <number> server UDP/TCP port (default " + KNXnetIPConnection.DEFAULT_PORT + ")");
+		sb.add("  sd                         shortcut for 'search --withDescription'");
+
+		sb.add("Other options:");
+		sb.add("  --localport <number>       local UDP/TCP port (default system assigned)");
+		sb.add("  --nat -n                   enable Network Address Translation");
+		sb.add("  --timeout -t               discovery/description response timeout in seconds");
+		sb.add("  --tcp                      request TCP communication");
+		sb.add("  --udp                      request UDP communication");
+		sb.add("  --version                  show tool/library version and exit");
+		sb.add("  --help -h                  show this help message");
 		out(sb.toString());
 	}
 

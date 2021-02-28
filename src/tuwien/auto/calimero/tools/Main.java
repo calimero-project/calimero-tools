@@ -79,6 +79,7 @@ import tuwien.auto.calimero.link.medium.PLSettings;
 import tuwien.auto.calimero.link.medium.RFSettings;
 import tuwien.auto.calimero.mgmt.LocalDeviceManagementIp;
 import tuwien.auto.calimero.secure.Keyring;
+import tuwien.auto.calimero.secure.Keyring.Interface;
 import tuwien.auto.calimero.secure.Security;
 
 /**
@@ -87,8 +88,8 @@ import tuwien.auto.calimero.secure.Security;
 final class Main
 {
 	private static final String[][] cmds = new String[][] {
-		{ "discover", "Discover KNXnet/IP servers", "search" },
-		{ "describe", "KNXnet/IP server self-description", "describe" },
+		{ "discover", "Discover KNXnet/IP devices", "search" },
+		{ "describe", "KNXnet/IP device self-description", "describe" },
 		{ "scan", "Determine the existing KNX devices on a KNX subnetwork" },
 		{ "ipconfig", "KNXnet/IP device address configuration" },
 		{ "monitor", "Open network monitor (passive) for KNX network traffic" },
@@ -467,13 +468,15 @@ final class Main
 
 	private static Keyring toolKeyring;
 
-	private static void lookupKeyring(final Map<String, Object> options) {
+	static void lookupKeyring(final Map<String, Object> options) {
 		// check for keyring password, and user-supplied keyring or any keyring in current working directory
 		final boolean gotPwd = options.containsKey("keyring-pwd");
-		final Optional<Keyring> optKeyring = Optional.ofNullable((Keyring) options.get("keyring")).or(Main::cwdKeyring);
-		if (gotPwd && optKeyring.isPresent()) {
-			toolKeyring = optKeyring.get();
-			Security.defaultInstallation().useKeyring(toolKeyring, (char[]) options.get("keyring-pwd"));
+		final Optional<Keyring> optKeyring = Optional.ofNullable((Keyring) options.get("keyring"));
+		if (gotPwd) {
+			optKeyring.or(Main::cwdKeyring).ifPresent(keyring -> {
+					Security.defaultInstallation().useKeyring(keyring, (char[]) options.get("keyring-pwd"));
+					toolKeyring = keyring;
+			});
 		}
 		else if (gotPwd ^ optKeyring.isPresent()) // should maybe make this an exception, too
 			System.out.println("both keyring and keyring password are required, secure communication won't be available!");
@@ -489,7 +492,7 @@ final class Main
 		}
 	}
 
-	private static Optional<byte[]> userKey(final Map<String, Object> options) {
+	static Optional<byte[]> userKey(final Map<String, Object> options) {
 		return Optional.ofNullable((byte[]) options.get("user-key")).or(() -> keyringUserKey(options));
 	}
 
@@ -501,7 +504,7 @@ final class Main
 		return Optional.ofNullable((byte[]) options.get("group-key")).or(() -> keyringGroupKey(multicastGroup, options));
 	}
 
-	private static byte[] deviceAuthentication(final Map<String, Object> options) {
+	static byte[] deviceAuthentication(final Map<String, Object> options) {
 		return Optional.ofNullable((byte[]) options.get("device-key"))
 				.or(() -> keyringDeviceAuthentication(options))
 				.orElse(new byte[0]);
@@ -512,13 +515,10 @@ final class Main
 			return Optional.empty();
 		final var ifAddr = (IndividualAddress) options.get("interface");
 		final int user = (int) options.getOrDefault("user", 0);
-		final var interfaces = interfaceAddress(ifAddr).map(toolKeyring.interfaces()::get).orElse(List.of());
-		for (final var i : interfaces) {
-			if (i.user() == user || i.address().equals(ifAddr)) {
-				if (user == 0)
-					options.put("user", i.user());
-				return i.password().map(decryptAndHashUserPwd(options));
-			}
+		final var connectConfig = interfaceFor(ifAddr, user);
+		if (connectConfig.isPresent()) {
+			options.put("user", connectConfig.get().user());
+			return connectConfig.get().password().map(decryptAndHashUserPwd(options));
 		}
 		return Optional.empty();
 	}
@@ -543,21 +543,65 @@ final class Main
 				.hashDeviceAuthenticationPassword(toolKeyring.decryptPassword(pwd, (char[]) options.get("keyring-pwd"))));
 	}
 
-	private static Optional<Keyring.Device> keyringDeviceForInterface(final IndividualAddress host) {
-		return interfaceAddress(host).map(deviceAddr -> toolKeyring.devices().get(deviceAddr));
+	private static Optional<Keyring.Device> keyringDeviceForInterface(final IndividualAddress ifAddr) {
+		if (toolKeyring == null)
+			return Optional.empty();
+		final var devices = toolKeyring.devices();
+		final var interfaces = toolKeyring.interfaces();
+
+		if (ifAddr != null) {
+			if (devices.containsKey(ifAddr))
+				return Optional.of(devices.get(ifAddr));
+			// XXX keyring interface does not provide host address, so we have to iterate entry set
+			for (final var entry : interfaces.entrySet()) {
+				for (final var iface : entry.getValue()) {
+					if (iface.address().equals(ifAddr)) {
+						final var host = entry.getKey();
+						return Optional.ofNullable(devices.get(host));
+					}
+				}
+			}
+		}
+
+		if (interfaces.size() != 1)
+			return Optional.empty();
+		final var deviceAddr = interfaces.keySet().iterator().next();
+		return Optional.of(devices.get(deviceAddr));
 	}
 
-	private static Optional<IndividualAddress> interfaceAddress(final IndividualAddress ifAddr) {
+	// user = 0 for unspecified user, or ifAddr null for unspecified interface address
+	private static Optional<Interface> interfaceFor(final IndividualAddress ifAddr, final int user) {
 		if (toolKeyring == null)
 			return Optional.empty();
 		final var interfaces = toolKeyring.interfaces();
-		var deviceAddr = ifAddr;
-		if (deviceAddr == null || !interfaces.containsKey(deviceAddr)) {
+
+		List<Interface> list = null;
+		if (ifAddr == null) {
+			// lookup default host
 			if (interfaces.size() != 1)
 				return Optional.empty();
-			deviceAddr = interfaces.keySet().iterator().next();
+			list = interfaces.values().iterator().next();
 		}
-		return Optional.of(deviceAddr);
+		if (user != 0) {
+			// lookup by host address and user
+			if (list == null) {
+				list = interfaces.get(ifAddr);
+				if (list == null)
+					return Optional.empty();
+			}
+			for (final var ifConfig : list)
+				if (ifConfig.user() == user)
+					return Optional.of(ifConfig);
+		}
+		if (list == null) {
+			// ifAddr != null and user == 0, lookup specific interface given by ifAddr
+			for (final var configs : interfaces.values()) {
+				for (final var ifConfig : configs)
+					if (ifConfig.address().equals(ifAddr))
+						return Optional.of(ifConfig);
+			}
+		}
+		return Optional.empty();
 	}
 
 	private static Function<byte[], byte[]> decryptAndHashUserPwd(final Map<String, Object> options) {
