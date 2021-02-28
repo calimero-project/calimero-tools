@@ -501,7 +501,7 @@ public class Discover implements Runnable
 				options.put("tcp", null);
 			else if (Main.isOption(arg, "udp", null))
 				options.put("udp", null);
-			else if ("search".equals(arg) || Main.isOption(arg, "search", "s"))
+			else if ("search".equals(arg))
 				options.put("search", null);
 			else if (Main.isOption(arg, "unicast", "u"))
 				options.put("mcastResponse", Boolean.FALSE);
@@ -515,7 +515,7 @@ public class Discover implements Runnable
 				searchParameters.add(Srp.withProgrammingMode());
 			else if (Main.isOption(arg, "mac", null))
 				searchParameters.add(Srp.withMacAddress(fromHex(i.next())));
-			else if ("describe".equals(arg) || Main.isOption(arg, "description", "d")) {
+			else if ("describe".equals(arg)) {
 				if (!i.hasNext())
 					throw new KNXIllegalArgumentException("specify remote host");
 				options.put("host", Main.parseHost(i.next()));
