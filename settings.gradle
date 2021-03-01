@@ -4,3 +4,4 @@ def safeIncludeBuild(String dir) {
 }
 
 safeIncludeBuild '../calimero-core'
+safeIncludeBuild '../calimero-rxtx'
