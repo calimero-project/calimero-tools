@@ -104,9 +104,7 @@ public class Discover implements Runnable
 	private final List<Srp> searchParameters = new ArrayList<>();
 
 	/**
-	 * Creates a new Discover instance using the supplied options.
-	 * <p>
-	 * See {@link #main(String[])} for a list of options.
+	 * Creates a new Discover instance using the supplied options; see {@link #main(String[])} for a list of options.
 	 *
 	 * @param args list with options
 	 * @throws KNXException on instantiation problems
@@ -263,7 +261,6 @@ public class Discover implements Runnable
 	 * Invoked by this tool immediately after receiving a description response.
 	 * <p>
 	 * This default implementation extracts the information and writes it to the standard output.
-	 * <p>
 	 *
 	 * @param result the description result containing the received description response
 	 */
@@ -332,7 +329,6 @@ public class Discover implements Runnable
 
 	/**
 	 * Called by this tool on completion.
-	 * <p>
 	 *
 	 * @param thrown the thrown exception if operation completed due to a raised exception,
 	 *        <code>null</code> otherwise
@@ -397,7 +393,6 @@ public class Discover implements Runnable
 
 	/**
 	 * Requests a self description using the supplied options.
-	 * <p>
 	 *
 	 * @throws KNXException on problem requesting the description
 	 */
