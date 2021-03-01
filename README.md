@@ -165,6 +165,20 @@ Read device information of KNX device `1.1.4` in a TP1 network (default medium) 
 	java -cp "calimero-tools-2.5-SNAPSHOT.jar" devinfo 192.168.10.12 1.1.4
 
 
+Run tools using Gradle without source code
+-------
+
+With Gradle installed, copy the following snippet into a file named *build.gradle*, and execute `gradle` in the same directory (see [Examples](#Examples), e.g., `gradle run --args="monitor 192.168.115.6"`).
+
+```gradle
+plugins { id 'application' }
+repositories { mavenCentral() }
+mainClassName = "tuwien.auto.calimero.tools.Main"
+dependencies {
+  runtimeOnly group: 'com.github.calimero', name: 'calimero-tools', version: '2.4'
+}
+```
+
 Logging
 -------
 
