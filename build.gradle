@@ -60,8 +60,8 @@ sourceSets {
 dependencies {
 	implementation "com.github.calimero:calimero-core:${version}"
 	runtimeOnly "com.github.calimero:calimero-rxtx:${version}"
-	implementation 'org.slf4j:slf4j-api:2.0.0-alpha1'
-	runtimeOnly 'org.slf4j:slf4j-simple:2.0.0-alpha1'
+	implementation 'org.slf4j:slf4j-api:1.7.30'
+	runtimeOnly 'org.slf4j:slf4j-simple:1.7.30'
 	implementation 'net.lingala.zip4j:zip4j:2.7.0'
 }
 
