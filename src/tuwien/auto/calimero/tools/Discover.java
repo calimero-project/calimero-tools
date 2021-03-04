@@ -52,6 +52,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import org.slf4j.Logger;
@@ -59,6 +60,7 @@ import org.slf4j.Logger;
 import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.KNXTimeoutException;
+import tuwien.auto.calimero.KnxRuntimeException;
 import tuwien.auto.calimero.knxnetip.Discoverer;
 import tuwien.auto.calimero.knxnetip.Discoverer.Result;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
@@ -102,6 +104,7 @@ public class Discover implements Runnable
 	private final Discoverer d;
 	private final Map<String, Object> options = new HashMap<>();
 	private final List<Srp> searchParameters = new ArrayList<>();
+	private final boolean reuseForDescription;
 
 	/**
 	 * Creates a new Discover instance using the supplied options; see {@link #main(String[])} for a list of options.
@@ -149,9 +152,12 @@ public class Discover implements Runnable
 			}
 			else
 				d = Discoverer.tcp(connection);
+			reuseForDescription = true;
 		}
-		else
+		else {
 			d = new Discoverer(local, lp != null ? lp.intValue() : 0, options.containsKey("nat"), mcast);
+			reuseForDescription = false;
+		}
 	}
 
 	/**
@@ -411,12 +417,21 @@ public class Discover implements Runnable
 	private void searchWithDescription() throws KNXException, InterruptedException
 	{
 		final var timeout = ((Duration) options.get("timeout"));
+		final List<Result<SearchResponse>> res;
 		// start the search, using a particular network interface if supplied
-		if (options.containsKey("if"))
+		if (options.containsKey("if")) {
 			d.startSearch(0, (NetworkInterface) options.get("if"), (int) timeout.toSeconds(), true);
+			res = d.getSearchResponses();
+		}
 		else
-			d.startSearch((int) timeout.toSeconds(), true);
-		final List<Result<SearchResponse>> res = d.getSearchResponses();
+			try {
+				res = d.timeout(timeout).search(searchParameters.toArray(Srp[]::new)).get();
+			}
+			catch (final ExecutionException e) {
+				if (e.getCause() instanceof KNXException)
+					throw (KNXException) e.getCause();
+				throw new KnxRuntimeException("waiting for search response", e);
+			}
 		new HashSet<>(res).parallelStream().forEach(this::description);
 	}
 
@@ -434,8 +449,9 @@ public class Discover implements Runnable
 
 		final int timeout = 2;
 		try {
-			final Result<DescriptionResponse> dr = new Discoverer(r.localEndpoint().getAddress(), 0,
-					options.containsKey("nat"), false).getDescription(server, timeout);
+			final var discoverer = reuseForDescription ? d
+					: new Discoverer(r.localEndpoint().getAddress(), 0, options.containsKey("nat"), false);
+			final Result<DescriptionResponse> dr = discoverer.getDescription(server, timeout);
 			onDescriptionReceived(dr, new HPAI(hpai.getHostProtocol(), server));
 		}
 		catch (final KNXException e) {
