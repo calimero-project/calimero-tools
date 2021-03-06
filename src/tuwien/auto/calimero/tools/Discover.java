@@ -373,6 +373,8 @@ public class Discover implements Runnable
 			catch (final CompletionException e) {
 				if (TimeoutException.class.isAssignableFrom(e.getCause().getClass()))
 					throw new KNXTimeoutException("timeout waiting for response from " + ctrlEndpoint);
+				if (e.getCause() instanceof KNXException)
+					throw (KNXException) e.getCause();
 			}
 			return;
 		}
