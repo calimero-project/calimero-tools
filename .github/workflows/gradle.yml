@@ -22,6 +22,11 @@ jobs:
       with:
         repository: calimero-project/calimero-core
         path: calimero-core
+    - name: Checkout calimero-rxtx
+      uses: actions/checkout@v2
+      with:
+        repository: calimero-project/calimero-rxtx
+        path: calimero-rxtx
     - name: Checkout calimero-tools
       uses: actions/checkout@v2
       with:
