@@ -31,6 +31,10 @@ jobs:
       with:
         java-version: ${{ matrix.java }}
     - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
+      run: |
+        cd calimero-tools
+        chmod +x gradlew
     - name: Build with Gradle
-      run: ./gradlew build
+      run: |
+        cd calimero-tools
+        ./gradlew build
