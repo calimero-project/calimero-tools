@@ -359,13 +359,13 @@ public class Discover implements Runnable
 	private void search() throws KNXException, InterruptedException
 	{
 		final var timeout = ((Duration) options.get("timeout"));
+		final Srp[] srps = searchParameters.toArray(new Srp[0]);
 
 		// see if we have an extended unicast search to a control endpoint
 		if (options.containsKey("host")) {
 			final InetAddress server = (InetAddress) options.get("host");
 			final var ctrlEndpoint = new InetSocketAddress(server, (int) options.get("serverport"));
 
-			final Srp[] srps = searchParameters.toArray(new Srp[0]);
 			try {
 				final var result = d.timeout(timeout).search(ctrlEndpoint, srps);
 				result.thenAccept(this::onEndpointReceived).join();
@@ -381,6 +381,18 @@ public class Discover implements Runnable
 		// start the search, using a particular network interface if supplied
 		else if (options.containsKey("if"))
 			d.startSearch(0, (NetworkInterface) options.get("if"), (int) timeout.toSeconds(), false);
+		else if (srps.length > 0) {
+			try {
+				final var results = d.timeout(timeout).search(srps).get();
+				results.forEach(this::onEndpointReceived);
+			}
+			catch (final ExecutionException e) {
+				if (e.getCause() instanceof KNXException)
+					throw (KNXException) e.getCause();
+				throw new KnxRuntimeException("extended search", e.getCause());
+			}
+			return;
+		}
 		else
 			d.startSearch((int) timeout.toSeconds(), false);
 		int displayed = 0;
