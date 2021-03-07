@@ -1,5 +1,6 @@
-Calimero Tools
-==============
+# Calimero Tools [![Java CI with Gradle](https://github.com/calimero-project/calimero-tools/actions/workflows/gradle.yml/badge.svg)](https://github.com/calimero-project/calimero-tools/actions/workflows/gradle.yml)
+
+
 ~~~ sh
 git clone https://github.com/calimero-project/calimero-tools.git
 ~~~
