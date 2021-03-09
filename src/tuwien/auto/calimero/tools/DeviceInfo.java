@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2011, 2020 B. Malinowsky
+    Copyright (c) 2011, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -567,8 +567,8 @@ public class DeviceInfo implements Runnable
 			findInterfaceObjects();
 		}
 
-		// System B has mask version 0x07B0 or 0x17B0 and provides error code property
-		isSystemB = dd == DD0.TYPE_07B0 || dd == DD0.TYPE_17B0;
+		// System B has mask version x7B0 and provides error code property
+		isSystemB = dd == DD0.TYPE_07B0 || dd == DD0.TYPE_17B0 || dd == DD0.TYPE_27B0 || dd == DD0.TYPE_57B0;
 
 		if (ifObjects.containsKey(0))
 			readDeviceObject(0);
@@ -1130,18 +1130,19 @@ public class DeviceInfo implements Runnable
 			memLocation = addrGroupAddrTable;
 
 		// realization type 1
-		final int entries = readMem(memLocation, 1, "Group address table entries ", false,
+		final int lengthSize = isSystemB ? 2 : 1;
+		final int entries = readMem(memLocation, lengthSize, "Group address table entries ", false,
 				CommonParameter.GroupAddressTableEntries);
 
-		int startAddr = memLocation + 1;
-		if (entries > 0) {
+		int startAddr = memLocation + lengthSize;
+		if (!isSystemB && entries > 0) {
 			// address of device address
 			readMem(startAddr, 2, "", v -> new IndividualAddress(v & 0x7fff).toString(), CommonParameter.DeviceAddress);
+			startAddr += 2;
 		}
 
 		final StringBuilder sb = new StringBuilder();
-		for (int i = 1; i < entries; i++) {
-			startAddr += 2;
+		for (int i = isSystemB ? 0 : 1; i < entries; i++) {
 			final int raw = readMem(startAddr, 2);
 			final KNXAddress group = new GroupAddress(raw & 0x7fff);
 			if (sb.length() > 0)
@@ -1150,6 +1151,7 @@ public class DeviceInfo implements Runnable
 			// are we the group responder
 			if ((raw & 0x8000) == 0x8000)
 				sb.append("(R)");
+			startAddr += 2;
 		}
 		putResult(CommonParameter.GroupAddresses, sb.toString(), new byte[0]);
 	}
