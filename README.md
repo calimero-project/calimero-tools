@@ -176,7 +176,7 @@ plugins { id 'application' }
 repositories { mavenCentral() }
 mainClassName = "tuwien.auto.calimero.tools.Main"
 dependencies {
-  runtimeOnly group: 'com.github.calimero', name: 'calimero-tools', version: '2.4'
+  runtimeOnly group: 'com.github.calimero', name: 'calimero-tools', version: '2.5-M1'
 }
 ```
 
