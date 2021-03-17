@@ -60,6 +60,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import tuwien.auto.calimero.CloseEvent;
+import tuwien.auto.calimero.DataUnitBuilder;
 import tuwien.auto.calimero.DeviceDescriptor;
 import tuwien.auto.calimero.GroupAddress;
 import tuwien.auto.calimero.IndividualAddress;
@@ -67,8 +68,10 @@ import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.KnxRuntimeException;
+import tuwien.auto.calimero.Priority;
 import tuwien.auto.calimero.dptxlator.DPTXlator;
 import tuwien.auto.calimero.dptxlator.PropertyTypes;
+import tuwien.auto.calimero.dptxlator.TranslatorTypes;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.medium.TPSettings;
@@ -125,6 +128,7 @@ public class Property implements Runnable
 	private final Thread interruptOnClose;
 
 	private boolean associationTableFormat1;
+	private int groupDescriptorSize;
 
 	/**
 	 * Constructs a new Property object.
@@ -589,12 +593,34 @@ public class Property implements Runnable
 					}
 				}
 			}
-			catch (KNXException | RuntimeException e) {
+			catch (final KNXException | RuntimeException e) {
 				// if we're reading association table content, figure out table format size before
-				if ((objType == 2 || objType == 9) && pid == PID.TABLE) {
+				if (objType == 2 && pid == PID.TABLE) {
 					final var desc = pc.getDescription(oi, PID.TABLE);
 					final int pdt = desc.getPDT();
 					associationTableFormat1 = pdt == PropertyTypes.PDT_GENERIC_04;
+				}
+				// if we're reading group object table content, figure out GO descriptor size before
+				if (objType == 9 && pid == PID.TABLE) {
+					final var desc = pc.getDescription(oi, PID.TABLE);
+					final int pdt = desc.getPDT();
+					switch (pdt) {
+					case PropertyTypes.PDT_GENERIC_02:
+						groupDescriptorSize = 2;
+						break;
+					case PropertyTypes.PDT_GENERIC_03:
+						groupDescriptorSize = 3;
+						break;
+					case PropertyTypes.PDT_GENERIC_04:
+						groupDescriptorSize = 4;
+						break;
+					case PropertyTypes.PDT_GENERIC_06:
+						groupDescriptorSize = 6;
+						break;
+					default:
+						groupDescriptorSize = 0;
+						break;
+					}
 				}
 
 				if (args.length == 3) {
@@ -839,7 +865,7 @@ public class Property implements Runnable
 		final int pidCouplerServiceControl = 57;
 		customFormatter.put(key(6, pidCouplerServiceControl), Property::couplerServiceControl);
 
-		customFormatter.put(key(9, PID.TABLE), this::associationTable);
+		customFormatter.put(key(9, PID.TABLE), this::groupObjectDescriptors);
 
 		// at least jung devices have DD0 also in cEMI server and KNXnet/IP object
 		customFormatter.put(key(8, PID.DEVICE_DESCRIPTOR), Property::deviceDescriptor);
@@ -928,6 +954,102 @@ public class Property implements Runnable
 			joiner.add(assoc);
 		}
 		return joiner.toString();
+	}
+
+	private String groupObjectDescriptors(final byte[] data) {
+		final var joiner = new StringJoiner(delimiter);
+		final var buffer = ByteBuffer.wrap(data);
+		int groupObject = 1;
+		while (buffer.hasRemaining()) {
+			final byte[] descriptor = new byte[groupDescriptorSize];
+			buffer.get(descriptor);
+
+			final StringBuilder sb = new StringBuilder();
+
+			final int config;
+			final int bitsize;
+
+			switch (descriptor.length) {
+			case 2:
+				// System B
+				config = descriptor[0] & 0xff;
+				bitsize = valueFieldTypeToBits(descriptor[1] & 0xff);
+				break;
+			case 3:
+				// realization type 1 & 2, most devices
+				config = descriptor[1] & 0xff;
+				bitsize = valueFieldTypeToBits(descriptor[2] & 0xff);
+				break;
+			case 4:
+				// system 7
+				config = descriptor[2] & 0xff;
+				bitsize = valueFieldTypeToBits(descriptor[3] & 0xff);
+				break;
+			case 6:
+				// System 300
+				// config is 2 bytes, but high byte is always 0
+				config = descriptor[1] & 0xff;
+
+				final int mainType = (descriptor[2] & 0xff) << 8 | descriptor[3] & 0xff;
+				final int subType = (descriptor[4] & 0xff) << 8 | descriptor[5] & 0xff;
+				final String dptId = mainType + "." + subType;
+				bitsize = translatorBitSize(dptId);
+				break;
+			default:
+				return DataUnitBuilder.toHex(data, " ");
+			}
+
+			final var priority = Priority.get(config & 0x03);
+			final boolean enable = (config & 0x04) != 0;
+			final boolean responder = (config & 0x08) != 0;
+			final boolean write = (config & 0x10) != 0;
+			final boolean transmit = (config & 0x40) != 0;
+			final boolean updateOnResponse = (config & 0x80) != 0;
+
+			sb.append("GO#").append(groupObject).append(" ");
+			sb.append(bitsize).append(bitsize == 1 ? " bit " : " bits ");
+
+			final var commFlags = new StringJoiner("/");
+			if (enable)
+				commFlags.add("C");
+			if (responder)
+				commFlags.add("R");
+			if (write)
+				commFlags.add("W");
+			if (transmit)
+				commFlags.add("T");
+			if (updateOnResponse)
+				commFlags.add("U");
+
+			sb.append("(").append(commFlags).append(", ").append(priority).append(")");
+			joiner.add(sb);
+
+			groupObject++;
+		}
+		return joiner.toString();
+	}
+
+	// decodes group object descriptor value field type into PDT bit size
+	private static int valueFieldTypeToBits(final int code) {
+		final int[] lowerFieldTypes = { 1, 2, 3, 4, 5, 6, 7, 8,
+			2 * 8, 3 * 8, 4 * 8, 6 * 8, 8 * 8, 10 * 8, 14 * 8,
+			5 * 8, 7 * 8, 9 * 8, 11 * 8, 12 * 8, 13 * 8
+		};
+
+		if (code < lowerFieldTypes.length)
+			return lowerFieldTypes[code];
+		if (code == 255)
+			return 252 * 8;
+		return (code - 6) * 8;
+	}
+
+	private static int translatorBitSize(final String dptId) {
+		try {
+			return TranslatorTypes.createTranslator(dptId).bitSize();
+		}
+		catch (final KNXException e) {
+			return 0;
+		}
 	}
 
 	// same as BCU error flags located at 0x10d
