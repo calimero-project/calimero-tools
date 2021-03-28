@@ -514,7 +514,7 @@ public class Discover implements Runnable
 				options.put("localport", Integer.decode(i.next()));
 			else if (Main.isOption(arg, "nat", "n"))
 				options.put("nat", null);
-			else if (Main.isOption(arg, "interface", "i"))
+			else if (Main.isOption(arg, "interface", "i") || Main.isOption(arg, "netif", null))
 				options.put("if", getNetworkIF(i.next()));
 			else if (Main.isOption(arg, "timeout", "t")) {
 				final var timeout = Duration.ofSeconds(Long.valueOf(i.next()));
