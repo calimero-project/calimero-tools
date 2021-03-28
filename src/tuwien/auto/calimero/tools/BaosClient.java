@@ -231,7 +231,7 @@ public class BaosClient implements Runnable
 			return;
 		}
 		link = newBaosLink();
-		link.addLinkListener(new NetworkLinkListener(){
+		link.addLinkListener(new NetworkLinkListener() {
 			@LinkEvent
 			void baosService(final BaosService svc) { rcvQueue.offer(svc); onBaosEvent(svc); }
 		});
@@ -381,8 +381,9 @@ public class BaosClient implements Runnable
 			case "desc":
 			case "description": return BaosService.getDatapointDescription(id, items);
 			case "history":
-				final var start = Instant.parse(args[4]);
-				final var end = Instant.parse(args[5]);
+				// NYI what format to expect
+				final var start = Instant.EPOCH; //Instant.parse(args[4]);
+				final var end = Instant.now(); //Instant.parse(args[5]);
 				return BaosService.getDatapointHistory(id, items, start, end);
 			case "hs":
 				return BaosService.getDatapointHistoryState(id, items);
