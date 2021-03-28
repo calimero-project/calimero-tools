@@ -141,7 +141,15 @@ final class Main
 			usage();
 			return;
 		}
-		final String cmd = args[0];
+		int cmdIdx = 0;
+		if (args.length > 0 && args[0].startsWith("-v")) {
+			final String vs = args[0];
+			final String level = vs.startsWith("-vvv") ? "trace" : vs.startsWith("-vv") ? "debug" : "info";
+			System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", level);
+			cmdIdx++;
+		}
+
+		final String cmd = args[cmdIdx];
 		for (int i = 0; i < cmds.length; i++) {
 			if (cmds[i][0].equals(cmd)) {
 				try {
@@ -152,10 +160,11 @@ final class Main
 					else {
 						final int defaultArgsStart = 2;
 						final int defaultArgs = cmds[i].length - defaultArgsStart;
-						final int userArgs = args.length - 1;
+						final int startArgs = cmdIdx + 1;
+						final int userArgs = args.length - startArgs;
 						toolargs = Arrays.copyOfRange(cmds[i], defaultArgsStart,
 								defaultArgsStart + defaultArgs + userArgs);
-						System.arraycopy(args, 1, toolargs, defaultArgs, userArgs);
+						System.arraycopy(args, startArgs, toolargs, defaultArgs, userArgs);
 					}
 					m.invoke(null, new Object[] { toolargs });
 				}
