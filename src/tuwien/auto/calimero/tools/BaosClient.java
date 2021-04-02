@@ -73,7 +73,7 @@ import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.KNXTimeoutException;
 import tuwien.auto.calimero.KnxRuntimeException;
 import tuwien.auto.calimero.baos.Baos;
-import tuwien.auto.calimero.baos.Baos.KnxBaosLink;
+import tuwien.auto.calimero.baos.BaosLink;
 import tuwien.auto.calimero.baos.BaosService;
 import tuwien.auto.calimero.baos.BaosService.DatapointCommand;
 import tuwien.auto.calimero.baos.BaosService.ErrorCode;
@@ -86,7 +86,6 @@ import tuwien.auto.calimero.dptxlator.DPT;
 import tuwien.auto.calimero.dptxlator.DPTXlator;
 import tuwien.auto.calimero.dptxlator.TranslatorTypes;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
-import tuwien.auto.calimero.link.KNXLinkClosedException;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.LinkEvent;
 import tuwien.auto.calimero.link.NetworkLinkListener;
@@ -108,7 +107,7 @@ public class BaosClient implements Runnable
 	// specifies parameters to use for the network link
 	private final Map<String, Object> options = new HashMap<>();
 
-	private KnxBaosLink link;
+	private BaosLink link;
 	private final BlockingQueue<BaosService> rcvQueue = new LinkedBlockingQueue<>();
 
 	private final Map<Integer, DPT> dpIdToDpt = new ConcurrentHashMap<>();
@@ -306,7 +305,7 @@ public class BaosClient implements Runnable
 			out.error("completed with error", thrown);
 	}
 
-	private KnxBaosLink newBaosLink() throws KNXException, InterruptedException {
+	private BaosLink newBaosLink() throws KNXException, InterruptedException {
 		return Baos.asBaosLink(Main.newLink(options));
 	}
 
@@ -336,8 +335,7 @@ public class BaosClient implements Runnable
 		return xlator;
 	}
 
-	private BaosService datapointDescription(final int dpId) throws KNXTimeoutException, KNXLinkClosedException,
-			InterruptedException {
+	private BaosService datapointDescription(final int dpId) throws KNXException, InterruptedException {
 		final var desc = BaosService.getDatapointDescription(dpId, 1);
 		link.send(desc);
 		return waitForResponse(desc.subService());
