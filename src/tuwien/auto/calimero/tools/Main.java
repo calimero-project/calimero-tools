@@ -200,6 +200,10 @@ final class Main
 	// Utility methods used by the various tools
 	//
 
+	static InetSocketAddress createLocalSocket(final Map<String, Object> options) {
+		return Main.createLocalSocket((InetAddress) options.get("localhost"), (Integer) options.get("localport"));
+	}
+
 	static InetSocketAddress createLocalSocket(final InetAddress host, final Integer port)
 	{
 		final int p = port != null ? port.intValue() : 0;
@@ -395,7 +399,7 @@ final class Main
 		}
 
 		// we have an IP link
-		final InetSocketAddress local = createLocalSocket((InetAddress) options.get("localhost"), (Integer) options.get("localport"));
+		final InetSocketAddress local = createLocalSocket(options);
 		final InetAddress addr = parseHost(host);
 
 		// check for KNX IP routing
@@ -451,8 +455,7 @@ final class Main
 			final Consumer<CloseEvent> adapterClosed) throws KNXException, InterruptedException {
 		lookupKeyring(options);
 
-		final InetSocketAddress local = createLocalSocket((InetAddress) options.get("localhost"),
-				(Integer) options.get("localport"));
+		final InetSocketAddress local = createLocalSocket(options);
 		final InetSocketAddress host = new InetSocketAddress((String) options.get("host"),
 				((Integer) options.get("port")).intValue());
 		final boolean nat = options.containsKey("nat");

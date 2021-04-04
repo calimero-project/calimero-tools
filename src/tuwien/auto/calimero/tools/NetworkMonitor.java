@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2020 B. Malinowsky
+    Copyright (c) 2006, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -36,7 +36,6 @@
 
 package tuwien.auto.calimero.tools;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.time.LocalTime;
 import java.util.Arrays;
@@ -376,10 +375,8 @@ public class NetworkMonitor implements Runnable
 			return new KNXNetworkMonitorTpuart(host, true);
 		}
 		// create local and remote socket address for monitor link
-		final InetSocketAddress local = Main.createLocalSocket(
-				(InetAddress) options.get("localhost"), (Integer) options.get("localport"));
-		final InetSocketAddress remote = new InetSocketAddress(Main.parseHost(host),
-				((Integer) options.get("port")).intValue());
+		final InetSocketAddress local = Main.createLocalSocket(options);
+		final InetSocketAddress remote = new InetSocketAddress(Main.parseHost(host), (Integer) options.get("port"));
 		// create the monitor link, based on the KNXnet/IP protocol
 		// specify whether network address translation shall be used,
 		// and tell the physical medium of the KNX network
