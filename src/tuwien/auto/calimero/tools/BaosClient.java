@@ -40,6 +40,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.time.Duration;
@@ -85,7 +86,7 @@ import tuwien.auto.calimero.baos.BaosService.ValueFilter;
 import tuwien.auto.calimero.dptxlator.DPT;
 import tuwien.auto.calimero.dptxlator.DPTXlator;
 import tuwien.auto.calimero.dptxlator.TranslatorTypes;
-import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
+import tuwien.auto.calimero.knxnetip.Connection;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.LinkEvent;
 import tuwien.auto.calimero.link.NetworkLinkListener;
@@ -144,12 +145,14 @@ public class BaosClient implements Runnable
 	 * <ul>
 	 * <li><code>--help -h</code> show help message</li>
 	 * <li><code>--version</code> show tool/library version and exit</li>
-	 * <li><code>--localhost</code> <i>id</i> &nbsp;local IP/host name</li>
-	 * <li><code>--localport</code> <i>number</i> &nbsp;local UDP port (default system assigned)</li>
-	 * <li><code>--port -p</code> <i>number</i> &nbsp;UDP port on host (default 3671)</li>
-	 * <li><code>--nat -n</code> enable Network Address Translation</li>
 	 * <li><code>--ft12 -f</code> use FT1.2 serial communication</li>
 	 * <li><code>--usb -u</code> use KNX USB communication</li>
+	 * <li><code>--tcp</code> use TCP/IP communication (default)</li>
+	 * <li><code>--udp</code> use UDP/IP communication</li>
+	 * <li><code>--localhost</code> <i>id</i> &nbsp;local IP/host name</li>
+	 * <li><code>--localport</code> <i>number</i> &nbsp;local UDP port (default system assigned)</li>
+	 * <li><code>--port -p</code> <i>number</i> &nbsp;UDP port on host (default 12004)</li>
+	 * <li><code>--nat -n</code> enable Network Address Translation</li>
 	 * </ul>
 	 * Available commands for BAOS communication:
 	 * <ul>
@@ -306,7 +309,21 @@ public class BaosClient implements Runnable
 	}
 
 	private BaosLink newBaosLink() throws KNXException, InterruptedException {
-		return Baos.asBaosLink(Main.newLink(options));
+		final boolean ft12 = options.containsKey("ft12");
+		final boolean usb = options.containsKey("usb");
+		if (ft12 || usb)
+			return Baos.asBaosLink(Main.newLink(options));
+
+		final var local = Main.createLocalSocket(options);
+		final var addr = Main.parseHost((String) options.get("host"));
+		final int port = (Integer) options.get("port");
+		final var remote = new InetSocketAddress(addr, port);
+
+		if (options.containsKey("udp"))
+			return Baos.newUdpLink(local, remote);
+
+		final var connection = Connection.newTcpConnection(local, remote);
+		return Baos.newTcpLink(connection);
 	}
 
 	private String translate(final int dpId, final byte[] data) throws InterruptedException {
@@ -582,7 +599,7 @@ public class BaosClient implements Runnable
 		}
 
 		// add defaults
-		options.put("port", KNXnetIPConnection.DEFAULT_PORT);
+		options.put("port", 12004);
 		options.put("medium", new TPSettings());
 		options.put("timeout", defaultTimeout);
 
@@ -661,7 +678,6 @@ public class BaosClient implements Runnable
 		final var joiner = new StringJoiner(System.lineSeparator());
 		joiner.add("Usage: " + tool + " [options] <host|port> <command>");
 		Main.printCommonOptions(joiner);
-//		Main.printSecureOptions(joiner);
 		listCommandsAndDptAliases(joiner, true);
 		out(joiner);
 	}
