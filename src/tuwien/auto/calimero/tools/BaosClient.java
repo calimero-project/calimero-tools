@@ -67,6 +67,7 @@ import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 
+import tuwien.auto.calimero.CloseEvent;
 import tuwien.auto.calimero.DataUnitBuilder;
 import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXFormatException;
@@ -236,6 +237,12 @@ public class BaosClient implements Runnable
 		link.addLinkListener(new NetworkLinkListener() {
 			@LinkEvent
 			void baosService(final BaosService svc) { rcvQueue.offer(svc); onBaosEvent(svc); }
+
+			@Override
+			public void linkClosed(final CloseEvent e) {
+				quit();
+				onCompletion(null, e.getInitiator() != CloseEvent.USER_REQUEST);
+			}
 		});
 	}
 
