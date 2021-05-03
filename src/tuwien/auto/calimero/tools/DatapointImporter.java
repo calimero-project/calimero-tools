@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2019, 2020 B. Malinowsky
+    Copyright (c) 2019, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -36,10 +36,12 @@ import tuwien.auto.calimero.xml.KNXMLException;
 import tuwien.auto.calimero.xml.XmlInputFactory;
 import tuwien.auto.calimero.xml.XmlOutputFactory;
 import tuwien.auto.calimero.xml.XmlReader;
+import tuwien.auto.calimero.xml.XmlWriter;
 
 /**
- * Imports datapoint information from a KNX project (.knxproj) or group addresses file (in XML or CSV format) and stores
- * it as Calimero datapoint model in XML format.
+ * Imports datapoint information from a KNX project (.knxproj) or group addresses file (in XML or CSV format) and writes
+ * it as Calimero datapoint model in XML format. If no output file is provided, the datapoint model is written to the
+ * standard output.
  */
 public class DatapointImporter implements Runnable {
 
@@ -72,8 +74,6 @@ public class DatapointImporter implements Runnable {
 			showUsage();
 		else if ("--version".equals(arg))
 			Main.showVersion();
-		else if (args.length < 2)
-			showToolInfo();
 		else
 			new DatapointImporter(args).run();
 	}
@@ -93,7 +93,7 @@ public class DatapointImporter implements Runnable {
 				break;
 		}
 		input = args[i++];
-		output = args[i++];
+		output = args.length > i ? args[i++] : null;
 	}
 
 	@Override
@@ -103,8 +103,13 @@ public class DatapointImporter implements Runnable {
 			importAddressesFromXml(input);
 		else if (ext.equals("knxproj")) {
 			final var project = KnxProject.from(Path.of(input));
-			if (project.encrypted())
+			if (project.encrypted()) {
+				if (projectPwd.length == 0) {
+					System.err.println("project file is encrypted, password required!");
+					return;
+				}
 				project.decrypt(projectPwd);
+			}
 			try {
 				project.datapoints().getDatapoints().forEach(datapoints::add);
 			}
@@ -129,9 +134,14 @@ public class DatapointImporter implements Runnable {
 		if (freeStyle)
 			GroupAddress.addressStyle(Presentation.FreeStyle);
 
-		try (var writer = XmlOutputFactory.newInstance().createXMLWriter(output)) {
+		try (var writer = createXmlWriter()) {
 			datapoints.save(writer);
 		}
+	}
+
+	private XmlWriter createXmlWriter() {
+		final var fac = XmlOutputFactory.newInstance();
+		return output != null ? fac.createXMLWriter(output) : fac.createXMLStreamWriter(System.out);
 	}
 
 	private void importAddressesFromCsv(final String file) throws IOException {
@@ -200,7 +210,8 @@ public class DatapointImporter implements Runnable {
 	private static void showUsage() {
 		final var name = MethodHandles.lookup().lookupClass().getSimpleName();
 		final var joiner = new StringJoiner(System.getProperty("line.separator"));
-		joiner.add("Usage: " + name + " [options] <project.knxproj or group addresses file [.xml|.csv]> <output file (xml)>");
+		joiner.add("Usage: " + name + " [options] <project.knxproj or group addresses file [.xml|.csv]> [<output file (xml)>]");
+		joiner.add("       if no output file is specified, imported datapoints are written to the standard output");
 		joiner.add("Options:");
 		joiner.add("  -h --help                  show this help and exit");
 		joiner.add("  --version                  show tool/library version and exit");
