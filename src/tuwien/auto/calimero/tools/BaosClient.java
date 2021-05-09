@@ -74,8 +74,8 @@ import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.KNXTimeoutException;
 import tuwien.auto.calimero.KnxRuntimeException;
-import tuwien.auto.calimero.baos.Baos;
 import tuwien.auto.calimero.baos.BaosLink;
+import tuwien.auto.calimero.baos.BaosLinkAdapter;
 import tuwien.auto.calimero.baos.BaosService;
 import tuwien.auto.calimero.baos.BaosService.DatapointCommand;
 import tuwien.auto.calimero.baos.BaosService.ErrorCode;
@@ -84,6 +84,7 @@ import tuwien.auto.calimero.baos.BaosService.Item;
 import tuwien.auto.calimero.baos.BaosService.Property;
 import tuwien.auto.calimero.baos.BaosService.Timer;
 import tuwien.auto.calimero.baos.BaosService.ValueFilter;
+import tuwien.auto.calimero.baos.ip.BaosLinkIp;
 import tuwien.auto.calimero.dptxlator.DPT;
 import tuwien.auto.calimero.dptxlator.DPTXlator;
 import tuwien.auto.calimero.dptxlator.TranslatorTypes;
@@ -319,7 +320,7 @@ public class BaosClient implements Runnable
 		final boolean ft12 = options.containsKey("ft12");
 		final boolean usb = options.containsKey("usb");
 		if (ft12 || usb)
-			return Baos.asBaosLink(Main.newLink(options));
+			return BaosLinkAdapter.asBaosLink(Main.newLink(options));
 
 		final var local = Main.createLocalSocket(options);
 		final var addr = Main.parseHost((String) options.get("host"));
@@ -327,10 +328,10 @@ public class BaosClient implements Runnable
 		final var remote = new InetSocketAddress(addr, port);
 
 		if (options.containsKey("udp"))
-			return Baos.newUdpLink(local, remote);
+			return BaosLinkIp.newUdpLink(local, remote);
 
 		final var connection = Connection.newTcpConnection(local, remote);
-		return Baos.newTcpLink(connection);
+		return BaosLinkIp.newTcpLink(connection);
 	}
 
 	private String translate(final int dpId, final byte[] data) throws InterruptedException {
