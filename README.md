@@ -15,6 +15,11 @@ With Gradle, execute
 
 	./gradlew build
 
+### Docker image
+
+Pre-built Docker images for running the tools are available on [Docker Hub](https://hub.docker.com/r/calimeroproject/knxtools).
+
+
 Available Tools
 ---------------
 Use `./gradlew run` or `mvn exec:java` to list available commands.
