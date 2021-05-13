@@ -167,7 +167,7 @@ public class Discover implements Runnable
 	 * Command line arguments are treated case sensitive; if no command is given, the tool only shows a short
 	 * description and version info. Available commands and options for discovery/self description:
 	 * <ul>
-	 * <li><code>search [<i>host</i>]</code> start a discovery search</li>
+	 * <li><code>search [<i>host</i>]</code> start a discovery search
 	 * <ul>
 	 * <li><code>--withDescription</code> query self description for each search result</li>
 	 * <li><code>--interface -i</code> <i>interface name</i> | <i>IP address</i> &nbsp;local multicast network interface</li>
@@ -175,7 +175,7 @@ public class Discover implements Runnable
 	 * <li><code>--mac</code> <i>address</i> &nbsp;extended search requesting the specified MAC address</li>
 	 * <li><code>--progmode</code> &nbsp;extended search requesting devices in programming mode</li>
 	 * </ul>
-	 * <li><code>describe <i>host</i></code> &nbsp;query self description from host</li>
+	 * <li><code>describe <i>host</i></code> &nbsp;query self description from host
 	 * <ul>
 	 * <li><code>--interface -i</code> <i>interface name</i> | <i>IP address</i> &nbsp;local network interface for
 	 * sending description request</li>
