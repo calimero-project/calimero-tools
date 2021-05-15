@@ -1,5 +1,7 @@
 plugins {
   id "com.github.ben-manes.versions" version "0.38.0"
+  id 'maven-publish'
+  id 'signing'
 }
 
 repositories {
@@ -8,7 +10,7 @@ repositories {
 	maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
 }
 
-apply plugin:'java'
+apply plugin:'java-library'
 apply plugin:'application'
 
 group = 'com.github.calimero'
@@ -35,6 +37,23 @@ task execute(type: JavaExec) {
 	args(System.getProperty("exec.args", "").split())
 }
 
+java {
+    withSourcesJar()
+    withJavadocJar()
+}
+
+tasks.withType(Jar) {
+	from("${projectDir}") {
+        include 'LICENSE.txt'
+        into "META-INF"
+    }
+    if (name.equals('sourcesJar')) {
+    	from("${projectDir}") {
+		    include 'README.md'
+        }
+    }
+}
+
 compileJava.options*.compilerArgs = [
 	'-Xlint:all',
 	'-Xlint:-try',
@@ -57,7 +76,7 @@ sourceSets {
 }
 
 dependencies {
-	implementation "com.github.calimero:calimero-core:${version}"
+	api "com.github.calimero:calimero-core:${version}"
 	runtimeOnly "com.github.calimero:calimero-rxtx:${version}"
 	implementation 'org.slf4j:slf4j-api:1.7.30'
 	runtimeOnly 'org.slf4j:slf4j-simple:1.7.30'
@@ -71,4 +90,48 @@ jar {
 			'Class-Path': configurations.runtimeClasspath.collect { it.getName() }.join(' ')
 		)
 	}
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId = rootProject.name
+            from components.java
+            pom {
+                name = 'Calimero Tools'
+                description = 'A collection of tools for KNX network communication'
+                url = 'https://github.com/calimero-project/calimero-tools'
+                inceptionYear = '2006'
+                licenses {
+                    license {
+                        name = "GNU General Public License, version 2, with the Classpath Exception"
+                        url = 'LICENSE.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        name = "Boris Malinowsky"
+                        email = "b.malinowsky@gmail.com"
+                    }
+                }
+                scm {
+                    connection = 'scm:git:git://github.com:calimero-project/calimero-tools.git'
+                    url = 'https://github.com/calimero-project/calimero-tools.git'
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            name 'maven'
+            def releasesRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
+            def snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots/"
+            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+            credentials(PasswordCredentials)
+        }
+    }
+}
+
+signing {
+    sign publishing.publications.mavenJava
 }
