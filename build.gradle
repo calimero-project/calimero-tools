@@ -21,6 +21,8 @@ targetCompatibility = 11
 
 compileJava.options.encoding = 'UTF-8'
 compileTestJava.options.encoding = 'UTF-8'
+javadoc.options.encoding = 'UTF-8'
+
 
 mainClassName = 'tuwien.auto.calimero.tools.Main'
 
@@ -73,6 +75,10 @@ sourceSets {
 	test {
 		java.srcDirs = [ 'test' ]
 	}
+}
+
+tasks.withType(Javadoc) {
+    options.addStringOption("Xdoclint:-missing", '-quiet')
 }
 
 dependencies {
