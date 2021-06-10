@@ -574,7 +574,6 @@ public class Discover implements Runnable
 
 	/**
 	 * Gets the local network interface using the supplied identifier.
-	 * <p>
 	 *
 	 * @param id identifier associated with the network interface, either an network interface name,
 	 *        a host name, or an IP address bound to that interface
