@@ -48,6 +48,8 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -74,6 +76,8 @@ import tuwien.auto.calimero.link.KNXNetworkLinkFT12;
 import tuwien.auto.calimero.link.KNXNetworkLinkIP;
 import tuwien.auto.calimero.link.KNXNetworkLinkTpuart;
 import tuwien.auto.calimero.link.KNXNetworkLinkUsb;
+import tuwien.auto.calimero.link.LinkEvent;
+import tuwien.auto.calimero.link.NetworkLinkListener;
 import tuwien.auto.calimero.link.medium.KNXMediumSettings;
 import tuwien.auto.calimero.link.medium.PLSettings;
 import tuwien.auto.calimero.link.medium.RFSettings;
@@ -81,6 +85,7 @@ import tuwien.auto.calimero.mgmt.LocalDeviceManagementIp;
 import tuwien.auto.calimero.secure.Keyring;
 import tuwien.auto.calimero.secure.Keyring.Interface;
 import tuwien.auto.calimero.secure.Security;
+import tuwien.auto.calimero.serial.ConnectionStatus;
 
 /**
  * @author B. Malinowsky
@@ -366,6 +371,17 @@ final class Main
 	}
 
 	static KNXNetworkLink newLink(final Map<String, Object> options) throws KNXException, InterruptedException {
+		final var link = createNewLink(options);
+		link.addLinkListener(new NetworkLinkListener() {
+			@LinkEvent
+			void connectionStatus(final ConnectionStatus status) {
+				System.out.println(LocalTime.now().truncatedTo(ChronoUnit.MILLIS) + " connection status KNX " + status);
+			}
+		});
+		return link;
+	}
+
+	private static KNXNetworkLink createNewLink(final Map<String, Object> options) throws KNXException, InterruptedException {
 		lookupKeyring(options);
 
 		final String host = (String) options.get("host");
