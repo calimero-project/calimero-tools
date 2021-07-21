@@ -113,7 +113,7 @@ public class DeviceInfo implements Runnable
 		/**
 		 * Name of parameter.
 		 *
-		 * @return unique parameter name
+		 * @return parameter name
 		 */
 		String name();
 

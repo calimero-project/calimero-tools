@@ -212,7 +212,12 @@ public class ProcComm implements Runnable
 	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|knxip|rf] (defaults to tp1)</li>
 	 * <li><code>--domain</code> <i>address</i> &nbsp;domain address on open KNX medium (PL or RF)</li>
 	 * <li><code>--sn</code> <i>number</i> &nbsp;device serial number to use in RF multicasts &amp; broadcasts</li>
+	 * <li><code>--knx-address -k</code> <i>KNX address</i> &nbsp;KNX device address of local endpoint</li>
 	 * </ul>
+	 * The <code>--knx-address</code> option is only necessary if an access protocol is selected that directly
+	 * communicates with the KNX network, i.e., KNX IP or TP-UART. The selected KNX individual address shall be unique
+	 * in a network, and the subnetwork address (area and line) should be set to match the network configuration.
+	 * <p>
 	 * Available commands for process communication:
 	 * <ul>
 	 * <li><code>read</code> <i>group-address &nbsp;[DPT]</i> &nbsp;&nbsp;&nbsp;read from datapoint with the specified
@@ -880,7 +885,7 @@ public class ProcComm implements Runnable
 				options.put("monitor", null);
 			else if (Main.isOption(arg, "sn", null))
 				options.put("sn", SerialNumber.of(Long.decode(i.next())));
-			else if (Main.isOption(arg, "knx-address", null))
+			else if (Main.isOption(arg, "knx-address", "k"))
 				options.put("knx-address", Main.getAddress(i.next()));
 			else if (Main.isOption(arg, "timeout", "t"))
 				options.put("timeout", Duration.ofSeconds(Integer.decode(i.next())));

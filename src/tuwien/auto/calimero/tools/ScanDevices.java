@@ -299,6 +299,7 @@ public class ScanDevices implements Runnable
 		joiner.add("The area and line are given as numbers in the range [0..15], e.g., 3.1");
 		joiner.add("The (optional) device address part is in the range [0..255], e.g., 1.1.209");
 		Main.printCommonOptions(joiner);
+		joiner.add("  --dd                       require response with device descriptor");
 		Main.printSecureOptions(joiner);
 		out(joiner.toString());
 	}

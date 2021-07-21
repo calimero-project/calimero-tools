@@ -61,6 +61,8 @@ import java.util.StringJoiner;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import org.slf4j.LoggerFactory;
+
 import tuwien.auto.calimero.CloseEvent;
 import tuwien.auto.calimero.DataUnitBuilder;
 import tuwien.auto.calimero.IndividualAddress;
@@ -349,6 +351,7 @@ final class Main
 		joiner.add("  --tpuart                   use TP-UART communication");
 		joiner.add("  --medium -m <id>           KNX medium [tp1|p110|knxip|rf] (default tp1)");
 		joiner.add("  --domain <address>         domain address on KNX PL/RF medium (defaults to broadcast domain)");
+		joiner.add("  --knx-address -k <addr>    KNX device address of local endpoint");
 	}
 
 	static void printSecureOptions(final StringJoiner joiner, final boolean printGroupKey) {
@@ -411,6 +414,8 @@ final class Main
 
 		// check for TP-UART link
 		if (options.containsKey("tpuart")) {
+			if (device == null)
+				LoggerFactory.getLogger("calimero.tools").info("TP-UART sends without assigned KNX address (--knx-address)");
 			return new KNXNetworkLinkTpuart(host, medium, Collections.emptyList());
 		}
 

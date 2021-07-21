@@ -170,14 +170,14 @@ public class Discover implements Runnable
 	 * <li><code>search [<i>host</i>]</code> start a discovery search
 	 * <ul>
 	 * <li><code>--withDescription</code> query self description for each search result</li>
-	 * <li><code>--interface -i</code> <i>interface name</i> | <i>IP address</i> &nbsp;local multicast network interface</li>
+	 * <li><code>--netif -i</code> <i>interface name</i> | <i>IP address</i> &nbsp;local multicast network interface</li>
 	 * <li><code>--unicast -u</code> request unicast responses</li>
 	 * <li><code>--mac</code> <i>address</i> &nbsp;extended search requesting the specified MAC address</li>
 	 * <li><code>--progmode</code> &nbsp;extended search requesting devices in programming mode</li>
 	 * </ul>
 	 * <li><code>describe <i>host</i></code> &nbsp;query self description from host
 	 * <ul>
-	 * <li><code>--interface -i</code> <i>interface name</i> | <i>IP address</i> &nbsp;local network interface for
+	 * <li><code>--netif -i</code> <i>interface name</i> | <i>IP address</i> &nbsp;local network interface for
 	 * sending description request</li>
 	 * <li><code>--serverport -p</code> <i>number</i> &nbsp;server UDP/TCP port (defaults to port 3671)</li>
 	 * </ul>
@@ -514,7 +514,7 @@ public class Discover implements Runnable
 				options.put("localport", Integer.decode(i.next()));
 			else if (Main.isOption(arg, "nat", "n"))
 				options.put("nat", null);
-			else if (Main.isOption(arg, "interface", "i") || Main.isOption(arg, "netif", null))
+			else if (Main.isOption(arg, "netif", "i"))
 				options.put("if", getNetworkIF(i.next()));
 			else if (Main.isOption(arg, "timeout", "t")) {
 				final var timeout = Duration.ofSeconds(Long.valueOf(i.next()));
@@ -604,12 +604,12 @@ public class Discover implements Runnable
 		sb.add("  search [<host>]            start a discovery search");
 		sb.add("    --withDescription        query self description for each search result");
 		sb.add("    --unicast -u             request unicast response (where multicast would be used)");
-		sb.add("    --interface -i <interface/host name | IP address>    local multicast network interface");
+		sb.add("    --netif -i <interface/host name | IP address>    local multicast network interface");
 		sb.add("    --mac <address>          extended search requesting the specified MAC address");
 		sb.add("    --progmode               extended search requesting devices in programming mode");
 
 		sb.add("  describe <host>            query self description from host");
-		sb.add("    --interface -i <interface/host name | IP address>    local outgoing network interface");
+		sb.add("    --netif -i <interface/host name | IP address>    local outgoing network interface");
 		sb.add("    --serverport -p <number> server UDP/TCP port (default " + KNXnetIPConnection.DEFAULT_PORT + ")");
 		sb.add("  sd                         shortcut for 'search --withDescription'");
 
