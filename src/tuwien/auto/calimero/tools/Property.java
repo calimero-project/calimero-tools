@@ -714,22 +714,28 @@ public class Property implements Runnable
 
 	private void scanProperties(final String[] args) throws KNXException, InterruptedException
 	{
-		System.out.println("Object Index (OI), Property Index (PI), Object Type (OT), Property ID (PID)");
 		final int cnt = args.length;
+		if (cnt == 2 && args[1].equals("?")) {
+			printHelp("scan [object-idx] [\"all\" for all object properties]");
+			return;
+		}
+
+		System.out.println("Object Index (OI), Property Index (PI), Object Type (OT), Property ID (PID)");
 		if (cnt == 1)
 			pc.scanProperties(false, this::notifyDescription);
 		else if (cnt == 2) {
 			if (args[1].equals("all"))
 				pc.scanProperties(true, this::notifyDescription);
-			else if (args[1].equals("?"))
-				printHelp("scan [object-idx] [\"all\" for all object properties]");
 			else
 				pc.scanProperties(toInt(args[1]), false, this::notifyDescription);
 		}
 		else if (cnt == 3 && args[2].equals("all"))
 			pc.scanProperties(toInt(args[1]), true, this::notifyDescription);
-		else
+		else {
 			out("sorry, wrong number of arguments");
+			return;
+		}
+		System.out.println("scan complete");
 	}
 
 	private static void showCommandList()
