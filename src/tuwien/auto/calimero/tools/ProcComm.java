@@ -607,8 +607,9 @@ public class ProcComm implements Runnable
 		final int tagClass = (int) parsed[0]; // 0=lower range geo, 1=upper range geo, 2=app. specific, 3=unassigned (peripheral)
 		final GroupAddress group = (GroupAddress) parsed[1];
 
-		final CEMILDataEx ldata = new CEMILDataEx(CEMILData.MC_LDATA_REQ, KNXMediumSettings.BackboneRouter, group, tpdu,
-				Priority.LOW, true, false, false, 6) {{
+		final boolean knxip = link.getKNXMedium().getMedium() == KNXMediumSettings.MEDIUM_KNXIP;
+		final CEMILDataEx ldata = new CEMILDataEx(knxip ? CEMILData.MC_LDATA_IND : CEMILData.MC_LDATA_REQ,
+				KNXMediumSettings.BackboneRouter, group, tpdu, Priority.LOW, true, false, false, 6) {{
 				// adjust cEMI Ext Ctrl Field with frame format parameters for LTE
 				final int lteExtAddrType = 0x04; // LTE-HEE extended address type
 				ctrl2 |= lteExtAddrType;
@@ -619,7 +620,7 @@ public class ProcComm implements Runnable
 		link.send(ldata, true);
 	}
 
-	// currently only geo tags with wildcards, broadcast, and general peripheral in hex notation is supported
+	// currently only geo tags with wildcards, broadcast, and unassigned (peripheral) in hex notation is supported
 	// returns [tagClass, GroupAddress]
 	private static Object[] parseLteTag(final String tag) throws KNXFormatException {
 		final String[] split = tag.replaceAll("\\*", "0").split("/", -1);
