@@ -453,32 +453,34 @@ public class NetworkMonitor implements Runnable
 		final boolean lteExt = (extFormat & 0x0c) == 0x04;
 		if (!lteExt)
 			return "no LTE";
-		return decodeLteFrame(extFormat, frame.getDestination(), frame.getTpdu());
-	}
 
-	protected static String decodeLteFrame(final int extFormat, final KNXAddress dst, final byte[] tpdu) throws KNXFormatException {
-		final StringBuilder sb = new StringBuilder();
-		final var tag = LteHeeTag.from(extFormat, (GroupAddress) dst);
-		sb.append(tag).append(' ');
-
+		final byte[] tpdu = frame.getTpdu();
 		final int pci = tpdu[0] & 0xff;
 		final int tpci = (pci >>> 6);
 		// LTE has tpci always set 0
 		if (tpci != Tpci.UnnumberedData.ordinal())
 			throw new KNXFormatException("LTE extended frame requires TPCI " + Tpci.UnnumberedData);
 
-		final int iot = ((tpdu[2] & 0xff) << 8) | (tpdu[3] & 0xff);
-		final int ioi = tpdu[4] & 0xff;
-		final int pid = tpdu[5] & 0xff;
+		return decodeLteFrame(extFormat, frame.getDestination(), DataUnitBuilder.extractASDU(tpdu));
+	}
+
+	protected static String decodeLteFrame(final int extFormat, final KNXAddress dst, final byte[] asdu) throws KNXFormatException {
+		final StringBuilder sb = new StringBuilder();
+		final var tag = LteHeeTag.from(extFormat, (GroupAddress) dst);
+		sb.append(tag).append(' ');
+
+		final int iot = ((asdu[0] & 0xff) << 8) | (asdu[1] & 0xff);
+		final int ioi = asdu[2] & 0xff;
+		final int pid = asdu[3] & 0xff;
 		if (pid == 0xff) {
-			final int companyCode = ((tpdu[6] & 0xff) << 8) | (tpdu[7] & 0xff);
-			final int privatePid = tpdu[8] & 0xff;
+			final int companyCode = ((asdu[4] & 0xff) << 8) | (asdu[5] & 0xff);
+			final int privatePid = asdu[6] & 0xff;
 			sb.append("IOT " + iot + " OI " + ioi + " Company " + companyCode + " PID " + privatePid + ": "
-					+ DataUnitBuilder.toHex(Arrays.copyOfRange(tpdu, 9, tpdu.length), ""));
+					+ DataUnitBuilder.toHex(Arrays.copyOfRange(asdu, 7, asdu.length), ""));
 		}
 		else
 			sb.append("IOT " + iot + " OI " + ioi + " PID " + pid + ": "
-					+ DataUnitBuilder.toHex(Arrays.copyOfRange(tpdu, 6, tpdu.length), ""));
+					+ DataUnitBuilder.toHex(Arrays.copyOfRange(asdu, 4, asdu.length), ""));
 
 		return sb.toString();
 	}

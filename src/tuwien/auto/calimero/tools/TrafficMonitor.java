@@ -327,7 +327,7 @@ public class TrafficMonitor implements Runnable {
 						final int ctrl2 = data[3 + data[1]] & 0xff;
 						if ((ctrl2 & 0x04) != 0) {
 							final int eff = ctrl2 & 0x0f;
-							joiner.add(decodeLteFrame(eff, dst, payload));
+							joiner.add(decodeLteFrame(eff, dst, asdu));
 						}
 					}
 					else {
@@ -351,9 +351,9 @@ public class TrafficMonitor implements Runnable {
 		outTimestamped(joiner.toString());
 	}
 
-	private static String decodeLteFrame(final int extFormat, final KNXAddress dst, final byte[] tpdu)
+	private static String decodeLteFrame(final int extFormat, final KNXAddress dst, final byte[] asdu)
 			throws KNXFormatException {
-		return NetworkMonitor.decodeLteFrame(extFormat, dst, tpdu);
+		return NetworkMonitor.decodeLteFrame(extFormat, dst, asdu);
 	}
 
 	// shows one DPT of each matching main type based on the length of the supplied ASDU

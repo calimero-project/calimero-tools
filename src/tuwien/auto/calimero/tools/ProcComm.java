@@ -64,7 +64,6 @@ import tuwien.auto.calimero.DetachEvent;
 import tuwien.auto.calimero.FrameEvent;
 import tuwien.auto.calimero.GroupAddress;
 import tuwien.auto.calimero.IndividualAddress;
-import tuwien.auto.calimero.KNXAddress;
 import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
@@ -90,6 +89,7 @@ import tuwien.auto.calimero.link.medium.KNXMediumSettings;
 import tuwien.auto.calimero.link.medium.RFSettings;
 import tuwien.auto.calimero.link.medium.TPSettings;
 import tuwien.auto.calimero.log.LogService;
+import tuwien.auto.calimero.process.LteProcessEvent;
 import tuwien.auto.calimero.process.ProcessCommunicator;
 import tuwien.auto.calimero.process.ProcessCommunicatorImpl;
 import tuwien.auto.calimero.process.ProcessEvent;
@@ -382,8 +382,7 @@ public class ProcComm implements Runnable
 				sb.append(options.containsKey("compact") ? " " : ": ");
 				if ((e.getServiceCode() & 0b1111111100) == 0b1111101000) {
 					// group property service
-					final LteProcessEvent lteEvent = (LteProcessEvent) e;
-					sb.append(decodeLteFrame(lteEvent.extFrameFormat(), e.getDestination(), lteEvent.tpdu()));
+					sb.append(decodeLteFrame((LteProcessEvent) e));
 				}
 				else {
 					final Datapoint dp = datapoints.get(e.getDestination());
@@ -633,27 +632,6 @@ public class ProcComm implements Runnable
 		return new Object[] { upperRangeGeoTag, new GroupAddress(address & 0xffff) };
 	}
 
-	protected static final class LteProcessEvent extends ProcessEvent {
-		private static final long serialVersionUID = 1L;
-
-		private final int extFrameFormat;
-		private final byte[] tpdu;
-
-		LteProcessEvent(final ProcessCommunicator source, final IndividualAddress src, final int eff,
-			final GroupAddress tag, final byte[] tpdu) {
-			super(source, src, tag, DataUnitBuilder.getAPDUService(tpdu), DataUnitBuilder.extractASDU(tpdu), false);
-
-			this.extFrameFormat = eff;
-			this.tpdu = tpdu;
-		}
-
-		public int extFrameFormat() { return extFrameFormat; }
-
-		public byte[] tpdu() {
-			return tpdu.clone();
-		}
-	}
-
 	private void checkForLteFrame(final FrameEvent e) {
 		final CEMI cemi = e.getFrame();
 		if (!(cemi instanceof CEMILDataEx))
@@ -674,9 +652,8 @@ public class ProcComm implements Runnable
 		}
 	}
 
-	protected static String decodeLteFrame(final int extFormat, final KNXAddress dst, final byte[] tpdu)
-		throws KNXFormatException {
-		return NetworkMonitor.decodeLteFrame(extFormat, dst, tpdu);
+	protected static String decodeLteFrame(final LteProcessEvent e) throws KNXFormatException {
+		return NetworkMonitor.decodeLteFrame(e.extFrameFormat(), e.getDestination(), e.getASDU());
 	}
 
 	// shows one DPT of each matching main type based on the length of the supplied ASDU
