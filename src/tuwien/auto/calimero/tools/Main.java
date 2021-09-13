@@ -70,9 +70,9 @@ import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.Settings;
-import tuwien.auto.calimero.knxnetip.Connection;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.knxnetip.SecureConnection;
+import tuwien.auto.calimero.knxnetip.TcpConnection;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.KNXNetworkLinkFT12;
 import tuwien.auto.calimero.link.KNXNetworkLinkIP;
@@ -120,13 +120,13 @@ final class Main
 			Property.class, Property.class, PropClient.class, BaosClient.class, DeviceInfo.class, ProgMode.class,
 			Restart.class, DatapointImporter.class);
 
-	private static final Map<InetSocketAddress, Connection> tcpConnectionPool = new HashMap<>();
+	private static final Map<InetSocketAddress, TcpConnection> tcpConnectionPool = new HashMap<>();
 
-	static synchronized Connection tcpConnection(final InetSocketAddress local, final InetSocketAddress server)
+	static synchronized TcpConnection tcpConnection(final InetSocketAddress local, final InetSocketAddress server)
 		throws KNXException {
 		var connection = tcpConnectionPool.get(server);
 		if (connection == null || !connection.isConnected()) {
-			connection = Connection.newTcpConnection(local, server);
+			connection = TcpConnection.newTcpConnection(local, server);
 			tcpConnectionPool.put(server, connection);
 		}
 		return connection;
