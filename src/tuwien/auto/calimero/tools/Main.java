@@ -414,9 +414,10 @@ final class Main
 
 		// check for TP-UART link
 		if (options.containsKey("tpuart")) {
+			final var link = new KNXNetworkLinkTpuart(host, medium, Collections.emptyList());
 			if (device == null)
 				LoggerFactory.getLogger("calimero.tools").info("TP-UART sends without assigned KNX address (--knx-address)");
-			return new KNXNetworkLinkTpuart(host, medium, Collections.emptyList());
+			return link;
 		}
 
 		// we have an IP link
