@@ -73,6 +73,7 @@ import tuwien.auto.calimero.Settings;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.knxnetip.SecureConnection;
 import tuwien.auto.calimero.knxnetip.TcpConnection;
+import tuwien.auto.calimero.link.Connector;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.KNXNetworkLinkFT12;
 import tuwien.auto.calimero.link.KNXNetworkLinkIP;
@@ -374,7 +375,8 @@ final class Main
 	}
 
 	static KNXNetworkLink newLink(final Map<String, Object> options) throws KNXException, InterruptedException {
-		final var link = createNewLink(options);
+		final var link = new Connector().reconnectOn(false, true, true).reconnectDelay(Duration.ofSeconds(4))
+				.newLink(() -> createNewLink(options));
 		link.addLinkListener(new NetworkLinkListener() {
 			@LinkEvent
 			void connectionStatus(final ConnectionStatus status) {
