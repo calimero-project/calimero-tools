@@ -225,7 +225,9 @@ public class TrafficMonitor implements Runnable {
 			public void confirmation(final FrameEvent e) { onFrameEvent(e); }
 
 			@LinkEvent
-			void routingBusy(final RoutingBusyEvent e) { outTimestamped(e.sender() + " sent " + e.get()); }
+			void routingBusy(final RoutingBusyEvent e) {
+				outTimestamped(e.sender().getAddress().getHostAddress() + " sent " + e.get());
+			}
 			@LinkEvent
 			void routingLostMessage(final LostMessageEvent e) {
 				outTimestamped(e.getSender() + " lost " + e.getLostMessages() + " routing messages"
