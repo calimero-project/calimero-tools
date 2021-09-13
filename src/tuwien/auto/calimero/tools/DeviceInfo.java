@@ -73,7 +73,6 @@ import tuwien.auto.calimero.dptxlator.TranslatorTypes;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.link.KNXLinkClosedException;
 import tuwien.auto.calimero.link.KNXNetworkLink;
-import tuwien.auto.calimero.link.medium.KNXMediumSettings;
 import tuwien.auto.calimero.link.medium.TPSettings;
 import tuwien.auto.calimero.log.LogService;
 import tuwien.auto.calimero.mgmt.Destination;
@@ -212,38 +211,6 @@ public class DeviceInfo implements Runnable
 		IndividualAddressWriteEnabled, ServiceControl, AdditionalProfile, ErrorFlags
 	}
 
-	/**
-	 * @deprecated
-	 */
-	@Deprecated(forRemoval = true)
-	public static final class Result
-	{
-		private final Map<Parameter, String> formatted = new HashMap<>();
-		private final Map<Parameter, byte[]> raw = new HashMap<>();
-
-		/**
-		 * Returns the formatted value of the requested device information parameter.
-		 *
-		 * @param p parameter indicating the requested device information
-		 * @return value formatted as String
-		 */
-		public String formatted(final Parameter p)
-		{
-			return formatted.get(p);
-		}
-
-		/**
-		 * Returns the raw data of the requested device information parameter, if available.
-		 *
-		 * @param p parameter specifying the requested device information
-		 * @return raw data for parameter, or empty array
-		 */
-		public byte[] raw(final Parameter p)
-		{
-			return raw.get(p);
-		}
-	}
-
 	public static final class Item {
 		private final String category;
 		private final Parameter parameter;
@@ -297,11 +264,12 @@ public class DeviceInfo implements Runnable
 	private PropertyClient pc;
 
 	private final Map<String, Object> options = new HashMap<>();
-	private Result result;
 
 	private DeviceDescriptor dd;
 	// System B has mask version 0x07B0 or 0x17B0 and provides error code property
 	private boolean isSystemB;
+
+	private boolean groupAddressesDone;
 
 	private final Set<String> categories = new HashSet<>();
 	private String category = "General";
@@ -379,7 +347,6 @@ public class DeviceInfo implements Runnable
 		Exception thrown = null;
 		boolean canceled = false;
 		final IndividualAddress device = (IndividualAddress) options.get("device");
-		result = new Result();
 
 		try {
 			if (options.isEmpty()) {
@@ -433,21 +400,9 @@ public class DeviceInfo implements Runnable
 			Thread.currentThread().interrupt();
 		}
 		finally {
-			if (!result.formatted.isEmpty())
-				onDeviceInformation(device == null ? KNXMediumSettings.BackboneRouter : device, result);
 			onCompletion(thrown, canceled);
 		}
 	}
-
-	/**
-	 * @deprecated Use {@link #onDeviceInformation(Item)}.
-	 *
-	 * @param device KNX device address
-	 * @param info holds the result of reading KNX device information; depending on the device, not all available
-	 *        parameters might be set
-	 */
-	@Deprecated(forRemoval = true)
-	protected void onDeviceInformation(final IndividualAddress device, final Result info) {}
 
 	/**
 	 * Invoked after successfully reading a KNX device parameter. If a device parameter is not available or accessible
@@ -588,7 +543,7 @@ public class DeviceInfo implements Runnable
 		// Group Communication
 		iterate(addresstableObject, this::readLoadState);
 		iterate(assoctableObject, this::readLoadState);
-		if (mc != null && !result.formatted.containsKey(CommonParameter.GroupAddresses))
+		if (mc != null && !groupAddressesDone)
 			readGroupAddresses();
 
 		iterate(cemiServerObject, this::readCemiServerObject);
@@ -1009,8 +964,6 @@ public class DeviceInfo implements Runnable
 
 	private void putResult(final Parameter p, final String formatted, final byte[] raw)
 	{
-		result.formatted.put(p, formatted);
-		result.raw.put(p, raw);
 		final var item = new Item(category, p, formatted, raw);
 		onDeviceInformation(item);
 	}
@@ -1118,6 +1071,7 @@ public class DeviceInfo implements Runnable
 					final GroupAddress group = new GroupAddress(read(addresstableObjectIdx, PID.TABLE, i + 1, 1));
 					joiner.add(group.toString());
 				}
+				groupAddressesDone = true;
 				putResult(CommonParameter.GroupAddresses, joiner.toString(), new byte[0]);
 				return;
 			}
@@ -1153,6 +1107,7 @@ public class DeviceInfo implements Runnable
 				sb.append("(R)");
 			startAddr += 2;
 		}
+		groupAddressesDone = true;
 		putResult(CommonParameter.GroupAddresses, sb.toString(), new byte[0]);
 	}
 
@@ -1369,11 +1324,7 @@ public class DeviceInfo implements Runnable
 		throws InterruptedException
 	{
 		final byte[] data = read(p, objectIndex, pid);
-		if (data == null) {
-			result.formatted.put(p, "-");
-			result.raw.put(p, new byte[0]);
-		}
-		else {
+		if (data != null) {
 			final String formatted = hex ? DataUnitBuilder.toHex(data, "") : Long.toString(toUnsigned(data));
 			putResult(p, formatted, data);
 		}
