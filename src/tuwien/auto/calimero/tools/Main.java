@@ -122,15 +122,28 @@ final class Main
 			Restart.class, DatapointImporter.class);
 
 	private static final Map<InetSocketAddress, TcpConnection> tcpConnectionPool = new HashMap<>();
+	private static boolean registeredTcpShutdownHook;
 
 	static synchronized TcpConnection tcpConnection(final InetSocketAddress local, final InetSocketAddress server)
-		throws KNXException {
+			throws KNXException {
+		if (!registeredTcpShutdownHook) {
+			Runtime.getRuntime().addShutdownHook(new Thread(Main::closeTcpConnections));
+			registeredTcpShutdownHook = true;
+		}
+
 		var connection = tcpConnectionPool.get(server);
 		if (connection == null || !connection.isConnected()) {
 			connection = TcpConnection.newTcpConnection(local, server);
 			tcpConnectionPool.put(server, connection);
 		}
 		return connection;
+	}
+
+	private static void closeTcpConnections() {
+		final var connections = tcpConnectionPool.values().toArray(TcpConnection[]::new);
+		for (final var c : connections) {
+			c.close();
+		}
 	}
 
 	private Main() {}
