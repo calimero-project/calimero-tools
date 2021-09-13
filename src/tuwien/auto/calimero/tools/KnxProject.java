@@ -190,11 +190,15 @@ public final class KnxProject {
 	}
 
 	private static boolean isProjectEncrypted(final Path path) throws IOException {
-		return new ZipFile(path.toString()).isEncrypted();
+		try (var zipFile = new ZipFile(path.toString())) {
+			return zipFile.isEncrypted();
+		}
 	}
 
 	private static void unzip(final Path protectedFile, final Path to, final char[] pwd) throws IOException {
-		new ZipFile(protectedFile.toString(), pwd).extractAll(to.toString());
+		try (var zipFile = new ZipFile(protectedFile.toString(), pwd)) {
+			zipFile.extractAll(to.toString());
+		}
 	}
 
 	private static Path createPath(final Path baseDir, final ZipEntry zipEntry) throws IOException {
