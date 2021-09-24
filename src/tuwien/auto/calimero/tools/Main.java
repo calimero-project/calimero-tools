@@ -108,6 +108,7 @@ final class Main
 		{ "get", "Read a KNX property", "get" },
 		{ "set", "Write a KNX property", "set" },
 		{ "properties", "Open KNX property client", },
+		{ "info", "Send an LTE info command", "info" },
 		{ "baos", "Communicate with a KNX BAOS device" },
 		{ "devinfo", "Read KNX device information" },
 		{ "progmode", "Check/set device(s) in programming mode" },
@@ -118,8 +119,8 @@ final class Main
 	private static final List<Class<? extends Runnable>> tools = Arrays.asList(Discover.class, Discover.class,
 			ScanDevices.class, IPConfig.class, NetworkMonitor.class, ProcComm.class, ProcComm.class, ProcComm.class,
 			TrafficMonitor.class,
-			Property.class, Property.class, PropClient.class, BaosClient.class, DeviceInfo.class, ProgMode.class,
-			Restart.class, DatapointImporter.class);
+			Property.class, Property.class, PropClient.class, ProcComm.class, BaosClient.class, DeviceInfo.class,
+			ProgMode.class, Restart.class, DatapointImporter.class);
 
 	private static final Map<InetSocketAddress, TcpConnection> tcpConnectionPool = new HashMap<>();
 	private static boolean registeredTcpShutdownHook;

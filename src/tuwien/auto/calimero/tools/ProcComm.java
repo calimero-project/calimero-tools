@@ -774,6 +774,7 @@ public class ProcComm implements Runnable
 		// add defaults
 		options.put("port", KNXnetIPConnection.DEFAULT_PORT);
 		options.put("medium", new TPSettings());
+		boolean lte = false;
 
 		for (final var i = new Main.PeekingIterator<>(List.of(args).iterator()); i.hasNext();) {
 			final String arg = i.next();
@@ -787,13 +788,14 @@ public class ProcComm implements Runnable
 				;
 			else if (Main.isOption(arg, "compact", "c"))
 				options.put("compact", null);
-			else if (Main.isOption(arg, "lte", null)) {
+			else if (lte || Main.isOption(arg, "lte", null)) {
+				lte = false;
 				options.put("lte", null);
 				if (options.containsKey("tag")) {
 					final List<String> list = new ArrayList<>();
 					list.add(options.containsKey("read") ? "read" : options.containsKey("write") ? "write" : "info");
-					list.add(i.next()); // tag
-					list.add(i.next()); // IOT
+					list.add((String) options.get("tag")); // tag
+					list.add(arg); // IOT
 					list.add(i.next()); // OI
 					if ("company".equals(i.peek())) {
 						list.add(i.next());
@@ -809,11 +811,9 @@ public class ProcComm implements Runnable
 				if (!i.hasNext())
 					break;
 				options.put("read", null);
-				if ("--lte".equals(i.peek())) {
-					i.next();
-					options.put("tag", i.next());
+				lte = checkLte(i);
+				if (lte)
 					continue;
-				}
 				try {
 					options.put("dst", new GroupAddress(i.next()));
 				}
@@ -831,11 +831,10 @@ public class ProcComm implements Runnable
 				if (!i.hasNext())
 					break;
 				options.put("write", null);
-				if ("--lte".equals(i.peek())) {
-					i.next();
-					options.put("tag", i.next());
+				lte = checkLte(i);
+				if (lte)
 					continue;
-				}
+
 				try {
 					options.put("dst", new GroupAddress(i.next()));
 				}
@@ -855,9 +854,7 @@ public class ProcComm implements Runnable
 				if (!i.hasNext())
 					break;
 				options.put("info", null);
-				i.next();
-				options.put("tag", i.next());
-				continue;
+				lte = checkLte(i);
 			}
 			else if (arg.equals("monitor"))
 				options.put("monitor", null);
@@ -885,6 +882,19 @@ public class ProcComm implements Runnable
 
 		setDomainAddress(options);
 		setRfDeviceSettings();
+	}
+
+	private boolean checkLte(final Main.PeekingIterator<String> i) {
+		if ("--lte".equals(i.peek())) {
+			i.next();
+			options.put("tag", i.next());
+			return true;
+		}
+		if (options.containsKey("lte")) {
+			options.put("tag", i.next());
+			return true;
+		}
+		return false;
 	}
 
 	private void setRfDeviceSettings() {
