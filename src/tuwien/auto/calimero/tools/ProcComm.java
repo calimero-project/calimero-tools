@@ -615,7 +615,8 @@ public class ProcComm implements Runnable
 				ctrl2 |= tagClass;
 		}};
 		final String svc = cmd == 0 ? "write" : cmd == 1 ? "read" : "info";
-		System.out.println("send LTE-HEE " + svc + " " + tag + " IOT " + iot + " OI " + oi + " PID " + pid + " data [" + data + "]");
+		final String scmp = company > 0 ? " company " + company : "";
+		System.out.println("send LTE-HEE " + svc + " " + tag + " IOT " + iot + " OI " + oi + scmp + " PID " + pid + " data [" + data + "]");
 		link.send(ldata, true);
 	}
 
