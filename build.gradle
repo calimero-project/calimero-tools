@@ -24,19 +24,12 @@ compileTestJava.options.encoding = 'UTF-8'
 javadoc.options.encoding = 'UTF-8'
 
 
-mainClassName = 'tuwien.auto.calimero.tools.Main'
+mainClassName = System.getProperty("mainClass") ?: 'tuwien.auto.calimero.tools.Main'
 
 run {
 	// for passing program arguments, use -Dexec.args="..."
 	args System.getProperty("exec.args", "").split() 
 	standardInput = System.in
-}
-
-task execute(type: JavaExec) {
-	if (project.hasProperty("mainClass"))
-		main = mainClass
-	classpath = sourceSets.main.runtimeClasspath
-	args(System.getProperty("exec.args", "").split())
 }
 
 java {
