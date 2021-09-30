@@ -579,7 +579,8 @@ public class ProcComm implements Runnable
 		int i = 0;
 		asdu[i++] = (byte) (iot >> 8);
 		asdu[i++] = (byte) iot;
-		asdu[i++] = (byte) oi;
+		final int sendOi = cmd == 1 ? 0 : oi; // object instance is not used for reading
+		asdu[i++] = (byte) sendOi;
 		if (company > 0) {
 			asdu[i++] = (byte) 255;
 			asdu[i++] = (byte) (company >> 8);
@@ -616,7 +617,9 @@ public class ProcComm implements Runnable
 		}};
 		final String svc = cmd == 0 ? "write" : cmd == 1 ? "read" : "info";
 		final String scmp = company > 0 ? " company " + company : "";
-		System.out.println("send LTE-HEE " + svc + " " + tag + " IOT " + iot + " OI " + oi + scmp + " PID " + pid + " data [" + data + "]");
+		final String sdata = data.length() > 0 ? " data [" + data + "]" : "";
+		System.out.println("send LTE-HEE " + svc + " " + tag + " IOT " + iot + " OI " + sendOi + scmp + " PID " + pid
+				+ sdata);
 		link.send(ldata, true);
 	}
 
