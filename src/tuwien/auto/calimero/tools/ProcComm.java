@@ -608,8 +608,10 @@ public class ProcComm implements Runnable
 		final GroupAddress group = (GroupAddress) parsed[1];
 
 		final boolean knxip = link.getKNXMedium().getMedium() == KNXMediumSettings.MEDIUM_KNXIP;
+		final boolean tp1 = link.getKNXMedium().getMedium() == KNXMediumSettings.MEDIUM_TP1;
+		final boolean domainBroadcast = tp1 ? true : false;
 		final CEMILDataEx ldata = new CEMILDataEx(knxip ? CEMILData.MC_LDATA_IND : CEMILData.MC_LDATA_REQ,
-				KNXMediumSettings.BackboneRouter, group, tpdu, Priority.LOW, true, false, false, 6) {{
+				KNXMediumSettings.BackboneRouter, group, tpdu, Priority.LOW, true, domainBroadcast, false, 6) {{
 				// adjust cEMI Ext Ctrl Field with frame format parameters for LTE
 				final int lteExtAddrType = 0x04; // LTE-HEE extended address type
 				ctrl2 |= lteExtAddrType;
