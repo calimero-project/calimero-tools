@@ -125,13 +125,15 @@ import tuwien.auto.calimero.xml.XmlWriter;
  * <code>read 1/0/3 1.005</code> will decode subsequent values of that datapoint using the DPT 1.005
  * "Alarm" and its value representations "alarm" and "no alarm". A subsequent write can then simply
  * issue <code>w 1/0/3 alarm</code>, setting datapoint 1/0/3 to "alarm" state.<br>
- * When the tool exits, type information about any datapoint that was monitored is stored in a file
+ * When the tool exits and no user-supplied datapoints file was used, type information about any datapoint
+ * that was monitored is stored in a file
  * on disk in the current working directory (if file creation/modification is permitted). That file
  * is named something like ".proccomm_dplist.xml" (hidden file on Unix-based systems). It allows the
  * tool to remember user-specific settings of datapoint types between tool invocations, important
  * for the appropriate decoding of datapoint values. The file uses the layout of
  * {@link DatapointMap}, and can be edited or used at any other place Calimero expects a
  * {@link DatapointModel}. Note that any actual datapoint <i>values</i> are not stored in that file.
+ * Any user-supplied datapoints resource is not modified when the tool exits.
  * <p>
  * The tool implementation shows the necessary interaction with the Calimero-core library API for
  * the described tasks. The main part of the implementation is based on the library's
@@ -797,18 +799,26 @@ public class ProcComm implements Runnable
 	}
 
 	private void loadDatapoints() {
-		if (Files.exists(Path.of(toolDatapointsFile))) {
-			try (XmlReader r = XmlInputFactory.newInstance().createXMLReader(toolDatapointsFile)) {
-				datapoints.load(r);
-			}
-			catch (final KNXMLException e) {
-				out.info("failed to load datapoint information from {}: {}", toolDatapointsFile, e.getMessage());
-			}
+		if (options.containsKey("datapoints"))
+			loadDatapoints((String) options.get("datapoints"));
+		else if (Files.exists(Path.of(toolDatapointsFile)))
+			loadDatapoints(toolDatapointsFile);
+	}
+
+	private void loadDatapoints(final String dpResource) {
+		try (XmlReader r = XmlInputFactory.newInstance().createXMLReader(dpResource)) {
+			datapoints.load(r);
+		}
+		catch (final KNXMLException e) {
+			out.info("failed to load datapoint information from {}: {}", dpResource, e.getMessage());
 		}
 	}
 
 	private void saveDatapoints()
 	{
+		// we never save user-supplied datapoint resources
+		if (options.containsKey("datapoints"))
+			return;
 		final boolean possiblyModified = options.containsKey("monitor") || options.containsKey("dpt");
 		if (((DatapointMap<?>) datapoints).getDatapoints().isEmpty() || !possiblyModified)
 			return;
@@ -931,6 +941,8 @@ public class ProcComm implements Runnable
 				options.put("knx-address", Main.getAddress(i.next()));
 			else if (Main.isOption(arg, "timeout", "t"))
 				options.put("timeout", Duration.ofSeconds(Integer.decode(i.next())));
+			else if (Main.isOption(arg, "datapoints", null))
+				options.put("datapoints", i.next());
 			else if (!options.containsKey("host"))
 				options.put("host", arg);
 			else
