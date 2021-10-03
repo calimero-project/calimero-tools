@@ -36,6 +36,7 @@
 
 package tuwien.auto.calimero.tools;
 
+import static java.util.Map.entry;
 import static tuwien.auto.calimero.tools.Main.setDomainAddress;
 
 import java.io.BufferedReader;
@@ -53,6 +54,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -69,6 +71,7 @@ import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.KNXTimeoutException;
 import tuwien.auto.calimero.KnxRuntimeException;
+import tuwien.auto.calimero.LteHeeTag;
 import tuwien.auto.calimero.Priority;
 import tuwien.auto.calimero.SerialNumber;
 import tuwien.auto.calimero.cemi.CEMI;
@@ -79,6 +82,7 @@ import tuwien.auto.calimero.datapoint.DatapointMap;
 import tuwien.auto.calimero.datapoint.DatapointModel;
 import tuwien.auto.calimero.datapoint.StateDP;
 import tuwien.auto.calimero.dptxlator.DPTXlator;
+import tuwien.auto.calimero.dptxlator.DptXlator8BitSet;
 import tuwien.auto.calimero.dptxlator.TranslatorTypes;
 import tuwien.auto.calimero.dptxlator.TranslatorTypes.MainType;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
@@ -658,8 +662,65 @@ public class ProcComm implements Runnable
 		}
 	}
 
-	protected static String decodeLteFrame(final LteProcessEvent e) throws KNXFormatException {
-		return NetworkMonitor.decodeLteFrame(e.extFrameFormat(), e.getDestination(), e.getASDU());
+	protected String decodeLteFrame(final LteProcessEvent e) throws KNXFormatException {
+		return decodeLteFrame(e.extFrameFormat(), e.getDestination(), e.getASDU());
+	}
+
+	private String decodeLteFrame(final int extFormat, final GroupAddress dst, final byte[] asdu)
+			throws KNXFormatException {
+		final StringBuilder sb = new StringBuilder();
+		final var tag = LteHeeTag.from(extFormat, dst);
+		sb.append(tag).append(' ');
+
+		final int iot = ((asdu[0] & 0xff) << 8) | (asdu[1] & 0xff);
+		final int ioi = asdu[2] & 0xff;
+		final int pid = asdu[3] & 0xff;
+
+		final byte[] data = Arrays.copyOfRange(asdu, pid == 0xff ? 7 : 4, asdu.length);
+
+		String value = DataUnitBuilder.toHex(data, "");
+		final var dp = datapoints.get(dst);
+		if (dp != null) {
+			final var dpt = dp.getDPT();
+			value = decodeDpValue(dpt, data).or(() -> decodeLteZDpValue(dpt, data)).orElse(DataUnitBuilder.toHex(data, ""));
+		}
+
+		if (pid == 0xff) {
+			final int companyCode = ((asdu[4] & 0xff) << 8) | (asdu[5] & 0xff);
+			final int privatePid = asdu[6] & 0xff;
+			sb.append("IOT " + iot + " OI " + ioi + " Company " + companyCode + " PID " + privatePid + ": " + value);
+		}
+		else
+			sb.append("IOT " + iot + " OI " + ioi + " PID " + pid + ": " + value);
+
+		return sb.toString();
+	}
+
+	private static Optional<String> decodeDpValue(final String dpt, final byte[] data) {
+		try {
+			return Optional.of(TranslatorTypes.createTranslator(dpt, data).getValue());
+		}
+		catch (KNXIllegalArgumentException | KNXException e) {
+			return Optional.empty();
+		}
+	}
+
+	private static Optional<String> decodeLteZDpValue(final String dpt, final byte[] data) {
+		final var stdDpt = lteZToStdMode.get(dpt);
+		if (stdDpt == null)
+			return Optional.empty();
+		return decodeDpValue(stdDpt, Arrays.copyOfRange(data, 0, data.length - 1)).map(v -> appendLteStatus(v, data));
+	}
+
+	private static String appendLteStatus(final String prefix, final byte[] data) {
+		try {
+			final var status = new DptXlator8BitSet(DptXlator8BitSet.DptGeneralStatus);
+			status.setData(data, data.length - 1);
+			return prefix + (status.getNumericValue() == 0 ? "" : " (" + status.getValue() + ")");
+		}
+		catch (final KNXFormatException e) {
+			return prefix;
+		}
 	}
 
 	// shows one DPT of each matching main type based on the length of the supplied ASDU
@@ -996,4 +1057,47 @@ public class ProcComm implements Runnable
 			quit();
 		}
 	}
+
+	private static final Map<String, String> lteZToStdMode = Map.ofEntries(
+			entry("200.100", "1.100"),     // DPT_Heat/Cool_Z
+			entry("200.101", "1.006"),     // DPT_BinaryValue_Z
+			entry("201.100", "20.102"),    // DPT_HVACMode_Z
+			entry("201.102", "20.103"),    // DPT_DHWMode_Z
+			entry("201.104", "20.105"),    // DPT_HVACContrMode_Z
+			entry("201.105", "20.1105"),   // DPT_EnablH/Cstage_Z
+			entry("201.107", "20.002"),    // DPT_BuildingMode_Z
+			entry("201.108", "20.003"),    // DPT_OccMode_Z
+			entry("201.109", "20.106"),    // DPT_HVACEmergMode_Z
+			entry("202.001", "5.004"),     // DPT_RelValue_Z
+			entry("202.002", "5.010"),     // DPT_UCountValue8_Z
+			entry("203.002", "7.002"),     // DPT_TimePeriodMsec_Z
+			entry("203.003", "7.003"),     // DPT_TimePeriod10Msec_Z
+			entry("203.004", "7.004"),     // DPT_TimePeriod100Msec_Z
+			entry("203.005", "7.005"),     // DPT_TimePeriodSec_Z
+			entry("203.006", "7.006"),     // DPT_TimePeriodMin_Z
+			entry("203.007", "7.007"),     // DPT_TimePeriodHrs_Z
+			entry("203.011", "14.077"),    // DPT_UFlowRateLiter/h_Z
+			entry("203.012", "7.001"),     // DPT_UCountValue16_Z
+			entry("203.013", "14.019"),    // DPT_UElCurrentμA_Z
+			entry("203.014", "9.024"),     // DPT_PowerKW_Z
+			entry("203.015", "9.006"),     // DPT_AtmPressureAbs_Z
+			entry("203.017", "5.001"),     // DPT_PercentU16_Z
+			entry("203.100", "9.008"),     // DPT_HVACAirQual_Z
+			entry("203.101", "9.005"),     // DPT_WindSpeed_Z
+			entry("203.102", "9.022"),     // DPT_SunIntensity_Z
+			entry("203.104", "9.009"),     // DPT_HVACAirFlowAbs_Z
+			entry("204.001", "6.001"),     // DPT_RelSignedValue_Z
+			entry("205.002", "8.002"),     // DPT_DeltaTimeMsec_Z
+			entry("205.003", "8.003"),     // DPT_DeltaTime10Msec_Z
+			entry("205.004", "8.004"),     // DPT_DeltaTime100Msec_Z
+			entry("205.005", "8.005"),     // DPT_DeltaTimeSec_Z
+			entry("205.006", "8.006"),     // DPT_DeltaTimeMin_Z
+			entry("205.007", "8.007"),     // DPT_DeltaTimeHrs_Z
+			entry("205.017", "8.010"),     // DPT_Percent_V16_Z
+			entry("205.100", "9.001"),     // DPT_TempHVACAbs_Z
+			entry("205.101", "9.002"),     // DPT_TempHVACRel_Z
+			entry("205.102", "9.009"),     // DPT_HVACAirFlowRel_Z
+			entry("218.001", "14.076"),    // DPT_VolumeLiter_Z
+			entry("218.002", "14.077")     // DPT_FlowRate_m3/h_Z
+	);
 }
