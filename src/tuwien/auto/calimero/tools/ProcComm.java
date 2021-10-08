@@ -664,19 +664,23 @@ public class ProcComm implements Runnable
 		final byte[] data = Arrays.copyOfRange(asdu, pid == 0xff ? 7 : 4, asdu.length);
 
 		String value = DataUnitBuilder.toHex(data, "");
-		final var dp = datapoints.get(dst);
-		if (dp != null) {
-			final var dpt = dp.getDPT();
-			value = decodeDpValue(dpt, data).or(() -> decodeLteZDpValue(dpt, data)).orElse(DataUnitBuilder.toHex(data, ""));
+		if (data.length > 0) {
+			final var dp = datapoints.get(dst);
+			if (dp != null) {
+				final var dpt = dp.getDPT();
+				value = decodeDpValue(dpt, data).or(() -> decodeLteZDpValue(dpt, data))
+						.orElse(DataUnitBuilder.toHex(data, ""));
+			}
 		}
 
+		final String v = value.isEmpty() ? "" : ": " + value;
 		if (pid == 0xff) {
 			final int companyCode = ((asdu[4] & 0xff) << 8) | (asdu[5] & 0xff);
 			final int privatePid = asdu[6] & 0xff;
-			sb.append("IOT " + iot + " OI " + ioi + " Company " + companyCode + " PID " + privatePid + ": " + value);
+			sb.append("IOT " + iot + " OI " + ioi + " Company " + companyCode + " PID " + privatePid + v);
 		}
 		else
-			sb.append("IOT " + iot + " OI " + ioi + " PID " + pid + ": " + value);
+			sb.append("IOT " + iot + " OI " + ioi + " PID " + pid + v);
 
 		return sb.toString();
 	}
