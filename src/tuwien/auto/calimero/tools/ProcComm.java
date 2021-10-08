@@ -606,42 +606,25 @@ public class ProcComm implements Runnable
 		final int groupPropWrite = 0b1111101010;
 		final int groupPropInfo = 0b1111101011;
 		final int dataTagGroup = 0x04;
-		final byte[] tpdu = DataUnitBuilder.createAPDU(cmd == 0 ? groupPropWrite : cmd == 1 ? groupPropRead : groupPropInfo, asdu);
+		final int service = cmd == 0 ? groupPropWrite : cmd == 1 ? groupPropRead : groupPropInfo;
+		final byte[] tpdu = DataUnitBuilder.createAPDU(service, asdu);
 		tpdu[0] |= dataTagGroup;
-
-		final Object[] parsed = parseLteTag(tag);
-		final int tagClass = (int) parsed[0]; // 0=lower range geo, 1=upper range geo, 2=app. specific, 3=unassigned (peripheral)
-		final GroupAddress group = (GroupAddress) parsed[1];
+		final var tagAddr = LteHeeTag.from(tag);
 
 		final boolean knxip = link.getKNXMedium().getMedium() == KNXMediumSettings.MEDIUM_KNXIP;
 		final boolean tp1 = link.getKNXMedium().getMedium() == KNXMediumSettings.MEDIUM_TP1;
+		final var priority = service == groupPropInfo || service == groupPropWrite ? Priority.NORMAL : Priority.LOW;
 		final boolean domainBroadcast = tp1 ? true : false;
-		final CEMILDataEx ldata = new CEMILDataEx(knxip ? CEMILData.MC_LDATA_IND : CEMILData.MC_LDATA_REQ,
-				KNXMediumSettings.BackboneRouter, group, tpdu, Priority.LOW, true, domainBroadcast, false, 6) {{
-				// adjust cEMI Ext Ctrl Field with frame format parameters for LTE
-				final int lteExtAddrType = 0x04; // LTE-HEE extended address type
-				ctrl2 |= lteExtAddrType;
-				ctrl2 |= tagClass;
-		}};
+
+		final var ldata = CEMILDataEx.newLte(knxip ? CEMILData.MC_LDATA_IND : CEMILData.MC_LDATA_REQ,
+				KNXMediumSettings.BackboneRouter, tagAddr, tpdu, priority, true, domainBroadcast, false, 6);
+
 		final String svc = cmd == 0 ? "write" : cmd == 1 ? "read" : "info";
 		final String scmp = company > 0 ? " company " + company : "";
 		final String sdata = data.length() > 0 ? " data [" + data + "]" : "";
 		System.out.println("send LTE-HEE " + svc + " " + tag + " IOT " + iot + " OI " + sendOi + scmp + " PID " + pid
 				+ sdata);
 		link.send(ldata, true);
-	}
-
-	// currently only geo tags with wildcards, broadcast, and unassigned (peripheral) in hex notation is supported
-	// returns [tagClass, GroupAddress]
-	private static Object[] parseLteTag(final String tag) throws KNXFormatException {
-		final String[] split = tag.replaceAll("\\*", "0").split("/", -1);
-		final List<Integer> levels = Arrays.stream(split).map(Integer::decode).collect(Collectors.toList());
-		if (levels.size() == 1)
-			return new Object[] { 3, new GroupAddress(levels.get(0)) };
-		// bits 7/6/4
-		final int address = (levels.get(0) << 10) | (levels.get(1) << 4) | levels.get(2);
-		final int upperRangeGeoTag = address > 0xffff ? 1 : 0;
-		return new Object[] { upperRangeGeoTag, new GroupAddress(address & 0xffff) };
 	}
 
 	private void checkForLteFrame(final FrameEvent e) {
