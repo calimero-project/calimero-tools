@@ -56,6 +56,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.StringJoiner;
+import java.util.function.BiFunction;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -668,7 +669,7 @@ public class ProcComm implements Runnable
 			final var dp = datapoints.get(dst);
 			if (dp != null) {
 				final var dpt = dp.getDPT();
-				value = decodeDpValue(dpt, data).or(() -> decodeLteZDpValue(dpt, data))
+				value = decodeDpValue(dpt, data, true).or(() -> decodeLteZDpValue(dpt, data))
 						.orElse(DataUnitBuilder.toHex(data, ""));
 			}
 		}
@@ -685,9 +686,11 @@ public class ProcComm implements Runnable
 		return sb.toString();
 	}
 
-	private static Optional<String> decodeDpValue(final String dpt, final byte[] data) {
+	private static Optional<String> decodeDpValue(final String dpt, final byte[] data, final boolean withUnit) {
 		try {
-			return Optional.of(TranslatorTypes.createTranslator(dpt, data).getValue());
+			final var t = TranslatorTypes.createTranslator(dpt, data);
+			t.setAppendUnit(withUnit);
+			return Optional.of(t.getValue());
 		}
 		catch (KNXIllegalArgumentException | KNXException e) {
 			return Optional.empty();
@@ -695,10 +698,15 @@ public class ProcComm implements Runnable
 	}
 
 	private static Optional<String> decodeLteZDpValue(final String dpt, final byte[] data) {
-		final var stdDpt = lteZToStdMode.get(dpt);
-		if (stdDpt == null)
+		final var std = lteZToStdMode.get(dpt);
+		if (std == null)
 			return Optional.empty();
-		return decodeDpValue(stdDpt, Arrays.copyOfRange(data, 0, data.length - 1)).map(v -> appendLteStatus(v, data));
+		if (!std.dptId.isEmpty())
+			return decodeDpValue(std.dptId, Arrays.copyOfRange(data, 0, data.length - 1), std.withUnit)
+					.map(v -> appendLteStatus(v, data));
+		if (std.f != null)
+			return Optional.of(std.f.apply(data, std.unit));
+		return Optional.empty();
 	}
 
 	private static String appendLteStatus(final String prefix, final byte[] data) {
@@ -1057,46 +1065,120 @@ public class ProcComm implements Runnable
 		}
 	}
 
-	private static final Map<String, String> lteZToStdMode = Map.ofEntries(
-			entry("200.100", "1.100"),     // DPT_Heat/Cool_Z
-			entry("200.101", "1.006"),     // DPT_BinaryValue_Z
-			entry("201.100", "20.102"),    // DPT_HVACMode_Z
-			entry("201.102", "20.103"),    // DPT_DHWMode_Z
-			entry("201.104", "20.105"),    // DPT_HVACContrMode_Z
-			entry("201.105", "20.1105"),   // DPT_EnablH/Cstage_Z
-			entry("201.107", "20.002"),    // DPT_BuildingMode_Z
-			entry("201.108", "20.003"),    // DPT_OccMode_Z
-			entry("201.109", "20.106"),    // DPT_HVACEmergMode_Z
-			entry("202.001", "5.004"),     // DPT_RelValue_Z
-			entry("202.002", "5.010"),     // DPT_UCountValue8_Z
-			entry("203.002", "7.002"),     // DPT_TimePeriodMsec_Z
-			entry("203.003", "7.003"),     // DPT_TimePeriod10Msec_Z
-			entry("203.004", "7.004"),     // DPT_TimePeriod100Msec_Z
-			entry("203.005", "7.005"),     // DPT_TimePeriodSec_Z
-			entry("203.006", "7.006"),     // DPT_TimePeriodMin_Z
-			entry("203.007", "7.007"),     // DPT_TimePeriodHrs_Z
-			entry("203.011", "14.077"),    // DPT_UFlowRateLiter/h_Z
-			entry("203.012", "7.001"),     // DPT_UCountValue16_Z
-			entry("203.013", "14.019"),    // DPT_UElCurrentμA_Z
-			entry("203.014", "9.024"),     // DPT_PowerKW_Z
-			entry("203.015", "9.006"),     // DPT_AtmPressureAbs_Z
-			entry("203.017", "5.001"),     // DPT_PercentU16_Z
-			entry("203.100", "9.008"),     // DPT_HVACAirQual_Z
-			entry("203.101", "9.005"),     // DPT_WindSpeed_Z
-			entry("203.102", "9.022"),     // DPT_SunIntensity_Z
-			entry("203.104", "9.009"),     // DPT_HVACAirFlowAbs_Z
-			entry("204.001", "6.001"),     // DPT_RelSignedValue_Z
-			entry("205.002", "8.002"),     // DPT_DeltaTimeMsec_Z
-			entry("205.003", "8.003"),     // DPT_DeltaTime10Msec_Z
-			entry("205.004", "8.004"),     // DPT_DeltaTime100Msec_Z
-			entry("205.005", "8.005"),     // DPT_DeltaTimeSec_Z
-			entry("205.006", "8.006"),     // DPT_DeltaTimeMin_Z
-			entry("205.007", "8.007"),     // DPT_DeltaTimeHrs_Z
-			entry("205.017", "8.010"),     // DPT_Percent_V16_Z
-			entry("205.100", "9.001"),     // DPT_TempHVACAbs_Z
-			entry("205.101", "9.002"),     // DPT_TempHVACRel_Z
-			entry("205.102", "9.009"),     // DPT_HVACAirFlowRel_Z
-			entry("218.001", "14.076"),    // DPT_VolumeLiter_Z
-			entry("218.002", "14.077")     // DPT_FlowRate_m3/h_Z
+	private static final class StdMode {
+		private final BiFunction<byte[], String, String> f;
+		private final String unit;
+
+		private final String dptId;
+		private final boolean withUnit;
+
+		private StdMode(final BiFunction<byte[], String, String> f, final String unit) {
+			this.f = f;
+			this.unit = unit;
+			this.dptId = "";
+			this.withUnit = true;
+		}
+
+		private StdMode(final String dptId, final boolean withUnit) {
+			this.dptId = dptId;
+			this.withUnit = withUnit;
+
+			this.f = null;
+			this.unit = null;
+		}
+
+		static StdMode function(final BiFunction<byte[], String, String> f, final String unit) {
+			return new StdMode(f, unit);
+		}
+
+		static StdMode xlator(final String dptId) {
+			return new StdMode(dptId, true);
+		}
+
+		static StdMode xlatorDimensionless(final String dptId) {
+			return new StdMode(dptId, false);
+		}
+	}
+
+	private static final Map<String, StdMode> lteZToStdMode = Map.ofEntries(
+			entry("200.100", StdMode.xlator("1.100")),     // DPT_Heat/Cool_Z
+			entry("200.101", StdMode.xlator("1.006")),     // DPT_BinaryValue_Z
+			entry("201.100", StdMode.xlator("20.102")),    // DPT_HVACMode_Z
+			entry("201.102", StdMode.xlator("20.103")),    // DPT_DHWMode_Z
+			entry("201.104", StdMode.xlator("20.105")),    // DPT_HVACContrMode_Z
+			entry("201.105", StdMode.xlator("20.1105")),   // DPT_EnablH/Cstage_Z
+			entry("201.107", StdMode.xlator("20.002")),    // DPT_BuildingMode_Z
+			entry("201.108", StdMode.xlator("20.003")),    // DPT_OccMode_Z
+			entry("201.109", StdMode.xlator("20.106")),    // DPT_HVACEmergMode_Z
+			entry("202.001", StdMode.xlator("5.004")),     // DPT_RelValue_Z
+			entry("202.002", StdMode.xlator("5.010")),     // DPT_UCountValue8_Z
+			entry("203.002", StdMode.xlator("7.002")),     // DPT_TimePeriodMsec_Z
+			entry("203.003", StdMode.xlator("7.003")),     // DPT_TimePeriod10Msec_Z
+			entry("203.004", StdMode.xlator("7.004")),     // DPT_TimePeriod100Msec_Z
+			entry("203.005", StdMode.xlator("7.005")),     // DPT_TimePeriodSec_Z
+			entry("203.006", StdMode.xlator("7.006")),     // DPT_TimePeriodMin_Z
+			entry("203.007", StdMode.xlator("7.007")),     // DPT_TimePeriodHrs_Z
+			entry("203.011", StdMode.function(ProcComm::twoByteUnsigned10Millis, "l/h")),	// DPT_UFlowRateLiter/h_Z
+			entry("203.012", StdMode.xlatorDimensionless("7.001")),							// DPT_UCountValue16_Z
+			entry("203.013", StdMode.function(ProcComm::twoByteUnsigned10Millis, "μA")),    // DPT_UElCurrentμA_Z
+			entry("203.014", StdMode.function(ProcComm::twoByteUnsigned, "kW")),			// DPT_PowerKW_Z
+			entry("203.015", StdMode.function(ProcComm::twoByteUnsigned50Millis, "mbar")),	// DPT_AtmPressureAbs_Z
+			entry("203.017", StdMode.function(ProcComm::twoByteUnsigned10Millis, "%")),		// DPT_PercentU16_Z
+			entry("203.100", StdMode.function(ProcComm::twoByteUnsigned, "ppm")),			// DPT_HVACAirQual_Z
+			entry("203.101", StdMode.function(ProcComm::twoByteUnsigned10Millis, "m/s")),	// DPT_WindSpeed_Z
+			entry("203.102", StdMode.function(ProcComm::twoByteUnsigned50Millis, "W/m\u00b2")),     // DPT_SunIntensity_Z
+			entry("203.104", StdMode.function(ProcComm::twoByteUnsigned, "m\u00b3/h")),     // DPT_HVACAirFlowAbs_Z
+			entry("204.001", StdMode.xlator("6.001")),     // DPT_RelSignedValue_Z
+			entry("205.002", StdMode.xlator("8.002")),     // DPT_DeltaTimeMsec_Z
+			entry("205.003", StdMode.xlator("8.003")),     // DPT_DeltaTime10Msec_Z
+			entry("205.004", StdMode.xlator("8.004")),     // DPT_DeltaTime100Msec_Z
+			entry("205.005", StdMode.xlator("8.005")),     // DPT_DeltaTimeSec_Z
+			entry("205.006", StdMode.xlator("8.006")),     // DPT_DeltaTimeMin_Z
+			entry("205.007", StdMode.xlator("8.007")),     // DPT_DeltaTimeHrs_Z
+			entry("205.017", StdMode.xlator("8.010")),     // DPT_Percent_V16_Z
+			entry("205.100", StdMode.function(ProcComm::twoByteSigned20Millis, "°C")),		// DPT_TempHVACAbs_Z
+			entry("205.101", StdMode.function(ProcComm::twoByteSigned20Millis, "K")),		// DPT_TempHVACRel_Z
+			entry("205.102", StdMode.function(ProcComm::twoByteSigned, "m\u00b3/h")),		// DPT_HVACAirFlowRel_Z
+			entry("218.001", StdMode.function(ProcComm::fourByteSigned, "l")),				// DPT_VolumeLiter_Z
+			entry("218.002", StdMode.function(ProcComm::fourByteSigned0001, "m\u00b3/h"))	// DPT_FlowRate_m3/h_Z
 	);
+
+	private static String twoByteUnsigned(final byte[] data, final String unit) {
+		final int v = (data[0] & 0xff) << 8 | data[1] & 0xff;
+		return v + " " + unit;
+	}
+
+	private static String twoByteUnsigned10Millis(final byte[] data, final String unit) {
+		final int v = (data[0] & 0xff) << 8 | data[1] & 0xff;
+		final double d = v / 100d;
+		return d + " " + unit;
+	}
+
+	private static String twoByteUnsigned50Millis(final byte[] data, final String unit) {
+		final int v = (data[0] & 0xff) << 8 | data[1] & 0xff;
+		final double d = v / 20d;
+		return d + " " + unit;
+	}
+
+	private static String twoByteSigned(final byte[] data, final String unit) {
+		final int v = (short) (data[0] & 0xff) << 8 | data[1] & 0xff;
+		return v + " " + unit;
+	}
+
+	private static String twoByteSigned20Millis(final byte[] data, final String unit) {
+		final int v = (short) (data[0] & 0xff) << 8 | data[1] & 0xff;
+		final double d = v / 50d;
+		return d + " " + unit;
+	}
+
+	private static String fourByteSigned(final byte[] data, final String unit) {
+		final int v = (data[0] & 0xff) << 24 | (data[1] & 0xff) << 16 | (data[2] & 0xff) << 8 | data[3] & 0xff;
+		return v + " " + unit;
+	}
+
+	private static String fourByteSigned0001(final byte[] data, final String unit) {
+		final int v = (data[0] & 0xff) << 24 | (data[1] & 0xff) << 16 | (data[2] & 0xff) << 8 | data[3] & 0xff;
+		final double d = v / 10_000d;
+		return d + " " + unit;
+	}
 }
