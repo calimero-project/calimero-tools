@@ -1120,14 +1120,14 @@ public class ProcComm implements Runnable
 			entry("203.007", StdMode.xlator("7.007")),     // DPT_TimePeriodHrs_Z
 			entry("203.011", StdMode.function(ProcComm::twoByteUnsigned10Millis, "l/h")),	// DPT_UFlowRateLiter/h_Z
 			entry("203.012", StdMode.xlatorDimensionless("7.001")),							// DPT_UCountValue16_Z
-			entry("203.013", StdMode.function(ProcComm::twoByteUnsigned10Millis, "μA")),    // DPT_UElCurrentμA_Z
+			entry("203.013", StdMode.function(ProcComm::twoByteUnsigned10Millis, "μA")),	// DPT_UElCurrentμA_Z
 			entry("203.014", StdMode.function(ProcComm::twoByteUnsigned, "kW")),			// DPT_PowerKW_Z
 			entry("203.015", StdMode.function(ProcComm::twoByteUnsigned50Millis, "mbar")),	// DPT_AtmPressureAbs_Z
 			entry("203.017", StdMode.function(ProcComm::twoByteUnsigned10Millis, "%")),		// DPT_PercentU16_Z
 			entry("203.100", StdMode.function(ProcComm::twoByteUnsigned, "ppm")),			// DPT_HVACAirQual_Z
 			entry("203.101", StdMode.function(ProcComm::twoByteUnsigned10Millis, "m/s")),	// DPT_WindSpeed_Z
-			entry("203.102", StdMode.function(ProcComm::twoByteUnsigned50Millis, "W/m\u00b2")),     // DPT_SunIntensity_Z
-			entry("203.104", StdMode.function(ProcComm::twoByteUnsigned, "m\u00b3/h")),     // DPT_HVACAirFlowAbs_Z
+			entry("203.102", StdMode.function(ProcComm::twoByteUnsigned50Millis, "W/m\u00b2")), // DPT_SunIntensity_Z
+			entry("203.104", StdMode.function(ProcComm::twoByteUnsigned, "m\u00b3/h")),		// DPT_HVACAirFlowAbs_Z
 			entry("204.001", StdMode.xlator("6.001")),     // DPT_RelSignedValue_Z
 			entry("205.002", StdMode.xlator("8.002")),     // DPT_DeltaTimeMsec_Z
 			entry("205.003", StdMode.xlator("8.003")),     // DPT_DeltaTime10Msec_Z
