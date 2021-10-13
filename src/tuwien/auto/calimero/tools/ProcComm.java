@@ -615,10 +615,11 @@ public class ProcComm implements Runnable
 		final boolean knxip = link.getKNXMedium().getMedium() == KNXMediumSettings.MEDIUM_KNXIP;
 		final boolean tp1 = link.getKNXMedium().getMedium() == KNXMediumSettings.MEDIUM_TP1;
 		final var priority = service == groupPropInfo || service == groupPropWrite ? Priority.NORMAL : Priority.LOW;
+		final boolean repeat = !knxip;
 		final boolean domainBroadcast = tp1 ? true : false;
 
 		final var ldata = CEMILDataEx.newLte(knxip ? CEMILData.MC_LDATA_IND : CEMILData.MC_LDATA_REQ,
-				KNXMediumSettings.BackboneRouter, tagAddr, tpdu, priority, true, domainBroadcast, false, 6);
+				KNXMediumSettings.BackboneRouter, tagAddr, tpdu, priority, repeat, domainBroadcast, false, 6);
 
 		final String svc = cmd == 0 ? "write" : cmd == 1 ? "read" : "info";
 		final String scmp = company > 0 ? " company " + company : "";
