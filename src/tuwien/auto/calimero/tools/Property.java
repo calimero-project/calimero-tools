@@ -130,6 +130,9 @@ public class Property implements Runnable
 	private boolean associationTableFormat1;
 	private int groupDescriptorSize;
 
+	private static final int pidGroupObjectTable = 51;
+
+
 	/**
 	 * Constructs a new Property object.
 	 * <p>
@@ -622,6 +625,9 @@ public class Property implements Runnable
 						break;
 					}
 				}
+				if (objType == 9 && pid == pidGroupObjectTable) {
+					groupDescriptorSize = 6;
+				}
 
 				if (args.length == 3) {
 					final byte[] data = pc.getProperty(oi, pid, 1, 1);
@@ -872,6 +878,9 @@ public class Property implements Runnable
 		customFormatter.put(key(6, pidCouplerServiceControl), Property::couplerServiceControl);
 
 		customFormatter.put(key(9, PID.TABLE), this::groupObjectDescriptors);
+		final int extGroupObjectReference = 52;
+		customFormatter.put(key(9, pidGroupObjectTable), this::groupObjectDescriptors);
+		customFormatter.put(key(9, extGroupObjectReference), this::extGroupObjectReferences);
 
 		// at least jung devices have DD0 also in cEMI server and KNXnet/IP object
 		customFormatter.put(key(8, PID.DEVICE_DESCRIPTOR), Property::deviceDescriptor);
@@ -966,6 +975,8 @@ public class Property implements Runnable
 		final var joiner = new StringJoiner(delimiter);
 		final var buffer = ByteBuffer.wrap(data);
 		int groupObject = 1;
+
+		String dptId = null;
 		while (buffer.hasRemaining()) {
 			final byte[] descriptor = new byte[groupDescriptorSize];
 			buffer.get(descriptor);
@@ -998,7 +1009,7 @@ public class Property implements Runnable
 
 				final int mainType = (descriptor[2] & 0xff) << 8 | descriptor[3] & 0xff;
 				final int subType = (descriptor[4] & 0xff) << 8 | descriptor[5] & 0xff;
-				final String dptId = mainType + "." + subType;
+				dptId = String.format("%d.%03d", mainType, subType);
 				bitsize = translatorBitSize(dptId);
 				break;
 			default:
@@ -1014,6 +1025,8 @@ public class Property implements Runnable
 
 			sb.append("GO#").append(groupObject).append(" ");
 			sb.append(bitsize).append(bitsize == 1 ? " bit " : " bits ");
+			if (dptId != null)
+				sb.append(dptId).append(" ");
 
 			final var commFlags = new StringJoiner("/");
 			if (enable)
@@ -1031,6 +1044,27 @@ public class Property implements Runnable
 			joiner.add(sb);
 
 			groupObject++;
+		}
+		return joiner.toString();
+	}
+
+	private String extGroupObjectReferences(final byte[] data) {
+		final var joiner = new StringJoiner(delimiter);
+		final var buffer = ByteBuffer.wrap(data);
+
+		String s = "OT(Oinst)|PID ";
+		while (buffer.hasRemaining()) {
+			final int ot = buffer.getShort() & 0xffff;
+			final int oi = buffer.get() & 0xff;
+			final int pid = buffer.get() & 0xff;
+			final int startIdx = buffer.getShort() & 0xffff;
+			final int bitOffset = buffer.get() & 0xff;
+			final int conv = buffer.get() & 0xff;
+
+			s += String.format("%d(%d)|%d startidx %d bitoffset %d conv %d", ot, oi, pid, startIdx,
+					bitOffset, conv);
+			joiner.add(s);
+			s = "";
 		}
 		return joiner.toString();
 	}
