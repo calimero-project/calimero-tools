@@ -83,6 +83,7 @@ import tuwien.auto.calimero.datapoint.DatapointMap;
 import tuwien.auto.calimero.datapoint.DatapointModel;
 import tuwien.auto.calimero.datapoint.StateDP;
 import tuwien.auto.calimero.dptxlator.DPTXlator;
+import tuwien.auto.calimero.dptxlator.DPTXlator8BitEnum;
 import tuwien.auto.calimero.dptxlator.DptXlator8BitSet;
 import tuwien.auto.calimero.dptxlator.TranslatorTypes;
 import tuwien.auto.calimero.dptxlator.TranslatorTypes.MainType;
@@ -650,10 +651,10 @@ public class ProcComm implements Runnable
 	}
 
 	protected String decodeLteFrame(final LteProcessEvent e) throws KNXFormatException {
-		return decodeLteFrame(e.extFrameFormat(), e.getDestination(), e.getASDU());
+		return decodeLteFrame(e.getServiceCode(), e.extFrameFormat(), e.getDestination(), e.getASDU());
 	}
 
-	private String decodeLteFrame(final int extFormat, final GroupAddress dst, final byte[] asdu)
+	private String decodeLteFrame(final int svcCode, final int extFormat, final GroupAddress dst, final byte[] asdu)
 			throws KNXFormatException {
 		final StringBuilder sb = new StringBuilder();
 		final var tag = LteHeeTag.from(extFormat, dst);
@@ -670,7 +671,7 @@ public class ProcComm implements Runnable
 			final var dp = datapoints.get(dst);
 			if (dp != null) {
 				final var dpt = dp.getDPT();
-				value = decodeDpValue(dpt, data, true).or(() -> decodeLteZDpValue(dpt, data))
+				value = decodeDpValue(dpt, data, true).or(() -> decodeLteZDpValue(svcCode, dpt, data))
 						.orElse(DataUnitBuilder.toHex(data, ""));
 			}
 		}
@@ -698,16 +699,20 @@ public class ProcComm implements Runnable
 		}
 	}
 
-	private static Optional<String> decodeLteZDpValue(final String dpt, final byte[] data) {
+	private static final int GroupPropWrite = 0b1111101010;
+
+	private static Optional<String> decodeLteZDpValue(final int svcCode, final String dpt, final byte[] data) {
 		final var std = lteZToStdMode.get(dpt);
 		if (std == null)
 			return Optional.empty();
+
+		Optional<String> opt = Optional.empty();
 		if (!std.dptId.isEmpty())
-			return decodeDpValue(std.dptId, Arrays.copyOfRange(data, 0, data.length - 1), std.withUnit)
-					.map(v -> appendLteStatus(v, data));
+			opt = decodeDpValue(std.dptId, Arrays.copyOfRange(data, 0, data.length - 1), std.withUnit);
 		if (std.f != null)
-			return Optional.of(std.f.apply(data, std.unit));
-		return Optional.empty();
+			opt = Optional.of(std.f.apply(data, std.unit));
+		final boolean write = svcCode == GroupPropWrite;
+		return opt.map(v -> write ? appendHvacCommand(v, data) : appendLteStatus(v, data));
 	}
 
 	private static String appendLteStatus(final String prefix, final byte[] data) {
@@ -715,6 +720,17 @@ public class ProcComm implements Runnable
 			final var status = new DptXlator8BitSet(DptXlator8BitSet.DptGeneralStatus);
 			status.setData(data, data.length - 1);
 			return prefix + (status.getNumericValue() == 0 ? "" : " (" + status.getValue() + ")");
+		}
+		catch (final KNXFormatException e) {
+			return prefix;
+		}
+	}
+
+	private static String appendHvacCommand(final String prefix, final byte[] data) {
+		try {
+			final var cmd = new DPTXlator8BitEnum("20.60104");
+			cmd.setData(data, data.length - 1);
+			return prefix + " (" + cmd.getValue() + ")";
 		}
 		catch (final KNXFormatException e) {
 			return prefix;
@@ -1107,7 +1123,7 @@ public class ProcComm implements Runnable
 			entry("201.100", StdMode.xlator("20.102")),    // DPT_HVACMode_Z
 			entry("201.102", StdMode.xlator("20.103")),    // DPT_DHWMode_Z
 			entry("201.104", StdMode.xlator("20.105")),    // DPT_HVACContrMode_Z
-			entry("201.105", StdMode.xlator("20.1105")),   // DPT_EnablH/Cstage_Z
+			entry("201.105", StdMode.xlator("20.60105")),  // DPT_EnablH/Cstage_Z
 			entry("201.107", StdMode.xlator("20.002")),    // DPT_BuildingMode_Z
 			entry("201.108", StdMode.xlator("20.003")),    // DPT_OccMode_Z
 			entry("201.109", StdMode.xlator("20.106")),    // DPT_HVACEmergMode_Z
