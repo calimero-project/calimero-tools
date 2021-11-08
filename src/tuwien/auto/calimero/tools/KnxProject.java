@@ -184,7 +184,8 @@ public final class KnxProject {
 		try (var zis = new ZipInputStream(Files.newInputStream(project))) {
 			for (var entry = zis.getNextEntry(); entry != null; entry = zis.getNextEntry()) {
 				final var target = createPath(to, entry);
-				Files.copy(zis, target, StandardCopyOption.REPLACE_EXISTING);
+				if (!entry.isDirectory())
+					Files.copy(zis, target, StandardCopyOption.REPLACE_EXISTING);
 			}
 		}
 	}
