@@ -583,7 +583,7 @@ final class Main
 		if (toolKeyring == null)
 			return Optional.empty();
 		return toolKeyring.backbone().filter(bb -> bb.multicastGroup().equals(multicastGroup))
-				.map(Keyring.Backbone::groupKey)
+				.flatMap(Keyring.Backbone::groupKey)
 				.map(key -> toolKeyring.decryptKey(key, (char[]) options.get("keyring-pwd")));
 	}
 
