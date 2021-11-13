@@ -41,10 +41,15 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
+import java.nio.CharBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -52,6 +57,8 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.w3c.dom.Document;
@@ -59,6 +66,7 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
 import net.lingala.zip4j.ZipFile;
+import net.lingala.zip4j.model.enums.EncryptionMethod;
 import tuwien.auto.calimero.GroupAddress;
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.datapoint.DatapointMap;
@@ -197,7 +205,11 @@ public final class KnxProject {
 	}
 
 	private static void unzip(final Path protectedFile, final Path to, final char[] pwd) throws IOException {
-		try (var zipFile = new ZipFile(protectedFile.toString(), pwd)) {
+		try (var zipFile = new ZipFile(protectedFile.toString())) {
+			final var fileHeader = zipFile.getFileHeader("0.xml");
+			final var enc = fileHeader.getEncryptionMethod();
+			final var key = enc == EncryptionMethod.AES ? createAesKey(pwd) : pwd;
+			zipFile.setPassword(key);
 			zipFile.extractAll(to.toString());
 		}
 	}
@@ -238,5 +250,50 @@ public final class KnxProject {
 		if (mainSub.length == 2)
 			dptId = String.format("%d.%03d", main, Integer.parseInt(mainSub[1]));
 		return new Object[] { main, dptId };
+	}
+
+	private static final byte[] zipAesEncryptionSalt = "21.project.ets.knx.org".getBytes(StandardCharsets.UTF_8);
+
+	// ETS6
+	private static char[] createAesKey(final char[] pwd) {
+		try {
+			final byte[] key = deriveKey(pwd, zipAesEncryptionSalt, 65_536, 32);
+			return Base64.getEncoder().encodeToString(key).toCharArray();
+		}
+		catch (InvalidKeyException | NoSuchAlgorithmException e) {
+			throw new KnxSecureException("creating AES key for zip decryption", e);
+		}
+	}
+
+	private static byte[] deriveKey(final char[] pwd, final byte[] salt, final int iterations, final int size)
+			throws NoSuchAlgorithmException, InvalidKeyException {
+		final var mac = hmac("HmacSHA256", macKey(pwd));
+
+		mac.update(salt);
+		final byte[] blockIdx = new byte[] { 0, 0, 0, 1 };
+		byte[] input = mac.doFinal(blockIdx);
+		final byte[] output = new byte[size];
+		for (int i = 0; i < iterations; ++i) {
+			for (int s = 0; s < size; ++s)
+				output[s] ^= input[s];
+			input = mac.doFinal(input);
+		}
+		return output;
+	}
+
+	private static byte[] macKey(final char[] pwd) {
+		final var buffer = StandardCharsets.UTF_16LE.encode(CharBuffer.wrap(pwd));
+		final int len = buffer.remaining();
+		final byte[] macKey = new byte[len];
+		buffer.get(macKey);
+		buffer.clear().put(new byte[len]);
+		return macKey;
+	}
+
+	private static Mac hmac(final String algorithm, final byte[] key)
+			throws NoSuchAlgorithmException, InvalidKeyException {
+		final var mac = Mac.getInstance(algorithm);
+		mac.init(new SecretKeySpec(key, algorithm));
+		return mac;
 	}
 }
