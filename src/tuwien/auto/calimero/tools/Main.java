@@ -111,6 +111,7 @@ final class Main
 		{ "info", "Send an LTE info command", "info" },
 		{ "baos", "Communicate with a KNX BAOS device" },
 		{ "devinfo", "Read KNX device information" },
+		{ "mem", "Access KNX device memory" },
 		{ "progmode", "Check/set device(s) in programming mode" },
 		{ "restart", "Restart a KNX interface/device" },
 		{ "import", "Import datapoints from a KNX project (.knxproj) or group addresses file (.xml|.csv)" },
@@ -120,7 +121,7 @@ final class Main
 			ScanDevices.class, IPConfig.class, NetworkMonitor.class, ProcComm.class, ProcComm.class, ProcComm.class,
 			TrafficMonitor.class,
 			Property.class, Property.class, PropClient.class, ProcComm.class, BaosClient.class, DeviceInfo.class,
-			ProgMode.class, Restart.class, DatapointImporter.class);
+			Memory.class, ProgMode.class, Restart.class, DatapointImporter.class);
 
 	private static final Map<InetSocketAddress, TcpConnection> tcpConnectionPool = new HashMap<>();
 	private static boolean registeredTcpShutdownHook;
