@@ -1360,6 +1360,8 @@ public class DeviceInfo implements Runnable
 			return toUnsigned(mc.readMemory(d, startAddr, bytes));
 		}
 		catch (final KNXException e) {
+			out.debug("error reading 0x{}..0x{}: {}", Long.toHexString(startAddr),
+					Long.toHexString(startAddr + bytes), e.toString());
 			return -1;
 		}
 	}
