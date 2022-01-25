@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2021 B. Malinowsky
+    Copyright (c) 2006, 2022 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -410,7 +410,6 @@ public class ProcComm implements Runnable
 
 	/**
 	 * Called by this tool on completion.
-	 * <p>
 	 *
 	 * @param thrown the thrown exception if operation completed due to a raised exception,
 	 *        <code>null</code> otherwise
@@ -427,7 +426,6 @@ public class ProcComm implements Runnable
 	/**
 	 * Returns a string translation of the datapoint data for the specified datapoint type, using
 	 * the process event ASDU.
-	 * <p>
 	 *
 	 * @param asdu the process event ASDU with the datapoint data
 	 * @param dptMainNumber DPT main number &ge; 0, can be 0 if the <code>dptID</code> is unique
