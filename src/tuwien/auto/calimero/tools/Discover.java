@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2021 B. Malinowsky
+    Copyright (c) 2006, 2022 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -43,6 +43,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -283,7 +284,7 @@ public class Discover implements Runnable
 
 	private static String formatResponse(final Result<?> r, final HPAI controlEp, final DeviceDIB device,
 			final ServiceFamiliesDIB serviceFamilies, final Collection<DIB> description) {
-		final StringBuilder sb = new StringBuilder(sep);
+		final StringBuilder sb = new StringBuilder();
 
 		final var addr = r.localEndpoint().getAddress();
 		final var localEndpoint = addr instanceof Inet6Address ? addr.toString()
@@ -320,7 +321,7 @@ public class Discover implements Runnable
 		extractDib(DIB.AdditionalDeviceInfo, desc).map(dib -> dib.toString().replace(", ", sep)).ifPresent(joiner::add);
 		extractDib(DIB.TunnelingInfo, desc).map(dib -> dib.toString().replaceFirst(", ", sep)).ifPresent(joiner::add);
 		desc.forEach(dib -> joiner.add(dib.toString()));
-		return joiner.toString();
+		return joiner.add("").toString();
 	}
 
 	private static Optional<DIB> extractDib(final int typeCode, final Collection<DIB> description) {
@@ -395,19 +396,55 @@ public class Discover implements Runnable
 		}
 		else
 			d.startSearch((int) timeout.toSeconds(), false);
-		int displayed = 0;
-		// wait until search finished, and update console 4 times/second with
-		// received search responses
+
+
+		class TimestampedResponse {
+			final Instant received;
+			final Result<SearchResponse> result;
+			boolean shown;
+
+			TimestampedResponse(final Result<SearchResponse> response) {
+				this.received = Instant.now();
+				this.result = response;
+			}
+		}
+		final var responses = new HashMap<InetSocketAddress, TimestampedResponse>();
+
+		// wait until search finished, polling the search responses
+		int processed = 0;
 		try {
 			while (d.isSearching()) {
-				Thread.sleep(250);
-				final List<Result<SearchResponse>> res = d.getSearchResponses();
-				for (; displayed < res.size(); ++displayed)
-					onEndpointReceived(res.get(displayed));
+				final var res = d.getSearchResponses();
+				for (; processed < res.size(); ++processed) {
+					final var result = res.get(processed);
+					final var timestampedResponse = new TimestampedResponse(result);
+					// always use v2 response if supported by the server, otherwise store v1
+					if (result.getResponse().v2()) {
+						responses.put(result.remoteEndpoint(), timestampedResponse);
+						onEndpointReceived(timestampedResponse.result);
+						timestampedResponse.shown = true;
+					}
+					else
+						responses.putIfAbsent(result.remoteEndpoint(), timestampedResponse);
+				}
+
+				final var waitForV2Response = Duration.ofMillis(200);
+				final Instant notificationThreshold = Instant.now().minus(waitForV2Response);
+				for (final var timestampedResponse : responses.values()) {
+					final var result = timestampedResponse.result;
+					if (!timestampedResponse.shown && !result.getResponse().v2()
+							&& !Duration.between(timestampedResponse.received, notificationThreshold).isNegative()) {
+						onEndpointReceived(result);
+						timestampedResponse.shown = true;
+					}
+				}
+
+				Thread.sleep(50);
 			}
 		}
 		finally {
-			out.info("search stopped after " + timeout.toSeconds() + " seconds with " + displayed + " responses");
+			if (processed == 0)
+				out.info("search stopped after {} seconds with 0 responses", timeout.toSeconds());
 		}
 	}
 
