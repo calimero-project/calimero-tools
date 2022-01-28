@@ -82,6 +82,7 @@ import tuwien.auto.calimero.datapoint.Datapoint;
 import tuwien.auto.calimero.datapoint.DatapointMap;
 import tuwien.auto.calimero.datapoint.DatapointModel;
 import tuwien.auto.calimero.datapoint.StateDP;
+import tuwien.auto.calimero.dptxlator.DPT;
 import tuwien.auto.calimero.dptxlator.DPTXlator;
 import tuwien.auto.calimero.dptxlator.DPTXlator8BitEnum;
 import tuwien.auto.calimero.dptxlator.DptXlator8BitSet;
@@ -303,10 +304,10 @@ public class ProcComm implements Runnable
 	}
 
 	/**
-	 * Runs the process communicator.
+	 * Starts the process communicator and returns.
 	 * <p>
-	 * This method immediately returns when the process communicator is running. Call
-	 * {@link #quit()} to quit process communication.
+	 * This method immediately returns when this process communicator is already running. Call
+	 * {@link #quit()} to quit process communication. Restarting a process communicator is not supported.
 	 *
 	 * @param l a process event listener, can be <code>null</code>
 	 * @throws KNXException on problems creating network link or communication
@@ -314,16 +315,23 @@ public class ProcComm implements Runnable
 	 */
 	public void start(final ProcessListener l) throws KNXException, InterruptedException
 	{
+		if (closed)
+			return;
+
 		if (options.containsKey("about")) {
 			((Runnable) options.get("about")).run();
+			closed = true;
 			return;
 		}
 
-		// create the network link to the KNX network
-		final KNXNetworkLink lnk = createLink();
-		link = lnk;
+		synchronized (this) {
+			if (link != null)
+				return;
+			// create the network link to the KNX network
+			link = createLink();
+		}
 		// create process communicator with the established link
-		pc = new ProcessCommunicatorImpl(lnk);
+		pc = new ProcessCommunicatorImpl(link);
 		if (l != null)
 			pc.addProcessListener(l);
 
@@ -371,6 +379,51 @@ public class ProcComm implements Runnable
 	}
 
 	/**
+	 * Issues a read, write, or info command.
+	 *
+	 * @param line line with command and arguments, e.g., "write 1/0/3 switch off"
+	 * @throws KNXException
+	 * @throws InterruptedException
+	 * @see #start(ProcessListener)
+	 */
+	protected void issueCommand(final String line) throws KNXException, InterruptedException {
+		final String[] s = line.trim().split(" +");
+		if (s.length == 1 && "exit".equalsIgnoreCase(s[0]))
+			return;
+		if (s.length == 1 && ("?".equals(s[0]) || "help".equals(s[0])))
+			out(listCommandsAndDptAliases(new StringJoiner(System.lineSeparator()), false));
+		if (s.length > 1) {
+			// expected order: <cmd> <addr> [<dpt>] [<value>]
+			// cmd = ("r"|"read") | ("w"|"write") | ("i"|"info")
+			final String cmd = s[0];
+			final String addr = s[1];
+
+			final boolean read = cmd.equals("read") || cmd.equals("r");
+			final boolean write = cmd.equals("write") || cmd.equals("w");
+			final boolean info = cmd.equals("info") || cmd.equals("i");
+
+			if (options.containsKey("lte") && (read || write || info))
+				issueLteCommand(addr, s);
+			else if (read || write) {
+				final boolean withDpt = (read && s.length == 3) || (write && s.length >= 4);
+				StateDP dp;
+
+				final GroupAddress ga = new GroupAddress(addr);
+				dp = new StateDP(ga, "tmp", 0, withDpt ? fromDptName(s[2]) : null);
+				if (withDpt && !s[2].equals("-")) {
+					datapoints.remove(dp);
+					datapoints.add(dp);
+				}
+				dp = datapoints.contains(ga) ? datapoints.get(ga) : dp;
+				readWrite(dp, write, write ? Arrays.asList(s).subList(withDpt ? 3 : 2, s.length).stream()
+						.collect(Collectors.joining(" ")) : null);
+			}
+			else
+				out("unknown command '" + cmd + "'");
+		}
+	}
+
+	/**
 	 * Called by this tool on receiving a process communication group event.
 	 *
 	 * @param e the process event
@@ -406,6 +459,15 @@ public class ProcComm implements Runnable
 			}
 		}
 		System.out.println(LocalTime.now().truncatedTo(ChronoUnit.MILLIS) + " " + sb);
+	}
+
+	/**
+	 * If this tool instance is executing a read command, notifies about the read response (if any).
+	 * @param dp datapoint
+	 * @param value formatted read response, or hexadecimal representation if <code>dp</code> has no {@link DPT} set
+	 */
+	protected void onReadResponse(final Datapoint dp, final String value) {
+		System.out.println("read " + dp.getMainAddress() + " value: " + value);
 	}
 
 	/**
@@ -531,7 +593,7 @@ public class ProcComm implements Runnable
 		throws KNXException, InterruptedException
 	{
 		if (!write)
-			System.out.println("read " + dp.getMainAddress() + " value: " + pc.read(dp));
+			onReadResponse(dp, pc.read(dp));
 		else {
 			if (dp.getDPT() == null) {
 				System.out.println("cannot write to " + dp.getMainAddress()
@@ -764,46 +826,14 @@ public class ProcComm implements Runnable
 			final String line = in.readLine();
 			if (line == null)
 				continue;
-			final String[] s = line.trim().split(" +");
-			if (s.length == 1 && "exit".equalsIgnoreCase(s[0]))
-				return;
-			if (s.length == 1 && ("?".equals(s[0]) || "help".equals(s[0])))
-				out(listCommandsAndDptAliases(new StringJoiner(System.lineSeparator()), false));
-			if (s.length > 1) {
-				// expected order: <cmd> <addr> [<dpt>] [<value>]
-				// cmd = ("r"|"read") | ("w"|"write")
-				final String cmd = s[0];
-				final String addr = s[1];
-
-				final boolean read = cmd.equals("read") || cmd.equals("r");
-				final boolean write = cmd.equals("write") || cmd.equals("w");
-				final boolean info = cmd.equals("info") || cmd.equals("i");
-				try {
-					if (options.containsKey("lte") && (read || write || info))
-						issueLteCommand(addr, s);
-					else if (read || write) {
-						final boolean withDpt = (read && s.length == 3) || (write && s.length >= 4);
-						StateDP dp;
-
-						final GroupAddress ga = new GroupAddress(addr);
-						dp = new StateDP(ga, "tmp", 0, withDpt ? fromDptName(s[2]) : null);
-						if (withDpt && !s[2].equals("-")) {
-							datapoints.remove(dp);
-							datapoints.add(dp);
-						}
-						dp = datapoints.contains(ga) ? datapoints.get(ga) : dp;
-						readWrite(dp, write, write ? Arrays.asList(s).subList(withDpt ? 3 : 2, s.length).stream()
-								.collect(Collectors.joining(" ")) : null);
-					}
-					else
-						out("unknown command '" + cmd + "'");
-				}
-				catch (final KNXTimeoutException e) {
-					out(e.getMessage());
-				}
-				catch (KNXException | RuntimeException e) {
-					out.error("[{}] {}", line, e.toString());
-				}
+			try {
+				issueCommand(line);
+			}
+			catch (final KNXTimeoutException e) {
+				out(e.getMessage());
+			}
+			catch (KNXException | RuntimeException e) {
+				out.error("[{}] {}", line, e.toString());
 			}
 		}
 	}
