@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2019, 2021 B. Malinowsky
+    Copyright (c) 2019, 2022 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -318,7 +318,7 @@ public class TrafficMonitor implements Runnable {
 			if (payload.length > 1) {
 				final byte[] asdu = DataUnitBuilder.extractASDU(payload);
 				if (asdu.length > 0)
-					joiner.add(DataUnitBuilder.toHex(asdu, " ") + (compact ? "" : ":"));
+					joiner.add(DataUnitBuilder.toHex(asdu, " "));
 				final int apduSvc = DataUnitBuilder.getAPDUService(payload);
 
 				try {
@@ -329,12 +329,14 @@ public class TrafficMonitor implements Runnable {
 						final int ctrl2 = data[3 + data[1]] & 0xff;
 						if ((ctrl2 & 0x04) != 0) {
 							final int eff = ctrl2 & 0x0f;
+							joiner.add(compact ? "" : ":");
 							joiner.add(decodeLteFrame(eff, dst, asdu));
 						}
 					}
 					else {
-						if (asdu.length > 0 && dst instanceof GroupAddress) {
+						if (asdu.length > 0 && dst instanceof GroupAddress && dst.getRawAddress() != 0) {
 							final Datapoint dp = datapoints.get((GroupAddress) dst);
+							joiner.add(compact ? "" : ":");
 							if (dp != null)
 								joiner.add(asString(asdu, 0, dp.getDPT()));
 							else
