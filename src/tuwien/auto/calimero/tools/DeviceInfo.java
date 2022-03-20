@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2011, 2021 B. Malinowsky
+    Copyright (c) 2011, 2022 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -984,7 +984,7 @@ public class DeviceInfo implements Runnable
 		final int addrDoA = 0x0102; // length 2
 
 		readMem(addrDoA, 2, "DoA ", true, CommonParameter.DomainAddress);
-		readBcuInfo();
+		readBcuInfo(true);
 	}
 
 	private void readTP1Bcu1() throws InterruptedException
@@ -998,7 +998,7 @@ public class DeviceInfo implements Runnable
 
 		readMem(addrManufactData, 3, "KNX manufacturer data ", true, CommonParameter.ManufacturerData);
 
-		readBcuInfo();
+		readBcuInfo(true);
 	}
 
 	private void readTP1Bcu2() throws InterruptedException, KNXException
@@ -1006,7 +1006,7 @@ public class DeviceInfo implements Runnable
 		// Option Reg: bit 0: watchdog disabled/enabled, bit 1: mem 0x300-0x4df protected/writable
 //		final int addrOptionReg = 0x100;
 
-		final int addrManufactData = 0x0101; // length 2
+		final int addrManufacturer = 0x0101; // length 2
 		// App Id, length 5: App manufacturer (2), SW dev type (2), SW version (1)
 		// the App manufacturer can differ from product manufacturer (0x101), if a compatible program was downloaded
 		final int addrAppId = 0x0103;
@@ -1018,7 +1018,7 @@ public class DeviceInfo implements Runnable
 //		final int addrPeiInterface = 0x00c4; // if used
 //		final int addrPeiInfo = 0x00c5; // if used
 
-		readMem(addrManufactData, 3, "KNX manufacturer data ", true, CommonParameter.ManufacturerData);
+		readMem(addrManufacturer, 2, "KNX manufacturer ", DeviceInfo::manufacturer, CommonParameter.Manufacturer);
 		final long appId = readMemLong(addrAppId, 5);
 		final String appMf = manufacturer((int) appId >> (3 * 8));
 		final long swDev = (appId >> 8) & 0xff;
@@ -1027,16 +1027,18 @@ public class DeviceInfo implements Runnable
 		out.info("appId 0x{} - app manufacturer: {}, SW dev type {}, SW version {}", Long.toHexString(appId),
 				appMf, swDev, swVersion);
 
-		readBcuInfo();
+		readBcuInfo(false);
 
 		// interface objects: Device Object, Address table object, Assoc table object, App program object
 		findInterfaceObjects();
 	}
 
-	private void readBcuInfo() throws InterruptedException
+	private void readBcuInfo(final boolean bcu1) throws InterruptedException
 	{
-		readMem(addrManufact, 1, "KNX manufacturer ID ", DeviceInfo::manufacturer, CommonParameter.Manufacturer);
-		readMem(addrDevType, 2, "Device type number ", true, CommonParameter.DeviceTypeNumber);
+		if (bcu1) {
+			readMem(addrManufact, 1, "KNX manufacturer ", DeviceInfo::manufacturer, CommonParameter.Manufacturer);
+			readMem(addrDevType, 2, "Device type number ", true, CommonParameter.DeviceTypeNumber);
+		}
 		readMem(addrVersion, 1, "SW version ", i -> version(new byte[] { (byte) (int) i }), CommonParameter.SoftwareVersion);
 		// mechanical PEI type required by the application SW
 		readMem(addrPeiType, 1, "Hardware PEI type ", DeviceInfo::toPeiTypeString, CommonParameter.RequiredPeiType);
