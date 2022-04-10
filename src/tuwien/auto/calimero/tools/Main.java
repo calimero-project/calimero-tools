@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2010, 2021 B. Malinowsky
+    Copyright (c) 2010, 2022 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -135,7 +135,10 @@ final class Main
 
 		var connection = tcpConnectionPool.get(server);
 		if (connection == null || !connection.isConnected()) {
-			connection = TcpConnection.newTcpConnection(local, server);
+			if (local.getAddress().isAnyLocalAddress() && local.getPort() == 0)
+				connection = TcpConnection.newTcpConnection(server);
+			else
+				connection = TcpConnection.newTcpConnection(local, server);
 			tcpConnectionPool.put(server, connection);
 		}
 		return connection;

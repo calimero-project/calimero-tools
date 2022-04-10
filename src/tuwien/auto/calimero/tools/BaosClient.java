@@ -88,7 +88,6 @@ import tuwien.auto.calimero.baos.ip.BaosLinkIp;
 import tuwien.auto.calimero.dptxlator.DPT;
 import tuwien.auto.calimero.dptxlator.DPTXlator;
 import tuwien.auto.calimero.dptxlator.TranslatorTypes;
-import tuwien.auto.calimero.knxnetip.TcpConnection;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.LinkEvent;
 import tuwien.auto.calimero.link.NetworkLinkListener;
@@ -330,7 +329,7 @@ public class BaosClient implements Runnable
 		if (options.containsKey("udp"))
 			return BaosLinkIp.newUdpLink(local, remote);
 
-		final var connection = TcpConnection.newTcpConnection(local, remote);
+		final var connection = Main.tcpConnection(local, remote);
 		return BaosLinkIp.newTcpLink(connection);
 	}
 
