@@ -227,7 +227,7 @@ final class Main
 	//
 
 	static InetSocketAddress createLocalSocket(final Map<String, Object> options) {
-		return Main.createLocalSocket((InetAddress) options.get("localhost"), (Integer) options.get("localport"));
+		return createLocalSocket((InetAddress) options.get("localhost"), (Integer) options.get("localport"));
 	}
 
 	static InetSocketAddress createLocalSocket(final InetAddress host, final Integer port)
