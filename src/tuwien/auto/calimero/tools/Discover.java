@@ -52,6 +52,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.StringJoiner;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -64,6 +65,7 @@ import tuwien.auto.calimero.KNXTimeoutException;
 import tuwien.auto.calimero.KnxRuntimeException;
 import tuwien.auto.calimero.knxnetip.Discoverer;
 import tuwien.auto.calimero.knxnetip.Discoverer.Result;
+import tuwien.auto.calimero.knxnetip.DiscovererTcp;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.knxnetip.servicetype.DescriptionResponse;
 import tuwien.auto.calimero.knxnetip.servicetype.SearchResponse;
@@ -159,6 +161,7 @@ public class Discover implements Runnable
 			d = new Discoverer(local, lp != null ? lp.intValue() : 0, options.containsKey("nat"), mcast);
 			reuseForDescription = false;
 		}
+		d.timeout((Duration) options.get("timeout"));
 	}
 
 	/**
@@ -359,32 +362,30 @@ public class Discover implements Runnable
 	 */
 	private void search() throws KNXException, InterruptedException
 	{
-		final var timeout = ((Duration) options.get("timeout"));
 		final Srp[] srps = searchParameters.toArray(new Srp[0]);
+
+		if (d instanceof DiscovererTcp) {
+			final var result = d.search(srps).thenApply(list -> list.get(0)).thenAccept(this::onEndpointReceived);
+			joinOnResult(result);
+			return;
+		}
 
 		// see if we have an extended unicast search to a control endpoint
 		if (options.containsKey("host")) {
 			final InetAddress server = (InetAddress) options.get("host");
 			final var ctrlEndpoint = new InetSocketAddress(server, (int) options.get("serverport"));
-
-			try {
-				final var result = d.timeout(timeout).search(ctrlEndpoint, srps);
-				result.thenAccept(this::onEndpointReceived).join();
-			}
-			catch (final CompletionException e) {
-				if (TimeoutException.class.isAssignableFrom(e.getCause().getClass()))
-					throw new KNXTimeoutException("timeout waiting for response from " + ctrlEndpoint);
-				if (e.getCause() instanceof KNXException)
-					throw (KNXException) e.getCause();
-			}
+			final var result = d.search(ctrlEndpoint, srps).thenAccept(this::onEndpointReceived);
+			joinOnResult(result);
 			return;
 		}
+
+		final var timeout = ((Duration) options.get("timeout"));
 		// start the search, using a particular network interface if supplied
-		else if (options.containsKey("if"))
+		if (options.containsKey("if"))
 			d.startSearch(0, (NetworkInterface) options.get("if"), (int) timeout.toSeconds(), false);
 		else if (srps.length > 0) {
 			try {
-				final var results = d.timeout(timeout).search(srps).get();
+				final var results = d.search(srps).get();
 				results.forEach(this::onEndpointReceived);
 			}
 			catch (final ExecutionException e) {
@@ -448,13 +449,33 @@ public class Discover implements Runnable
 		}
 	}
 
+	private void joinOnResult(final CompletableFuture<Void> result) throws KNXException {
+		try {
+			result.join();
+		}
+		catch (final CompletionException e) {
+			final InetAddress server = (InetAddress) options.get("host");
+			final var ctrlEndpoint = new InetSocketAddress(server, (int) options.get("serverport"));
+			if (TimeoutException.class.isAssignableFrom(e.getCause().getClass()))
+				throw new KNXTimeoutException("timeout waiting for response from " + ctrlEndpoint);
+			if (e.getCause() instanceof KNXException)
+				throw (KNXException) e.getCause();
+		}
+	}
+
 	/**
 	 * Requests a self description using the supplied options.
 	 *
 	 * @throws KNXException on problem requesting the description
+	 * @throws InterruptedException
 	 */
-	private void description() throws KNXException
+	private void description() throws KNXException, InterruptedException
 	{
+		if (d instanceof DiscovererTcp) {
+			final var res = ((DiscovererTcp) d).description();
+			onDescriptionReceived(res);
+			return;
+		}
 		// create socket address of server to request self description from
 		final InetSocketAddress host = new InetSocketAddress((InetAddress) options.get("host"),
 				((Integer) options.get("serverport")).intValue());
@@ -471,19 +492,28 @@ public class Discover implements Runnable
 		final List<Result<SearchResponse>> res;
 		// start the search, using a particular network interface if supplied
 		if (options.containsKey("if")) {
-			d.startSearch(0, (NetworkInterface) options.get("if"), (int) timeout.toSeconds(), true);
-			res = d.getSearchResponses();
+			if (d instanceof DiscovererTcp) {
+				res = searchWithParams();
+			}
+			else {
+				d.startSearch(0, (NetworkInterface) options.get("if"), (int) timeout.toSeconds(), true);
+				res = d.getSearchResponses();
+			}
 		}
 		else
-			try {
-				res = d.timeout(timeout).search(searchParameters.toArray(Srp[]::new)).get();
-			}
-			catch (final ExecutionException e) {
-				if (e.getCause() instanceof KNXException)
-					throw (KNXException) e.getCause();
-				throw new KnxRuntimeException("waiting for search response", e);
-			}
+			res = searchWithParams();
 		new HashSet<>(res).parallelStream().forEach(this::description);
+	}
+
+	private List<Result<SearchResponse>> searchWithParams() throws InterruptedException, KNXException {
+		try {
+			return d.search(searchParameters.toArray(Srp[]::new)).get();
+		}
+		catch (final ExecutionException e) {
+			if (e.getCause() instanceof KNXException)
+				throw (KNXException) e.getCause();
+			throw new KnxRuntimeException("waiting for search response", e);
+		}
 	}
 
 	private void description(final Result<SearchResponse> r)
@@ -498,10 +528,21 @@ public class Discover implements Runnable
 		else
 			server = new InetSocketAddress(hpai.getAddress(), hpai.getPort());
 
-		final int timeout = 2;
 		try {
+			if (d instanceof DiscovererTcp) {
+				try {
+					final var description = ((DiscovererTcp) d).description();
+					onDescriptionReceived(description, new HPAI(hpai.getHostProtocol(), server));
+				}
+				catch (final InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
+				return;
+			}
+
 			final var discoverer = reuseForDescription ? d
 					: new Discoverer(r.localEndpoint().getAddress(), 0, options.containsKey("nat"), false);
+			final int timeout = 2;
 			final Result<DescriptionResponse> dr = discoverer.getDescription(server, timeout);
 			onDescriptionReceived(dr, new HPAI(hpai.getHostProtocol(), server));
 		}
