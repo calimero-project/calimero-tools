@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2015, 2021 B. Malinowsky
+    Copyright (c) 2015, 2022 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -50,10 +50,12 @@ import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
+import tuwien.auto.calimero.link.KNXLinkClosedException;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.medium.TPSettings;
-import tuwien.auto.calimero.mgmt.ManagementProcedures;
 import tuwien.auto.calimero.mgmt.ManagementProceduresImpl;
+import tuwien.auto.calimero.mgmt.PropertyAccess;
+import tuwien.auto.calimero.mgmt.PropertyClient;
 
 /**
  * ProgMode lists the current KNX devices in programming mode, and allows to set the programming mode of a device. The
@@ -108,15 +110,16 @@ public class ProgMode implements Runnable
 	 * <li><code>--medium -m</code> <i>id</i> &nbsp;KNX medium [tp1|p110|rf|knxip] (defaults to tp1)</li>
 	 * <li><code>--domain</code> <i>address</i> &nbsp;domain address on open KNX medium (PL or RF)</li>
 	 * <li><code>--knx-address -k</code> <i>KNX address</i> &nbsp;KNX device address of local endpoint</li>
+	 * <li><code>--local</code> &nbsp;use local device management</li>
 	 * </ul>
 	 * The <code>--knx-address</code> option is only necessary if an access protocol is selected that directly
 	 * communicates with the KNX network, i.e., KNX IP or TP-UART. The selected KNX individual address shall be unique
 	 * in a network, and the subnetwork address (area and line) should be set to match the network configuration.
 	 * <p>
-	 * Supported commands:
+	 * Supported commands (the device address is not needed with local device management):
 	 * <ul>
-	 * <li><code>on</code> <i>device</i> &nbsp; switch programming mode on</li>
-	 * <li><code>off</code> <i>device</i> &nbsp; switch programming mode off</li>
+	 * <li><code>on</code> <i>device address</i> &nbsp; switch programming mode on</li>
+	 * <li><code>off</code> <i>device address</i> &nbsp; switch programming mode off</li>
 	 * </ul>
 	 *
 	 * @param args command line arguments for the tool
@@ -141,16 +144,11 @@ public class ProgMode implements Runnable
 
 		Exception thrown = null;
 		boolean canceled = false;
-		try (KNXNetworkLink link = createLink(); ManagementProcedures mgmt = new ManagementProceduresImpl(link)) {
-			final String cmd = (String) options.get("command");
-			if ("status".equals(cmd)) {
-				System.out.print("Device(s) in programming mode ...");
-				System.out.flush();
-				while (true)
-					devicesInProgMode(mgmt.readAddress());
-			}
+		try {
+			if (options.containsKey("localDevMgmt"))
+				knxipServerProgMode();
 			else
-				mgmt.setProgrammingMode((IndividualAddress) options.get("device"), "on".equals(cmd));
+				progMode();
 		}
 		catch (KNXException | RuntimeException e) {
 			thrown = e;
@@ -164,12 +162,56 @@ public class ProgMode implements Runnable
 		}
 	}
 
+	private void knxipServerProgMode() throws KNXException, InterruptedException {
+		try (var devmgmt = Main.newLocalDeviceMgmtIP(options, closed -> {});
+			 var pc = new PropertyClient(devmgmt)) {
+
+			final String cmd = (String) options.get("command");
+			if ("status".equals(cmd)) {
+				final var subnetAddr = pc.getProperty(0, PropertyAccess.PID.SUBNET_ADDRESS, 1, 1);
+				final var deviceAddr = pc.getProperty(0, PropertyAccess.PID.DEVICE_ADDRESS, 1, 1);
+				final var server = new IndividualAddress(new byte[] { subnetAddr[0], deviceAddr[0] });
+
+				while (true) {
+					final var progmode = pc.getProperty(0, PropertyAccess.PID.PROGMODE, 1, 1);
+					if (progmode[0] == 1)
+						devicesInProgMode(server);
+					else
+						devicesInProgMode();
+					Thread.sleep(3000);
+				}
+			}
+			else {
+				final int progmode = "on".equals(cmd) ? 1 : 0;
+				pc.setProperty(0, PropertyAccess.PID.PROGMODE, 1, 1, (byte) progmode);
+				final var check = pc.getProperty(0, PropertyAccess.PID.PROGMODE, 1, 1);
+				out("Programming mode " + (check[0] == 1 ? "active" : "inactive"));
+			}
+		}
+	}
+
+	private void progMode() throws KNXException, InterruptedException, KNXLinkClosedException {
+		try (var link = createLink();
+			 var mgmt = new ManagementProceduresImpl(link)) {
+
+			final String cmd = (String) options.get("command");
+			if ("status".equals(cmd)) {
+				out("Device(s) in programming mode ...", false);
+				while (true)
+					devicesInProgMode(mgmt.readAddress());
+			}
+			else {
+				final var device = (IndividualAddress) options.get("device");
+				mgmt.setProgrammingMode(device, "on".equals(cmd));
+			}
+		}
+	}
+
 	protected void devicesInProgMode(final IndividualAddress... devices)
 	{
 		final String output = devices.length == 0 ? "none"
 				: new TreeSet<>(Arrays.asList(devices)).stream().map(Objects::toString).collect(Collectors.joining(", "));
-		System.out.print("\33[2K\rDevice(s) in programming mode: " + output + "\t\t");
-		System.out.flush();
+		out("\33[2K\rDevice(s) in programming mode: " + output + "\t\t", false);
 	}
 
 	/**
@@ -214,6 +256,8 @@ public class ProgMode implements Runnable
 				;
 			else if (Main.isOption(arg, "knx-address", "k"))
 				options.put("knx-address", Main.getAddress(i.next()));
+			else if (Main.isOption(arg, "local", null))
+				options.put("localDevMgmt", null);
 			else if (arg.equals("on") || arg.equals("off")) {
 				options.put("command", arg);
 				setmode = true;
@@ -231,7 +275,11 @@ public class ProgMode implements Runnable
 			throw new KNXIllegalArgumentException("no communication device/host specified");
 		if (options.containsKey("ft12") && !options.containsKey("remote"))
 			throw new KNXIllegalArgumentException("--remote option is mandatory with --ft12");
-		if (options.containsKey("command") != options.containsKey("device"))
+		if (options.containsKey("localDevMgmt")) {
+			if (options.containsKey("device"))
+				throw new KNXIllegalArgumentException("local device management does not need a KNX device address");
+		}
+		else if (options.containsKey("command") != options.containsKey("device"))
 			throw new KNXIllegalArgumentException("setting programming mode requires mode and KNX device address");
 		options.putIfAbsent("command", "status");
 		Main.setDomainAddress(options);
@@ -247,12 +295,13 @@ public class ProgMode implements Runnable
 	private static void showUsage()
 	{
 		final var joiner = new StringJoiner(sep);
-		joiner.add("Usage: " + tool + " [options] <host|port> [on|off <device address>]");
+		joiner.add("Usage: " + tool + " [options] <host|port> [on|off [<device address>]]");
 		Main.printCommonOptions(joiner);
+		joiner.add("  --local                    use local device management");
 		Main.printSecureOptions(joiner);
-		joiner.add("Commands:");
-		joiner.add("  on  <device address>    switch programming mode on");
-		joiner.add("  off <device address>    switch programming mode off");
+		joiner.add("Commands (local device management does not need a device address):");
+		joiner.add("  on  [<device address>]     switch programming mode on");
+		joiner.add("  off [<device address>]     switch programming mode off");
 		out(joiner.toString());
 	}
 
@@ -264,5 +313,14 @@ public class ProgMode implements Runnable
 		}
 		else
 			System.out.println(s);
+	}
+
+	private static void out(final CharSequence s, final boolean newline) {
+		if (newline)
+			System.out.println(s);
+		else {
+			System.out.print(s);
+			System.out.flush();
+		}
 	}
 }
