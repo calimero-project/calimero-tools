@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2020 B. Malinowsky
+    Copyright (c) 2006, 2022 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -551,22 +551,22 @@ public class IPConfig implements Runnable
 		final var joiner = new StringJoiner(sep);
 		joiner.add("Usage: " + tool + " [options] <host|port>");
 		Main.printCommonOptions(joiner);
-		joiner.add("  --local -l               local device management (default)");
-		joiner.add("  --remote -r <KNX addr>   remote property service");
+		joiner.add("  --local -l                 local device management (default)");
+		joiner.add("  --remote -r <KNX addr>     remote property service");
 		joiner.add("Options for remote property services only:");
-		joiner.add("  --connect -c             connection oriented mode");
-		joiner.add("  --authorize -a <key>     authorize key to access KNX device");
+		joiner.add("  --connect -c               connection oriented mode");
+		joiner.add("  --authorize -a <key>       authorize key to access KNX device");
 		Main.printSecureOptions(joiner);
 		joiner.add("Commands to change the IP configuration:");
-		joiner.add("  ip <address>             set the configured fixed IP address");
-		joiner.add("  subnet <address>         set the configured IP subnet mask");
-		joiner.add("  gateway <address>        set the configured IP address of the default gateway");
-		joiner.add("  multicast <address>      set the routing multicast address");
-		joiner.add("  manual                   enable manual IP assignment for current IP address");
-		joiner.add("  bootp                    enable Bootstrap Protocol IP assignment for current IP address");
-		joiner.add("  dhcp                     enable DHCP IP assignment for current IP address");
-		joiner.add("  auto                     enable automatic IP (AutoIP) assignment for current IP address")
-			  .add("                                           (address range 169.254.1.0 to 169.254.254.255)");
+		joiner.add("  ip <address>               set the configured fixed IP address");
+		joiner.add("  subnet <address>           set the configured IP subnet mask");
+		joiner.add("  gateway <address>          set the configured IP address of the default gateway");
+		joiner.add("  multicast <address>        set the routing multicast address");
+		joiner.add("  manual                     enable manual IP assignment for current IP address");
+		joiner.add("  bootp                      enable Bootstrap Protocol IP assignment for current IP address");
+		joiner.add("  dhcp                       enable DHCP IP assignment for current IP address");
+		joiner.add("  auto                       enable automatic IP (AutoIP) assignment for current IP address")
+			  .add("                                             (address range 169.254.1.0 to 169.254.254.255)");
 		out(joiner.toString());
 	}
 
