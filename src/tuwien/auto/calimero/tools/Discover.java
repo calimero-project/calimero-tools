@@ -699,6 +699,9 @@ public class Discover implements Runnable
 		sb.add("  --udp                      request UDP communication");
 		sb.add("  --version                  show tool/library version and exit");
 		sb.add("  --help -h                  show this help message");
+
+		Main.printSecureOptions(sb, false);
+
 		out(sb.toString());
 	}
 
