@@ -362,7 +362,9 @@ public class Discover implements Runnable
 	 */
 	private void search() throws KNXException, InterruptedException
 	{
-		final Srp[] srps = searchParameters.toArray(new Srp[0]);
+		final Srp[] srps = searchParameters.isEmpty() ? new Srp[]{ Srp.withDeviceDescription(DIB.DEVICE_INFO,
+				DIB.SUPP_SVC_FAMILIES, DIB.AdditionalDeviceInfo, DIB.SecureServiceFamilies, DIB.TunnelingInfo) }
+				: searchParameters.toArray(new Srp[0]);
 
 		if (d instanceof DiscovererTcp) {
 			final var result = d.search(srps).thenApply(list -> list.get(0)).thenAccept(this::onEndpointReceived);
