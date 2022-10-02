@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2021 B. Malinowsky
+    Copyright (c) 2006, 2022 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -35,6 +35,8 @@
 */
 
 package tuwien.auto.calimero.tools;
+
+import static tuwien.auto.calimero.tools.Main.tcpConnection;
 
 import java.net.InetSocketAddress;
 import java.time.LocalTime;
@@ -386,7 +388,17 @@ public class NetworkMonitor implements Runnable
 		if (options.containsKey("user")) {
 			final byte[] devAuth = (byte[]) options.getOrDefault("device-key", new byte[0]);
 			final byte[] userKey = (byte[]) options.getOrDefault("user-key", new byte[0]);
-			return KNXNetworkMonitorIP.newSecureMonitorLink(local, remote, nat, devAuth, (int) options.get("user"), userKey, medium);
+			final int user = (int) options.getOrDefault("user", 0);
+
+			if (options.containsKey("udp"))
+				return KNXNetworkMonitorIP.newSecureMonitorLink(local, remote, nat, devAuth, user, userKey, medium);
+
+			final var session = tcpConnection(local, remote).newSecureSession(user, userKey, devAuth);
+			return KNXNetworkMonitorIP.newSecureMonitorLink(session, medium);
+		}
+		if (options.containsKey("tcp")) {
+			final var c = tcpConnection(local, remote);
+			return KNXNetworkMonitorIP.newMonitorLink(c, medium);
 		}
 		return new KNXNetworkMonitorIP(local, remote, nat, medium);
 	}
