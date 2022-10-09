@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2013, 2021 B. Malinowsky
+    Copyright (c) 2013, 2022 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -122,7 +122,7 @@ public class ScanDevices implements Runnable
 	{
 		try {
 			final ScanDevices scan = new ScanDevices(args);
-			final ShutdownHandler sh = new ShutdownHandler().register();
+			final ShutdownHandler sh = new ShutdownHandler();
 			scan.run();
 			sh.unregister();
 		}

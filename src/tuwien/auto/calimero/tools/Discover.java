@@ -204,7 +204,7 @@ public class Discover implements Runnable
 	{
 		try {
 			final Discover d = new Discover(args);
-			final ShutdownHandler sh = new ShutdownHandler().register();
+			final ShutdownHandler sh = new ShutdownHandler();
 			d.run();
 			sh.unregister();
 		}

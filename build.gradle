@@ -16,8 +16,8 @@ apply plugin:'application'
 group = 'com.github.calimero'
 version = '2.6-SNAPSHOT'
 
-sourceCompatibility = 11
-targetCompatibility = 11
+sourceCompatibility = 19
+targetCompatibility = 19
 
 compileJava.options.encoding = 'UTF-8'
 compileTestJava.options.encoding = 'UTF-8'
@@ -37,6 +37,8 @@ java {
     withJavadocJar()
 }
 
+tasks.withType(JavaExec) { jvmArgs += "--enable-preview" }
+
 tasks.withType(Jar) {
 	from("${projectDir}") {
         include 'LICENSE.txt'
@@ -52,12 +54,13 @@ tasks.withType(Jar) {
 compileJava.options*.compilerArgs = [
 	'-Xlint:all',
 	'-Xlint:-try',
-	'-Xlint:-options',
+	'--enable-preview',
 ]
 
 compileTestJava.options*.compilerArgs = [
 	'-Xlint:all',
 	'-Xlint:-try',
+	'--enable-preview',
 ]
 
 sourceSets {
@@ -72,10 +75,12 @@ sourceSets {
 
 tasks.withType(Javadoc) {
     options.addStringOption("Xdoclint:-missing", '-quiet')
+    options.addBooleanOption('-enable-preview', true)
+	options.addStringOption("-release", "${targetCompatibility}")
 }
 
 dependencies {
-	api "com.github.calimero:calimero-core:${version}"
+	api "com.github.calimero:calimero-core-loom:${version}"
 	runtimeOnly "com.github.calimero:calimero-rxtx:${version}"
 	implementation 'org.slf4j:slf4j-api:1.7.36'
 	runtimeOnly 'org.slf4j:slf4j-simple:1.7.36'
@@ -97,7 +102,7 @@ publishing {
             artifactId = rootProject.name
             from components.java
             pom {
-                name = 'Calimero Tools'
+                name = 'Calimero Tools (Loom)'
                 description = 'A collection of tools for KNX network communication'
                 url = 'https://github.com/calimero-project/calimero-tools'
                 inceptionYear = '2006'

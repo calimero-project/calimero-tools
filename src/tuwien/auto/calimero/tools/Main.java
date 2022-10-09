@@ -126,10 +126,12 @@ final class Main
 	private static final Map<InetSocketAddress, TcpConnection> tcpConnectionPool = new HashMap<>();
 	private static boolean registeredTcpShutdownHook;
 
+	@SuppressWarnings("preview")
 	static synchronized TcpConnection tcpConnection(final InetSocketAddress local, final InetSocketAddress server)
 			throws KNXException {
 		if (!registeredTcpShutdownHook) {
-			Runtime.getRuntime().addShutdownHook(new Thread(Main::closeTcpConnections));
+			Runtime.getRuntime().addShutdownHook(Thread.ofVirtual().allowSetThreadLocals(false)
+					.unstarted(Main::closeTcpConnections));
 			registeredTcpShutdownHook = true;
 		}
 
@@ -670,25 +672,18 @@ final class Main
 		return DataUnitBuilder.fromHex(hex);
 	}
 
-	static final class ShutdownHandler extends Thread
-	{
-		private final Thread t = Thread.currentThread();
+	static final class ShutdownHandler {
+		private final Thread hook;
 
-		ShutdownHandler register()
-		{
-			Runtime.getRuntime().addShutdownHook(this);
-			return this;
+		@SuppressWarnings("preview")
+		ShutdownHandler() {
+			final Thread t = Thread.currentThread();
+			hook = Thread.ofVirtual().allowSetThreadLocals(false).unstarted(t::interrupt);
+			Runtime.getRuntime().addShutdownHook(hook);
 		}
 
-		void unregister()
-		{
-			Runtime.getRuntime().removeShutdownHook(this);
-		}
-
-		@Override
-		public void run()
-		{
-			t.interrupt();
+		void unregister() {
+			Runtime.getRuntime().removeShutdownHook(hook);
 		}
 	}
 

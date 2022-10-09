@@ -266,7 +266,7 @@ public class ProcComm implements Runnable
 	{
 		try {
 			final ProcComm pc = new ProcComm(args);
-			final ShutdownHandler sh = pc.new ShutdownHandler().register();
+			final ShutdownHandler sh = pc.new ShutdownHandler();
 			pc.run();
 			sh.unregister();
 		}
@@ -1087,26 +1087,20 @@ public class ProcComm implements Runnable
 		System.out.println(s);
 	}
 
-	private final class ShutdownHandler extends Thread
-	{
-		ShutdownHandler register()
-		{
-			Runtime.getRuntime().addShutdownHook(this);
-			return this;
+	private final class ShutdownHandler {
+		private final Thread hook;
+
+		@SuppressWarnings("preview")
+		ShutdownHandler() {
+			hook = Thread.ofVirtual().allowSetThreadLocals(false).unstarted(ProcComm.this::quit);
+			Runtime.getRuntime().addShutdownHook(hook);
 		}
 
-		void unregister()
-		{
+		void unregister() {
 			try {
-				Runtime.getRuntime().removeShutdownHook(this);
+				Runtime.getRuntime().removeShutdownHook(hook);
 			}
 			catch (final IllegalStateException expected) {}
-		}
-
-		@Override
-		public void run()
-		{
-			quit();
 		}
 	}
 

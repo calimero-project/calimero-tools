@@ -332,7 +332,7 @@ public class DeviceInfo implements Runnable
 	{
 		try {
 			final DeviceInfo d = new DeviceInfo(args);
-			final ShutdownHandler sh = new ShutdownHandler().register();
+			final ShutdownHandler sh = new ShutdownHandler();
 			d.run();
 			sh.unregister();
 		}

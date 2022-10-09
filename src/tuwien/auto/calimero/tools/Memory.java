@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2021, 2021 B. Malinowsky
+    Copyright (c) 2021, 2022 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -140,7 +140,7 @@ public class Memory implements Runnable {
 	public static void main(final String[] args) {
 		try {
 			final Memory d = new Memory(args);
-			final ShutdownHandler sh = new ShutdownHandler().register();
+			final ShutdownHandler sh = new ShutdownHandler();
 			d.run();
 			sh.unregister();
 		}

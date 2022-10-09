@@ -184,7 +184,7 @@ public class BaosClient implements Runnable
 	{
 		try {
 			final BaosClient baos = new BaosClient(args);
-			final var sh = new ShutdownHandler().register();
+			final var sh = new ShutdownHandler();
 			baos.run();
 			sh.unregister();
 		}

@@ -3,11 +3,11 @@
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>com.github.calimero</groupId>
-		<artifactId>calimero-parent</artifactId>
+		<artifactId>calimero-parent-loom</artifactId>
 		<version>2.6-SNAPSHOT</version>
 	</parent>
-	<artifactId>calimero-tools</artifactId>
-	<name>Calimero Tools</name>
+	<artifactId>calimero-tools-loom</artifactId>
+	<name>Calimero Tools (Loom)</name>
 	<description>A collection of tools for KNX network communication</description>
 	<scm>
 		<url>https://github.com/calimero-project/calimero-tools.git</url>
@@ -65,7 +65,7 @@
 	<dependencies>
 		<dependency>
 			<groupId>com.github.calimero</groupId>
-			<artifactId>calimero-core</artifactId>
+			<artifactId>calimero-core-loom</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 		<dependency>
