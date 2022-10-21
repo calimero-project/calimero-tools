@@ -105,6 +105,7 @@ public class Discover implements Runnable
 	private static Logger out = LogService.getLogger(Discoverer.LOG_SERVICE);
 
 	private final Discoverer d;
+	private final DiscovererTcp tcp;
 	private final Map<String, Object> options = new HashMap<>();
 	private final List<Srp> searchParameters = new ArrayList<>();
 	private final boolean reuseForDescription;
@@ -151,17 +152,22 @@ public class Discover implements Runnable
 				final int user = (int) options.getOrDefault("user", 0);
 
 				final var session = connection.newSecureSession(user, userKey, devAuth);
-				d = Discoverer.secure(session);
+				tcp = Discoverer.secure(session);
 			}
 			else
-				d = Discoverer.tcp(connection);
+				tcp = Discoverer.tcp(connection);
 			reuseForDescription = true;
+			tcp.timeout((Duration) options.get("timeout"));
+
+			d = null;
 		}
 		else {
 			d = new Discoverer(local, lp != null ? lp.intValue() : 0, options.containsKey("nat"), mcast);
 			reuseForDescription = false;
+			d.timeout((Duration) options.get("timeout"));
+
+			tcp = null;
 		}
-		d.timeout((Duration) options.get("timeout"));
 	}
 
 	/**
@@ -364,8 +370,8 @@ public class Discover implements Runnable
 	{
 		final Srp[] srps = searchParameters.toArray(new Srp[0]);
 
-		if (d instanceof DiscovererTcp) {
-			final var result = d.search(srps).thenApply(list -> list.get(0)).thenAccept(this::onEndpointReceived);
+		if (tcp != null) {
+			final var result = tcp.search(srps).thenApply(list -> list.get(0)).thenAccept(this::onEndpointReceived);
 			joinOnResult(result);
 			return;
 		}
@@ -471,8 +477,8 @@ public class Discover implements Runnable
 	 */
 	private void description() throws KNXException, InterruptedException
 	{
-		if (d instanceof DiscovererTcp) {
-			final var res = ((DiscovererTcp) d).description();
+		if (tcp != null) {
+			final var res = tcp.description();
 			onDescriptionReceived(res);
 			return;
 		}
@@ -492,28 +498,32 @@ public class Discover implements Runnable
 		final List<Result<SearchResponse>> res;
 		// start the search, using a particular network interface if supplied
 		if (options.containsKey("if")) {
-			if (d instanceof DiscovererTcp) {
-				res = searchWithParams();
+			if (tcp != null) {
+				try {
+					res = tcp.search(searchParameters.toArray(Srp[]::new)).get();
+				}
+				catch (final ExecutionException e) {
+					if (e.getCause() instanceof KNXException)
+						throw (KNXException) e.getCause();
+					throw new KnxRuntimeException("waiting for search response", e);
+				}
 			}
 			else {
 				d.startSearch(0, (NetworkInterface) options.get("if"), (int) timeout.toSeconds(), true);
 				res = d.getSearchResponses();
 			}
 		}
-		else
-			res = searchWithParams();
+		else {
+			try {
+				res = d.search(searchParameters.toArray(Srp[]::new)).get();
+			}
+			catch (final ExecutionException e) {
+				if (e.getCause() instanceof KNXException)
+					throw (KNXException) e.getCause();
+				throw new KnxRuntimeException("waiting for search response", e);
+			}
+		}
 		new HashSet<>(res).parallelStream().forEach(this::description);
-	}
-
-	private List<Result<SearchResponse>> searchWithParams() throws InterruptedException, KNXException {
-		try {
-			return d.search(searchParameters.toArray(Srp[]::new)).get();
-		}
-		catch (final ExecutionException e) {
-			if (e.getCause() instanceof KNXException)
-				throw (KNXException) e.getCause();
-			throw new KnxRuntimeException("waiting for search response", e);
-		}
 	}
 
 	private void description(final Result<SearchResponse> r)
@@ -529,9 +539,9 @@ public class Discover implements Runnable
 			server = new InetSocketAddress(hpai.getAddress(), hpai.getPort());
 
 		try {
-			if (d instanceof DiscovererTcp) {
+			if (tcp != null) {
 				try {
-					final var description = ((DiscovererTcp) d).description();
+					final var description = tcp.description();
 					onDescriptionReceived(description, new HPAI(hpai.getHostProtocol(), server));
 				}
 				catch (final InterruptedException e) {
