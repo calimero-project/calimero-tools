@@ -631,15 +631,18 @@ public class Discover implements Runnable
 			else if ("describe".equals(arg)) {
 				if (!i.hasNext())
 					throw new KNXIllegalArgumentException("specify remote host");
-				options.put("host", Main.parseHost(i.next()));
+				options.put("describe", null);
 			}
 			else if (Main.isOption(arg, "serverport", "p"))
 				options.put("serverport", Integer.decode(i.next()));
-			else if (options.containsKey("search"))
-				options.put("host", Main.parseHost(arg)); // update to unicast search with server control endpoint
+			else if (options.containsKey("search") || options.containsKey("describe"))
+				options.put("host", Main.parseHost(arg));
 			else
 				throw new KNXIllegalArgumentException("unknown option " + arg);
 		}
+
+		if (options.containsKey("describe") && !options.containsKey("host"))
+			throw new KNXIllegalArgumentException("specify remote host");
 	}
 
 	private static String nameOf(final NetworkInterface nif)
