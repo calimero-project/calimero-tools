@@ -40,6 +40,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
+import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
@@ -61,8 +64,6 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -71,6 +72,7 @@ import io.calimero.GroupAddress;
 import io.calimero.KNXFormatException;
 import io.calimero.datapoint.DatapointMap;
 import io.calimero.datapoint.StateDP;
+import io.calimero.log.LogService;
 import io.calimero.secure.KnxSecureException;
 import io.calimero.xml.KNXMLException;
 import net.lingala.zip4j.ZipFile;
@@ -191,13 +193,13 @@ public final class KnxProject {
 	public String toString() { return name(); }
 
 	private static void unzip(final Path project, final Path to) throws IOException {
-		final Logger logger = LoggerFactory.getLogger("io.calimero.tools.knxproject");
-		logger.debug("unzip project into directory {}", to);
+		final Logger logger = LogService.getLogger(MethodHandles.lookup().lookupClass());
+		logger.log(Level.DEBUG, "unzip project into directory {0}", to);
 		try (var zis = new ZipInputStream(Files.newInputStream(project))) {
 			for (var entry = zis.getNextEntry(); entry != null; entry = zis.getNextEntry()) {
 				final var target = createPath(to, entry);
 				if (!entry.isDirectory()) {
-					logger.debug("extract {}", entry.getName());
+					logger.log(Level.DEBUG, "extract {0}", entry.getName());
 					Files.copy(zis, target, StandardCopyOption.REPLACE_EXISTING);
 				}
 			}

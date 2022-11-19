@@ -37,7 +37,11 @@
 package io.calimero.tools;
 
 import static io.calimero.tools.Main.tcpConnection;
+import static java.lang.System.Logger.Level.ERROR;
+import static java.lang.System.Logger.Level.INFO;
+import static java.lang.System.Logger.Level.WARNING;
 
+import java.lang.System.Logger;
 import java.net.InetSocketAddress;
 import java.time.LocalTime;
 import java.util.Arrays;
@@ -45,8 +49,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
-
-import org.slf4j.Logger;
 
 import io.calimero.CloseEvent;
 import io.calimero.DataUnitBuilder;
@@ -120,13 +122,13 @@ public class NetworkMonitor implements Runnable
 				NetworkMonitor.this.onIndication(e);
 			}
 			catch (final RuntimeException rte) {
-				out.warn("on indication", rte);
+				out.log(WARNING, "on indication", rte);
 			}
 		}
 		@Override
 		public void linkClosed(final CloseEvent e)
 		{
-			out.info("network monitor closed (" + e.getReason() + ")");
+			out.log(INFO, "network monitor closed (" + e.getReason() + ")");
 			synchronized (NetworkMonitor.this) {
 				NetworkMonitor.this.notify();
 			}
@@ -190,7 +192,7 @@ public class NetworkMonitor implements Runnable
 			sh.unregister();
 		}
 		catch (final KNXIllegalArgumentException e) {
-			out.error("parsing options", e);
+			out.log(ERROR, "parsing options", e);
 		}
 	}
 
@@ -324,7 +326,7 @@ public class NetworkMonitor implements Runnable
 					}
 				}
 				catch (final Exception ex) {
-					out.error("decoding RF frame", ex);
+					out.log(ERROR, "decoding RF frame", ex);
 				}
 			}
 		}
@@ -341,10 +343,9 @@ public class NetworkMonitor implements Runnable
 	protected void onCompletion(final Exception thrown, final boolean canceled)
 	{
 		if (canceled)
-			out.info(tool + " stopped");
+			out.log(INFO, tool + " stopped");
 		if (thrown != null)
-			out.error(thrown.getMessage() != null ? thrown.getMessage() : thrown.getClass()
-					.getName());
+			out.log(ERROR, thrown.getMessage() != null ? thrown.getMessage() : thrown.getClass().getName());
 	}
 
 	/**

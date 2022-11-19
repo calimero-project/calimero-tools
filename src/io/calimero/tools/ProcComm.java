@@ -36,12 +36,16 @@
 
 package io.calimero.tools;
 
-import static java.util.Map.entry;
 import static io.calimero.tools.Main.setDomainAddress;
+import static java.lang.System.Logger.Level.ERROR;
+import static java.lang.System.Logger.Level.INFO;
+import static java.lang.System.Logger.Level.WARNING;
+import static java.util.Map.entry;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.System.Logger;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -59,8 +63,6 @@ import java.util.StringJoiner;
 import java.util.function.BiFunction;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import org.slf4j.Logger;
 
 import io.calimero.DataUnitBuilder;
 import io.calimero.DetachEvent;
@@ -271,7 +273,7 @@ public class ProcComm implements Runnable
 			sh.unregister();
 		}
 		catch (final Throwable t) {
-			out.error("tool options", t);
+			out.log(ERROR, "tool options", t);
 		}
 	}
 
@@ -455,7 +457,7 @@ public class ProcComm implements Runnable
 				}
 			}
 			catch (KNXException | RuntimeException ex) {
-				out.info("error parsing group event {}", sb, ex);
+				out.log(INFO, "error parsing group event {0}", sb, ex);
 			}
 		}
 		System.out.println(LocalTime.now().truncatedTo(ChronoUnit.MILLIS) + " " + sb);
@@ -480,9 +482,9 @@ public class ProcComm implements Runnable
 	protected void onCompletion(final Exception thrown, final boolean canceled)
 	{
 		if (canceled)
-			out.info("process communication was stopped");
+			out.log(INFO, "process communication was stopped");
 		if (thrown != null)
-			out.error("completed with error", thrown);
+			out.log(ERROR, "completed with error", thrown);
 	}
 
 	/**
@@ -706,7 +708,7 @@ public class ProcComm implements Runnable
 			onGroupEvent(new LteProcessEvent(pc, f.getSource(), ctrl2 & 0x0f, (GroupAddress) f.getDestination(), tpdu));
 		}
 		catch (final Exception ex) {
-			out.error("decoding LTE frame", ex);
+			out.log(ERROR, "decoding LTE frame", ex);
 		}
 	}
 
@@ -833,7 +835,7 @@ public class ProcComm implements Runnable
 				out(e.getMessage());
 			}
 			catch (KNXException | RuntimeException e) {
-				out.error("[{}] {}", line, e.toString());
+				out.log(ERROR, "[{0}] {1}", line, e.toString());
 			}
 		}
 	}
@@ -850,7 +852,7 @@ public class ProcComm implements Runnable
 			datapoints.load(r);
 		}
 		catch (final KNXMLException e) {
-			out.info("failed to load datapoint information from {}: {}", dpResource, e.getMessage());
+			out.log(INFO, "failed to load datapoint information from {0}: {1}", dpResource, e.getMessage());
 		}
 	}
 
@@ -866,7 +868,7 @@ public class ProcComm implements Runnable
 			datapoints.save(w);
 		}
 		catch (final KNXMLException e) {
-			out.warn("on saving datapoint information to " + toolDatapointsFile, e);
+			out.log(WARNING, "on saving datapoint information to " + toolDatapointsFile, e);
 		}
 	}
 

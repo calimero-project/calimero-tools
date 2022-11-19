@@ -37,10 +37,13 @@
 package io.calimero.tools;
 
 import static io.calimero.tools.Main.setDomainAddress;
+import static java.lang.System.Logger.Level.ERROR;
+import static java.lang.System.Logger.Level.INFO;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.System.Logger;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -52,8 +55,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
-
-import org.slf4j.Logger;
 
 import io.calimero.DataUnitBuilder;
 import io.calimero.FrameEvent;
@@ -183,7 +184,7 @@ public class TrafficMonitor implements Runnable {
 			sh.unregister();
 		}
 		catch (final Throwable t) {
-			out.error("tool options", t);
+			out.log(ERROR, "tool options", t);
 		}
 	}
 
@@ -254,9 +255,9 @@ public class TrafficMonitor implements Runnable {
 	 */
 	protected void onCompletion(final Exception thrown, final boolean canceled) {
 		if (canceled)
-			out.info("traffic monitor was stopped");
+			out.log(INFO, "traffic monitor was stopped");
 		if (thrown != null)
-			out.error("completed with error", thrown);
+			out.log(ERROR, "completed with error", thrown);
 	}
 
 	private String asString(final byte[] asdu, final int dptMainNumber, final String dptID) throws KNXException {
@@ -345,7 +346,7 @@ public class TrafficMonitor implements Runnable {
 					}
 				}
 				catch (KNXException | RuntimeException ex) {
-					out.info("error parsing group event {} {}", joiner, ex.toString());
+					out.log(INFO, "error parsing group event {0} {1}", joiner, ex.toString());
 				}
 			}
 		}
@@ -406,7 +407,7 @@ public class TrafficMonitor implements Runnable {
 					}
 				}
 				catch (final RuntimeException e) {
-					out.info("[{}] {}", line, e.toString());
+					out.log(INFO, "[{0}] {1}", line, e.toString());
 				}
 			}
 		}
@@ -419,7 +420,7 @@ public class TrafficMonitor implements Runnable {
 				datapoints.load(r);
 			}
 			catch (final KNXMLException e) {
-				out.info("failed to load datapoint information from {}: {}", datapointsFile, e.getMessage());
+				out.log(INFO, "failed to load datapoint information from {0}: {1}", datapointsFile, e.getMessage());
 			}
 		}
 	}

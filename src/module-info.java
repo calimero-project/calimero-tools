@@ -38,7 +38,6 @@ module io.calimero.tools {
 	requires transitive io.calimero.core;
 
 	requires java.xml;
-	requires org.slf4j;
 
 	exports io.calimero.tools;
 

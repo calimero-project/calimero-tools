@@ -36,13 +36,16 @@
 
 package io.calimero.tools;
 
+import static java.lang.System.Logger.Level.DEBUG;
+import static java.lang.System.Logger.Level.ERROR;
+import static java.lang.System.Logger.Level.INFO;
+
+import java.lang.System.Logger;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
-
-import org.slf4j.Logger;
 
 import io.calimero.DataUnitBuilder;
 import io.calimero.IndividualAddress;
@@ -145,7 +148,7 @@ public class Memory implements Runnable {
 			sh.unregister();
 		}
 		catch (final Throwable t) {
-			out.error("parsing options", t);
+			out.log(ERROR, "parsing options", t);
 		}
 	}
 
@@ -205,9 +208,9 @@ public class Memory implements Runnable {
 	 */
 	protected void onCompletion(final Exception thrown, final boolean canceled) {
 		if (canceled)
-			out.info("memory access canceled");
+			out.log(INFO, "memory access canceled");
 		if (thrown != null)
-			out.error("completed", thrown);
+			out.log(ERROR, "completed", thrown);
 	}
 
 	private void out(final byte[] data) {
@@ -224,7 +227,7 @@ public class Memory implements Runnable {
 		if (read) {
 			final int startAddr = (Integer) options.get("read");
 			final int bytes = (Integer) options.get("bytes");
-			out.debug("read {} 0x{}..0x{}", dst.getAddress(), Long.toHexString(startAddr),
+			out.log(DEBUG, "read {0} 0x{1}..0x{2}", dst.getAddress(), Long.toHexString(startAddr),
 					Long.toHexString(startAddr + bytes - 1));
 			final byte[] data = mc.readMemory(dst, startAddr, bytes);
 			onMemoryRead(data);
@@ -237,7 +240,7 @@ public class Memory implements Runnable {
 				data = new BigInteger(input).toByteArray();
 			else
 				data = DataUnitBuilder.fromHex(input);
-			out.debug("write to {} 0x{}..0x{}: {}", dst.getAddress(), Long.toHexString(startAddr),
+			out.log(DEBUG, "write to {0} 0x{1}..0x{2}: {3}", dst.getAddress(), Long.toHexString(startAddr),
 					Long.toHexString(startAddr + data.length - 1), DataUnitBuilder.toHex(data, " "));
 			mc.writeMemory(dst, startAddr, data);
 		}
