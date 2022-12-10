@@ -27,8 +27,6 @@ javadoc.options.encoding = 'UTF-8'
 mainClassName = System.getProperty("mainClass") ?: 'tuwien.auto.calimero.tools.Main'
 
 run {
-	// for passing program arguments, use -Dexec.args="..."
-	args System.getProperty("exec.args", "").split() 
 	standardInput = System.in
 }
 
