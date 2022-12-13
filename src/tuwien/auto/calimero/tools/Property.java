@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2010, 2021 B. Malinowsky
+    Copyright (c) 2010, 2022 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -85,6 +85,7 @@ import tuwien.auto.calimero.mgmt.PropertyClient.PropertyKey;
 import tuwien.auto.calimero.mgmt.PropertyClient.XmlPropertyDefinitions;
 import tuwien.auto.calimero.mgmt.RemotePropertyServiceAdapter;
 import tuwien.auto.calimero.serial.usb.UsbConnection;
+import tuwien.auto.calimero.serial.usb.UsbConnectionFactory;
 import tuwien.auto.calimero.tools.Main.PeekingIterator;
 import tuwien.auto.calimero.xml.KNXMLException;
 import tuwien.auto.calimero.xml.XmlInputFactory;
@@ -435,7 +436,7 @@ public class Property implements Runnable
 	private PropertyAdapter createUsbAdapter(final String device) throws KNXException,
 		InterruptedException
 	{
-		final UsbConnection usb = new UsbConnection(device);
+		final UsbConnection usb = UsbConnectionFactory.open(device);
 		return new LocalDeviceManagementUsb(usb, this::adapterClosed, options.containsKey("emulatewriteenable"));
 	}
 

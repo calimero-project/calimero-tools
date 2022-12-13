@@ -84,6 +84,7 @@ import tuwien.auto.calimero.mgmt.PropertyAdapter;
 import tuwien.auto.calimero.mgmt.PropertyClient;
 import tuwien.auto.calimero.mgmt.RemotePropertyServiceAdapter;
 import tuwien.auto.calimero.serial.usb.UsbConnection;
+import tuwien.auto.calimero.serial.usb.UsbConnectionFactory;
 import tuwien.auto.calimero.tools.Main.ShutdownHandler;
 
 /**
@@ -374,7 +375,7 @@ public class DeviceInfo implements Runnable
 			}
 			else if (options.containsKey("usb")) {
 				// setup for reading device info of usb interface
-				try (UsbConnection conn = new UsbConnection((String) options.get("host"));
+				try (UsbConnection conn = UsbConnectionFactory.open((String) options.get("host"));
 						PropertyAdapter adapter = new LocalDeviceManagementUsb(conn, e -> {}, false)) {
 					dd = conn.deviceDescriptor();
 					pc = new PropertyClient(adapter);
