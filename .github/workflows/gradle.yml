@@ -27,6 +27,11 @@ jobs:
       with:
         repository: calimero-project/calimero-rxtx
         path: calimero-rxtx
+    - name: Checkout calimero-usb
+      uses: actions/checkout@v2
+      with:
+        repository: calimero-project/calimero-usb
+        path: calimero-usb
     - name: Checkout calimero-tools
       uses: actions/checkout@v2
       with:
