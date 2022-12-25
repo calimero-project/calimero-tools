@@ -1,5 +1,7 @@
 plugins {
   id "com.github.ben-manes.versions" version "0.44.0"
+  id 'java-library'
+  id 'application'
   id 'maven-publish'
   id 'signing'
 }
@@ -8,10 +10,8 @@ repositories {
 	mavenLocal()
 	mavenCentral()
 	maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+	maven { url 'https://s01.oss.sonatype.org/content/repositories/snapshots' }
 }
-
-apply plugin:'java-library'
-apply plugin:'application'
 
 group = 'com.github.calimero'
 version = '2.6-SNAPSHOT'
@@ -33,6 +33,13 @@ run {
 java {
     withSourcesJar()
     withJavadocJar()
+    
+    registerFeature('serial') {
+        usingSourceSet(sourceSets.main)
+    }
+    registerFeature('usb') {
+        usingSourceSet(sourceSets.main)
+    }
 }
 
 tasks.withType(Jar) {
@@ -74,11 +81,11 @@ tasks.withType(Javadoc) {
 
 dependencies {
 	api "com.github.calimero:calimero-core:${version}"
-	runtimeOnly "com.github.calimero:calimero-rxtx:${version}"
-	runtimeOnly "io.calimero:calimero-usb:${version}"
+	implementation 'net.lingala.zip4j:zip4j:2.11.2'
 	implementation 'org.slf4j:slf4j-api:1.7.36'
 	runtimeOnly 'org.slf4j:slf4j-simple:1.7.36'
-	implementation 'net.lingala.zip4j:zip4j:2.11.2'
+	serialImplementation "com.github.calimero:calimero-rxtx:${version}"
+	usbImplementation "io.calimero:calimero-usb:${version}"
 }
 
 jar {
@@ -113,7 +120,7 @@ publishing {
                     }
                 }
                 scm {
-                    connection = 'scm:git:git://github.com:calimero-project/calimero-tools.git'
+                    connection = 'scm:git:git://github.com/calimero-project/calimero-tools.git'
                     url = 'https://github.com/calimero-project/calimero-tools.git'
                 }
             }
