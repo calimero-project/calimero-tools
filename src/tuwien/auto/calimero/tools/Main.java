@@ -411,14 +411,9 @@ final class Main
 		final KNXMediumSettings medium = (KNXMediumSettings) options.get("medium");
 
 		// check for FT1.2 network link
-		if (options.containsKey("ft12")) {
-			try {
-				return new KNXNetworkLinkFT12(Integer.parseInt(host), medium);
-			}
-			catch (final NumberFormatException e) {
-				return new KNXNetworkLinkFT12(host, medium);
-			}
-		}
+		if (options.containsKey("ft12"))
+			return new KNXNetworkLinkFT12(host, medium);
+
 		// check for FT1.2 cEMI network link
 		if (options.containsKey("ft12-cemi"))
 			return KNXNetworkLinkFT12.newCemiLink(host, medium);

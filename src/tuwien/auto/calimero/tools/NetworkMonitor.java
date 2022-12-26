@@ -359,14 +359,9 @@ public class NetworkMonitor implements Runnable
 		final String host = (String) options.get("host");
 		final KNXMediumSettings medium = (KNXMediumSettings) options.get("medium");
 		// check for FT1.2 monitor link
-		if (options.containsKey("ft12")) {
-			try {
-				return new KNXNetworkMonitorFT12(Integer.parseInt(host), medium);
-			}
-			catch (final NumberFormatException e) {
-				return new KNXNetworkMonitorFT12(host, medium);
-			}
-		}
+		if (options.containsKey("ft12"))
+			return new KNXNetworkMonitorFT12(host, medium);
+
 		if (options.containsKey("ft12-cemi"))
 			return KNXNetworkMonitorFT12.newCemiMonitor(host, medium);
 
