@@ -73,7 +73,7 @@ import io.calimero.tools.Main.ShutdownHandler;
 public class Memory implements Runnable {
 	private static final String tool = "Memory";
 
-	private static Logger out = LogService.getLogger("calimero.tools");
+	private static Logger out = LogService.getLogger("io.calimero.tools");
 
 	private ManagementClient mc;
 	private Destination dst;

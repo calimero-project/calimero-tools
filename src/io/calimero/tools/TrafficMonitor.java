@@ -107,7 +107,7 @@ import io.calimero.xml.XmlReader;
  */
 public class TrafficMonitor implements Runnable {
 	private static final String tool = MethodHandles.lookup().lookupClass().getSimpleName();
-	private static final Logger out = LogService.getLogger("calimero.tools." + tool);
+	private static final Logger out = LogService.getLogger("io.calimero.tools." + tool);
 
 
 	private final Map<String, Object> options = new HashMap<>();

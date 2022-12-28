@@ -83,7 +83,7 @@ public class ScanDevices implements Runnable
 	private static final String tool = "ScanDevices";
 	private static final String sep = System.getProperty("line.separator");
 
-	private static Logger out = LoggerFactory.getLogger("calimero.tools");
+	private static Logger out = LoggerFactory.getLogger("io.calimero.tools");
 
 	private final Map<String, Object> options = new HashMap<>();
 

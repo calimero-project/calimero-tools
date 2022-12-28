@@ -159,7 +159,7 @@ public class PropClient implements Runnable
 	 */
 	public static void main(final String[] args)
 	{
-		Property.out = LogService.getLogger("calimero.tools");
+		Property.out = LogService.getLogger("io.calimero.tools");
 		try {
 			final PropClient pc = new PropClient(args);
 			pc.run();

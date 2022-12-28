@@ -257,7 +257,7 @@ public class DeviceInfo implements Runnable
 	// maps object type to object indices in device
 	private final Map<Integer, List<Integer>> ifObjects = new HashMap<>();
 
-	private static Logger out = LogService.getLogger("calimero.tools");
+	private static Logger out = LogService.getLogger("io.calimero.tools");
 
 
 	private ManagementClient mc;

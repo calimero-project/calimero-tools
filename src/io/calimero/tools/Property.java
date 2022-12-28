@@ -113,7 +113,7 @@ public class Property implements Runnable
 	private static final String tool = "Property";
 	private static final String sep = System.getProperty("line.separator");
 
-	static Logger out = LoggerFactory.getLogger("calimero.tools");
+	static Logger out = LoggerFactory.getLogger("io.calimero.tools");
 
 	/** Contains tool options after parsing command line. */
 	protected final Map<String, Object> options = new HashMap<>();

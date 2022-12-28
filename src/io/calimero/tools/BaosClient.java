@@ -102,7 +102,7 @@ import io.calimero.tools.Main.ShutdownHandler;
 public class BaosClient implements Runnable
 {
 	private static final String tool = MethodHandles.lookup().lookupClass().getSimpleName();
-	private static final Logger out = LogService.getLogger("calimero.tools." + tool);
+	private static final Logger out = LogService.getLogger("io.calimero.tools." + tool);
 
 	private static final Duration defaultTimeout = Duration.ofSeconds(2);
 

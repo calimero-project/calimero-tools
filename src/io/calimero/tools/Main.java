@@ -431,7 +431,7 @@ final class Main
 		if (options.containsKey("tpuart")) {
 			final var link = new KNXNetworkLinkTpuart(host, medium, Collections.emptyList());
 			if (device == null)
-				LoggerFactory.getLogger("calimero.tools").info("TP-UART sends without assigned KNX address (--knx-address)");
+				LoggerFactory.getLogger("io.calimero.tools").info("TP-UART sends without assigned KNX address (--knx-address)");
 			return link;
 		}
 

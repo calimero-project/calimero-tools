@@ -163,7 +163,7 @@ public class ProcComm implements Runnable
 	private static final String sep = System.getProperty("line.separator");
 	private static final String toolDatapointsFile = "." + tool.toLowerCase() + "_dplist.xml";
 
-	private static final Logger out = LogService.getLogger("calimero.tools." + tool);
+	private static final Logger out = LogService.getLogger("io.calimero.tools." + tool);
 
 	private KNXNetworkLink link;
 
