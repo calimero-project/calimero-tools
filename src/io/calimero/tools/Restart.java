@@ -34,7 +34,7 @@
     version.
 */
 
-package tuwien.auto.calimero.tools;
+package io.calimero.tools;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -44,16 +44,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
 
-import tuwien.auto.calimero.IndividualAddress;
-import tuwien.auto.calimero.KNXException;
-import tuwien.auto.calimero.KNXFormatException;
-import tuwien.auto.calimero.KNXIllegalArgumentException;
-import tuwien.auto.calimero.KNXTimeoutException;
-import tuwien.auto.calimero.knxnetip.KNXConnectionClosedException;
-import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
-import tuwien.auto.calimero.link.medium.TPSettings;
-import tuwien.auto.calimero.mgmt.Destination;
-import tuwien.auto.calimero.mgmt.ManagementClientImpl;
+import io.calimero.IndividualAddress;
+import io.calimero.KNXException;
+import io.calimero.KNXFormatException;
+import io.calimero.KNXIllegalArgumentException;
+import io.calimero.KNXTimeoutException;
+import io.calimero.knxnetip.KNXConnectionClosedException;
+import io.calimero.knxnetip.KNXnetIPConnection;
+import io.calimero.link.medium.TPSettings;
+import io.calimero.mgmt.Destination;
+import io.calimero.mgmt.ManagementClientImpl;
 
 /**
  * Restart performs a basic restart or master reset of a KNX interface or KNX device. The tool supports network access

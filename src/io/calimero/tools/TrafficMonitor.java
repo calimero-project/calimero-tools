@@ -34,9 +34,9 @@
     version.
 */
 
-package tuwien.auto.calimero.tools;
+package io.calimero.tools;
 
-import static tuwien.auto.calimero.tools.Main.setDomainAddress;
+import static io.calimero.tools.Main.setDomainAddress;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -55,40 +55,40 @@ import java.util.StringJoiner;
 
 import org.slf4j.Logger;
 
-import tuwien.auto.calimero.DataUnitBuilder;
-import tuwien.auto.calimero.FrameEvent;
-import tuwien.auto.calimero.GroupAddress;
-import tuwien.auto.calimero.IndividualAddress;
-import tuwien.auto.calimero.KNXAddress;
-import tuwien.auto.calimero.KNXException;
-import tuwien.auto.calimero.KNXFormatException;
-import tuwien.auto.calimero.KNXIllegalArgumentException;
-import tuwien.auto.calimero.KnxRuntimeException;
-import tuwien.auto.calimero.SerialNumber;
-import tuwien.auto.calimero.cemi.CEMILData;
-import tuwien.auto.calimero.cemi.CEMILDataEx;
-import tuwien.auto.calimero.datapoint.Datapoint;
-import tuwien.auto.calimero.datapoint.DatapointMap;
-import tuwien.auto.calimero.datapoint.DatapointModel;
-import tuwien.auto.calimero.datapoint.StateDP;
-import tuwien.auto.calimero.dptxlator.DPTXlator;
-import tuwien.auto.calimero.dptxlator.TranslatorTypes;
-import tuwien.auto.calimero.dptxlator.TranslatorTypes.MainType;
-import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
-import tuwien.auto.calimero.knxnetip.LostMessageEvent;
-import tuwien.auto.calimero.knxnetip.RoutingBusyEvent;
-import tuwien.auto.calimero.knxnetip.servicetype.TunnelingFeature;
-import tuwien.auto.calimero.link.KNXNetworkLink;
-import tuwien.auto.calimero.link.LinkEvent;
-import tuwien.auto.calimero.link.NetworkLinkListener;
-import tuwien.auto.calimero.link.medium.KNXMediumSettings;
-import tuwien.auto.calimero.link.medium.RFSettings;
-import tuwien.auto.calimero.link.medium.TPSettings;
-import tuwien.auto.calimero.log.LogService;
-import tuwien.auto.calimero.tools.Main.ShutdownHandler;
-import tuwien.auto.calimero.xml.KNXMLException;
-import tuwien.auto.calimero.xml.XmlInputFactory;
-import tuwien.auto.calimero.xml.XmlReader;
+import io.calimero.DataUnitBuilder;
+import io.calimero.FrameEvent;
+import io.calimero.GroupAddress;
+import io.calimero.IndividualAddress;
+import io.calimero.KNXAddress;
+import io.calimero.KNXException;
+import io.calimero.KNXFormatException;
+import io.calimero.KNXIllegalArgumentException;
+import io.calimero.KnxRuntimeException;
+import io.calimero.SerialNumber;
+import io.calimero.cemi.CEMILData;
+import io.calimero.cemi.CEMILDataEx;
+import io.calimero.datapoint.Datapoint;
+import io.calimero.datapoint.DatapointMap;
+import io.calimero.datapoint.DatapointModel;
+import io.calimero.datapoint.StateDP;
+import io.calimero.dptxlator.DPTXlator;
+import io.calimero.dptxlator.TranslatorTypes;
+import io.calimero.dptxlator.TranslatorTypes.MainType;
+import io.calimero.knxnetip.KNXnetIPConnection;
+import io.calimero.knxnetip.LostMessageEvent;
+import io.calimero.knxnetip.RoutingBusyEvent;
+import io.calimero.knxnetip.servicetype.TunnelingFeature;
+import io.calimero.link.KNXNetworkLink;
+import io.calimero.link.LinkEvent;
+import io.calimero.link.NetworkLinkListener;
+import io.calimero.link.medium.KNXMediumSettings;
+import io.calimero.link.medium.RFSettings;
+import io.calimero.link.medium.TPSettings;
+import io.calimero.log.LogService;
+import io.calimero.tools.Main.ShutdownHandler;
+import io.calimero.xml.KNXMLException;
+import io.calimero.xml.XmlInputFactory;
+import io.calimero.xml.XmlReader;
 
 /**
  * A tool for showing KNX network traffic &amp; link status information.

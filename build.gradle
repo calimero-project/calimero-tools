@@ -13,7 +13,7 @@ repositories {
 	maven { url 'https://s01.oss.sonatype.org/content/repositories/snapshots' }
 }
 
-group = 'com.github.calimero'
+group = 'io.calimero'
 version = '2.6-SNAPSHOT'
 
 sourceCompatibility = 11
@@ -24,7 +24,7 @@ compileTestJava.options.encoding = 'UTF-8'
 javadoc.options.encoding = 'UTF-8'
 
 
-mainClassName = System.getProperty("mainClass") ?: 'tuwien.auto.calimero.tools.Main'
+mainClassName = System.getProperty("mainClass") ?: 'io.calimero.tools.Main'
 
 run {
 	standardInput = System.in
@@ -80,11 +80,11 @@ tasks.withType(Javadoc) {
 }
 
 dependencies {
-	api "com.github.calimero:calimero-core:${version}"
+	api "io.calimero:calimero-core:${version}"
 	implementation 'net.lingala.zip4j:zip4j:2.11.2'
 	implementation 'org.slf4j:slf4j-api:1.7.36'
 	runtimeOnly 'org.slf4j:slf4j-simple:1.7.36'
-	serialImplementation "com.github.calimero:calimero-rxtx:${version}"
+	serialImplementation "io.calimero:calimero-rxtx:${version}"
 	usbImplementation "io.calimero:calimero-usb:${version}"
 }
 

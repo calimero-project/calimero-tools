@@ -34,7 +34,7 @@
     version.
 */
 
-package tuwien.auto.calimero.tools;
+package io.calimero.tools;
 
 import java.io.ByteArrayOutputStream;
 import java.net.InetAddress;
@@ -57,35 +57,35 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 
-import tuwien.auto.calimero.DataUnitBuilder;
-import tuwien.auto.calimero.DeviceDescriptor;
-import tuwien.auto.calimero.DeviceDescriptor.DD0;
-import tuwien.auto.calimero.GroupAddress;
-import tuwien.auto.calimero.IndividualAddress;
-import tuwien.auto.calimero.KNXAddress;
-import tuwien.auto.calimero.KNXException;
-import tuwien.auto.calimero.KNXFormatException;
-import tuwien.auto.calimero.KNXIllegalArgumentException;
-import tuwien.auto.calimero.KNXRemoteException;
-import tuwien.auto.calimero.dptxlator.DPTXlatorBoolean;
-import tuwien.auto.calimero.dptxlator.DptXlator16BitSet;
-import tuwien.auto.calimero.dptxlator.TranslatorTypes;
-import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
-import tuwien.auto.calimero.link.KNXLinkClosedException;
-import tuwien.auto.calimero.link.KNXNetworkLink;
-import tuwien.auto.calimero.link.medium.TPSettings;
-import tuwien.auto.calimero.log.LogService;
-import tuwien.auto.calimero.mgmt.Destination;
-import tuwien.auto.calimero.mgmt.LocalDeviceManagementUsb;
-import tuwien.auto.calimero.mgmt.ManagementClient;
-import tuwien.auto.calimero.mgmt.PropertyAccess;
-import tuwien.auto.calimero.mgmt.PropertyAccess.PID;
-import tuwien.auto.calimero.mgmt.PropertyAdapter;
-import tuwien.auto.calimero.mgmt.PropertyClient;
-import tuwien.auto.calimero.mgmt.RemotePropertyServiceAdapter;
-import tuwien.auto.calimero.serial.usb.UsbConnection;
-import tuwien.auto.calimero.serial.usb.UsbConnectionFactory;
-import tuwien.auto.calimero.tools.Main.ShutdownHandler;
+import io.calimero.DataUnitBuilder;
+import io.calimero.DeviceDescriptor;
+import io.calimero.DeviceDescriptor.DD0;
+import io.calimero.GroupAddress;
+import io.calimero.IndividualAddress;
+import io.calimero.KNXAddress;
+import io.calimero.KNXException;
+import io.calimero.KNXFormatException;
+import io.calimero.KNXIllegalArgumentException;
+import io.calimero.KNXRemoteException;
+import io.calimero.dptxlator.DPTXlatorBoolean;
+import io.calimero.dptxlator.DptXlator16BitSet;
+import io.calimero.dptxlator.TranslatorTypes;
+import io.calimero.knxnetip.KNXnetIPConnection;
+import io.calimero.link.KNXLinkClosedException;
+import io.calimero.link.KNXNetworkLink;
+import io.calimero.link.medium.TPSettings;
+import io.calimero.log.LogService;
+import io.calimero.mgmt.Destination;
+import io.calimero.mgmt.LocalDeviceManagementUsb;
+import io.calimero.mgmt.ManagementClient;
+import io.calimero.mgmt.PropertyAccess;
+import io.calimero.mgmt.PropertyAccess.PID;
+import io.calimero.mgmt.PropertyAdapter;
+import io.calimero.mgmt.PropertyClient;
+import io.calimero.mgmt.RemotePropertyServiceAdapter;
+import io.calimero.serial.usb.UsbConnection;
+import io.calimero.serial.usb.UsbConnectionFactory;
+import io.calimero.tools.Main.ShutdownHandler;
 
 /**
  * A tool for Calimero showing device information of a device in a KNX network.

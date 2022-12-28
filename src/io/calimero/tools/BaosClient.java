@@ -34,7 +34,7 @@
     version.
 */
 
-package tuwien.auto.calimero.tools;
+package io.calimero.tools;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -67,33 +67,33 @@ import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 
-import tuwien.auto.calimero.CloseEvent;
-import tuwien.auto.calimero.DataUnitBuilder;
-import tuwien.auto.calimero.KNXException;
-import tuwien.auto.calimero.KNXFormatException;
-import tuwien.auto.calimero.KNXIllegalArgumentException;
-import tuwien.auto.calimero.KNXTimeoutException;
-import tuwien.auto.calimero.KnxRuntimeException;
-import tuwien.auto.calimero.baos.BaosLink;
-import tuwien.auto.calimero.baos.BaosLinkAdapter;
-import tuwien.auto.calimero.baos.BaosService;
-import tuwien.auto.calimero.baos.BaosService.DatapointCommand;
-import tuwien.auto.calimero.baos.BaosService.ErrorCode;
-import tuwien.auto.calimero.baos.BaosService.HistoryCommand;
-import tuwien.auto.calimero.baos.BaosService.Item;
-import tuwien.auto.calimero.baos.BaosService.Property;
-import tuwien.auto.calimero.baos.BaosService.Timer;
-import tuwien.auto.calimero.baos.BaosService.ValueFilter;
-import tuwien.auto.calimero.baos.ip.BaosLinkIp;
-import tuwien.auto.calimero.dptxlator.DPT;
-import tuwien.auto.calimero.dptxlator.DPTXlator;
-import tuwien.auto.calimero.dptxlator.TranslatorTypes;
-import tuwien.auto.calimero.link.KNXNetworkLink;
-import tuwien.auto.calimero.link.LinkEvent;
-import tuwien.auto.calimero.link.NetworkLinkListener;
-import tuwien.auto.calimero.link.medium.TPSettings;
-import tuwien.auto.calimero.log.LogService;
-import tuwien.auto.calimero.tools.Main.ShutdownHandler;
+import io.calimero.CloseEvent;
+import io.calimero.DataUnitBuilder;
+import io.calimero.KNXException;
+import io.calimero.KNXFormatException;
+import io.calimero.KNXIllegalArgumentException;
+import io.calimero.KNXTimeoutException;
+import io.calimero.KnxRuntimeException;
+import io.calimero.baos.BaosLink;
+import io.calimero.baos.BaosLinkAdapter;
+import io.calimero.baos.BaosService;
+import io.calimero.baos.BaosService.DatapointCommand;
+import io.calimero.baos.BaosService.ErrorCode;
+import io.calimero.baos.BaosService.HistoryCommand;
+import io.calimero.baos.BaosService.Item;
+import io.calimero.baos.BaosService.Property;
+import io.calimero.baos.BaosService.Timer;
+import io.calimero.baos.BaosService.ValueFilter;
+import io.calimero.baos.ip.BaosLinkIp;
+import io.calimero.dptxlator.DPT;
+import io.calimero.dptxlator.DPTXlator;
+import io.calimero.dptxlator.TranslatorTypes;
+import io.calimero.link.KNXNetworkLink;
+import io.calimero.link.LinkEvent;
+import io.calimero.link.NetworkLinkListener;
+import io.calimero.link.medium.TPSettings;
+import io.calimero.log.LogService;
+import io.calimero.tools.Main.ShutdownHandler;
 
 /**
  * A tool for Calimero providing KNX BAOS (Bus Access and Object Server) communication.

@@ -34,7 +34,7 @@
     version.
 */
 
-package tuwien.auto.calimero.tools;
+package io.calimero.tools;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -42,10 +42,10 @@ import java.io.InputStreamReader;
 import java.io.InterruptedIOException;
 import java.nio.charset.Charset;
 
-import tuwien.auto.calimero.KNXIllegalArgumentException;
-import tuwien.auto.calimero.log.LogService;
-import tuwien.auto.calimero.mgmt.PropertyAdapter;
-import tuwien.auto.calimero.mgmt.PropertyClient;
+import io.calimero.KNXIllegalArgumentException;
+import io.calimero.log.LogService;
+import io.calimero.mgmt.PropertyAdapter;
+import io.calimero.mgmt.PropertyClient;
 
 /**
  * A tool for Calimero showing features of the {@link PropertyClient} used for KNX property access.
@@ -65,7 +65,7 @@ import tuwien.auto.calimero.mgmt.PropertyClient;
  */
 public class PropClient implements Runnable
 {
-	class PropertyEx extends tuwien.auto.calimero.tools.Property
+	class PropertyEx extends io.calimero.tools.Property
 	{
 		PropertyEx(final String[] args)
 		{

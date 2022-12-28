@@ -2,7 +2,7 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
-		<groupId>com.github.calimero</groupId>
+		<groupId>io.calimero</groupId>
 		<artifactId>calimero-parent</artifactId>
 		<version>2.6-SNAPSHOT</version>
 	</parent>
@@ -26,7 +26,7 @@
 		</developer>
 	</developers>
 	<properties>
-		<exec.mainClass>tuwien.auto.calimero.tools.Main</exec.mainClass>
+		<exec.mainClass>io.calimero.tools.Main</exec.mainClass>
 	</properties>
 	<build>
 		<plugins>
@@ -37,7 +37,7 @@
 					<archive>
 						<manifest>
 							<addClasspath>true</addClasspath>
-							<mainClass>tuwien.auto.calimero.tools.Main</mainClass>
+							<mainClass>io.calimero.tools.Main</mainClass>
 						</manifest>
 					</archive>
 				</configuration>
@@ -64,12 +64,12 @@
 	</build>
 	<dependencies>
 		<dependency>
-			<groupId>com.github.calimero</groupId>
+			<groupId>io.calimero</groupId>
 			<artifactId>calimero-core</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>com.github.calimero</groupId>
+			<groupId>io.calimero</groupId>
 			<artifactId>calimero-rxtx</artifactId>
 			<version>${project.version}</version>
 			<scope>runtime</scope>

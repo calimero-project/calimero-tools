@@ -34,9 +34,9 @@
     version.
 */
 
-package tuwien.auto.calimero.tools;
+package io.calimero.tools;
 
-import static tuwien.auto.calimero.tools.Main.setDomainAddress;
+import static io.calimero.tools.Main.setDomainAddress;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -50,18 +50,18 @@ import java.util.StringJoiner;
 
 import org.slf4j.Logger;
 
-import tuwien.auto.calimero.IndividualAddress;
-import tuwien.auto.calimero.KNXException;
-import tuwien.auto.calimero.KNXIllegalArgumentException;
-import tuwien.auto.calimero.KNXRemoteException;
-import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
-import tuwien.auto.calimero.link.KNXNetworkLink;
-import tuwien.auto.calimero.link.medium.TPSettings;
-import tuwien.auto.calimero.log.LogService;
-import tuwien.auto.calimero.mgmt.PropertyAccess;
-import tuwien.auto.calimero.mgmt.PropertyAdapter;
-import tuwien.auto.calimero.mgmt.PropertyClient;
-import tuwien.auto.calimero.mgmt.RemotePropertyServiceAdapter;
+import io.calimero.IndividualAddress;
+import io.calimero.KNXException;
+import io.calimero.KNXIllegalArgumentException;
+import io.calimero.KNXRemoteException;
+import io.calimero.knxnetip.KNXnetIPConnection;
+import io.calimero.link.KNXNetworkLink;
+import io.calimero.link.medium.TPSettings;
+import io.calimero.log.LogService;
+import io.calimero.mgmt.PropertyAccess;
+import io.calimero.mgmt.PropertyAdapter;
+import io.calimero.mgmt.PropertyClient;
+import io.calimero.mgmt.RemotePropertyServiceAdapter;
 
 /**
  * A tool for Calimero to read/set the IP configuration of a KNXnet/IP server using KNX properties.

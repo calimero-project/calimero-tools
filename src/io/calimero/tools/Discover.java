@@ -34,7 +34,7 @@
     version.
 */
 
-package tuwien.auto.calimero.tools;
+package io.calimero.tools;
 
 import java.io.IOException;
 import java.net.Inet4Address;
@@ -59,24 +59,24 @@ import java.util.concurrent.TimeoutException;
 
 import org.slf4j.Logger;
 
-import tuwien.auto.calimero.KNXException;
-import tuwien.auto.calimero.KNXIllegalArgumentException;
-import tuwien.auto.calimero.KNXTimeoutException;
-import tuwien.auto.calimero.KnxRuntimeException;
-import tuwien.auto.calimero.knxnetip.Discoverer;
-import tuwien.auto.calimero.knxnetip.Discoverer.Result;
-import tuwien.auto.calimero.knxnetip.DiscovererTcp;
-import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
-import tuwien.auto.calimero.knxnetip.servicetype.DescriptionResponse;
-import tuwien.auto.calimero.knxnetip.servicetype.SearchResponse;
-import tuwien.auto.calimero.knxnetip.util.DIB;
-import tuwien.auto.calimero.knxnetip.util.DeviceDIB;
-import tuwien.auto.calimero.knxnetip.util.HPAI;
-import tuwien.auto.calimero.knxnetip.util.ServiceFamiliesDIB;
-import tuwien.auto.calimero.knxnetip.util.ServiceFamiliesDIB.ServiceFamily;
-import tuwien.auto.calimero.knxnetip.util.Srp;
-import tuwien.auto.calimero.log.LogService;
-import tuwien.auto.calimero.tools.Main.ShutdownHandler;
+import io.calimero.KNXException;
+import io.calimero.KNXIllegalArgumentException;
+import io.calimero.KNXTimeoutException;
+import io.calimero.KnxRuntimeException;
+import io.calimero.knxnetip.Discoverer;
+import io.calimero.knxnetip.Discoverer.Result;
+import io.calimero.knxnetip.DiscovererTcp;
+import io.calimero.knxnetip.KNXnetIPConnection;
+import io.calimero.knxnetip.servicetype.DescriptionResponse;
+import io.calimero.knxnetip.servicetype.SearchResponse;
+import io.calimero.knxnetip.util.DIB;
+import io.calimero.knxnetip.util.DeviceDIB;
+import io.calimero.knxnetip.util.HPAI;
+import io.calimero.knxnetip.util.ServiceFamiliesDIB;
+import io.calimero.knxnetip.util.ServiceFamiliesDIB.ServiceFamily;
+import io.calimero.knxnetip.util.Srp;
+import io.calimero.log.LogService;
+import io.calimero.tools.Main.ShutdownHandler;
 
 /**
  * A tool for Calimero showing the KNXnet/IP discovery and self description feature.

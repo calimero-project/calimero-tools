@@ -34,7 +34,7 @@
     version.
 */
 
-package tuwien.auto.calimero.tools;
+package io.calimero.tools;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -63,32 +63,32 @@ import java.util.function.Function;
 
 import org.slf4j.LoggerFactory;
 
-import tuwien.auto.calimero.CloseEvent;
-import tuwien.auto.calimero.DataUnitBuilder;
-import tuwien.auto.calimero.IndividualAddress;
-import tuwien.auto.calimero.KNXException;
-import tuwien.auto.calimero.KNXFormatException;
-import tuwien.auto.calimero.KNXIllegalArgumentException;
-import tuwien.auto.calimero.Settings;
-import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
-import tuwien.auto.calimero.knxnetip.SecureConnection;
-import tuwien.auto.calimero.knxnetip.TcpConnection;
-import tuwien.auto.calimero.link.Connector;
-import tuwien.auto.calimero.link.KNXNetworkLink;
-import tuwien.auto.calimero.link.KNXNetworkLinkFT12;
-import tuwien.auto.calimero.link.KNXNetworkLinkIP;
-import tuwien.auto.calimero.link.KNXNetworkLinkTpuart;
-import tuwien.auto.calimero.link.KNXNetworkLinkUsb;
-import tuwien.auto.calimero.link.LinkEvent;
-import tuwien.auto.calimero.link.NetworkLinkListener;
-import tuwien.auto.calimero.link.medium.KNXMediumSettings;
-import tuwien.auto.calimero.link.medium.PLSettings;
-import tuwien.auto.calimero.link.medium.RFSettings;
-import tuwien.auto.calimero.mgmt.LocalDeviceManagementIp;
-import tuwien.auto.calimero.secure.Keyring;
-import tuwien.auto.calimero.secure.Keyring.Interface;
-import tuwien.auto.calimero.secure.Security;
-import tuwien.auto.calimero.serial.ConnectionStatus;
+import io.calimero.CloseEvent;
+import io.calimero.DataUnitBuilder;
+import io.calimero.IndividualAddress;
+import io.calimero.KNXException;
+import io.calimero.KNXFormatException;
+import io.calimero.KNXIllegalArgumentException;
+import io.calimero.Settings;
+import io.calimero.knxnetip.KNXnetIPConnection;
+import io.calimero.knxnetip.SecureConnection;
+import io.calimero.knxnetip.TcpConnection;
+import io.calimero.link.Connector;
+import io.calimero.link.KNXNetworkLink;
+import io.calimero.link.KNXNetworkLinkFT12;
+import io.calimero.link.KNXNetworkLinkIP;
+import io.calimero.link.KNXNetworkLinkTpuart;
+import io.calimero.link.KNXNetworkLinkUsb;
+import io.calimero.link.LinkEvent;
+import io.calimero.link.NetworkLinkListener;
+import io.calimero.link.medium.KNXMediumSettings;
+import io.calimero.link.medium.PLSettings;
+import io.calimero.link.medium.RFSettings;
+import io.calimero.mgmt.LocalDeviceManagementIp;
+import io.calimero.secure.Keyring;
+import io.calimero.secure.Keyring.Interface;
+import io.calimero.secure.Security;
+import io.calimero.serial.ConnectionStatus;
 
 /**
  * @author B. Malinowsky

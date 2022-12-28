@@ -17,7 +17,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-package tuwien.auto.calimero.tools;
+package io.calimero.tools;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -27,16 +27,16 @@ import java.nio.file.Path;
 import java.util.Optional;
 import java.util.StringJoiner;
 
-import tuwien.auto.calimero.GroupAddress;
-import tuwien.auto.calimero.GroupAddress.Presentation;
-import tuwien.auto.calimero.KNXFormatException;
-import tuwien.auto.calimero.datapoint.DatapointMap;
-import tuwien.auto.calimero.datapoint.StateDP;
-import tuwien.auto.calimero.xml.KNXMLException;
-import tuwien.auto.calimero.xml.XmlInputFactory;
-import tuwien.auto.calimero.xml.XmlOutputFactory;
-import tuwien.auto.calimero.xml.XmlReader;
-import tuwien.auto.calimero.xml.XmlWriter;
+import io.calimero.GroupAddress;
+import io.calimero.GroupAddress.Presentation;
+import io.calimero.KNXFormatException;
+import io.calimero.datapoint.DatapointMap;
+import io.calimero.datapoint.StateDP;
+import io.calimero.xml.KNXMLException;
+import io.calimero.xml.XmlInputFactory;
+import io.calimero.xml.XmlOutputFactory;
+import io.calimero.xml.XmlReader;
+import io.calimero.xml.XmlWriter;
 
 /**
  * Imports datapoint information from a KNX project (.knxproj) or group addresses file (in XML or CSV format) and writes

@@ -83,7 +83,7 @@ Run a command with option `--help` to show the help message for usage
 
 The equivalent of the above command using explicit invocation would be
 
-	mvn exec:java -Dexec.mainClass=tuwien.auto.calimero.tools.ProcComm -Dexec.args="--help"
+	mvn exec:java -Dexec.mainClass=io.calimero.tools.ProcComm -Dexec.args="--help"
 
 **Discover KNXnet/IP devices**
 
@@ -92,7 +92,7 @@ The equivalent of the above command using explicit invocation would be
 $ mvn exec:java -Dexec.args=discover
 
 # Variant which specifically refers to the tool class
-$ mvn exec:java -Dexec.mainClass=tuwien.auto.calimero.tools.Discover -Dexec.args=--search
+$ mvn exec:java -Dexec.mainClass=io.calimero.tools.Discover -Dexec.args=--search
 ~~~
 
 **Process Communication**
@@ -179,9 +179,9 @@ With Gradle installed, copy the following snippet into a file named *build.gradl
 ```gradle
 plugins { id 'application' }
 repositories { mavenCentral() }
-mainClassName = "tuwien.auto.calimero.tools.Main"
+mainClassName = "io.calimero.tools.Main"
 dependencies {
-  runtimeOnly group: 'com.github.calimero', name: 'calimero-tools', version: '2.6-SNAPSHOT'
+  runtimeOnly group: 'io.calimero', name: 'calimero-tools', version: '2.6-SNAPSHOT'
 }
 ```
 

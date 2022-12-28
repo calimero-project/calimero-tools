@@ -34,7 +34,7 @@
     version.
 */
 
-package tuwien.auto.calimero.tools;
+package io.calimero.tools;
 
 import java.util.HashMap;
 import java.util.List;
@@ -45,16 +45,16 @@ import java.util.stream.IntStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import tuwien.auto.calimero.DeviceDescriptor;
-import tuwien.auto.calimero.IndividualAddress;
-import tuwien.auto.calimero.KNXException;
-import tuwien.auto.calimero.KNXIllegalArgumentException;
-import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
-import tuwien.auto.calimero.link.KNXNetworkLink;
-import tuwien.auto.calimero.link.medium.TPSettings;
-import tuwien.auto.calimero.mgmt.ManagementProcedures;
-import tuwien.auto.calimero.mgmt.ManagementProceduresImpl;
-import tuwien.auto.calimero.tools.Main.ShutdownHandler;
+import io.calimero.DeviceDescriptor;
+import io.calimero.IndividualAddress;
+import io.calimero.KNXException;
+import io.calimero.KNXIllegalArgumentException;
+import io.calimero.knxnetip.KNXnetIPConnection;
+import io.calimero.link.KNXNetworkLink;
+import io.calimero.link.medium.TPSettings;
+import io.calimero.mgmt.ManagementProcedures;
+import io.calimero.mgmt.ManagementProceduresImpl;
+import io.calimero.tools.Main.ShutdownHandler;
 
 /**
  * A tool to list existing (and responsive) KNX devices on a KNX network, or checking whether a

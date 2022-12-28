@@ -34,7 +34,7 @@
     version.
 */
 
-package tuwien.auto.calimero.tools;
+package io.calimero.tools;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -67,12 +67,12 @@ import org.w3c.dom.Node;
 
 import net.lingala.zip4j.ZipFile;
 import net.lingala.zip4j.model.enums.EncryptionMethod;
-import tuwien.auto.calimero.GroupAddress;
-import tuwien.auto.calimero.KNXFormatException;
-import tuwien.auto.calimero.datapoint.DatapointMap;
-import tuwien.auto.calimero.datapoint.StateDP;
-import tuwien.auto.calimero.secure.KnxSecureException;
-import tuwien.auto.calimero.xml.KNXMLException;
+import io.calimero.GroupAddress;
+import io.calimero.KNXFormatException;
+import io.calimero.datapoint.DatapointMap;
+import io.calimero.datapoint.StateDP;
+import io.calimero.secure.KnxSecureException;
+import io.calimero.xml.KNXMLException;
 
 /**
  * Represents a KNX project resource.
