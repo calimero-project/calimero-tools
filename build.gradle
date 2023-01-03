@@ -24,7 +24,10 @@ compileTestJava.options.encoding = 'UTF-8'
 javadoc.options.encoding = 'UTF-8'
 
 
-mainClassName = System.getProperty("mainClass") ?: 'io.calimero.tools.Main'
+application {
+	mainModule = "io.calimero.tools"
+	mainClass = System.getProperty("mainClass") ?: 'io.calimero.tools.Main'
+}
 
 run {
 	standardInput = System.in
@@ -58,6 +61,7 @@ compileJava.options*.compilerArgs = [
 	'-Xlint:all',
 	'-Xlint:-try',
 	'-Xlint:-options',
+	"--add-reads", "io.calimero.tools=ALL-UNNAMED"
 ]
 
 compileTestJava.options*.compilerArgs = [
@@ -77,6 +81,16 @@ sourceSets {
 
 tasks.withType(Javadoc) {
     options.addStringOption("Xdoclint:-missing", '-quiet')
+    options.addStringOption("-add-reads", "io.calimero.tools=ALL-UNNAMED") // zip4j
+}
+
+tasks.withType(JavaExec) { 
+    jvmArgs += [ 
+            "--add-reads", "io.calimero.tools=ALL-UNNAMED", // zip4j
+            "--add-reads", "io.calimero.core=io.calimero.tools", // @LinkEvent
+            "--add-opens", "io.calimero.tools/io.calimero.tools=io.calimero.core", // @LinkEvent
+            "--add-reads", "io.calimero.serial.provider.rxtx=ALL-UNNAMED",
+            "--add-reads", "io.calimero.usb=ALL-UNNAMED" ] 
 }
 
 dependencies {
@@ -91,10 +105,18 @@ dependencies {
 jar {
 	manifest {
 		attributes(
-			'Main-Class': mainClassName,
+			'Main-Class': application.mainClass,
 			'Class-Path': configurations.runtimeClasspath.collect { it.getName() }.join(' ')
 		)
 	}
+}
+
+distTar {
+    duplicatesStrategy = 'EXCLUDE'
+}
+
+distZip {
+    duplicatesStrategy = 'EXCLUDE'
 }
 
 publishing {
