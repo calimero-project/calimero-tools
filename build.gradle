@@ -88,9 +88,8 @@ tasks.withType(JavaExec) {
     jvmArgs += [ 
             "--add-reads", "io.calimero.tools=ALL-UNNAMED", // zip4j
             "--add-reads", "io.calimero.core=io.calimero.tools", // @LinkEvent
-            "--add-opens", "io.calimero.tools/io.calimero.tools=io.calimero.core", // @LinkEvent
             "--add-reads", "io.calimero.serial.provider.rxtx=ALL-UNNAMED",
-            "--add-reads", "io.calimero.usb=ALL-UNNAMED" ] 
+            "--add-reads", "io.calimero.usb=ALL-UNNAMED" ]
 }
 
 dependencies {

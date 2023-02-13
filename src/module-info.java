@@ -41,4 +41,6 @@ module io.calimero.tools {
 	requires org.slf4j;
 
 	exports io.calimero.tools;
+
+	opens io.calimero.tools to io.calimero.core; // @LinkEvent
 }
