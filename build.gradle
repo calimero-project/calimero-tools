@@ -85,6 +85,7 @@ dependencies {
 	implementation 'org.slf4j:slf4j-api:1.7.36'
 	runtimeOnly 'org.slf4j:slf4j-simple:1.7.36'
 	serialImplementation "com.github.calimero:calimero-rxtx:${version}"
+	serialRuntimeOnly "io.calimero:serial-native:${version}"
 	usbImplementation "io.calimero:calimero-usb:${version}"
 }
 
