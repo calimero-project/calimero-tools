@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2010, 2022 B. Malinowsky
+    Copyright (c) 2010, 2023 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -69,6 +69,7 @@ import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.KnxRuntimeException;
 import tuwien.auto.calimero.Priority;
+import tuwien.auto.calimero.Settings;
 import tuwien.auto.calimero.dptxlator.DPTXlator;
 import tuwien.auto.calimero.dptxlator.PropertyTypes;
 import tuwien.auto.calimero.dptxlator.TranslatorTypes;
@@ -257,7 +258,7 @@ public class Property implements Runnable
 				}
 				else {
 					resource = "/properties.xml";
-					try (InputStream is = Property.class.getResourceAsStream(resource);
+					try (InputStream is = Settings.class.getResourceAsStream(resource);
 							XmlReader r = XmlInputFactory.newInstance().createXMLStreamReader(is)) {
 						pc.addDefinitions(new XmlPropertyDefinitions().load(r));
 					}
