@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2013, 2021 B. Malinowsky
+    Copyright (c) 2013, 2023 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -83,7 +83,7 @@ public class ScanDevices implements Runnable
 	private static final String tool = "ScanDevices";
 	private static final String sep = System.getProperty("line.separator");
 
-	private static Logger out = LoggerFactory.getLogger("io.calimero.tools");
+	private static final Logger out = LoggerFactory.getLogger("io.calimero.tools");
 
 	private final Map<String, Object> options = new HashMap<>();
 
@@ -172,12 +172,12 @@ public class ScanDevices implements Runnable
 					ManagementProcedures mp = new ManagementProceduresImpl(link)) {
 
 				final String[] range = ((String) options.get("range")).split("\\.", 0);
-				final int area = Integer.decode(range[0]).intValue();
-				final int[] lines = range.length > 1 ? new int[] { Integer.decode(range[1]).intValue() }
+				final int area = Integer.decode(range[0]);
+				final int[] lines = range.length > 1 ? new int[] {Integer.decode(range[1])}
 													 : IntStream.range(0, 16).toArray();
 
 				if (range.length == 3) {
-					final int device = Integer.decode(range[2]).intValue();
+					final int device = Integer.decode(range[2]);
 					final IndividualAddress addr = new IndividualAddress(area, lines[0], device);
 					if (mp.isAddressOccupied(addr)) {
 						onDeviceFound(addr);

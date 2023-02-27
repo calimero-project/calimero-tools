@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2022 B. Malinowsky
+    Copyright (c) 2006, 2023 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -89,7 +89,7 @@ public class IPConfig implements Runnable
 	private static final String sep = System.getProperty("line.separator");
 	private static final int IPObjType = 11;
 
-	private static Logger out = LogService.getLogger("io.calimero.tools");
+	private static final Logger out = LogService.getLogger("io.calimero.tools");
 
 	private KNXNetworkLink lnk;
 	private PropertyClient pc;
@@ -266,7 +266,7 @@ public class IPConfig implements Runnable
 			final String value = s[2].isEmpty() ? "n/a" : s[2];
 			sb.append(s[1]).append(padding.substring(s[1].length()) + value).append(sep);
 		}
-		System.out.println(sb.toString());
+		System.out.println(sb);
 	}
 
 	/**
@@ -298,7 +298,7 @@ public class IPConfig implements Runnable
 			assignment |= 0x08;
 		if (assignment != 0)
 			pc.setProperty(objIndex, PropertyAccess.PID.IP_ASSIGNMENT_METHOD, 1, 1,
-					new byte[] { (byte) assignment });
+					(byte) assignment);
 	}
 
 	private void setIP(final int pid, final String key) throws InterruptedException
@@ -394,8 +394,7 @@ public class IPConfig implements Runnable
 			final byte[] data = query(pid);
 			return data == null ? "" : InetAddress.getByAddress(data).getHostAddress();
 		}
-		catch (final UnknownHostException e) {}
-		catch (final KNXException e) {}
+		catch (final UnknownHostException | KNXException e) {}
 		return "-";
 	}
 
@@ -484,7 +483,7 @@ public class IPConfig implements Runnable
 	{
 		// remove empty arguments
 		final List<String> l = new ArrayList<>(Arrays.asList(args));
-		l.removeAll(Arrays.asList(""));
+		l.removeAll(List.of(""));
 		if (l.size() == 0)
 			return;
 
@@ -577,7 +576,7 @@ public class IPConfig implements Runnable
 
 	private static byte[] getAuthorizeKey(final String key)
 	{
-		final long value = Long.decode(key).longValue();
+		final long value = Long.decode(key);
 		if (value < 0 || value > 0xFFFFFFFFL)
 			throw new KNXIllegalArgumentException("invalid authorize key");
 		return new byte[] { (byte) (value >> 24), (byte) (value >> 16), (byte) (value >> 8),

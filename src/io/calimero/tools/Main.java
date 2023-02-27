@@ -126,8 +126,7 @@ final class Main
 	private static final Map<InetSocketAddress, TcpConnection> tcpConnectionPool = new HashMap<>();
 	private static boolean registeredTcpShutdownHook;
 
-	static synchronized TcpConnection tcpConnection(final InetSocketAddress local, final InetSocketAddress server)
-			throws KNXException {
+	static synchronized TcpConnection tcpConnection(final InetSocketAddress local, final InetSocketAddress server) {
 		if (!registeredTcpShutdownHook) {
 			Runtime.getRuntime().addShutdownHook(new Thread(Main::closeTcpConnections));
 			registeredTcpShutdownHook = true;
@@ -172,7 +171,7 @@ final class Main
 			return;
 		}
 		int cmdIdx = 0;
-		if (args.length > 0 && args[0].startsWith("-v")) {
+		if (args[0].startsWith("-v")) {
 			final String vs = args[0];
 			final String level = vs.startsWith("-vvv") ? "trace" : vs.startsWith("-vv") ? "debug" : "info";
 			System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", level);
@@ -216,8 +215,8 @@ final class Main
 		final StringBuilder sb = new StringBuilder();
 		final String sep = System.lineSeparator();
 		sb.append("Supported commands (always safe without further options, use -h for help):").append(sep);
-		for (int i = 0; i < cmds.length; i++) {
-			sb.append(cmds[i][0]).append(" - ").append(cmds[i][1]).append(sep);
+		for (String[] cmd : cmds) {
+			sb.append(cmd[0]).append(" - ").append(cmd[1]).append(sep);
 		}
 		System.out.println(sb);
 	}
@@ -236,7 +235,7 @@ final class Main
 
 	static InetSocketAddress createLocalSocket(final InetAddress host, final Integer port)
 	{
-		final int p = port != null ? port.intValue() : 0;
+		final int p = port != null ? port : 0;
 		return host != null ? new InetSocketAddress(host, p) : new InetSocketAddress(p);
 	}
 
@@ -466,7 +465,7 @@ final class Main
 		}
 
 		// IP tunneling
-		final InetSocketAddress remote = new InetSocketAddress(addr, ((Integer) options.get("port")).intValue());
+		final InetSocketAddress remote = new InetSocketAddress(addr, (Integer) options.get("port"));
 		final boolean nat = options.containsKey("nat");
 
 		// supported combination of options for secure connection:
@@ -498,7 +497,7 @@ final class Main
 
 		final InetSocketAddress local = createLocalSocket(options);
 		final InetSocketAddress host = new InetSocketAddress((String) options.get("host"),
-				((Integer) options.get("port")).intValue());
+				(Integer) options.get("port"));
 		final boolean nat = options.containsKey("nat");
 		final Optional<byte[]> optUserKey = deviceMgmtKey(options);
 		if (optUserKey.isPresent()) {
@@ -531,7 +530,7 @@ final class Main
 					toolKeyring = keyring;
 			});
 		}
-		else if (gotPwd ^ optKeyring.isPresent()) // should maybe make this an exception, too
+		else if (optKeyring.isPresent()) // should maybe make this an exception, too
 			System.out.println("both keyring and keyring password are required, secure communication won't be available!");
 	}
 

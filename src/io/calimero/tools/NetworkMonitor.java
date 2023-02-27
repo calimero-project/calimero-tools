@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2022 B. Malinowsky
+    Copyright (c) 2006, 2023 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -107,7 +107,7 @@ public class NetworkMonitor implements Runnable
 	private static final String tool = "NetworkMonitor";
 	private static final String sep = System.getProperty("line.separator");
 
-	private static Logger out = LogService.getLogger("io.calimero.tools");
+	private static final Logger out = LogService.getLogger("io.calimero.tools");
 
 	private final Map<String, Object> options = new HashMap<>();
 	private KNXNetworkMonitor m;
@@ -304,7 +304,7 @@ public class NetworkMonitor implements Runnable
 		final RawFrame raw = ((MonitorFrameEvent) e).getRawFrame();
 		if (raw != null) {
 			sb.append(compact ? " " : " = ");
-			sb.append(raw.toString());
+			sb.append(raw);
 			if (raw instanceof RawFrameBase) {
 				final RawFrameBase f = (RawFrameBase) raw;
 				sb.append(": ").append(DataUnitBuilder.decode(f.getTPDU(), f.getDestination()));
@@ -328,7 +328,7 @@ public class NetworkMonitor implements Runnable
 				}
 			}
 		}
-		System.out.println(LocalTime.now() + " " + sb.toString());
+		System.out.println(LocalTime.now() + " " + sb);
 	}
 
 	/**

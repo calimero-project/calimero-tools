@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2019, 2022 B. Malinowsky
+    Copyright (c) 2019, 2023 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -340,7 +340,7 @@ public class TrafficMonitor implements Runnable {
 							if (dp != null)
 								joiner.add(asString(asdu, 0, dp.getDPT()));
 							else
-								joiner.add(decodeAsduByLength(asdu, payload.length <= 2));
+								joiner.add(decodeAsduByLength(asdu, payload.length == 2));
 						}
 					}
 				}
@@ -361,7 +361,7 @@ public class TrafficMonitor implements Runnable {
 	}
 
 	// shows one DPT of each matching main type based on the length of the supplied ASDU
-	private static String decodeAsduByLength(final byte[] asdu, final boolean optimized) throws KNXFormatException {
+	private static String decodeAsduByLength(final byte[] asdu, final boolean optimized) {
 		final var joiner = new StringJoiner(", ");
 		final List<MainType> typesBySize = TranslatorTypes.getMainTypesBySize(optimized ? 0 : asdu.length);
 		for (final var mainType : typesBySize) {
@@ -376,7 +376,7 @@ public class TrafficMonitor implements Runnable {
 		return joiner.toString();
 	}
 
-	private void runMonitorLoop() throws IOException, KNXException, InterruptedException {
+	private void runMonitorLoop() throws IOException, InterruptedException {
 		final BufferedReader in = new BufferedReader(new InputStreamReader(System.in, Charset.defaultCharset()));
 		while (true) {
 			while (!in.ready() && link.isOpen())
