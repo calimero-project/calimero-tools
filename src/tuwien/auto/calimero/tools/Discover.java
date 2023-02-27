@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2022 B. Malinowsky
+    Copyright (c) 2006, 2023 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -79,20 +79,20 @@ import tuwien.auto.calimero.log.LogService;
 import tuwien.auto.calimero.tools.Main.ShutdownHandler;
 
 /**
- * A tool for Calimero showing the KNXnet/IP discovery and self description feature.
+ * A tool for Calimero showing the KNXnet/IP discovery and self-description feature.
  * <p>
  * Discover is a {@link Runnable} tool implementation allowing a user to do KNXnet/IP discovery and
- * self description of KNXnet/IP capable devices. As the protocol name already implies, this is done
+ * self-description of KNXnet/IP capable devices. As the protocol name already implies, this is done
  * using the IP protocol. This tool shows the necessary interaction with the Calimero 2 API for
  * discovering KNXnet/IP capable devices and query descriptions. The main part of this tool
  * implementation interacts with the type {@link Discoverer} in the library, which implements the
- * necessary discovery and self description features.<br>
+ * necessary discovery and self-description features.<br>
  * When running this tool from the console, the <code>main</code>- method of this class is invoked,
  * otherwise use it in the context appropriate to a {@link Runnable}.
  * <p>
  * To cancel a running discovery/description request on the console, use a user interrupt for
  * termination, for example, <code>^C</code>.<br>
- * In console mode, discovery and self description responses, as well as errors and problems during
+ * In console mode, discovery and self-description responses, as well as errors and problems during
  * discovery/description are written to <code>System.out</code>.
  *
  * @author B. Malinowsky
@@ -102,7 +102,7 @@ public class Discover implements Runnable
 	private static final String tool = "Discover";
 	private static final String sep = System.getProperty("line.separator");
 
-	private static Logger out = LogService.getLogger(Discoverer.LOG_SERVICE);
+	private static final Logger out = LogService.getLogger(Discoverer.LOG_SERVICE);
 
 	private final Discoverer d;
 	private final DiscovererTcp tcp;
@@ -141,7 +141,7 @@ public class Discover implements Runnable
 		if (tcpSearch || options.containsKey("tcp")) {
 			final InetAddress server = (InetAddress) options.get("host");
 			final var ctrlEndpoint = new InetSocketAddress(server, (int) options.get("serverport"));
-			final var localEp = new InetSocketAddress(local, lp != null ? lp.intValue() : 0);
+			final var localEp = new InetSocketAddress(local, lp != null ? lp : 0);
 			final var connection = Main.tcpConnection(localEp, ctrlEndpoint);
 
 			Main.lookupKeyring(options);
@@ -162,7 +162,7 @@ public class Discover implements Runnable
 			d = null;
 		}
 		else {
-			d = new Discoverer(local, lp != null ? lp.intValue() : 0, options.containsKey("nat"), mcast);
+			d = new Discoverer(local, lp != null ? lp : 0, options.containsKey("nat"), mcast);
 			reuseForDescription = false;
 			d.timeout((Duration) options.get("timeout"));
 
@@ -174,8 +174,8 @@ public class Discover implements Runnable
 	 * Entry point for running Discover.
 	 * <p>
 	 * To show usage message of the tool on the console, supply the command line option --help (or -h).<br>
-	 * Command line arguments are treated case sensitive; if no command is given, the tool only shows a short
-	 * description and version info. Available commands and options for discovery/self description:
+	 * Command line arguments are treated case-sensitive; if no command is given, the tool only shows a short
+	 * description and version info. Available commands and options for discovery/self-description:
 	 * <ul>
 	 * <li><code>search [<i>host</i>]</code> start a discovery search
 	 * <ul>
@@ -204,7 +204,7 @@ public class Discover implements Runnable
 	 * <li><code>--udp</code> request UDP communication</li>
 	 * </ul>
 	 *
-	 * @param args command line options for discovery or self description
+	 * @param args command line options for discovery or self-description
 	 */
 	public static void main(final String[] args)
 	{
@@ -243,17 +243,13 @@ public class Discover implements Runnable
 				out("Type --help for help message");
 			}
 		}
-		catch (final KNXException e) {
+		catch (final KNXException | RuntimeException e) {
 			thrown = e;
 		}
 		catch (final InterruptedException e) {
 			canceled = true;
 			Thread.currentThread().interrupt();
-		}
-		catch (final RuntimeException e) {
-			thrown = e;
-		}
-		finally {
+		} finally {
 			onCompletion(thrown, canceled);
 		}
 	}
@@ -470,7 +466,7 @@ public class Discover implements Runnable
 	}
 
 	/**
-	 * Requests a self description using the supplied options.
+	 * Requests a self-description using the supplied options.
 	 *
 	 * @throws KNXException on problem requesting the description
 	 * @throws InterruptedException
@@ -482,9 +478,9 @@ public class Discover implements Runnable
 			onDescriptionReceived(res);
 			return;
 		}
-		// create socket address of server to request self description from
+		// create socket address of server to request self-description from
 		final InetSocketAddress host = new InetSocketAddress((InetAddress) options.get("host"),
-				((Integer) options.get("serverport")).intValue());
+				(Integer) options.get("serverport"));
 		final var timeout = ((Duration) options.get("timeout"));
 		// request description
 		final Result<DescriptionResponse> res = d.getDescription(host, (int) timeout.toSeconds());
@@ -575,8 +571,8 @@ public class Discover implements Runnable
 	private void parseOptions(final String[] args)
 	{
 		// add defaults
-		options.put("localport", Integer.valueOf(0));
-		options.put("serverport", Integer.valueOf(KNXnetIPConnection.DEFAULT_PORT));
+		options.put("localport", 0);
+		options.put("serverport", KNXnetIPConnection.DEFAULT_PORT);
 		options.put("timeout", Duration.ofSeconds(3));
 		options.put("mcastResponse", true);
 
@@ -605,7 +601,7 @@ public class Discover implements Runnable
 			else if (Main.isOption(arg, "netif", "i"))
 				options.put("if", getNetworkIF(i.next()));
 			else if (Main.isOption(arg, "timeout", "t")) {
-				final var timeout = Duration.ofSeconds(Long.valueOf(i.next()));
+				final var timeout = Duration.ofSeconds(Long.parseLong(i.next()));
 				// a value of 0 means infinite timeout
 				if (timeout.toMillis() > 0)
 					options.put("timeout", timeout);
@@ -666,7 +662,7 @@ public class Discover implements Runnable
 	/**
 	 * Gets the local network interface using the supplied identifier.
 	 *
-	 * @param id identifier associated with the network interface, either an network interface name,
+	 * @param id identifier associated with the network interface, either a network interface name,
 	 *        a host name, or an IP address bound to that interface
 	 * @return the network interface
 	 * @throws KNXIllegalArgumentException if no network interface found

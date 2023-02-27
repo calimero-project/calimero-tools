@@ -54,7 +54,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -365,7 +364,7 @@ public class Property implements Runnable
 		buf.append(", max. " + d.getMaxElements());
 		buf.append(", r/w access " + d.getReadLevel() + "/" + d.getWriteLevel());
 		buf.append(d.isWriteEnabled() ? ", w.enabled" : ", r.only");
-		System.out.println(buf.toString());
+		System.out.println(buf);
 	}
 
 	/**
@@ -592,7 +591,7 @@ public class Property implements Runnable
 						final String[] allValues = translator.getAllValues();
 						if (!s.isEmpty())
 							s += ", ";
-						s += Arrays.asList(allValues).stream().collect(Collectors.joining(delimiter));
+						s += String.join(delimiter, allValues);
 						for (int from = 0; from < data.length; from += size)
 							raw.add(Arrays.copyOfRange(data, from, from + size));
 					}
@@ -797,7 +796,7 @@ public class Property implements Runnable
 
 	private static byte[] getAuthorizeKey(final String key)
 	{
-		final long value = Long.decode(key).longValue();
+		final long value = Long.decode(key);
 		if (value < 0 || value > 0xFFFFFFFFL)
 			throw new KNXIllegalArgumentException("invalid authorize key");
 		return new byte[] { (byte) (value >> 24), (byte) (value >> 16), (byte) (value >> 8), (byte) value };
@@ -805,7 +804,7 @@ public class Property implements Runnable
 
 	private static int toInt(final String number)
 	{
-		return Integer.decode(number).intValue();
+		return Integer.decode(number);
 	}
 
 	private static byte[] toByteArray(final String s)

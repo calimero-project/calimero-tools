@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2011, 2022 B. Malinowsky
+    Copyright (c) 2011, 2023 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -53,7 +53,6 @@ import java.util.StringJoiner;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 
@@ -117,7 +116,7 @@ public class DeviceInfo implements Runnable
 		 */
 		String name();
 
-		// create human readable name from parameter by inserting some spaces
+		// create human-readable name from parameter by inserting some spaces
 		default String friendlyName() { return name().replaceAll("([A-Z])", " $1").replace("I P", "IP").trim(); }
 	}
 
@@ -307,7 +306,7 @@ public class DeviceInfo implements Runnable
 	 * Running the tool without a KNX device address will read the device info of the local KNX interface (KNXnet/IP and
 	 * USB only).<br>
 	 * To show usage message of the tool on the console, supply the command line option --help (or -h). Command line
-	 * options are treated case sensitive. Available options for connecting to the KNX device in question:
+	 * options are treated case-sensitive. Available options for connecting to the KNX device in question:
 	 * <ul>
 	 * <li>no arguments: only show short description and version info</li>
 	 * <li><code>--help -h</code> show help message</li>
@@ -463,7 +462,7 @@ public class DeviceInfo implements Runnable
 		return "";
 	}
 
-	private void findInterfaceObjects() throws KNXException, InterruptedException
+	private void findInterfaceObjects() throws InterruptedException
 	{
 		// check if there are any interface object at all, i.e., the Device Object
 		if (readElements(0, PID.OBJECT_TYPE) <= 0)
@@ -477,7 +476,7 @@ public class DeviceInfo implements Runnable
 				return;
 			for (int i = 0; i < data.length / 2; ++i) {
 				final int type = (data[2 * i] & 0xff) << 8 | (data[2 * i + 1] & 0xff);
-				ifObjects.compute(type, (__, v) -> v == null ? new ArrayList<Integer>() : v).add(i);
+				ifObjects.compute(type, (__, v) -> v == null ? new ArrayList<>() : v).add(i);
 			}
 		}
 		else {
@@ -487,7 +486,7 @@ public class DeviceInfo implements Runnable
 				final int type = (int) toUnsigned(read(i, PID.OBJECT_TYPE));
 				if (type < 0)
 					break;
-				ifObjects.compute(type, (__, v) -> v == null ? new ArrayList<Integer>() : v).add(i);
+				ifObjects.compute(type, (__, v) -> v == null ? new ArrayList<>() : v).add(i);
 			}
 
 			if (ifObjects.size() == 1) {
@@ -770,7 +769,7 @@ public class DeviceInfo implements Runnable
 		catch (final Exception e) {}
 	}
 
-	private void cEmiExtensionRfBiBat(final int objectIndex) throws KNXException, InterruptedException {
+	private void cEmiExtensionRfBiBat(final int objectIndex) throws InterruptedException {
 		read(CemiParameter.SupportedRfModes, objectIndex, PID.RF_MODE_SUPPORT, support -> {
 			final boolean slave = (support[0] & 0x04) == 0x04;
 			final boolean master = (support[0] & 0x02) == 0x02;
@@ -950,7 +949,7 @@ public class DeviceInfo implements Runnable
 		for (int i = 0; i < 8; i++)
 			if ((data[0] & (1 << i)) == 0)
 				errors.add(description[i]);
-		return errors.stream().collect(Collectors.joining(", "));
+		return String.join(", ", errors);
 	}
 
 	private void putResult(final Parameter p, final String formatted, final long raw)
@@ -1417,7 +1416,7 @@ public class DeviceInfo implements Runnable
 					options.put("device", new IndividualAddress(arg));
 				}
 				catch (final KNXFormatException e) {
-					throw new KNXIllegalArgumentException("KNX device " + e.toString(), e);
+					throw new KNXIllegalArgumentException("KNX device " + e, e);
 				}
 			else
 				throw new KNXIllegalArgumentException("unknown option " + arg);

@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2022 B. Malinowsky
+    Copyright (c) 2006, 2023 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -58,7 +58,6 @@ import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.function.BiFunction;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 
@@ -415,8 +414,7 @@ public class ProcComm implements Runnable
 					datapoints.add(dp);
 				}
 				dp = datapoints.contains(ga) ? datapoints.get(ga) : dp;
-				readWrite(dp, write, write ? Arrays.asList(s).subList(withDpt ? 3 : 2, s.length).stream()
-						.collect(Collectors.joining(" ")) : null);
+				readWrite(dp, write, write ? String.join(" ", Arrays.asList(s).subList(withDpt ? 3 : 2, s.length)) : null);
 			}
 			else
 				out("unknown command '" + cmd + "'");
@@ -618,8 +616,7 @@ public class ProcComm implements Runnable
 		final int privatePidOffset = "company".equals(s[4]) ? 2 : 0;
 		final int company = privatePidOffset > 0 ? Integer.parseInt(s[5]) : 0;
 		final int pid = Integer.parseInt(s[4 + privatePidOffset]);
-		final String data = Arrays.asList(Arrays.copyOfRange(s, 5 + privatePidOffset, s.length)).stream()
-				.collect(Collectors.joining("")).replaceAll("0x", "");
+		final String data = String.join("", Arrays.copyOfRange(s, 5 + privatePidOffset, s.length)).replaceAll("0x", "");
 
 		final String cmd = s[0];
 		final boolean read = cmd.equals("read") || cmd.equals("r");
@@ -638,7 +635,7 @@ public class ProcComm implements Runnable
 	}
 
 	private void readWrite(final int cmd, final String tag, final int iot, final int oi, final int company,
-		final int pid, final String data) throws KNXFormatException, KNXTimeoutException, KNXLinkClosedException {
+		final int pid, final String data) throws KNXTimeoutException, KNXLinkClosedException {
 
 		// create asdu
 		final int dataLen = data.length() / 2;
@@ -714,8 +711,7 @@ public class ProcComm implements Runnable
 		return decodeLteFrame(e.getServiceCode(), e.extFrameFormat(), e.getDestination(), e.getASDU());
 	}
 
-	private String decodeLteFrame(final int svcCode, final int extFormat, final GroupAddress dst, final byte[] asdu)
-			throws KNXFormatException {
+	private String decodeLteFrame(final int svcCode, final int extFormat, final GroupAddress dst, final byte[] asdu) {
 		final StringBuilder sb = new StringBuilder();
 		final var tag = LteHeeTag.from(extFormat, dst);
 		sb.append(tag).append(' ');
@@ -798,8 +794,7 @@ public class ProcComm implements Runnable
 	}
 
 	// shows one DPT of each matching main type based on the length of the supplied ASDU
-	private static String decodeAsduByLength(final byte[] asdu, final boolean optimized) throws KNXFormatException
-	{
+	private static String decodeAsduByLength(final byte[] asdu, final boolean optimized) {
 		final StringBuilder sb = new StringBuilder();
 		final List<MainType> typesBySize = TranslatorTypes.getMainTypesBySize(optimized ? 0 : asdu.length);
 		for (final Iterator<MainType> i = typesBySize.iterator(); i.hasNext();) {
@@ -815,7 +810,7 @@ public class ProcComm implements Runnable
 		return sb.toString();
 	}
 
-	private void runMonitorLoop() throws IOException, KNXException, InterruptedException
+	private void runMonitorLoop() throws IOException, InterruptedException
 	{
 		final BufferedReader in = new BufferedReader(new InputStreamReader(System.in, Charset.defaultCharset()));
 		while (true) {
@@ -1171,8 +1166,8 @@ public class ProcComm implements Runnable
 			entry("203.017", StdMode.function(ProcComm::twoByteUnsigned10Millis, "%")),		// DPT_PercentU16_Z
 			entry("203.100", StdMode.function(ProcComm::twoByteUnsigned, "ppm")),			// DPT_HVACAirQual_Z
 			entry("203.101", StdMode.function(ProcComm::twoByteUnsigned10Millis, "m/s")),	// DPT_WindSpeed_Z
-			entry("203.102", StdMode.function(ProcComm::twoByteUnsigned50Millis, "W/m\u00b2")), // DPT_SunIntensity_Z
-			entry("203.104", StdMode.function(ProcComm::twoByteUnsigned, "m\u00b3/h")),		// DPT_HVACAirFlowAbs_Z
+			entry("203.102", StdMode.function(ProcComm::twoByteUnsigned50Millis, "W/m²")), // DPT_SunIntensity_Z
+			entry("203.104", StdMode.function(ProcComm::twoByteUnsigned, "m³/h")),		// DPT_HVACAirFlowAbs_Z
 			entry("204.001", StdMode.xlator("6.001")),     // DPT_RelSignedValue_Z
 			entry("205.002", StdMode.xlator("8.002")),     // DPT_DeltaTimeMsec_Z
 			entry("205.003", StdMode.xlator("8.003")),     // DPT_DeltaTime10Msec_Z
@@ -1183,9 +1178,9 @@ public class ProcComm implements Runnable
 			entry("205.017", StdMode.xlator("8.010")),     // DPT_Percent_V16_Z
 			entry("205.100", StdMode.function(ProcComm::twoByteSigned20Millis, "°C")),		// DPT_TempHVACAbs_Z
 			entry("205.101", StdMode.function(ProcComm::twoByteSigned20Millis, "K")),		// DPT_TempHVACRel_Z
-			entry("205.102", StdMode.function(ProcComm::twoByteSigned, "m\u00b3/h")),		// DPT_HVACAirFlowRel_Z
+			entry("205.102", StdMode.function(ProcComm::twoByteSigned, "m³/h")),		// DPT_HVACAirFlowRel_Z
 			entry("218.001", StdMode.function(ProcComm::fourByteSigned, "l")),				// DPT_VolumeLiter_Z
-			entry("218.002", StdMode.function(ProcComm::fourByteSigned0001, "m\u00b3/h"))	// DPT_FlowRate_m3/h_Z
+			entry("218.002", StdMode.function(ProcComm::fourByteSigned0001, "m³/h"))	// DPT_FlowRate_m3/h_Z
 	);
 
 	private static String twoByteUnsigned(final byte[] data, final String unit) {

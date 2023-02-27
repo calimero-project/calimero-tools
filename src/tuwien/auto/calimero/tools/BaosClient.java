@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2019, 2022 B. Malinowsky
+    Copyright (c) 2019, 2023 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -142,7 +142,7 @@ public class BaosClient implements Runnable
 	 * for IP, USB, or FT1.2. Use the command line option <code>--help</code> (or <code>-h</code>) to show the
 	 * usage of this tool.
 	 * <p>
-	 * Command line options are treated case sensitive. Available options for communication:
+	 * Command line options are treated case-sensitive. Available options for communication:
 	 * <ul>
 	 * <li><code>--help -h</code> show help message</li>
 	 * <li><code>--version</code> show tool/library version and exit</li>
@@ -286,7 +286,7 @@ public class BaosClient implements Runnable
 					}
 					else if (subService == BaosService.GetDatapointHistoryState) {
 						final String state = datapointHistoryState((int) item.info());
-						final int entries = ByteBuffer.wrap(item.data()).getInt() & 0xffff_ffff;
+						final int entries = ByteBuffer.wrap(item.data()).getInt();
 						out("DP #" + item.id() + " history " + state + ", " + entries + " entries");
 					}
 					else {
@@ -558,7 +558,7 @@ public class BaosClient implements Runnable
 		waitForResponse(svc.subService());
 	}
 
-	private void runRepl() throws IOException, KNXException, InterruptedException {
+	private void runRepl() throws IOException, InterruptedException {
 		final BufferedReader in = new BufferedReader(new InputStreamReader(System.in, Charset.defaultCharset()));
 		while (true) {
 			while (!in.ready() && !closed)

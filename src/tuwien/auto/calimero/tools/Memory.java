@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2021, 2021 B. Malinowsky
+    Copyright (c) 2021, 2023 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -289,7 +289,7 @@ public class Memory implements Runnable {
 					options.put("device", new IndividualAddress(arg));
 				}
 				catch (final KNXFormatException e) {
-					throw new KNXIllegalArgumentException("KNX device " + e.toString(), e);
+					throw new KNXIllegalArgumentException("KNX device " + e, e);
 				}
 			else
 				throw new KNXIllegalArgumentException("unknown option " + arg);
