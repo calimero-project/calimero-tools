@@ -14,7 +14,7 @@ repositories {
 }
 
 group = 'io.calimero'
-version = '2.6-SNAPSHOT'
+version = '3.0-SNAPSHOT'
 
 sourceCompatibility = 11
 targetCompatibility = 11
