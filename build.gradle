@@ -84,18 +84,28 @@ dependencies {
 	implementation 'net.lingala.zip4j:zip4j:2.11.5'
 	implementation 'org.slf4j:slf4j-api:1.7.36'
 	runtimeOnly 'org.slf4j:slf4j-simple:1.7.36'
-	serialImplementation "com.github.calimero:calimero-rxtx:${version}"
+	serialRuntimeOnly "com.github.calimero:calimero-rxtx:${version}"
 	serialRuntimeOnly "io.calimero:serial-native:${version}"
-	usbImplementation "io.calimero:calimero-usb:${version}"
+	usbRuntimeOnly "io.calimero:calimero-usb:${version}"
 }
 
 jar {
-	manifest {
-		attributes(
-			'Main-Class': mainClassName,
-			'Class-Path': configurations.runtimeClasspath.collect { it.getName() }.join(' ')
-		)
+	doLast {
+		manifest {
+			attributes(
+				'Main-Class': mainClassName,
+				'Class-Path': configurations.runtimeClasspath.collect { it.getName() }.join(' ')
+			)
+		}
 	}
+}
+
+distTar {
+    duplicatesStrategy = 'EXCLUDE'
+}
+
+distZip {
+    duplicatesStrategy = 'EXCLUDE'
 }
 
 publishing {
