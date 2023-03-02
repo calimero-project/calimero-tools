@@ -264,7 +264,7 @@ public class IPConfig implements Runnable
 		for (int i = 2; i < config.size(); ++i) {
 			final String[] s = config.get(i);
 			final String value = s[2].isEmpty() ? "n/a" : s[2];
-			sb.append(s[1]).append(padding.substring(s[1].length()) + value).append(sep);
+			sb.append(s[1]).append(padding.substring(s[1].length())).append(value).append(sep);
 		}
 		System.out.println(sb);
 	}

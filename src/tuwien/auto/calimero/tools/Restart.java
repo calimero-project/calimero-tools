@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2019, 2020 B. Malinowsky
+    Copyright (c) 2019, 2023 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -185,7 +185,7 @@ public class Restart implements Runnable {
 	}
 
 	private void localDeviceMgmtReset()
-			throws KNXConnectionClosedException, KNXTimeoutException, InterruptedException, KNXException {
+			throws InterruptedException, KNXException {
 		try (var mgmt = Main.newLocalDeviceMgmtIP(options, __ -> {})) {
 			final int restartType = (Integer) options.get("restart-type");
 			if (restartType != 0)
@@ -264,20 +264,17 @@ public class Restart implements Runnable {
 
 	private static int restartType(final String option) {
 		final var code = option.length() < 2 ? option : option.substring(2);
-		switch (code) {
-		case "basic": return 0;
-		case "confirmed": return 1;
-
-		case "factory-reset":
-		case "reset-factory": return 2;
-
-		case "reset-address": return 3;
-		case "reset-app": return 4;
-		case "reset-params": return 5;
-		case "reset-links": return 6;
-		case "factory-keep-addr": return 7;
-		default: return -1;
-		}
+		return switch (code) {
+			case "basic" -> 0;
+			case "confirmed" -> 1;
+			case "factory-reset", "reset-factory" -> 2;
+			case "reset-address" -> 3;
+			case "reset-app" -> 4;
+			case "reset-params" -> 5;
+			case "reset-links" -> 6;
+			case "factory-keep-addr" -> 7;
+			default -> -1;
+		};
 	}
 
 	private static void showToolInfo() {

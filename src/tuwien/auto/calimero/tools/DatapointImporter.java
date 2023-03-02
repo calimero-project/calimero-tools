@@ -93,7 +93,7 @@ public class DatapointImporter implements Runnable {
 				break;
 		}
 		input = args[i++];
-		output = args.length > i ? args[i++] : null;
+		output = args.length > i ? args[i] : null;
 	}
 
 	@Override

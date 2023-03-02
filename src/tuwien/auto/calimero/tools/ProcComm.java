@@ -606,7 +606,7 @@ public class ProcComm implements Runnable
 	}
 
 	private void issueLteCommand(final String addr, final String... s)
-		throws KNXFormatException, KNXTimeoutException, KNXLinkClosedException {
+		throws KNXTimeoutException, KNXLinkClosedException {
 		if (s.length < 5) {
 			System.out.println("LTE-HEE command: r|w|i address IOT OI [\"company\" company] PID [hex values]");
 			return;

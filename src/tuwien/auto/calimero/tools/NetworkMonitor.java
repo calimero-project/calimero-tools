@@ -283,7 +283,6 @@ public class NetworkMonitor implements Runnable
 
 	/**
 	 * Called by this tool on receiving a monitor indication frame.
-	 * <p>
 	 *
 	 * @param e the frame event
 	 */
@@ -305,14 +304,12 @@ public class NetworkMonitor implements Runnable
 		if (raw != null) {
 			sb.append(compact ? " " : " = ");
 			sb.append(raw);
-			if (raw instanceof RawFrameBase) {
-				final RawFrameBase f = (RawFrameBase) raw;
+			if (raw instanceof final RawFrameBase f) {
 				sb.append(": ").append(DataUnitBuilder.decode(f.getTPDU(), f.getDestination()));
 				sb.append(" ").append(
 						DataUnitBuilder.toHex(DataUnitBuilder.extractASDU(f.getTPDU()), " "));
 			}
-			else if (raw instanceof RFLData) {
-				final RFLData rf = (RFLData) raw;
+			else if (raw instanceof final RFLData rf) {
 				try {
 					sb.append(": ");
 					final String bibat = decodeBibat(rf);

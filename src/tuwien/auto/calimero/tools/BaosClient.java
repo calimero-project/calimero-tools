@@ -382,11 +382,11 @@ public class BaosClient implements Runnable
 	private BaosService parse(final String[] args) throws KNXException, InterruptedException {
 		if (args.length < 2)
 			throw new KNXIllegalArgumentException("command too short: " + List.of(args));
-		switch (args[0]) {
-		case "get": return get(args);
-		case "set": return set(args);
-		default: throw new KNXIllegalArgumentException("unknown command " + args[0]);
-		}
+		return switch (args[0]) {
+			case "get" -> get(args);
+			case "set" -> set(args);
+			default -> throw new KNXIllegalArgumentException("unknown command " + args[0]);
+		};
 	}
 
 	private static BaosService get(final String[] args) {
@@ -394,92 +394,88 @@ public class BaosClient implements Runnable
 		final int id = unsigned(args[2]);
 		final int items = args.length > 3 ? unsigned(args[3]) : 1;
 
-		switch (svc) {
-			case "property": return BaosService.getServerItem(Property.of(id), items);
-			case "value":
+		return switch (svc) {
+			case "property" -> BaosService.getServerItem(Property.of(id), items);
+			case "value" -> {
 				final var filter = args.length > 4 ? valueFilter(args[4]) : ValueFilter.All;
-				return BaosService.getDatapointValue(id, items, filter);
-			case "timer": return BaosService.getTimer(id, items);
-			case "desc":
-			case "description": return BaosService.getDatapointDescription(id, items);
-			case "history":
+				yield BaosService.getDatapointValue(id, items, filter);
+			}
+			case "timer" -> BaosService.getTimer(id, items);
+			case "desc", "description" -> BaosService.getDatapointDescription(id, items);
+			case "history" -> {
 				// NYI what format to expect
 				final var start = Instant.EPOCH; //Instant.parse(args[4]);
 				final var end = Instant.now(); //Instant.parse(args[5]);
-				return BaosService.getDatapointHistory(id, items, start, end);
-			case "hs":
-				return BaosService.getDatapointHistoryState(id, items);
-			default: throw new KNXIllegalArgumentException("unsupported BAOS service '" + svc + "'");
-		}
+				yield BaosService.getDatapointHistory(id, items, start, end);
+			}
+			case "hs" -> BaosService.getDatapointHistoryState(id, items);
+			default -> throw new KNXIllegalArgumentException("unsupported BAOS service '" + svc + "'");
+		};
 	}
 
 	private BaosService set(final String[] args) throws KNXException, InterruptedException {
 		final String svc = args[1];
 		final int id = unsigned(args[2]);
 
-		switch (svc) {
-			case "property": return BaosService.setServerItem(Item.property(Property.of(id), DataUnitBuilder.fromHex(args[3])));
-			case "value": return BaosService.setDatapointValue(
+		return switch (svc) {
+			case "property" -> BaosService.setServerItem(Item.property(Property.of(id), DataUnitBuilder.fromHex(args[3])));
+			case "value" -> BaosService.setDatapointValue(
 					parseDatapointValue(id, Arrays.copyOfRange(args, 3, args.length)));
-			case "timer": return setTimer(id, args);
-			case "history":
+			case "timer" -> setTimer(id, args);
+			case "history" -> {
 				final String cmd = args[4] + (args.length > 5 ? args[5] : "");
-				return BaosService.setDatapointHistoryCommand(id, unsigned(args[3]), HistoryCommand.of(cmd));
-			default: throw new KNXIllegalArgumentException("unsupported BAOS service '" + svc + "'");
-		}
+				yield BaosService.setDatapointHistoryCommand(id, unsigned(args[3]), HistoryCommand.of(cmd));
+			}
+			default -> throw new KNXIllegalArgumentException("unsupported BAOS service '" + svc + "'");
+		};
 	}
 
 	private static ValueFilter valueFilter(final String arg) {
-		switch (arg) {
-		case "all": return ValueFilter.All;
-		case "valid": return ValueFilter.ValidOnly;
-		case "updated": return ValueFilter.UpdatedOnly;
-		default: throw new KNXIllegalArgumentException("unknown value filter " + arg);
-		}
+		return switch (arg) {
+			case "all" -> ValueFilter.All;
+			case "valid" -> ValueFilter.ValidOnly;
+			case "updated" -> ValueFilter.UpdatedOnly;
+			default -> throw new KNXIllegalArgumentException("unknown value filter " + arg);
+		};
 	}
 
 	// format: <datapoint id> <datapoint cmd> [value]
 	private Item<DatapointCommand> parseDatapointValue(final int dpId, final String[] args)
 			throws KNXException, InterruptedException {
 		final var cmd = DatapointCommand.of(unsigned(args[0]));
-		switch (cmd) {
-		case NoCommand:
-		case SendValueOnBus:
-		case ReadValueViaBus:
-		case ClearTransmissionState:
-			return Item.datapoint(dpId, cmd, new byte[0]);
-
-		case SetValue:
-		case SetValueAndSendOnBus:
-			final DPTXlator xlator;
-			if (isDpt(args[1])) {
-				final var dptId = fromDptName(args[1]);
-				xlator = TranslatorTypes.createTranslator(dptId);
-				dpIdToDpt.put(dpId, xlator.getType());
-				xlator.setValue(args[2]);
+		return switch (cmd) {
+			case NoCommand, SendValueOnBus, ReadValueViaBus, ClearTransmissionState -> Item.datapoint(dpId, cmd, new byte[0]);
+			case SetValue, SetValueAndSendOnBus -> {
+				final DPTXlator xlator;
+				if (isDpt(args[1])) {
+					final var dptId = fromDptName(args[1]);
+					xlator = TranslatorTypes.createTranslator(dptId);
+					dpIdToDpt.put(dpId, xlator.getType());
+					xlator.setValue(args[2]);
+				}
+				else {
+					xlator = translatorFor(dpId);
+					xlator.setValue(args[1]);
+				}
+				yield Item.datapoint(dpId, cmd, xlator.getData());
 			}
-			else {
-				xlator = translatorFor(dpId);
-				xlator.setValue(args[1]);
-			}
-			return Item.datapoint(dpId, cmd, xlator.getData());
-		default: throw new IllegalStateException(cmd.toString());
-		}
+			default -> throw new IllegalStateException(cmd.toString());
+		};
 	}
 
 	private BaosService setTimer(final int id, final String[] args) throws KNXException, InterruptedException {
 		final String action = args[3];
-		switch (action) {
-			case "delete": return BaosService.setTimer(Timer.delete(id));
-			case "oneshot": {
+		return switch (action) {
+			case "delete" -> BaosService.setTimer(Timer.delete(id));
+			case "oneshot" -> {
 				final var dateTime = parseDateTime(args[4]);
 				final int dpId = unsigned(args[5]);
 				final var valueItem = parseDatapointValue(dpId, Arrays.copyOfRange(args, 6, args.length));
 				final var job = timerJobSetValue(valueItem);
 				final var description = ""; // NYI
-				return BaosService.setTimer(Timer.oneShot(id, dateTime, job, description));
+				yield BaosService.setTimer(Timer.oneShot(id, dateTime, job, description));
 			}
-			case "interval": {
+			case "interval" -> {
 				final var start = parseDateTime(args[4]);
 				final var end = parseDateTime(args[5]);
 				final var interval = Duration.parse(args[6]);
@@ -487,10 +483,10 @@ public class BaosClient implements Runnable
 				final var valueItem = parseDatapointValue(dpId, Arrays.copyOfRange(args, 8, args.length));
 				final var job = timerJobSetValue(valueItem);
 				final var description = ""; // NYI
-				return BaosService.setTimer(Timer.interval(id, start, end, interval, job, description));
+				yield BaosService.setTimer(Timer.interval(id, start, end, interval, job, description));
 			}
-			default: throw new KNXIllegalArgumentException("unsupported timer action '" + action + "'");
-		}
+			default -> throw new KNXIllegalArgumentException("unsupported timer action '" + action + "'");
+		};
 	}
 
 	private static byte[] timerJobSetValue(final Item<DatapointCommand> value) {
@@ -500,48 +496,37 @@ public class BaosClient implements Runnable
 	}
 
 	private static String datapointHistoryState(final int state) {
-		switch (state) {
-		case 0: return "inactive";
-		case 1: return "available";
-		case 2: return "active";
-		case 3: return "active available";
-		default: return state + " (unknown)";
-		}
+		return switch (state) {
+			case 0 -> "inactive";
+			case 1 -> "available";
+			case 2 -> "active";
+			case 3 -> "active available";
+			default -> state + " (unknown)";
+		};
 	}
 
-	private static String fromDptName(final String id)
-	{
-		if ("switch".equals(id))
-			return "1.001";
-		if ("bool".equals(id))
-			return "1.002";
-		if ("dimmer".equals(id))
-			return "3.007";
-		if ("blinds".equals(id))
-			return "3.008";
-		if ("string".equals(id))
-			return "16.001";
-		if ("temp".equals(id))
-			return "9.001";
-		if ("float".equals(id))
-			return "9.002";
-		if ("float2".equals(id))
-			return "9.002";
-		if ("float4".equals(id))
-			return "14.005";
-		if ("ucount".equals(id))
-			return "5.010";
-		if ("int".equals(id))
-			return "13.001";
-		if ("angle".equals(id))
-			return "5.003";
-		if ("percent".equals(id))
-			return "5.001";
-		if ("%".equals(id))
-			return "5.001";
-		if (!"-".equals(id) && !Character.isDigit(id.charAt(0)))
-			throw new KnxRuntimeException("unrecognized DPT '" + id + "'");
-		return id;
+	private static String fromDptName(final String id) {
+		return switch (id) {
+			case "switch" -> "1.001";
+			case "bool" -> "1.002";
+			case "dimmer" -> "3.007";
+			case "blinds" -> "3.008";
+			case "string" -> "16.001";
+			case "temp" -> "9.001";
+			case "float" -> "9.002";
+			case "float2" -> "9.002";
+			case "float4" -> "14.005";
+			case "ucount" -> "5.010";
+			case "int" -> "13.001";
+			case "angle" -> "5.003";
+			case "percent" -> "5.001";
+			case "%" -> "5.001";
+			default -> {
+				if (!"-".equals(id) && !Character.isDigit(id.charAt(0)))
+					throw new KnxRuntimeException("unrecognized DPT '" + id + "'");
+				yield id;
+			}
+		};
 	}
 
 	private void issueBaosService() throws KNXException, InterruptedException

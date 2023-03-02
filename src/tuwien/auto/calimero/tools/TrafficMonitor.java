@@ -303,8 +303,7 @@ public class TrafficMonitor implements Runnable {
 		final var joiner = new StringJoiner(" ");
 		final var frame = e.getFrame();
 
-		if (frame instanceof CEMILData) {
-			final var ldata = (CEMILData) frame;
+		if (frame instanceof final CEMILData ldata) {
 			final var dst = ldata.getDestination();
 			final var payload = frame.getPayload();
 
