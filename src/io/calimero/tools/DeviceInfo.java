@@ -801,19 +801,14 @@ public class DeviceInfo implements Runnable
 
 	private static String commMode(final byte[] data) {
 		final int commMode = data[0] & 0xff;
-		switch (commMode) {
-		case 0:
-			return "Data link layer";
-		case 1:
-			return "Data link layer busmonitor";
-		case 2:
-			return "Data link layer raw frames";
-		case 6:
-			return "cEMI transport layer";
-		case 0xff:
-			return "no layer";
-		}
-		return "unknown/unspecified (" + commMode + ")";
+		return switch (commMode) {
+			case 0 -> "Data link layer";
+			case 1 -> "Data link layer busmonitor";
+			case 2 -> "Data link layer raw frames";
+			case 6 -> "cEMI transport layer";
+			case 0xff -> "no layer";
+			default -> "unknown/unspecified (" + commMode + ")";
+		};
 	}
 
 	private void readRFMediumObject(final int objectIndex) {
@@ -1001,8 +996,7 @@ public class DeviceInfo implements Runnable
 		readBcuInfo(true);
 	}
 
-	private void readTP1Bcu2() throws InterruptedException, KNXException
-	{
+	private void readTP1Bcu2() throws InterruptedException {
 		// Option Reg: bit 0: watchdog disabled/enabled, bit 1: mem 0x300-0x4df protected/writable
 //		final int addrOptionReg = 0x100;
 
@@ -1479,18 +1473,13 @@ public class DeviceInfo implements Runnable
 
 	private static String toMediumTypeString(final int type)
 	{
-		switch (type) {
-		case 0:
-			return "Twisted Pair 1";
-		case 1:
-			return "Power-line 110";
-		case 2:
-			return "Radio Frequency";
-		case 5:
-			return "KNX IP";
-		default:
-			return "Type " + type;
-		}
+		return switch (type) {
+			case 0 -> "Twisted Pair 1";
+			case 1 -> "Power-line 110";
+			case 2 -> "Radio Frequency";
+			case 5 -> "KNX IP";
+			default -> "Type " + type;
+		};
 	}
 
 	private static String mediumTypes(final byte[] data) {
@@ -1504,53 +1493,38 @@ public class DeviceInfo implements Runnable
 
 	private static String toFirmwareTypeString(final int type)
 	{
-		switch (type) {
-		case 0:
-			return "BCU 1, BCU 2, BIM M113";
-		case 1:
-			return "Unidirectional devices";
-		case 3:
-			return "Property based device management";
-		case 7:
-			return "BIM M112";
-		case 8:
-			return "IR Decoder, TP1 legacy";
-		case 9:
-			return "Repeater, Coupler";
-		default:
-			return "Type " + type;
-		}
+		return switch (type) {
+			case 0 -> "BCU 1, BCU 2, BIM M113";
+			case 1 -> "Unidirectional devices";
+			case 3 -> "Property based device management";
+			case 7 -> "BIM M112";
+			case 8 -> "IR Decoder, TP1 legacy";
+			case 9 -> "Repeater, Coupler";
+			default -> "Type " + type;
+		};
 	}
 
 	private static String toPeiTypeString(final int peitype)
 	{
 		if (peitype == -1 || peitype == 0xff)
 			return "n/a";
-		final String[] desc = new String[] {
-			"No adapter", // 0
-			"Illegal adapter",
-			"4 inputs, 1 output (LED)",
-			"Reserved",
-			"2 inputs / 2 outputs, 1 output (LED)",
-			"Reserved", // 5
-			"3 inputs / 1 output, 1 output (LED)",
-			"Reserved",
-			"5 inputs",
-			"Reserved",
-			"FT1.2 protocol", // (default) type 10 is defined twice
-			// "Loadable serial protocol", // 10 (alternative)
-			"Reserved",
-			"Serial sync message protocol",
-			"Reserved",
-			"Serial sync data block protocol",
-			"Reserved", // 15
-			"Serial async message protocol",
-			"Programmable I/O",
-			"Reserved",
-			"4 outputs, 1 output (LED)",
-			"Download", // 20
+		return switch (peitype) {
+			case 0 -> "No adapter";
+			case 1 -> "Illegal adapter";
+			case 2 -> "4 inputs, 1 output (LED)";
+			case 4 -> "2 inputs / 2 outputs, 1 output (LED)";
+			case 6 -> "3 inputs / 1 output, 1 output (LED)";
+			case 8 -> "5 inputs";
+			case 10 -> "FT1.2 protocol"; // (default) type 10 is defined twice
+//			case 10 -> "Loadable serial protocol", // 10 (alternative)
+			case 12 -> "Serial sync message protocol";
+			case 14 -> "Serial sync data block protocol";
+			case 16 -> "Serial async message protocol";
+			case 17 -> "Programmable I/O";
+			case 19 -> "4 outputs, 1 output (LED)";
+			case 20 -> "Download";
+			default -> "Reserved";
 		};
-		return desc[peitype];
 	}
 
 	private static String decodeRunError(final int runError)
@@ -1574,22 +1548,15 @@ public class DeviceInfo implements Runnable
 		if (data == null || data.length < 1)
 			return "n/a";
 		final int state = data[0] & 0xff;
-		switch (state) {
-		case 0:
-			return "Unloaded";
-		case 1:
-			return "Loaded";
-		case 2:
-			return "Loading";
-		case 3:
-			return "Error (during load process)";
-		case 4:
-			return "Unloading";
-		case 5:
-			return "Load Completing (Intermediate)";
-		default:
-			return "Invalid load status " + state;
-		}
+		return switch (state) {
+			case 0 -> "Unloaded";
+			case 1 -> "Loaded";
+			case 2 -> "Loading";
+			case 3 -> "Error (during load process)";
+			case 4 -> "Unloading";
+			case 5 -> "Load Completing (Intermediate)";
+			default -> "Invalid load status " + state;
+		};
 	}
 
 	private static String getRunState(final byte[] data)
@@ -1597,22 +1564,15 @@ public class DeviceInfo implements Runnable
 		if (data == null || data.length < 1)
 			return "n/a";
 		final int state = data[0] & 0xff;
-		switch (state) {
-		case 0:
-			return "Halted";
-		case 1:
-			return "Running";
-		case 2:
-			return "Ready";
-		case 3:
-			return "Terminated";
-		case 4:
-			return "Starting";
-		case 5:
-			return "Shutting down";
-		default:
-			return "Invalid run state " + state;
-		}
+		return switch (state) {
+			case 0 -> "Halted";
+			case 1 -> "Running";
+			case 2 -> "Ready";
+			case 3 -> "Terminated";
+			case 4 -> "Starting";
+			case 5 -> "Shutting down";
+			default -> "Invalid run state " + state;
+		};
 	}
 
 	private static String toIPAssignmentString(final byte[] data)
@@ -1664,491 +1624,489 @@ public class DeviceInfo implements Runnable
 		return "[" + magic + "] " + version + "." + rev;
 	}
 
-	static String manufacturer(final int mf) {
-		return manufacturer.getOrDefault(mf, "Unknown");
-	}
-
 	// KNX manufacturer IDs as of 2020
-	private static final Map<Integer, String> manufacturer = new HashMap<>();
-	static {
-		manufacturer.put(1, "Siemens");
-		manufacturer.put(2, "ABB");
-		manufacturer.put(4, "Albrecht Jung");
-		manufacturer.put(5, "Bticino");
-		manufacturer.put(6, "Berker");
-		manufacturer.put(7, "Busch-Jaeger Elektro");
-		manufacturer.put(8, "GIRA Giersiepen");
-		manufacturer.put(9, "Hager Electro");
-		manufacturer.put(10, "Insta GmbH");
-		manufacturer.put(11, "LEGRAND Appareillage électrique");
-		manufacturer.put(12, "Merten");
-		manufacturer.put(14, "ABB SpA-SACE Division");
-		manufacturer.put(22, "Siedle & Söhne");
-		manufacturer.put(24, "Eberle");
-		manufacturer.put(25, "GEWISS");
-		manufacturer.put(27, "Albert Ackermann");
-		manufacturer.put(28, "Schupa GmbH");
-		manufacturer.put(29, "ABB SCHWEIZ");
-		manufacturer.put(30, "Feller");
-		manufacturer.put(31, "Glamox AS");
-		manufacturer.put(32, "DEHN & SÖHNE");
-		manufacturer.put(33, "CRABTREE");
-		manufacturer.put(34, "eVoKNX");
-		manufacturer.put(36, "Paul Hochköpper");
-		manufacturer.put(37, "Altenburger Electronic");
-		manufacturer.put(41, "Grässlin");
-		manufacturer.put(42, "Simon");
-		manufacturer.put(44, "VIMAR");
-		manufacturer.put(45, "Moeller Gebäudeautomation KG");
-		manufacturer.put(46, "Eltako");
-		manufacturer.put(49, "Bosch-Siemens Haushaltsgeräte");
-		manufacturer.put(52, "RITTO GmbH&Co.KG");
-		manufacturer.put(53, "Power Controls");
-		manufacturer.put(55, "ZUMTOBEL");
-		manufacturer.put(57, "Phoenix Contact");
-		manufacturer.put(61, "WAGO Kontakttechnik");
-		manufacturer.put(62, "knXpresso");
-		manufacturer.put(66, "Wieland Electric");
-		manufacturer.put(67, "Hermann Kleinhuis");
-		manufacturer.put(69, "Stiebel Eltron");
-		manufacturer.put(71, "Tehalit");
-		manufacturer.put(72, "Theben AG");
-		manufacturer.put(73, "Wilhelm Rutenbeck");
-		manufacturer.put(75, "Winkhaus");
-		manufacturer.put(76, "Robert Bosch");
-		manufacturer.put(78, "Somfy");
-		manufacturer.put(80, "Woertz");
-		manufacturer.put(81, "Viessmann Werke");
-		manufacturer.put(82, "IMI Hydronic Engineering");
-		manufacturer.put(83, "Joh. Vaillant");
-		manufacturer.put(85, "AMP Deutschland");
-		manufacturer.put(89, "Bosch Thermotechnik GmbH");
-		manufacturer.put(90, "SEF - ECOTEC");
-		manufacturer.put(92, "DORMA GmbH + Co. KG");
-		manufacturer.put(93, "WindowMaster A/S");
-		manufacturer.put(94, "Walther Werke");
-		manufacturer.put(95, "ORAS");
-		manufacturer.put(97, "Dätwyler");
-		manufacturer.put(98, "Electrak");
-		manufacturer.put(99, "Techem");
-		manufacturer.put(100, "Schneider Electric Industries SAS");
-		manufacturer.put(101, "WHD Wilhelm Huber + Söhne");
-		manufacturer.put(102, "Bischoff Elektronik");
-		manufacturer.put(104, "JEPAZ");
-		manufacturer.put(105, "RTS Automation");
-		manufacturer.put(106, "EIBMARKT GmbH");
-		manufacturer.put(107, "WAREMA Renkhoff SE");
-		manufacturer.put(108, "Eelectron");
-		manufacturer.put(109, "Belden Wire & Cable B.V.");
-		manufacturer.put(110, "Becker-Antriebe GmbH");
-		manufacturer.put(111, "J.Stehle+Söhne GmbH");
-		manufacturer.put(112, "AGFEO");
-		manufacturer.put(113, "Zennio");
-		manufacturer.put(114, "TAPKO Technologies");
-		manufacturer.put(115, "HDL");
-		manufacturer.put(116, "Uponor");
-		manufacturer.put(117, "se Lightmanagement AG");
-		manufacturer.put(118, "Arcus-eds");
-		manufacturer.put(119, "Intesis");
-		manufacturer.put(120, "Herholdt Controls srl");
-		manufacturer.put(121, "Niko-Zublin");
-		manufacturer.put(122, "Durable Technologies");
-		manufacturer.put(123, "Innoteam");
-		manufacturer.put(124, "ise GmbH");
-		manufacturer.put(125, "TEAM FOR TRONICS");
-		manufacturer.put(126, "CIAT");
-		manufacturer.put(127, "Remeha BV");
-		manufacturer.put(128, "ESYLUX");
-		manufacturer.put(129, "BASALTE");
-		manufacturer.put(130, "Vestamatic");
-		manufacturer.put(131, "MDT technologies");
-		manufacturer.put(132, "Warendorfer Küchen GmbH");
-		manufacturer.put(133, "Video-Star");
-		manufacturer.put(134, "Sitek");
-		manufacturer.put(135, "CONTROLtronic");
-		manufacturer.put(136, "function Technology");
-		manufacturer.put(137, "AMX");
-		manufacturer.put(138, "ELDAT");
-		manufacturer.put(139, "Panasonic");
-		manufacturer.put(140, "Pulse Technologies");
-		manufacturer.put(141, "Crestron");
-		manufacturer.put(142, "STEINEL professional");
-		manufacturer.put(143, "BILTON LED Lighting");
-		manufacturer.put(144, "denro AG");
-		manufacturer.put(145, "GePro");
-		manufacturer.put(146, "preussen automation");
-		manufacturer.put(147, "Zoppas Industries");
-		manufacturer.put(148, "MACTECH");
-		manufacturer.put(149, "TECHNO-TREND");
-		manufacturer.put(150, "FS Cables");
-		manufacturer.put(151, "Delta Dore");
-		manufacturer.put(152, "Eissound");
-		manufacturer.put(153, "Cisco");
-		manufacturer.put(154, "Dinuy");
-		manufacturer.put(155, "iKNiX");
-		manufacturer.put(156, "Rademacher Geräte-Elektronik GmbH");
-		manufacturer.put(157, "EGi Electroacustica General Iberica");
-		manufacturer.put(158, "Bes – Ingenium");
-		manufacturer.put(159, "ElabNET");
-		manufacturer.put(160, "Blumotix");
-		manufacturer.put(161, "Hunter Douglas");
-		manufacturer.put(162, "APRICUM");
-		manufacturer.put(163, "TIANSU Automation");
-		manufacturer.put(164, "Bubendorff");
-		manufacturer.put(165, "MBS GmbH");
-		manufacturer.put(166, "Enertex Bayern GmbH");
-		manufacturer.put(167, "BMS");
-		manufacturer.put(168, "Sinapsi");
-		manufacturer.put(169, "Embedded Systems SIA");
-		manufacturer.put(170, "KNX1");
-		manufacturer.put(171, "Tokka");
-		manufacturer.put(172, "NanoSense");
-		manufacturer.put(173, "PEAR Automation GmbH");
-		manufacturer.put(174, "DGA");
-		manufacturer.put(175, "Lutron");
-		manufacturer.put(176, "AIRZONE – ALTRA");
-		manufacturer.put(177, "Lithoss Design Switches");
-		manufacturer.put(178, "3ATEL");
-		manufacturer.put(179, "Philips Controls");
-		manufacturer.put(180, "VELUX A/S");
-		manufacturer.put(181, "LOYTEC");
-		manufacturer.put(182, "Ekinex S.p.A.");
-		manufacturer.put(183, "SIRLAN Technologies");
-		manufacturer.put(184, "ProKNX SAS");
-		manufacturer.put(185, "IT GmbH");
-		manufacturer.put(186, "RENSON");
-		manufacturer.put(187, "HEP Group");
-		manufacturer.put(188, "Balmart");
-		manufacturer.put(189, "GFS GmbH");
-		manufacturer.put(190, "Schenker Storen AG");
-		manufacturer.put(191, "Algodue Elettronica S.r.L.");
-		manufacturer.put(192, "ABB France");
-		manufacturer.put(193, "maintronic");
-		manufacturer.put(194, "Vantage");
-		manufacturer.put(195, "Foresis");
-		manufacturer.put(196, "Research & Production Association SEM");
-		manufacturer.put(197, "Weinzierl Engineering GmbH");
-		manufacturer.put(198, "Möhlenhoff Wärmetechnik GmbH");
-		manufacturer.put(199, "PKC-GROUP Oyj");
-		manufacturer.put(200, "B.E.G.");
-		manufacturer.put(201, "Elsner Elektronik GmbH");
-		manufacturer.put(202, "Siemens Building Technologies (HK/China) Ltd.");
-		manufacturer.put(204, "Eutrac");
-		manufacturer.put(205, "Gustav Hensel GmbH & Co. KG");
-		manufacturer.put(206, "GARO AB");
-		manufacturer.put(207, "Waldmann Lichttechnik");
-		manufacturer.put(208, "SCHÜCO");
-		manufacturer.put(209, "EMU");
-		manufacturer.put(210, "JNet Systems AG");
-		manufacturer.put(214, "O.Y.L. Electronics");
-		manufacturer.put(215, "Galax System");
-		manufacturer.put(216, "Disch");
-		manufacturer.put(217, "Aucoteam");
-		manufacturer.put(218, "Luxmate Controls");
-		manufacturer.put(219, "Danfoss");
-		manufacturer.put(220, "AST GmbH");
-		manufacturer.put(222, "WILA Leuchten");
-		manufacturer.put(223, "b+b Automations- und Steuerungstechnik");
-		manufacturer.put(225, "Lingg & Janke");
-		manufacturer.put(227, "Sauter");
-		manufacturer.put(228, "SIMU");
-		manufacturer.put(232, "Theben HTS AG");
-		manufacturer.put(233, "Amann GmbH");
-		manufacturer.put(234, "BERG Energiekontrollsysteme GmbH");
-		manufacturer.put(235, "Hüppe Form Sonnenschutzsysteme GmbH");
-		manufacturer.put(237, "Oventrop KG");
-		manufacturer.put(238, "Griesser AG");
-		manufacturer.put(239, "IPAS GmbH");
-		manufacturer.put(240, "elero GmbH");
-		manufacturer.put(241, "Ardan Production and Industrial Controls Ltd.");
-		manufacturer.put(242, "Metec Meßtechnik GmbH");
-		manufacturer.put(244, "ELKA-Elektronik GmbH");
-		manufacturer.put(245, "ELEKTROANLAGEN D. NAGEL");
-		manufacturer.put(246, "Tridonic Bauelemente GmbH");
-		manufacturer.put(248, "Stengler Gesellschaft");
-		manufacturer.put(249, "Schneider Electric (MG)");
-		manufacturer.put(250, "KNX Association");
-		manufacturer.put(251, "VIVO");
-		manufacturer.put(252, "Hugo Müller GmbH & Co KG");
-		manufacturer.put(253, "Siemens HVAC");
-		manufacturer.put(254, "APT");
-		manufacturer.put(256, "HighDom");
-		manufacturer.put(257, "Top Services");
-		manufacturer.put(258, "ambiHome");
-		manufacturer.put(259, "DATEC electronic AG");
-		manufacturer.put(260, "ABUS Security-Center");
-		manufacturer.put(261, "Lite-Puter");
-		manufacturer.put(262, "Tantron Electronic");
-		manufacturer.put(263, "Interra");
-		manufacturer.put(264, "DKX Tech");
-		manufacturer.put(265, "Viatron");
-		manufacturer.put(266, "Nautibus");
-		manufacturer.put(267, "ON Semiconductor");
-		manufacturer.put(268, "Longchuang");
-		manufacturer.put(269, "Air-On AG");
-		manufacturer.put(270, "ib-company GmbH");
-		manufacturer.put(271, "Sation Factory");
-		manufacturer.put(272, "Agentilo GmbH");
-		manufacturer.put(273, "Makel Elektrik");
-		manufacturer.put(274, "Helios Ventilatoren");
-		manufacturer.put(275, "Otto Solutions Pte Ltd");
-		manufacturer.put(276, "Airmaster");
-		manufacturer.put(277, "Vallox GmbH");
-		manufacturer.put(278, "Dalitek");
-		manufacturer.put(279, "ASIN");
-		manufacturer.put(280, "Bridges Intelligence Technology Inc.");
-		manufacturer.put(281, "ARBONIA");
-		manufacturer.put(282, "KERMI");
-		manufacturer.put(283, "PROLUX");
-		manufacturer.put(284, "ClicHome");
-		manufacturer.put(285, "COMMAX");
-		manufacturer.put(286, "EAE");
-		manufacturer.put(287, "Tense");
-		manufacturer.put(288, "Seyoung Electronics");
-		manufacturer.put(289, "Lifedomus");
-		manufacturer.put(290, "EUROtronic Technology GmbH");
-		manufacturer.put(291, "tci");
-		manufacturer.put(292, "Rishun Electronic");
-		manufacturer.put(293, "Zipato");
-		manufacturer.put(294, "cm-security GmbH & Co KG");
-		manufacturer.put(295, "Qing Cables");
-		manufacturer.put(296, "LABIO");
-		manufacturer.put(297, "Coster Tecnologie Elettroniche S.p.A.");
-		manufacturer.put(298, "E.G.E");
-		manufacturer.put(299, "NETxAutomation");
-		manufacturer.put(300, "tecalor");
-		manufacturer.put(301, "Urmet Electronics (Huizhou) Ltd.");
-		manufacturer.put(302, "Peiying Building Control");
-		manufacturer.put(303, "BPT S.p.A. a Socio Unico");
-		manufacturer.put(304, "Kanontec - KanonBUS");
-		manufacturer.put(305, "ISER Tech");
-		manufacturer.put(306, "Fineline");
-		manufacturer.put(307, "CP Electronics Ltd");
-		manufacturer.put(308, "Niko-Servodan A/S");
-		manufacturer.put(309, "Simon");
-		manufacturer.put(310, "GM modular pvt. Ltd.");
-		manufacturer.put(311, "FU CHENG Intelligence");
-		manufacturer.put(312, "NexKon");
-		manufacturer.put(313, "FEEL s.r.l");
-		manufacturer.put(314, "Not Assigned");
-		manufacturer.put(315, "Shenzhen Fanhai Sanjiang Electronics Co., Ltd.");
-		manufacturer.put(316, "Jiuzhou Greeble");
-		manufacturer.put(317, "Aumüller Aumatic GmbH");
-		manufacturer.put(318, "Etman Electric");
-		manufacturer.put(319, "EMT Controls");
-		manufacturer.put(320, "ZidaTech AG");
-		manufacturer.put(321, "IDGS bvba");
-		manufacturer.put(322, "dakanimo");
-		manufacturer.put(323, "Trebor Automation AB");
-		manufacturer.put(324, "Satel sp. z o.o.");
-		manufacturer.put(325, "Russound, Inc.");
-		manufacturer.put(326, "Midea Heating & Ventilating Equipment CO LTD");
-		manufacturer.put(327, "Consorzio Terranuova");
-		manufacturer.put(328, "Wolf Heiztechnik GmbH");
-		manufacturer.put(329, "SONTEC");
-		manufacturer.put(330, "Belcom Cables Ltd.");
-		manufacturer.put(331, "Guangzhou SeaWin Electrical Technologies Co., Ltd.");
-		manufacturer.put(332, "Acrel");
-		manufacturer.put(333, "Franke Aquarotter GmbH");
-		manufacturer.put(334, "Orion Systems");
-		manufacturer.put(335, "Schrack Technik GmbH");
-		manufacturer.put(336, "INSPRID");
-		manufacturer.put(337, "Sunricher");
-		manufacturer.put(338, "Menred automation system(shanghai) Co.,Ltd.");
-		manufacturer.put(339, "Aurex");
-		manufacturer.put(340, "Josef Barthelme GmbH & Co. KG");
-		manufacturer.put(341, "Architecture Numerique");
-		manufacturer.put(342, "UP GROUP");
-		manufacturer.put(343, "Teknos-Avinno");
-		manufacturer.put(344, "Ningbo Dooya Mechanic & Electronic Technology");
-		manufacturer.put(345, "Thermokon Sensortechnik GmbH");
-		manufacturer.put(346, "BELIMO Automation AG");
-		manufacturer.put(347, "Zehnder Group International AG");
-		manufacturer.put(348, "sks Kinkel Elektronik");
-		manufacturer.put(349, "ECE Wurmitzer GmbH");
-		manufacturer.put(350, "LARS");
-		manufacturer.put(351, "URC");
-		manufacturer.put(352, "LightControl");
-		manufacturer.put(353, "ShenZhen YM");
-		manufacturer.put(354, "MEAN WELL Enterprises Co. Ltd.");
-		manufacturer.put(355, "OSix");
-		manufacturer.put(356, "AYPRO Technology");
-		manufacturer.put(357, "Hefei Ecolite Software");
-		manufacturer.put(358, "Enno");
-		manufacturer.put(359, "OHOSURE");
-		manufacturer.put(360, "Garefowl");
-		manufacturer.put(361, "GEZE");
-		manufacturer.put(362, "LG Electronics Inc.");
-		manufacturer.put(363, "SMC interiors");
-		manufacturer.put(365, "SCS Cable");
-		manufacturer.put(366, "Hoval");
-		manufacturer.put(367, "CANST");
-		manufacturer.put(368, "HangZhou Berlin");
-		manufacturer.put(369, "EVN-Lichttechnik");
-		manufacturer.put(370, "rutec");
-		manufacturer.put(371, "Finder");
-		manufacturer.put(372, "Fujitsu General Limited");
-		manufacturer.put(373, "ZF Friedrichshafen AG");
-		manufacturer.put(374, "Crealed");
-		manufacturer.put(375, "Miles Magic Automation Private Limited");
-		manufacturer.put(376, "E+");
-		manufacturer.put(377, "Italcond");
-		manufacturer.put(378, "SATION");
-		manufacturer.put(379, "NewBest");
-		manufacturer.put(380, "GDS DIGITAL SYSTEMS");
-		manufacturer.put(381, "Iddero");
-		manufacturer.put(382, "MBNLED");
-		manufacturer.put(383, "VITRUM");
-		manufacturer.put(384, "ekey biometric systems GmbH");
-		manufacturer.put(385, "AMC");
-		manufacturer.put(386, "TRILUX GmbH & Co. KG");
-		manufacturer.put(387, "WExcedo");
-		manufacturer.put(388, "VEMER SPA");
-		manufacturer.put(389, "Alexander Bürkle GmbH & Co KG");
-		manufacturer.put(390, "Seetroll");
-		manufacturer.put(391, "Shenzhen HeGuang");
-		manufacturer.put(392, "Not Assigned");
-		manufacturer.put(393, "TRANE B.V.B.A");
-		manufacturer.put(394, "CAREL");
-		manufacturer.put(395, "Prolite Controls");
-		manufacturer.put(396, "BOSMER");
-		manufacturer.put(397, "EUCHIPS");
-		manufacturer.put(398, "connect (Thinka connect)");
-		manufacturer.put(399, "PEAKnx a DOGAWIST company ");
-		manufacturer.put(400, "ACEMATIC");
-		manufacturer.put(401, "ELAUSYS");
-		manufacturer.put(402, "ITK Engineering AG");
-		manufacturer.put(403, "INTEGRA METERING AG");
-		manufacturer.put(404, "FMS Hospitality Pte Ltd");
-		manufacturer.put(405, "Nuvo");
-		manufacturer.put(406, "u::Lux GmbH");
-		manufacturer.put(407, "Brumberg Leuchten");
-		manufacturer.put(408, "Lime");
-		manufacturer.put(409, "Great Empire International Group Co., Ltd.");
-		manufacturer.put(410, "Kavoshpishro Asia");
-		manufacturer.put(411, "V2 SpA");
-		manufacturer.put(412, "Johnson Controls");
-		manufacturer.put(413, "Arkud");
-		manufacturer.put(414, "Iridium Ltd.");
-		manufacturer.put(415, "bsmart");
-		manufacturer.put(416, "BAB TECHNOLOGIE GmbH");
-		manufacturer.put(417, "NICE Spa");
-		manufacturer.put(418, "Redfish Group Pty Ltd");
-		manufacturer.put(419, "SABIANA spa");
-		manufacturer.put(420, "Ubee Interactive Europe");
-		manufacturer.put(421, "Rexel");
-		manufacturer.put(422, "Ges Teknik A.S.");
-		manufacturer.put(423, "Ave S.p.A. ");
-		manufacturer.put(424, "Zhuhai Ltech Technology Co., Ltd. ");
-		manufacturer.put(425, "ARCOM");
-		manufacturer.put(426, "VIA Technologies, Inc.");
-		manufacturer.put(427, "FEELSMART.");
-		manufacturer.put(428, "SUPCON");
-		manufacturer.put(429, "MANIC");
-		manufacturer.put(430, "TDE GmbH");
-		manufacturer.put(431, "Nanjing Shufan Information technology Co.,Ltd.");
-		manufacturer.put(432, "EWTech");
-		manufacturer.put(433, "Kluger Automation GmbH");
-		manufacturer.put(434, "JoongAng Control");
-		manufacturer.put(435, "GreenControls Technology Sdn. Bhd.");
-		manufacturer.put(436, "IME S.p.a.");
-		manufacturer.put(437, "SiChuan HaoDing");
-		manufacturer.put(438, "Mindjaga Ltd.");
-		manufacturer.put(439, "RuiLi Smart Control");
-		manufacturer.put(440, "3S-Smart Software Solutions GmbH");
-		manufacturer.put(441, "Moorgen Deutschland GmbH");
-		manufacturer.put(442, "CULLMANN TECH");
-		manufacturer.put(443, "Merck Window Technologies B.V.");
-		manufacturer.put(444, "ABEGO");
-		manufacturer.put(445, "myGEKKO");
-		manufacturer.put(446, "Ergo3 Sarl");
-		manufacturer.put(447, "STmicroelectronics International N.V.");
-		manufacturer.put(448, "cjc systems");
-		manufacturer.put(449, "Sudoku");
-		manufacturer.put(451, "AZ e-lite Pte Ltd");
-		manufacturer.put(452, "Arlight");
-		manufacturer.put(453, "Grünbeck Wasseraufbereitung GmbH");
-		manufacturer.put(454, "Module Electronic");
-		manufacturer.put(455, "KOPLAT");
-		manufacturer.put(456, "Guangzhou Letour Life Technology Co., Ltd");
-		manufacturer.put(457, "ILEVIA");
-		manufacturer.put(458, "LN SYSTEMTEQ");
-		manufacturer.put(459, "Hisense SmartHome");
-		manufacturer.put(460, "Flink Automation System");
-		manufacturer.put(461, "xxter bv");
-		manufacturer.put(462, "lynxus technology");
-		manufacturer.put(463, "ROBOT S.A.");
-		manufacturer.put(464, "Shenzhen Atte Smart Life Co.,Ltd.");
-		manufacturer.put(465, "Noblesse");
-		manufacturer.put(466, "Advanced Devices");
-		manufacturer.put(467, "Atrina Building Automation Co. Ltd");
-		manufacturer.put(468, "Guangdong Daming Laffey electric Co., Ltd.");
-		manufacturer.put(469, "Westerstrand Urfabrik AB");
-		manufacturer.put(470, "Control4 Corporate");
-		manufacturer.put(471, "Ontrol");
-		manufacturer.put(472, "Starnet");
-		manufacturer.put(473, "BETA CAVI");
-		manufacturer.put(474, "EaseMore");
-		manufacturer.put(475, "Vivaldi srl");
-		manufacturer.put(476, "Gree Electric Appliances,Inc. of Zhuhai");
-		manufacturer.put(477, "HWISCON");
-		manufacturer.put(478, "Shanghai ELECON Intelligent Technology Co., Ltd.");
-		manufacturer.put(479, "Kampmann");
-		manufacturer.put(480, "Impolux GmbH / LEDIMAX");
-		manufacturer.put(481, "Evaux");
-		manufacturer.put(482, "Webro Cables & Connectors Limited");
-		manufacturer.put(483, "Shanghai E-tech Solution");
-		manufacturer.put(484, "Guangzhou HOKO Electric Co.,Ltd.");
-		manufacturer.put(485, "LAMMIN HIGH TECH CO.,LTD");
-		manufacturer.put(486, "Shenzhen Merrytek Technology Co., Ltd");
-		manufacturer.put(487, "I-Luxus");
-		manufacturer.put(488, "Elmos Semiconductor AG");
-		manufacturer.put(489, "EmCom Technology Inc");
-		manufacturer.put(490, "project innovations GmbH");
-		manufacturer.put(491, "Itc");
-		manufacturer.put(492, "ABB LV Installation Materials Company Ltd, Beijing");
-		manufacturer.put(493, "Maico ");
-		manufacturer.put(494, "Total Solution GmbH");
-		manufacturer.put(495, "ELAN SRL");
-		manufacturer.put(496, "MinhHa Technology co.,Ltd");
-		manufacturer.put(497, "Zhejiang Tianjie Industrial CORP.");
-		manufacturer.put(498, "iAutomation Pty Limited");
-		manufacturer.put(499, "Extron");
-		manufacturer.put(500, "Freedompro");
-		manufacturer.put(501, "Voxior Inc.");
-		manufacturer.put(502, "EOS Saunatechnik GmbH");
-		manufacturer.put(503, "KUSATEK GmbH");
-		manufacturer.put(504, "EisBär Scada");
-		manufacturer.put(505, "AUTOMATISMI BENINCA S.P.A.");
-		manufacturer.put(506, "Blendom");
-		manufacturer.put(507, "Madel Air Technical diffusion");
-		manufacturer.put(508, "NIKO");
-		manufacturer.put(509, "Bosch Rexroth AG");
-		manufacturer.put(512, "C&M Products");
-		manufacturer.put(513, "Hörmann KG Verkaufsgesellschaft");
-		manufacturer.put(514, "Shanghai Rajayasa co.,LTD");
-		manufacturer.put(515, "SUZUKI");
-		manufacturer.put(516, "Silent Gliss International Ltd.");
-		manufacturer.put(517, "BEE Controls (ADGSC Group)");
-		manufacturer.put(518, "xDTecGmbH");
-		manufacturer.put(519, "OSRAM");
-		manufacturer.put(520, "Lebenor");
-		manufacturer.put(521, "automaneng");
-		manufacturer.put(522, "Honeywell Automation Solution control (China)");
-		manufacturer.put(523, "Hangzhou binthen Intelligence Technology Co.,Ltd");
-		manufacturer.put(524, "ETA Heiztechnik");
-		manufacturer.put(525, "DIVUS GmbH");
-		manufacturer.put(526, "Nanjing Taijiesai Intelligent Technology Co. Ltd.");
-		manufacturer.put(527, "Lunatone");
-		manufacturer.put(528, "ZHEJIANG SCTECH BUILDING INTELLIGENT");
-		manufacturer.put(529, "Foshan Qite Technology Co., Ltd.");
-		manufacturer.put(530, "NOKE");
-		manufacturer.put(531, "LANDCOM");
-		manufacturer.put(532, "Stork AS");
-		manufacturer.put(533, "Hangzhou Shendu Technology Co., Ltd.");
-		manufacturer.put(534, "CoolAutomation");
-		manufacturer.put(535, "Aprstern");
-		manufacturer.put(536, "sonnen");
-		manufacturer.put(537, "DNAKE");
+	static String manufacturer(final int mf) {
+		return switch (mf) {
+			case 1 -> "Siemens";
+			case 2 -> "ABB";
+			case 4 -> "Albrecht Jung";
+			case 5 -> "Bticino";
+			case 6 -> "Berker";
+			case 7 -> "Busch-Jaeger Elektro";
+			case 8 -> "GIRA Giersiepen";
+			case 9 -> "Hager Electro";
+			case 10 -> "Insta GmbH";
+			case 11 -> "LEGRAND Appareillage électrique";
+			case 12 -> "Merten";
+			case 14 -> "ABB SpA-SACE Division";
+			case 22 -> "Siedle & Söhne";
+			case 24 -> "Eberle";
+			case 25 -> "GEWISS";
+			case 27 -> "Albert Ackermann";
+			case 28 -> "Schupa GmbH";
+			case 29 -> "ABB SCHWEIZ";
+			case 30 -> "Feller";
+			case 31 -> "Glamox AS";
+			case 32 -> "DEHN & SÖHNE";
+			case 33 -> "CRABTREE";
+			case 34 -> "eVoKNX";
+			case 36 -> "Paul Hochköpper";
+			case 37 -> "Altenburger Electronic";
+			case 41 -> "Grässlin";
+			case 42 -> "Simon";
+			case 44 -> "VIMAR";
+			case 45 -> "Moeller Gebäudeautomation KG";
+			case 46 -> "Eltako";
+			case 49 -> "Bosch-Siemens Haushaltsgeräte";
+			case 52 -> "RITTO GmbH&Co.KG";
+			case 53 -> "Power Controls";
+			case 55 -> "ZUMTOBEL";
+			case 57 -> "Phoenix Contact";
+			case 61 -> "WAGO Kontakttechnik";
+			case 62 -> "knXpresso";
+			case 66 -> "Wieland Electric";
+			case 67 -> "Hermann Kleinhuis";
+			case 69 -> "Stiebel Eltron";
+			case 71 -> "Tehalit";
+			case 72 -> "Theben AG";
+			case 73 -> "Wilhelm Rutenbeck";
+			case 75 -> "Winkhaus";
+			case 76 -> "Robert Bosch";
+			case 78 -> "Somfy";
+			case 80 -> "Woertz";
+			case 81 -> "Viessmann Werke";
+			case 82 -> "IMI Hydronic Engineering";
+			case 83 -> "Joh. Vaillant";
+			case 85 -> "AMP Deutschland";
+			case 89 -> "Bosch Thermotechnik GmbH";
+			case 90 -> "SEF - ECOTEC";
+			case 92 -> "DORMA GmbH + Co. KG";
+			case 93 -> "WindowMaster A/S";
+			case 94 -> "Walther Werke";
+			case 95 -> "ORAS";
+			case 97 -> "Dätwyler";
+			case 98 -> "Electrak";
+			case 99 -> "Techem";
+			case 100 -> "Schneider Electric Industries SAS";
+			case 101 -> "WHD Wilhelm Huber + Söhne";
+			case 102 -> "Bischoff Elektronik";
+			case 104 -> "JEPAZ";
+			case 105 -> "RTS Automation";
+			case 106 -> "EIBMARKT GmbH";
+			case 107 -> "WAREMA Renkhoff SE";
+			case 108 -> "Eelectron";
+			case 109 -> "Belden Wire & Cable B.V.";
+			case 110 -> "Becker-Antriebe GmbH";
+			case 111 -> "J.Stehle+Söhne GmbH";
+			case 112 -> "AGFEO";
+			case 113 -> "Zennio";
+			case 114 -> "TAPKO Technologies";
+			case 115 -> "HDL";
+			case 116 -> "Uponor";
+			case 117 -> "se Lightmanagement AG";
+			case 118 -> "Arcus-eds";
+			case 119 -> "Intesis";
+			case 120 -> "Herholdt Controls srl";
+			case 121 -> "Niko-Zublin";
+			case 122 -> "Durable Technologies";
+			case 123 -> "Innoteam";
+			case 124 -> "ise GmbH";
+			case 125 -> "TEAM FOR TRONICS";
+			case 126 -> "CIAT";
+			case 127 -> "Remeha BV";
+			case 128 -> "ESYLUX";
+			case 129 -> "BASALTE";
+			case 130 -> "Vestamatic";
+			case 131 -> "MDT technologies";
+			case 132 -> "Warendorfer Küchen GmbH";
+			case 133 -> "Video-Star";
+			case 134 -> "Sitek";
+			case 135 -> "CONTROLtronic";
+			case 136 -> "function Technology";
+			case 137 -> "AMX";
+			case 138 -> "ELDAT";
+			case 139 -> "Panasonic";
+			case 140 -> "Pulse Technologies";
+			case 141 -> "Crestron";
+			case 142 -> "STEINEL professional";
+			case 143 -> "BILTON LED Lighting";
+			case 144 -> "denro AG";
+			case 145 -> "GePro";
+			case 146 -> "preussen automation";
+			case 147 -> "Zoppas Industries";
+			case 148 -> "MACTECH";
+			case 149 -> "TECHNO-TREND";
+			case 150 -> "FS Cables";
+			case 151 -> "Delta Dore";
+			case 152 -> "Eissound";
+			case 153 -> "Cisco";
+			case 154 -> "Dinuy";
+			case 155 -> "iKNiX";
+			case 156 -> "Rademacher Geräte-Elektronik GmbH";
+			case 157 -> "EGi Electroacustica General Iberica";
+			case 158 -> "Bes – Ingenium";
+			case 159 -> "ElabNET";
+			case 160 -> "Blumotix";
+			case 161 -> "Hunter Douglas";
+			case 162 -> "APRICUM";
+			case 163 -> "TIANSU Automation";
+			case 164 -> "Bubendorff";
+			case 165 -> "MBS GmbH";
+			case 166 -> "Enertex Bayern GmbH";
+			case 167 -> "BMS";
+			case 168 -> "Sinapsi";
+			case 169 -> "Embedded Systems SIA";
+			case 170 -> "KNX1";
+			case 171 -> "Tokka";
+			case 172 -> "NanoSense";
+			case 173 -> "PEAR Automation GmbH";
+			case 174 -> "DGA";
+			case 175 -> "Lutron";
+			case 176 -> "AIRZONE – ALTRA";
+			case 177 -> "Lithoss Design Switches";
+			case 178 -> "3ATEL";
+			case 179 -> "Philips Controls";
+			case 180 -> "VELUX A/S";
+			case 181 -> "LOYTEC";
+			case 182 -> "Ekinex S.p.A.";
+			case 183 -> "SIRLAN Technologies";
+			case 184 -> "ProKNX SAS";
+			case 185 -> "IT GmbH";
+			case 186 -> "RENSON";
+			case 187 -> "HEP Group";
+			case 188 -> "Balmart";
+			case 189 -> "GFS GmbH";
+			case 190 -> "Schenker Storen AG";
+			case 191 -> "Algodue Elettronica S.r.L.";
+			case 192 -> "ABB France";
+			case 193 -> "maintronic";
+			case 194 -> "Vantage";
+			case 195 -> "Foresis";
+			case 196 -> "Research & Production Association SEM";
+			case 197 -> "Weinzierl Engineering GmbH";
+			case 198 -> "Möhlenhoff Wärmetechnik GmbH";
+			case 199 -> "PKC-GROUP Oyj";
+			case 200 -> "B.E.G.";
+			case 201 -> "Elsner Elektronik GmbH";
+			case 202 -> "Siemens Building Technologies (HK/China) Ltd.";
+			case 204 -> "Eutrac";
+			case 205 -> "Gustav Hensel GmbH & Co. KG";
+			case 206 -> "GARO AB";
+			case 207 -> "Waldmann Lichttechnik";
+			case 208 -> "SCHÜCO";
+			case 209 -> "EMU";
+			case 210 -> "JNet Systems AG";
+			case 214 -> "O.Y.L. Electronics";
+			case 215 -> "Galax System";
+			case 216 -> "Disch";
+			case 217 -> "Aucoteam";
+			case 218 -> "Luxmate Controls";
+			case 219 -> "Danfoss";
+			case 220 -> "AST GmbH";
+			case 222 -> "WILA Leuchten";
+			case 223 -> "b+b Automations- und Steuerungstechnik";
+			case 225 -> "Lingg & Janke";
+			case 227 -> "Sauter";
+			case 228 -> "SIMU";
+			case 232 -> "Theben HTS AG";
+			case 233 -> "Amann GmbH";
+			case 234 -> "BERG Energiekontrollsysteme GmbH";
+			case 235 -> "Hüppe Form Sonnenschutzsysteme GmbH";
+			case 237 -> "Oventrop KG";
+			case 238 -> "Griesser AG";
+			case 239 -> "IPAS GmbH";
+			case 240 -> "elero GmbH";
+			case 241 -> "Ardan Production and Industrial Controls Ltd.";
+			case 242 -> "Metec Meßtechnik GmbH";
+			case 244 -> "ELKA-Elektronik GmbH";
+			case 245 -> "ELEKTROANLAGEN D. NAGEL";
+			case 246 -> "Tridonic Bauelemente GmbH";
+			case 248 -> "Stengler Gesellschaft";
+			case 249 -> "Schneider Electric (MG)";
+			case 250 -> "KNX Association";
+			case 251 -> "VIVO";
+			case 252 -> "Hugo Müller GmbH & Co KG";
+			case 253 -> "Siemens HVAC";
+			case 254 -> "APT";
+			case 256 -> "HighDom";
+			case 257 -> "Top Services";
+			case 258 -> "ambiHome";
+			case 259 -> "DATEC electronic AG";
+			case 260 -> "ABUS Security-Center";
+			case 261 -> "Lite-Puter";
+			case 262 -> "Tantron Electronic";
+			case 263 -> "Interra";
+			case 264 -> "DKX Tech";
+			case 265 -> "Viatron";
+			case 266 -> "Nautibus";
+			case 267 -> "ON Semiconductor";
+			case 268 -> "Longchuang";
+			case 269 -> "Air-On AG";
+			case 270 -> "ib-company GmbH";
+			case 271 -> "Sation Factory";
+			case 272 -> "Agentilo GmbH";
+			case 273 -> "Makel Elektrik";
+			case 274 -> "Helios Ventilatoren";
+			case 275 -> "Otto Solutions Pte Ltd";
+			case 276 -> "Airmaster";
+			case 277 -> "Vallox GmbH";
+			case 278 -> "Dalitek";
+			case 279 -> "ASIN";
+			case 280 -> "Bridges Intelligence Technology Inc.";
+			case 281 -> "ARBONIA";
+			case 282 -> "KERMI";
+			case 283 -> "PROLUX";
+			case 284 -> "ClicHome";
+			case 285 -> "COMMAX";
+			case 286 -> "EAE";
+			case 287 -> "Tense";
+			case 288 -> "Seyoung Electronics";
+			case 289 -> "Lifedomus";
+			case 290 -> "EUROtronic Technology GmbH";
+			case 291 -> "tci";
+			case 292 -> "Rishun Electronic";
+			case 293 -> "Zipato";
+			case 294 -> "cm-security GmbH & Co KG";
+			case 295 -> "Qing Cables";
+			case 296 -> "LABIO";
+			case 297 -> "Coster Tecnologie Elettroniche S.p.A.";
+			case 298 -> "E.G.E";
+			case 299 -> "NETxAutomation";
+			case 300 -> "tecalor";
+			case 301 -> "Urmet Electronics (Huizhou) Ltd.";
+			case 302 -> "Peiying Building Control";
+			case 303 -> "BPT S.p.A. a Socio Unico";
+			case 304 -> "Kanontec - KanonBUS";
+			case 305 -> "ISER Tech";
+			case 306 -> "Fineline";
+			case 307 -> "CP Electronics Ltd";
+			case 308 -> "Niko-Servodan A/S";
+			case 309 -> "Simon";
+			case 310 -> "GM modular pvt. Ltd.";
+			case 311 -> "FU CHENG Intelligence";
+			case 312 -> "NexKon";
+			case 313 -> "FEEL s.r.l";
+			case 314 -> "Not Assigned";
+			case 315 -> "Shenzhen Fanhai Sanjiang Electronics Co., Ltd.";
+			case 316 -> "Jiuzhou Greeble";
+			case 317 -> "Aumüller Aumatic GmbH";
+			case 318 -> "Etman Electric";
+			case 319 -> "EMT Controls";
+			case 320 -> "ZidaTech AG";
+			case 321 -> "IDGS bvba";
+			case 322 -> "dakanimo";
+			case 323 -> "Trebor Automation AB";
+			case 324 -> "Satel sp. z o.o.";
+			case 325 -> "Russound, Inc.";
+			case 326 -> "Midea Heating & Ventilating Equipment CO LTD";
+			case 327 -> "Consorzio Terranuova";
+			case 328 -> "Wolf Heiztechnik GmbH";
+			case 329 -> "SONTEC";
+			case 330 -> "Belcom Cables Ltd.";
+			case 331 -> "Guangzhou SeaWin Electrical Technologies Co., Ltd.";
+			case 332 -> "Acrel";
+			case 333 -> "Franke Aquarotter GmbH";
+			case 334 -> "Orion Systems";
+			case 335 -> "Schrack Technik GmbH";
+			case 336 -> "INSPRID";
+			case 337 -> "Sunricher";
+			case 338 -> "Menred automation system(shanghai) Co.,Ltd.";
+			case 339 -> "Aurex";
+			case 340 -> "Josef Barthelme GmbH & Co. KG";
+			case 341 -> "Architecture Numerique";
+			case 342 -> "UP GROUP";
+			case 343 -> "Teknos-Avinno";
+			case 344 -> "Ningbo Dooya Mechanic & Electronic Technology";
+			case 345 -> "Thermokon Sensortechnik GmbH";
+			case 346 -> "BELIMO Automation AG";
+			case 347 -> "Zehnder Group International AG";
+			case 348 -> "sks Kinkel Elektronik";
+			case 349 -> "ECE Wurmitzer GmbH";
+			case 350 -> "LARS";
+			case 351 -> "URC";
+			case 352 -> "LightControl";
+			case 353 -> "ShenZhen YM";
+			case 354 -> "MEAN WELL Enterprises Co. Ltd.";
+			case 355 -> "OSix";
+			case 356 -> "AYPRO Technology";
+			case 357 -> "Hefei Ecolite Software";
+			case 358 -> "Enno";
+			case 359 -> "OHOSURE";
+			case 360 -> "Garefowl";
+			case 361 -> "GEZE";
+			case 362 -> "LG Electronics Inc.";
+			case 363 -> "SMC interiors";
+			case 365 -> "SCS Cable";
+			case 366 -> "Hoval";
+			case 367 -> "CANST";
+			case 368 -> "HangZhou Berlin";
+			case 369 -> "EVN-Lichttechnik";
+			case 370 -> "rutec";
+			case 371 -> "Finder";
+			case 372 -> "Fujitsu General Limited";
+			case 373 -> "ZF Friedrichshafen AG";
+			case 374 -> "Crealed";
+			case 375 -> "Miles Magic Automation Private Limited";
+			case 376 -> "E+";
+			case 377 -> "Italcond";
+			case 378 -> "SATION";
+			case 379 -> "NewBest";
+			case 380 -> "GDS DIGITAL SYSTEMS";
+			case 381 -> "Iddero";
+			case 382 -> "MBNLED";
+			case 383 -> "VITRUM";
+			case 384 -> "ekey biometric systems GmbH";
+			case 385 -> "AMC";
+			case 386 -> "TRILUX GmbH & Co. KG";
+			case 387 -> "WExcedo";
+			case 388 -> "VEMER SPA";
+			case 389 -> "Alexander Bürkle GmbH & Co KG";
+			case 390 -> "Seetroll";
+			case 391 -> "Shenzhen HeGuang";
+			case 392 -> "Not Assigned";
+			case 393 -> "TRANE B.V.B.A";
+			case 394 -> "CAREL";
+			case 395 -> "Prolite Controls";
+			case 396 -> "BOSMER";
+			case 397 -> "EUCHIPS";
+			case 398 -> "connect (Thinka connect)";
+			case 399 -> "PEAKnx a DOGAWIST company ";
+			case 400 -> "ACEMATIC";
+			case 401 -> "ELAUSYS";
+			case 402 -> "ITK Engineering AG";
+			case 403 -> "INTEGRA METERING AG";
+			case 404 -> "FMS Hospitality Pte Ltd";
+			case 405 -> "Nuvo";
+			case 406 -> "u::Lux GmbH";
+			case 407 -> "Brumberg Leuchten";
+			case 408 -> "Lime";
+			case 409 -> "Great Empire International Group Co., Ltd.";
+			case 410 -> "Kavoshpishro Asia";
+			case 411 -> "V2 SpA";
+			case 412 -> "Johnson Controls";
+			case 413 -> "Arkud";
+			case 414 -> "Iridium Ltd.";
+			case 415 -> "bsmart";
+			case 416 -> "BAB TECHNOLOGIE GmbH";
+			case 417 -> "NICE Spa";
+			case 418 -> "Redfish Group Pty Ltd";
+			case 419 -> "SABIANA spa";
+			case 420 -> "Ubee Interactive Europe";
+			case 421 -> "Rexel";
+			case 422 -> "Ges Teknik A.S.";
+			case 423 -> "Ave S.p.A. ";
+			case 424 -> "Zhuhai Ltech Technology Co., Ltd. ";
+			case 425 -> "ARCOM";
+			case 426 -> "VIA Technologies, Inc.";
+			case 427 -> "FEELSMART.";
+			case 428 -> "SUPCON";
+			case 429 -> "MANIC";
+			case 430 -> "TDE GmbH";
+			case 431 -> "Nanjing Shufan Information technology Co.,Ltd.";
+			case 432 -> "EWTech";
+			case 433 -> "Kluger Automation GmbH";
+			case 434 -> "JoongAng Control";
+			case 435 -> "GreenControls Technology Sdn. Bhd.";
+			case 436 -> "IME S.p.a.";
+			case 437 -> "SiChuan HaoDing";
+			case 438 -> "Mindjaga Ltd.";
+			case 439 -> "RuiLi Smart Control";
+			case 440 -> "3S-Smart Software Solutions GmbH";
+			case 441 -> "Moorgen Deutschland GmbH";
+			case 442 -> "CULLMANN TECH";
+			case 443 -> "Merck Window Technologies B.V.";
+			case 444 -> "ABEGO";
+			case 445 -> "myGEKKO";
+			case 446 -> "Ergo3 Sarl";
+			case 447 -> "STmicroelectronics International N.V.";
+			case 448 -> "cjc systems";
+			case 449 -> "Sudoku";
+			case 451 -> "AZ e-lite Pte Ltd";
+			case 452 -> "Arlight";
+			case 453 -> "Grünbeck Wasseraufbereitung GmbH";
+			case 454 -> "Module Electronic";
+			case 455 -> "KOPLAT";
+			case 456 -> "Guangzhou Letour Life Technology Co., Ltd";
+			case 457 -> "ILEVIA";
+			case 458 -> "LN SYSTEMTEQ";
+			case 459 -> "Hisense SmartHome";
+			case 460 -> "Flink Automation System";
+			case 461 -> "xxter bv";
+			case 462 -> "lynxus technology";
+			case 463 -> "ROBOT S.A.";
+			case 464 -> "Shenzhen Atte Smart Life Co.,Ltd.";
+			case 465 -> "Noblesse";
+			case 466 -> "Advanced Devices";
+			case 467 -> "Atrina Building Automation Co. Ltd";
+			case 468 -> "Guangdong Daming Laffey electric Co., Ltd.";
+			case 469 -> "Westerstrand Urfabrik AB";
+			case 470 -> "Control4 Corporate";
+			case 471 -> "Ontrol";
+			case 472 -> "Starnet";
+			case 473 -> "BETA CAVI";
+			case 474 -> "EaseMore";
+			case 475 -> "Vivaldi srl";
+			case 476 -> "Gree Electric Appliances,Inc. of Zhuhai";
+			case 477 -> "HWISCON";
+			case 478 -> "Shanghai ELECON Intelligent Technology Co., Ltd.";
+			case 479 -> "Kampmann";
+			case 480 -> "Impolux GmbH / LEDIMAX";
+			case 481 -> "Evaux";
+			case 482 -> "Webro Cables & Connectors Limited";
+			case 483 -> "Shanghai E-tech Solution";
+			case 484 -> "Guangzhou HOKO Electric Co.,Ltd.";
+			case 485 -> "LAMMIN HIGH TECH CO.,LTD";
+			case 486 -> "Shenzhen Merrytek Technology Co., Ltd";
+			case 487 -> "I-Luxus";
+			case 488 -> "Elmos Semiconductor AG";
+			case 489 -> "EmCom Technology Inc";
+			case 490 -> "project innovations GmbH";
+			case 491 -> "Itc";
+			case 492 -> "ABB LV Installation Materials Company Ltd, Beijing";
+			case 493 -> "Maico ";
+			case 494 -> "Total Solution GmbH";
+			case 495 -> "ELAN SRL";
+			case 496 -> "MinhHa Technology co.,Ltd";
+			case 497 -> "Zhejiang Tianjie Industrial CORP.";
+			case 498 -> "iAutomation Pty Limited";
+			case 499 -> "Extron";
+			case 500 -> "Freedompro";
+			case 501 -> "Voxior Inc.";
+			case 502 -> "EOS Saunatechnik GmbH";
+			case 503 -> "KUSATEK GmbH";
+			case 504 -> "EisBär Scada";
+			case 505 -> "AUTOMATISMI BENINCA S.P.A.";
+			case 506 -> "Blendom";
+			case 507 -> "Madel Air Technical diffusion";
+			case 508 -> "NIKO";
+			case 509 -> "Bosch Rexroth AG";
+			case 512 -> "C&M Products";
+			case 513 -> "Hörmann KG Verkaufsgesellschaft";
+			case 514 -> "Shanghai Rajayasa co.,LTD";
+			case 515 -> "SUZUKI";
+			case 516 -> "Silent Gliss International Ltd.";
+			case 517 -> "BEE Controls (ADGSC Group)";
+			case 518 -> "xDTecGmbH";
+			case 519 -> "OSRAM";
+			case 520 -> "Lebenor";
+			case 521 -> "automaneng";
+			case 522 -> "Honeywell Automation Solution control (China)";
+			case 523 -> "Hangzhou binthen Intelligence Technology Co.,Ltd";
+			case 524 -> "ETA Heiztechnik";
+			case 525 -> "DIVUS GmbH";
+			case 526 -> "Nanjing Taijiesai Intelligent Technology Co. Ltd.";
+			case 527 -> "Lunatone";
+			case 528 -> "ZHEJIANG SCTECH BUILDING INTELLIGENT";
+			case 529 -> "Foshan Qite Technology Co., Ltd.";
+			case 530 -> "NOKE";
+			case 531 -> "LANDCOM";
+			case 532 -> "Stork AS";
+			case 533 -> "Hangzhou Shendu Technology Co., Ltd.";
+			case 534 -> "CoolAutomation";
+			case 535 -> "Aprstern";
+			case 536 -> "sonnen";
+			case 537 -> "DNAKE";
+			default -> "Unknown";
+		};
 	}
 }

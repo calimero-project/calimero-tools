@@ -162,7 +162,7 @@ public class Property implements Runnable
 	 * for KNX network access.<br>
 	 * To show the usage message of this tool on the console, supply the command line option --help
 	 * (or -h).<br>
-	 * Command line options are treated case sensitive. Available options are:
+	 * Command line options are treated case-sensitive. Available options are:
 	 * <ul>
 	 * <li><code>--help -h</code> show help message</li>
 	 * <li><code>--version</code> show tool/library version and exit</li>
@@ -239,9 +239,8 @@ public class Property implements Runnable
 
 			final PropertyAdapter adapter = createAdapter();
 
-			if (options.containsKey("reset") && adapter instanceof LocalDeviceManagementIp) {
+			if (options.containsKey("reset") && adapter instanceof final LocalDeviceManagementIp ldm) {
 				out("send local device management reset request to " + options.get("host") + ":" + options.get("port"));
-				final LocalDeviceManagementIp ldm = (LocalDeviceManagementIp) adapter;
 				ldm.reset();
 				while (ldm.isOpen())
 					Thread.sleep(1000);
@@ -250,7 +249,7 @@ public class Property implements Runnable
 			pc = new PropertyClient(adapter);
 			String resource = "";
 			try {
-				// check if user supplied a XML resource with property definitions
+				// check if user supplied an XML resource with property definitions
 				if (options.containsKey("definitions")) {
 					resource = (String) options.get("definitions");
 					pc.addDefinitions(new XmlPropertyDefinitions().load(resource));
@@ -467,7 +466,7 @@ public class Property implements Runnable
 
 	private static String alignRight(final int value, final int width)
 	{
-		return String.format("%1$" + width + "s", Integer.toString(value));
+		return String.format("%1$" + width + "s", value);
 	}
 
 	private PropertyClient.Property getPropertyDef(final int objType, final int pid)
@@ -649,12 +648,12 @@ public class Property implements Runnable
 					final var data = collect.toByteArray();
 					if (data.length > 0) {
 						s = customFormatter(objType, pid).map(f -> f.apply(data)).orElseGet(() -> {
-							String tmp = "";
+							StringBuilder tmp = new StringBuilder();
 							final String hex = toHex(data, "");
 							final int chars = hex.length() / elements;
 							for (int k = 0; k < elements; ++k)
-								tmp += "0x" + hex.substring(k * chars, (k + 1) * chars) + " ";
-							return tmp;
+								tmp.append("0x").append(hex, k * chars, (k + 1) * chars).append(" ");
+							return tmp.toString();
 						});
 
 						final int size = data.length / elements;
@@ -1233,22 +1232,15 @@ public class Property implements Runnable
 
 	private static String loadState(final byte[] data) {
 		final int state = data[0] & 0xff;
-		switch (state) {
-		case 0:
-			return "unloaded";
-		case 1:
-			return "loaded";
-		case 2:
-			return "loading";
-		case 3:
-			return "error (during load process)";
-		case 4:
-			return "unloading";
-		case 5:
-			return "load completing";
-		default:
-			return "invalid load status " + state;
-		}
+		return switch (state) {
+			case 0 -> "unloaded";
+			case 1 -> "loaded";
+			case 2 -> "loading";
+			case 3 -> "error (during load process)";
+			case 4 -> "unloading";
+			case 5 -> "load completing";
+			default -> "invalid load status " + state;
+		};
 	}
 
 	private static boolean bitSet(final byte value, final int bit) {
