@@ -36,9 +36,13 @@
 
 package io.calimero.tools;
 
+import static java.lang.System.Logger.Level.ERROR;
+import static java.lang.System.Logger.Level.INFO;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.System.Logger;
 import java.lang.invoke.MethodHandles;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -64,8 +68,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
-
-import org.slf4j.Logger;
 
 import io.calimero.CloseEvent;
 import io.calimero.DataUnitBuilder;
@@ -102,7 +104,7 @@ import io.calimero.tools.Main.ShutdownHandler;
 public class BaosClient implements Runnable
 {
 	private static final String tool = MethodHandles.lookup().lookupClass().getSimpleName();
-	private static final Logger out = LogService.getLogger("io.calimero.tools." + tool);
+	private static final Logger out = LogService.getLogger(MethodHandles.lookup().lookupClass());
 
 	private static final Duration defaultTimeout = Duration.ofSeconds(2);
 
@@ -189,7 +191,7 @@ public class BaosClient implements Runnable
 			sh.unregister();
 		}
 		catch (final Throwable t) {
-			out.error("tool options", t);
+			out.log(ERROR, "tool options", t);
 		}
 	}
 
@@ -310,9 +312,9 @@ public class BaosClient implements Runnable
 	protected void onCompletion(final Exception thrown, final boolean canceled)
 	{
 		if (canceled)
-			out.info("BAOS communication was stopped");
+			out.log(INFO, "BAOS communication was stopped");
 		if (thrown != null)
-			out.error("completed with error", thrown);
+			out.log(ERROR, "completed with error", thrown);
 	}
 
 	private BaosLink newBaosLink() throws KNXException, InterruptedException {
@@ -577,7 +579,7 @@ public class BaosClient implements Runnable
 					out(e.getMessage());
 				}
 				catch (KNXException | RuntimeException e) {
-					out.error("[{}]", line, e);
+					out.log(ERROR, "[{0}]", line, e);
 				}
 			}
 		}

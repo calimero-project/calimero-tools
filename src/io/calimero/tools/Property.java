@@ -37,11 +37,14 @@
 package io.calimero.tools;
 
 import static io.calimero.DataUnitBuilder.toHex;
+import static java.lang.System.Logger.Level.ERROR;
+import static java.lang.System.Logger.Level.INFO;
 import static java.util.stream.Collectors.joining;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.System.Logger;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
@@ -54,9 +57,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.function.Function;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.calimero.CloseEvent;
 import io.calimero.DataUnitBuilder;
@@ -75,6 +75,7 @@ import io.calimero.dptxlator.TranslatorTypes;
 import io.calimero.knxnetip.KNXnetIPConnection;
 import io.calimero.link.KNXNetworkLink;
 import io.calimero.link.medium.TPSettings;
+import io.calimero.log.LogService;
 import io.calimero.mgmt.Description;
 import io.calimero.mgmt.LocalDeviceManagementIp;
 import io.calimero.mgmt.LocalDeviceManagementUsb;
@@ -113,7 +114,7 @@ public class Property implements Runnable
 	private static final String tool = "Property";
 	private static final String sep = System.getProperty("line.separator");
 
-	static Logger out = LoggerFactory.getLogger("io.calimero.tools");
+	static Logger out = LogService.getLogger("io.calimero.tools");
 
 	/** Contains tool options after parsing command line. */
 	protected final Map<String, Object> options = new HashMap<>();
@@ -216,7 +217,7 @@ public class Property implements Runnable
 			new Property(args).run();
 		}
 		catch (final Throwable t) {
-			out.error("parsing option", t);
+			out.log(ERROR, "parsing option", t);
 		}
 	}
 
@@ -264,7 +265,7 @@ public class Property implements Runnable
 				definitions = pc.getDefinitions();
 			}
 			catch (IOException | KNXMLException e) {
-				out.error("loading definitions from " + resource + " failed", e);
+				out.log(ERROR, "loading definitions from " + resource + " failed", e);
 			}
 
 			// run the user command
@@ -319,10 +320,10 @@ public class Property implements Runnable
 				out("unknown command ('?' or 'help' shows help)");
 		}
 		catch (final NumberFormatException e) {
-			out.error("invalid number (" + e.getMessage() + ")");
+			out.log(ERROR, "invalid number (" + e.getMessage() + ")");
 		}
 		catch (final KNXException | RuntimeException e) {
-			out.error(e.getMessage());
+			out.log(ERROR, e.getMessage());
 		}
 	}
 
@@ -392,7 +393,7 @@ public class Property implements Runnable
 		if (canceled)
 			out("reading property canceled");
 		if (thrown != null)
-			out.error("on completion", thrown);
+			out.log(ERROR, "on completion", thrown);
 	}
 
 	/** @return the network link used by this tool */
@@ -458,7 +459,7 @@ public class Property implements Runnable
 		final byte[] authKey = (byte[]) options.get("authorize");
 		if (authKey != null) {
 			final RemotePropertyServiceAdapter adapter = new RemotePropertyServiceAdapter(link, remote, this::adapterClosed, authKey);
-			out.info("{} granted access level {}", remote, adapter.accessLevel());
+			out.log(INFO, "{0} granted access level {1}", remote, adapter.accessLevel());
 			return adapter;
 		}
 		return new RemotePropertyServiceAdapter(link, remote, this::adapterClosed, options.containsKey("connect"));
@@ -648,7 +649,7 @@ public class Property implements Runnable
 					final var data = collect.toByteArray();
 					if (data.length > 0) {
 						s = customFormatter(objType, pid).map(f -> f.apply(data)).orElseGet(() -> {
-							StringBuilder tmp = new StringBuilder();
+							final StringBuilder tmp = new StringBuilder();
 							final String hex = toHex(data, "");
 							final int chars = hex.length() / elements;
 							for (int k = 0; k < elements; ++k)

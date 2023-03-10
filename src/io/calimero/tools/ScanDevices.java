@@ -36,14 +36,15 @@
 
 package io.calimero.tools;
 
+import static java.lang.System.Logger.Level.ERROR;
+import static java.lang.System.Logger.Level.INFO;
+
+import java.lang.System.Logger;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
 import java.util.stream.IntStream;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.calimero.DeviceDescriptor;
 import io.calimero.IndividualAddress;
@@ -52,6 +53,7 @@ import io.calimero.KNXIllegalArgumentException;
 import io.calimero.knxnetip.KNXnetIPConnection;
 import io.calimero.link.KNXNetworkLink;
 import io.calimero.link.medium.TPSettings;
+import io.calimero.log.LogService;
 import io.calimero.mgmt.ManagementProcedures;
 import io.calimero.mgmt.ManagementProceduresImpl;
 import io.calimero.tools.Main.ShutdownHandler;
@@ -83,7 +85,7 @@ public class ScanDevices implements Runnable
 	private static final String tool = "ScanDevices";
 	private static final String sep = System.getProperty("line.separator");
 
-	private static final Logger out = LoggerFactory.getLogger("io.calimero.tools");
+	private static final Logger out = LogService.getLogger("io.calimero.tools");
 
 	private final Map<String, Object> options = new HashMap<>();
 
@@ -127,7 +129,7 @@ public class ScanDevices implements Runnable
 			sh.unregister();
 		}
 		catch (final Throwable t) {
-			out.error("parsing options", t);
+			out.log(ERROR, "parsing options", t);
 		}
 	}
 
@@ -241,9 +243,9 @@ public class ScanDevices implements Runnable
 	protected void onCompletion(final Exception thrown, final boolean canceled)
 	{
 		if (canceled)
-			out.info("scanning for devices canceled");
+			out.log(INFO, "scanning for devices canceled");
 		if (thrown != null)
-			out.error("completed", thrown);
+			out.log(ERROR, "completed", thrown);
 	}
 
 	/**

@@ -36,6 +36,8 @@
 
 package io.calimero.tools;
 
+import static java.lang.System.Logger.Level.ERROR;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -165,7 +167,7 @@ public class PropClient implements Runnable
 			pc.run();
 		}
 		catch (final Throwable t) {
-			Property.out.error("client error", t);
+			Property.out.log(ERROR, "client error", t);
 		}
 	}
 

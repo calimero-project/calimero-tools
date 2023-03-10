@@ -36,7 +36,11 @@
 
 package io.calimero.tools;
 
+import static java.lang.System.Logger.Level.ERROR;
+import static java.lang.System.Logger.Level.INFO;
+
 import java.io.IOException;
+import java.lang.System.Logger;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
@@ -56,8 +60,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
-
-import org.slf4j.Logger;
 
 import io.calimero.KNXException;
 import io.calimero.KNXIllegalArgumentException;
@@ -215,7 +217,7 @@ public class Discover implements Runnable
 			sh.unregister();
 		}
 		catch (final Throwable t) {
-			out.error("parsing options", t);
+			out.log(ERROR, "parsing options", t);
 		}
 	}
 
@@ -350,10 +352,10 @@ public class Discover implements Runnable
 	{
 		if (canceled) {
 			final String msg = options.containsKey("search") ? "stopped discovery" : "self description canceled";
-			out.info(msg);
+			out.log(INFO, msg);
 		}
 		if (thrown != null)
-			out.error("completed", thrown);
+			out.log(ERROR, "completed", thrown);
 	}
 
 	/**
@@ -447,7 +449,7 @@ public class Discover implements Runnable
 		}
 		finally {
 			if (processed == 0)
-				out.info("search stopped after {} seconds with 0 responses", timeout.toSeconds());
+				out.log(INFO, "search stopped after {0} seconds with 0 responses", timeout.toSeconds());
 		}
 	}
 

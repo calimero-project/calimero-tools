@@ -36,6 +36,9 @@
 
 package io.calimero.tools;
 
+
+import static java.lang.System.Logger.Level.INFO;
+
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -61,8 +64,6 @@ import java.util.StringJoiner;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import org.slf4j.LoggerFactory;
-
 import io.calimero.CloseEvent;
 import io.calimero.DataUnitBuilder;
 import io.calimero.IndividualAddress;
@@ -84,6 +85,7 @@ import io.calimero.link.NetworkLinkListener;
 import io.calimero.link.medium.KNXMediumSettings;
 import io.calimero.link.medium.PLSettings;
 import io.calimero.link.medium.RFSettings;
+import io.calimero.log.LogService;
 import io.calimero.mgmt.LocalDeviceManagementIp;
 import io.calimero.secure.Keyring;
 import io.calimero.secure.Keyring.Interface;
@@ -170,11 +172,13 @@ final class Main
 			usage();
 			return;
 		}
+
+		System.setProperty("jdk.system.logger.format", "%1$tT.%1$tL [%4$-7s] %3$s: %5$s%6$s%n");
 		int cmdIdx = 0;
 		if (args[0].startsWith("-v")) {
 			final String vs = args[0];
-			final String level = vs.startsWith("-vvv") ? "trace" : vs.startsWith("-vv") ? "debug" : "info";
-			System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", level);
+			final String level = vs.startsWith("-vvv") ? "TRACE" : vs.startsWith("-vv") ? "DEBUG" : "INFO";
+			System.setProperty("jdk.system.logger.level", level);
 			cmdIdx++;
 		}
 
@@ -434,7 +438,7 @@ final class Main
 		if (options.containsKey("tpuart")) {
 			final var link = new KNXNetworkLinkTpuart(host, medium, Collections.emptyList());
 			if (device == null)
-				LoggerFactory.getLogger("io.calimero.tools").info("TP-UART sends without assigned KNX address (--knx-address)");
+				LogService.getLogger("io.calimero.tools").log(INFO, "TP-UART sends without assigned KNX address (--knx-address)");
 			return link;
 		}
 

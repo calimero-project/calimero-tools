@@ -103,7 +103,7 @@ Start process communication for group monitoring (command `groupmon`), accessing
 
 With USB, you can also specify the USB interface using the vendor and product ID as `VendorID:ProductID`. If you don't know any identification yet, run the tool using a bogus ID and debug settings to print the available USB interfaces.
 
-Start process communication for group monitoring, accessing a RF network using a Weinzierl USB interface. Adjust the slf4 [Simple Logger](http://www.slf4j.org/api/org/slf4j/impl/SimpleLogger.html) logging level for `debug` output using `-Dorg.slf4j.simpleLogger.defaultLogLevel=debug`:
+Start process communication for group monitoring, accessing a RF network using a Weinzierl USB interface. Adjust the logging level for `debug` output:
 
 	mvn exec:java -Dexec.args="groupmon --usb weinzierl -m rf" -Dorg.slf4j.simpleLogger.defaultLogLevel=debug
 
@@ -188,7 +188,7 @@ dependencies {
 Logging
 -------
 
-Calimero Tools use the [Simple Logging Facade for Java (slf4j)](http://www.slf4j.org/). Bind any desired logging frameworks of your choice. By default, the [Simple Logger](http://www.slf4j.org/api/org/slf4j/impl/SimpleLogger.html) is used. It logs everything to standard output. The simple logger can be configured via the resource file `simplelogger.properties`, or -- with Maven -- using command line arguments, e.g., `-Dorg.slf4j.simpleLogger.defaultLogLevel=warn`.
+Calimero tools use the [System.Logger](https://docs.oracle.com/en/java/javase/19/docs/api/java.base/java/lang/System.Logger.html). Bind any desired logging frameworks of your choice.
 
 Extending Tools
 ---------------

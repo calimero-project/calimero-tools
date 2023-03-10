@@ -37,7 +37,10 @@
 package io.calimero.tools;
 
 import static io.calimero.tools.Main.setDomainAddress;
+import static java.lang.System.Logger.Level.ERROR;
+import static java.lang.System.Logger.Level.INFO;
 
+import java.lang.System.Logger;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -47,8 +50,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.StringJoiner;
-
-import org.slf4j.Logger;
 
 import io.calimero.IndividualAddress;
 import io.calimero.KNXException;
@@ -182,7 +183,7 @@ public class IPConfig implements Runnable
 			new IPConfig(args).run();
 		}
 		catch (final Throwable t) {
-			out.error("IP config", t);
+			out.log(ERROR, "IP config", t);
 		}
 	}
 
@@ -214,7 +215,7 @@ public class IPConfig implements Runnable
 					objIndex = d.getObjectIndex();
 			});
 			if (objIndex == -1) {
-				out.error(PropertyClient.getObjectTypeName(IPObjType) + " not found");
+				out.log(ERROR, PropertyClient.getObjectTypeName(IPObjType) + " not found");
 				return;
 			}
 			setIPAssignment();
@@ -280,9 +281,9 @@ public class IPConfig implements Runnable
 	protected void onCompletion(final Exception thrown, final boolean canceled)
 	{
 		if (canceled)
-			out.info("configuration canceled");
+			out.log(INFO, "configuration canceled");
 		if (thrown != null)
-			out.error("completed", thrown);
+			out.log(ERROR, "completed", thrown);
 	}
 
 	private void setIPAssignment() throws KNXException, InterruptedException
@@ -308,7 +309,7 @@ public class IPConfig implements Runnable
 				pc.setProperty(objIndex, pid, 1, 1, ((InetAddress) options.get(key)).getAddress());
 			}
 			catch (final KNXException e) {
-				out.error("setting " + key + " failed, " + e.getMessage());
+				out.log(ERROR, "setting " + key + " failed, " + e.getMessage());
 			}
 	}
 
@@ -383,7 +384,7 @@ public class IPConfig implements Runnable
 			return pc.getProperty(objIndex, pid, 1, 1);
 		}
 		catch (final KNXRemoteException e) {
-			out.error("getting property with ID " + pid + " failed: {}", e.getMessage());
+			out.log(ERROR, "getting property with ID " + pid + " failed: {0}", e.getMessage());
 			return null;
 		}
 	}
