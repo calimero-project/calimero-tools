@@ -33,7 +33,7 @@ run {
 java {
     withSourcesJar()
     withJavadocJar()
-    
+
     registerFeature('serial') {
         usingSourceSet(sourceSets.main)
     }
@@ -90,13 +90,11 @@ dependencies {
 }
 
 jar {
-	doLast {
-		manifest {
-			attributes(
-				'Main-Class': mainClassName,
-				'Class-Path': configurations.runtimeClasspath.collect { it.getName() }.join(' ')
-			)
-		}
+	manifest {
+		attributes(
+			'Main-Class': application.mainClass,
+			'Class-Path': configurations.runtimeClasspath.collect { it.getName() }.join(' ')
+		)
 	}
 }
 
