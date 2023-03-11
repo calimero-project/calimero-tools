@@ -43,6 +43,7 @@ import static java.lang.System.Logger.Level.INFO;
 import java.lang.System.Logger;
 import java.math.BigInteger;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
@@ -218,7 +219,7 @@ public class Memory implements Runnable {
 		if (options.containsKey("dec"))
 			s = new BigInteger(1, data).toString();
 		else
-			s = "0x" + DataUnitBuilder.toHex(data, "");
+			s = "0x" + HexFormat.of().formatHex(data);
 		out(s);
 	}
 
@@ -241,7 +242,7 @@ public class Memory implements Runnable {
 			else
 				data = DataUnitBuilder.fromHex(input);
 			out.log(DEBUG, "write to {0} 0x{1}..0x{2}: {3}", dst.getAddress(), Long.toHexString(startAddr),
-					Long.toHexString(startAddr + data.length - 1), DataUnitBuilder.toHex(data, " "));
+					Long.toHexString(startAddr + data.length - 1), HexFormat.ofDelimiter(" ").formatHex(data));
 			mc.writeMemory(dst, startAddr, data);
 		}
 	}

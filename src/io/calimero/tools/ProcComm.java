@@ -55,6 +55,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -435,9 +436,10 @@ public class ProcComm implements Runnable
 		sb.append(e.getSourceAddr()).append("->");
 		if (!options.containsKey("lte"))
 			sb.append(e.getDestination());
-		if (!options.containsKey("compact"))
-			sb.append(" ").append(DataUnitBuilder.decodeAPCI(e.getServiceCode())).append(" ")
-					.append(DataUnitBuilder.toHex(asdu, " "));
+		if (!options.containsKey("compact")) {
+			sb.append(" ").append(DataUnitBuilder.decodeAPCI(e.getServiceCode())).append(" ");
+			HexFormat.ofDelimiter(" ").formatHex(sb, asdu);
+		}
 		if (asdu.length > 0) {
 			try {
 				sb.append(options.containsKey("compact") ? " " : ": ");
@@ -724,13 +726,13 @@ public class ProcComm implements Runnable
 
 		final byte[] data = Arrays.copyOfRange(asdu, pid == 0xff ? 7 : 4, asdu.length);
 
-		String value = DataUnitBuilder.toHex(data, "");
+		String value = HexFormat.of().formatHex(data);
 		if (data.length > 0) {
 			final var dp = datapoints.get(dst);
 			if (dp != null) {
 				final var dpt = dp.getDPT();
 				value = decodeDpValue(dpt, data, true).or(() -> decodeLteZDpValue(svcCode, dpt, data))
-						.orElse(DataUnitBuilder.toHex(data, ""));
+						.orElse(HexFormat.of().formatHex(data));
 			}
 		}
 

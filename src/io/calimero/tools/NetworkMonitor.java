@@ -44,8 +44,8 @@ import static java.lang.System.Logger.Level.WARNING;
 import java.lang.System.Logger;
 import java.net.InetSocketAddress;
 import java.time.LocalTime;
-import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
@@ -308,8 +308,8 @@ public class NetworkMonitor implements Runnable
 			sb.append(raw);
 			if (raw instanceof final RawFrameBase f) {
 				sb.append(": ").append(DataUnitBuilder.decode(f.getTPDU(), f.getDestination()));
-				sb.append(" ").append(
-						DataUnitBuilder.toHex(DataUnitBuilder.extractASDU(f.getTPDU()), " "));
+				sb.append(" ");
+				HexFormat.ofDelimiter(" ").formatHex(sb, DataUnitBuilder.extractASDU(f.getTPDU()));
 			}
 			else if (raw instanceof final RFLData rf) {
 				try {
@@ -482,11 +482,11 @@ public class NetworkMonitor implements Runnable
 			final int companyCode = ((asdu[4] & 0xff) << 8) | (asdu[5] & 0xff);
 			final int privatePid = asdu[6] & 0xff;
 			sb.append("IOT " + iot + " OI " + ioi + " Company " + companyCode + " PID " + privatePid + ": "
-					+ DataUnitBuilder.toHex(Arrays.copyOfRange(asdu, 7, asdu.length), ""));
+					+ HexFormat.of().formatHex(asdu, 7, asdu.length));
 		}
 		else
 			sb.append("IOT " + iot + " OI " + ioi + " PID " + pid + ": "
-					+ DataUnitBuilder.toHex(Arrays.copyOfRange(asdu, 4, asdu.length), ""));
+					+ HexFormat.of().formatHex(asdu, 4, asdu.length));
 
 		return sb.toString();
 	}

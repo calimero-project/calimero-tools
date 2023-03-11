@@ -52,6 +52,7 @@ import java.time.Duration;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
@@ -318,7 +319,7 @@ public class TrafficMonitor implements Runnable {
 			if (payload.length > 1) {
 				final byte[] asdu = DataUnitBuilder.extractASDU(payload);
 				if (asdu.length > 0)
-					joiner.add(DataUnitBuilder.toHex(asdu, " "));
+					joiner.add(HexFormat.ofDelimiter(" ").formatHex(asdu));
 				final int apduSvc = DataUnitBuilder.getAPDUService(payload);
 
 				try {

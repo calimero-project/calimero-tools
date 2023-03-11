@@ -59,6 +59,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -342,7 +343,7 @@ public class BaosClient implements Runnable
 			return xlator.getValue();
 		}
 		catch (final KNXException e) {
-			return DataUnitBuilder.toHex(data, " ");
+			return HexFormat.ofDelimiter(" ").formatHex(data);
 		}
 	}
 
