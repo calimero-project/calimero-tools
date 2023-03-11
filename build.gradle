@@ -109,13 +109,11 @@ dependencies {
 }
 
 jar {
-	doLast {
-		manifest {
-			attributes(
-				'Main-Class': application.mainClass,
-				'Class-Path': configurations.runtimeClasspath.collect { it.getName() }.join(' ')
-			)
-		}
+	manifest {
+		attributes(
+			'Main-Class': application.mainClass,
+			'Class-Path': configurations.runtimeClasspath.collect { it.getName() }.join(' ')
+		)
 	}
 }
 
