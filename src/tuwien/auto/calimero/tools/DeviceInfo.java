@@ -45,6 +45,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -56,7 +57,6 @@ import java.util.function.Predicate;
 
 import org.slf4j.Logger;
 
-import tuwien.auto.calimero.DataUnitBuilder;
 import tuwien.auto.calimero.DeviceDescriptor;
 import tuwien.auto.calimero.DeviceDescriptor.DD0;
 import tuwien.auto.calimero.GroupAddress;
@@ -447,7 +447,7 @@ public class DeviceInfo implements Runnable
 			out(System.lineSeparator() + item.category());
 
 		final String s = item.parameter().friendlyName() + " = " + item.value();
-		final String hex = item.raw().length > 0 ? "0x" + DataUnitBuilder.toHex(item.raw(), "") : "n/a";
+		final String hex = item.raw().length > 0 ? "0x" + HexFormat.of().formatHex(item.raw()) : "n/a";
 		// left-pad unformatted output
 		final int n = Math.max(1, 60 - s.length());
 		final String detail = printUnformatted ? String.format(" %" + n + "s%s]", "[", hex) : "";
@@ -667,7 +667,7 @@ public class DeviceInfo implements Runnable
 		// optional in the device object (PID 82). At least the Weinzierl USB stores it only in the device object.
 		try {
 			read(CommonParameter.DomainAddress, objectIdx, PID.RF_DOMAIN_ADDRESS,
-					bytes -> DataUnitBuilder.toHex(bytes, ""));
+					bytes -> HexFormat.of().formatHex(bytes));
 		}
 		catch (final Exception e) {}
 
@@ -815,7 +815,7 @@ public class DeviceInfo implements Runnable
 		try {
 			// different PID as in Device Object !!!
 			final int pidRfDomainAddress = 56;
-			read(RfParameter.DomainAddress, objectIndex, pidRfDomainAddress, doa -> "0x" + DataUnitBuilder.toHex(doa, ""));
+			read(RfParameter.DomainAddress, objectIndex, pidRfDomainAddress, doa -> "0x" + HexFormat.of().formatHex(doa));
 		}
 		catch (final Exception e) {}
 	}
@@ -1117,7 +1117,7 @@ public class DeviceInfo implements Runnable
 		final boolean supportsTunneling = (data[1] & 0x01) == 0x01;
 
 		// MAC Address
-		read(KnxipParameter.MacAddress, objectIndex, PropertyAccess.PID.MAC_ADDRESS, mac -> DataUnitBuilder.toHex(mac, ":"));
+		read(KnxipParameter.MacAddress, objectIndex, PropertyAccess.PID.MAC_ADDRESS, HexFormat.ofDelimiter(":")::formatHex);
 		// Current IP Assignment
 		data = read(KnxipParameter.CurrentIPAssignment, objectIndex, PropertyAccess.PID.CURRENT_IP_ASSIGNMENT_METHOD,
 				DeviceInfo::toIPAssignmentString).orElse(new byte[1]);
@@ -1184,7 +1184,7 @@ public class DeviceInfo implements Runnable
 
 	private static String programVersion(final byte[] data) {
 		if (data.length != 5)
-			return DataUnitBuilder.toHex(data, "");
+			return HexFormat.of().formatHex(data);
 		final int mfr = (data[0] & 0xff) << 8 | (data[1] & 0xff);
 		return String.format("%s %02x%02x v%d.%d", manufacturer(mfr), data[2], data[3], (data[4] & 0xff) >> 4, data[4] & 0xf);
 	}
@@ -1321,7 +1321,7 @@ public class DeviceInfo implements Runnable
 	{
 		final byte[] data = read(p, objectIndex, pid);
 		if (data != null) {
-			final String formatted = hex ? DataUnitBuilder.toHex(data, "") : Long.toString(toUnsigned(data));
+			final String formatted = hex ? HexFormat.of().formatHex(data) : Long.toString(toUnsigned(data));
 			putResult(p, formatted, data);
 		}
 	}
@@ -1609,7 +1609,7 @@ public class DeviceInfo implements Runnable
 	}
 
 	private static String knxSerialNumber(final byte[] data) {
-		final var hex = DataUnitBuilder.toHex(data, "");
+		final var hex = HexFormat.of().formatHex(data);
 		return hex.substring(0, 4) + ":" + hex.substring(4);
 	}
 

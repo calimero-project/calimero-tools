@@ -53,6 +53,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -64,7 +65,6 @@ import java.util.function.Function;
 import org.slf4j.LoggerFactory;
 
 import tuwien.auto.calimero.CloseEvent;
-import tuwien.auto.calimero.DataUnitBuilder;
 import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXFormatException;
@@ -215,7 +215,7 @@ final class Main
 		final StringBuilder sb = new StringBuilder();
 		final String sep = System.lineSeparator();
 		sb.append("Supported commands (always safe without further options, use -h for help):").append(sep);
-		for (String[] cmd : cmds) {
+		for (final String[] cmd : cmds) {
 			sb.append(cmd[0]).append(" - ").append(cmd[1]).append(sep);
 		}
 		System.out.println(sb);
@@ -665,7 +665,7 @@ final class Main
 		final int len = hex.length();
 		if (len != 0 && len != 32)
 			throw new KNXIllegalArgumentException("wrong KNX key length, requires 16 bytes (32 hex chars)");
-		return DataUnitBuilder.fromHex(hex);
+		return HexFormat.of().parseHex(hex);
 	}
 
 	static final class ShutdownHandler extends Thread
