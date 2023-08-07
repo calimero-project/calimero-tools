@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2022 B. Malinowsky
+    Copyright (c) 2006, 2023 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -34,14 +34,18 @@
     version.
 */
 
-package tuwien.auto.calimero.tools;
+package io.calimero.tools;
 
+import static io.calimero.tools.Main.setDomainAddress;
+import static java.lang.System.Logger.Level.ERROR;
+import static java.lang.System.Logger.Level.INFO;
+import static java.lang.System.Logger.Level.WARNING;
 import static java.util.Map.entry;
-import static tuwien.auto.calimero.tools.Main.setDomainAddress;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.System.Logger;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -51,6 +55,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -58,54 +63,51 @@ import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.function.BiFunction;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-
-import tuwien.auto.calimero.DataUnitBuilder;
-import tuwien.auto.calimero.DetachEvent;
-import tuwien.auto.calimero.FrameEvent;
-import tuwien.auto.calimero.GroupAddress;
-import tuwien.auto.calimero.IndividualAddress;
-import tuwien.auto.calimero.KNXException;
-import tuwien.auto.calimero.KNXFormatException;
-import tuwien.auto.calimero.KNXIllegalArgumentException;
-import tuwien.auto.calimero.KNXTimeoutException;
-import tuwien.auto.calimero.KnxRuntimeException;
-import tuwien.auto.calimero.LteHeeTag;
-import tuwien.auto.calimero.Priority;
-import tuwien.auto.calimero.SerialNumber;
-import tuwien.auto.calimero.cemi.CEMI;
-import tuwien.auto.calimero.cemi.CEMILData;
-import tuwien.auto.calimero.cemi.CEMILDataEx;
-import tuwien.auto.calimero.datapoint.Datapoint;
-import tuwien.auto.calimero.datapoint.DatapointMap;
-import tuwien.auto.calimero.datapoint.DatapointModel;
-import tuwien.auto.calimero.datapoint.StateDP;
-import tuwien.auto.calimero.dptxlator.DPT;
-import tuwien.auto.calimero.dptxlator.DPTXlator;
-import tuwien.auto.calimero.dptxlator.DPTXlator8BitEnum;
-import tuwien.auto.calimero.dptxlator.DptXlator8BitSet;
-import tuwien.auto.calimero.dptxlator.TranslatorTypes;
-import tuwien.auto.calimero.dptxlator.TranslatorTypes.MainType;
-import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
-import tuwien.auto.calimero.link.KNXLinkClosedException;
-import tuwien.auto.calimero.link.KNXNetworkLink;
-import tuwien.auto.calimero.link.NetworkLinkListener;
-import tuwien.auto.calimero.link.medium.KNXMediumSettings;
-import tuwien.auto.calimero.link.medium.RFSettings;
-import tuwien.auto.calimero.link.medium.TPSettings;
-import tuwien.auto.calimero.log.LogService;
-import tuwien.auto.calimero.process.LteProcessEvent;
-import tuwien.auto.calimero.process.ProcessCommunicator;
-import tuwien.auto.calimero.process.ProcessCommunicatorImpl;
-import tuwien.auto.calimero.process.ProcessEvent;
-import tuwien.auto.calimero.process.ProcessListener;
-import tuwien.auto.calimero.xml.KNXMLException;
-import tuwien.auto.calimero.xml.XmlInputFactory;
-import tuwien.auto.calimero.xml.XmlOutputFactory;
-import tuwien.auto.calimero.xml.XmlReader;
-import tuwien.auto.calimero.xml.XmlWriter;
+import io.calimero.DataUnitBuilder;
+import io.calimero.DetachEvent;
+import io.calimero.FrameEvent;
+import io.calimero.GroupAddress;
+import io.calimero.IndividualAddress;
+import io.calimero.KNXException;
+import io.calimero.KNXFormatException;
+import io.calimero.KNXIllegalArgumentException;
+import io.calimero.KNXTimeoutException;
+import io.calimero.KnxRuntimeException;
+import io.calimero.LteHeeTag;
+import io.calimero.Priority;
+import io.calimero.SerialNumber;
+import io.calimero.cemi.CEMI;
+import io.calimero.cemi.CEMILData;
+import io.calimero.cemi.CEMILDataEx;
+import io.calimero.datapoint.Datapoint;
+import io.calimero.datapoint.DatapointMap;
+import io.calimero.datapoint.DatapointModel;
+import io.calimero.datapoint.StateDP;
+import io.calimero.dptxlator.DPT;
+import io.calimero.dptxlator.DPTXlator;
+import io.calimero.dptxlator.DPTXlator8BitEnum;
+import io.calimero.dptxlator.DptXlator8BitSet;
+import io.calimero.dptxlator.TranslatorTypes;
+import io.calimero.dptxlator.TranslatorTypes.MainType;
+import io.calimero.knxnetip.KNXnetIPConnection;
+import io.calimero.link.KNXLinkClosedException;
+import io.calimero.link.KNXNetworkLink;
+import io.calimero.link.NetworkLinkListener;
+import io.calimero.link.medium.KNXMediumSettings;
+import io.calimero.link.medium.RFSettings;
+import io.calimero.link.medium.TPSettings;
+import io.calimero.log.LogService;
+import io.calimero.process.LteProcessEvent;
+import io.calimero.process.ProcessCommunicator;
+import io.calimero.process.ProcessCommunicatorImpl;
+import io.calimero.process.ProcessEvent;
+import io.calimero.process.ProcessListener;
+import io.calimero.xml.KNXMLException;
+import io.calimero.xml.XmlInputFactory;
+import io.calimero.xml.XmlOutputFactory;
+import io.calimero.xml.XmlReader;
+import io.calimero.xml.XmlWriter;
 
 /**
  * A tool for Calimero providing KNX process communication.
@@ -163,7 +165,7 @@ public class ProcComm implements Runnable
 	private static final String sep = System.getProperty("line.separator");
 	private static final String toolDatapointsFile = "." + tool.toLowerCase() + "_dplist.xml";
 
-	private static final Logger out = LogService.getLogger("calimero.tools." + tool);
+	private static final Logger out = LogService.getLogger("io.calimero.tools." + tool);
 
 	private KNXNetworkLink link;
 
@@ -271,7 +273,7 @@ public class ProcComm implements Runnable
 			sh.unregister();
 		}
 		catch (final Throwable t) {
-			out.error("tool options", t);
+			out.log(ERROR, "tool options", t);
 		}
 	}
 
@@ -415,8 +417,7 @@ public class ProcComm implements Runnable
 					datapoints.add(dp);
 				}
 				dp = datapoints.contains(ga) ? datapoints.get(ga) : dp;
-				readWrite(dp, write, write ? Arrays.asList(s).subList(withDpt ? 3 : 2, s.length).stream()
-						.collect(Collectors.joining(" ")) : null);
+				readWrite(dp, write, write ? String.join(" ", Arrays.asList(s).subList(withDpt ? 3 : 2, s.length)) : null);
 			}
 			else
 				out("unknown command '" + cmd + "'");
@@ -435,9 +436,10 @@ public class ProcComm implements Runnable
 		sb.append(e.getSourceAddr()).append("->");
 		if (!options.containsKey("lte"))
 			sb.append(e.getDestination());
-		if (!options.containsKey("compact"))
-			sb.append(" ").append(DataUnitBuilder.decodeAPCI(e.getServiceCode())).append(" ")
-					.append(DataUnitBuilder.toHex(asdu, " "));
+		if (!options.containsKey("compact")) {
+			sb.append(" ").append(DataUnitBuilder.decodeAPCI(e.getServiceCode())).append(" ");
+			HexFormat.ofDelimiter(" ").formatHex(sb, asdu);
+		}
 		if (asdu.length > 0) {
 			try {
 				sb.append(options.containsKey("compact") ? " " : ": ");
@@ -455,7 +457,7 @@ public class ProcComm implements Runnable
 				}
 			}
 			catch (KNXException | RuntimeException ex) {
-				out.info("error parsing group event {}", sb, ex);
+				out.log(INFO, "error parsing group event {0}", sb, ex);
 			}
 		}
 		System.out.println(LocalTime.now().truncatedTo(ChronoUnit.MILLIS) + " " + sb);
@@ -480,9 +482,9 @@ public class ProcComm implements Runnable
 	protected void onCompletion(final Exception thrown, final boolean canceled)
 	{
 		if (canceled)
-			out.info("process communication was stopped");
+			out.log(INFO, "process communication was stopped");
 		if (thrown != null)
-			out.error("completed with error", thrown);
+			out.log(ERROR, "completed with error", thrown);
 	}
 
 	/**
@@ -608,7 +610,7 @@ public class ProcComm implements Runnable
 	}
 
 	private void issueLteCommand(final String addr, final String... s)
-		throws KNXFormatException, KNXTimeoutException, KNXLinkClosedException {
+		throws KNXTimeoutException, KNXLinkClosedException {
 		if (s.length < 5) {
 			System.out.println("LTE-HEE command: r|w|i address IOT OI [\"company\" company] PID [hex values]");
 			return;
@@ -618,8 +620,7 @@ public class ProcComm implements Runnable
 		final int privatePidOffset = "company".equals(s[4]) ? 2 : 0;
 		final int company = privatePidOffset > 0 ? Integer.parseInt(s[5]) : 0;
 		final int pid = Integer.parseInt(s[4 + privatePidOffset]);
-		final String data = Arrays.asList(Arrays.copyOfRange(s, 5 + privatePidOffset, s.length)).stream()
-				.collect(Collectors.joining("")).replaceAll("0x", "");
+		final String data = String.join("", Arrays.copyOfRange(s, 5 + privatePidOffset, s.length)).replaceAll("0x", "");
 
 		final String cmd = s[0];
 		final boolean read = cmd.equals("read") || cmd.equals("r");
@@ -638,7 +639,7 @@ public class ProcComm implements Runnable
 	}
 
 	private void readWrite(final int cmd, final String tag, final int iot, final int oi, final int company,
-		final int pid, final String data) throws KNXFormatException, KNXTimeoutException, KNXLinkClosedException {
+		final int pid, final String data) throws KNXTimeoutException, KNXLinkClosedException {
 
 		// create asdu
 		final int dataLen = data.length() / 2;
@@ -706,7 +707,7 @@ public class ProcComm implements Runnable
 			onGroupEvent(new LteProcessEvent(pc, f.getSource(), ctrl2 & 0x0f, (GroupAddress) f.getDestination(), tpdu));
 		}
 		catch (final Exception ex) {
-			out.error("decoding LTE frame", ex);
+			out.log(ERROR, "decoding LTE frame", ex);
 		}
 	}
 
@@ -714,8 +715,7 @@ public class ProcComm implements Runnable
 		return decodeLteFrame(e.getServiceCode(), e.extFrameFormat(), e.getDestination(), e.getASDU());
 	}
 
-	private String decodeLteFrame(final int svcCode, final int extFormat, final GroupAddress dst, final byte[] asdu)
-			throws KNXFormatException {
+	private String decodeLteFrame(final int svcCode, final int extFormat, final GroupAddress dst, final byte[] asdu) {
 		final StringBuilder sb = new StringBuilder();
 		final var tag = LteHeeTag.from(extFormat, dst);
 		sb.append(tag).append(' ');
@@ -726,13 +726,13 @@ public class ProcComm implements Runnable
 
 		final byte[] data = Arrays.copyOfRange(asdu, pid == 0xff ? 7 : 4, asdu.length);
 
-		String value = DataUnitBuilder.toHex(data, "");
+		String value = HexFormat.of().formatHex(data);
 		if (data.length > 0) {
 			final var dp = datapoints.get(dst);
 			if (dp != null) {
 				final var dpt = dp.getDPT();
 				value = decodeDpValue(dpt, data, true).or(() -> decodeLteZDpValue(svcCode, dpt, data))
-						.orElse(DataUnitBuilder.toHex(data, ""));
+						.orElse(HexFormat.of().formatHex(data));
 			}
 		}
 
@@ -798,8 +798,7 @@ public class ProcComm implements Runnable
 	}
 
 	// shows one DPT of each matching main type based on the length of the supplied ASDU
-	private static String decodeAsduByLength(final byte[] asdu, final boolean optimized) throws KNXFormatException
-	{
+	private static String decodeAsduByLength(final byte[] asdu, final boolean optimized) {
 		final StringBuilder sb = new StringBuilder();
 		final List<MainType> typesBySize = TranslatorTypes.getMainTypesBySize(optimized ? 0 : asdu.length);
 		for (final Iterator<MainType> i = typesBySize.iterator(); i.hasNext();) {
@@ -815,7 +814,7 @@ public class ProcComm implements Runnable
 		return sb.toString();
 	}
 
-	private void runMonitorLoop() throws IOException, KNXException, InterruptedException
+	private void runMonitorLoop() throws IOException, InterruptedException
 	{
 		final BufferedReader in = new BufferedReader(new InputStreamReader(System.in, Charset.defaultCharset()));
 		while (true) {
@@ -833,7 +832,7 @@ public class ProcComm implements Runnable
 				out(e.getMessage());
 			}
 			catch (KNXException | RuntimeException e) {
-				out.error("[{}] {}", line, e.toString());
+				out.log(ERROR, "[{0}] {1}", line, e.toString());
 			}
 		}
 	}
@@ -850,7 +849,7 @@ public class ProcComm implements Runnable
 			datapoints.load(r);
 		}
 		catch (final KNXMLException e) {
-			out.info("failed to load datapoint information from {}: {}", dpResource, e.getMessage());
+			out.log(INFO, "failed to load datapoint information from {0}: {1}", dpResource, e.getMessage());
 		}
 	}
 
@@ -866,7 +865,7 @@ public class ProcComm implements Runnable
 			datapoints.save(w);
 		}
 		catch (final KNXMLException e) {
-			out.warn("on saving datapoint information to " + toolDatapointsFile, e);
+			out.log(WARNING, "on saving datapoint information to " + toolDatapointsFile, e);
 		}
 	}
 
@@ -1165,8 +1164,8 @@ public class ProcComm implements Runnable
 			entry("203.017", StdMode.function(ProcComm::twoByteUnsigned10Millis, "%")),		// DPT_PercentU16_Z
 			entry("203.100", StdMode.function(ProcComm::twoByteUnsigned, "ppm")),			// DPT_HVACAirQual_Z
 			entry("203.101", StdMode.function(ProcComm::twoByteUnsigned10Millis, "m/s")),	// DPT_WindSpeed_Z
-			entry("203.102", StdMode.function(ProcComm::twoByteUnsigned50Millis, "W/m\u00b2")), // DPT_SunIntensity_Z
-			entry("203.104", StdMode.function(ProcComm::twoByteUnsigned, "m\u00b3/h")),		// DPT_HVACAirFlowAbs_Z
+			entry("203.102", StdMode.function(ProcComm::twoByteUnsigned50Millis, "W/m²")), // DPT_SunIntensity_Z
+			entry("203.104", StdMode.function(ProcComm::twoByteUnsigned, "m³/h")),		// DPT_HVACAirFlowAbs_Z
 			entry("204.001", StdMode.xlator("6.001")),     // DPT_RelSignedValue_Z
 			entry("205.002", StdMode.xlator("8.002")),     // DPT_DeltaTimeMsec_Z
 			entry("205.003", StdMode.xlator("8.003")),     // DPT_DeltaTime10Msec_Z
@@ -1177,9 +1176,9 @@ public class ProcComm implements Runnable
 			entry("205.017", StdMode.xlator("8.010")),     // DPT_Percent_V16_Z
 			entry("205.100", StdMode.function(ProcComm::twoByteSigned20Millis, "°C")),		// DPT_TempHVACAbs_Z
 			entry("205.101", StdMode.function(ProcComm::twoByteSigned20Millis, "K")),		// DPT_TempHVACRel_Z
-			entry("205.102", StdMode.function(ProcComm::twoByteSigned, "m\u00b3/h")),		// DPT_HVACAirFlowRel_Z
+			entry("205.102", StdMode.function(ProcComm::twoByteSigned, "m³/h")),		// DPT_HVACAirFlowRel_Z
 			entry("218.001", StdMode.function(ProcComm::fourByteSigned, "l")),				// DPT_VolumeLiter_Z
-			entry("218.002", StdMode.function(ProcComm::fourByteSigned0001, "m\u00b3/h"))	// DPT_FlowRate_m3/h_Z
+			entry("218.002", StdMode.function(ProcComm::fourByteSigned0001, "m³/h"))	// DPT_FlowRate_m3/h_Z
 	);
 
 	private static String twoByteUnsigned(final byte[] data, final String unit) {

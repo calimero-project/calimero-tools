@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2021, 2022 B. Malinowsky
+    Copyright (c) 2021, 2023 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -34,29 +34,33 @@
     version.
 */
 
-package tuwien.auto.calimero.tools;
+package io.calimero.tools;
 
+import static java.lang.System.Logger.Level.DEBUG;
+import static java.lang.System.Logger.Level.ERROR;
+import static java.lang.System.Logger.Level.INFO;
+
+import java.lang.System.Logger;
 import java.math.BigInteger;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
 
-import org.slf4j.Logger;
-
-import tuwien.auto.calimero.DataUnitBuilder;
-import tuwien.auto.calimero.IndividualAddress;
-import tuwien.auto.calimero.KNXException;
-import tuwien.auto.calimero.KNXFormatException;
-import tuwien.auto.calimero.KNXIllegalArgumentException;
-import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
-import tuwien.auto.calimero.link.KNXNetworkLink;
-import tuwien.auto.calimero.link.medium.TPSettings;
-import tuwien.auto.calimero.log.LogService;
-import tuwien.auto.calimero.mgmt.Destination;
-import tuwien.auto.calimero.mgmt.ManagementClient;
-import tuwien.auto.calimero.mgmt.RemotePropertyServiceAdapter;
-import tuwien.auto.calimero.tools.Main.ShutdownHandler;
+import io.calimero.DataUnitBuilder;
+import io.calimero.IndividualAddress;
+import io.calimero.KNXException;
+import io.calimero.KNXFormatException;
+import io.calimero.KNXIllegalArgumentException;
+import io.calimero.knxnetip.KNXnetIPConnection;
+import io.calimero.link.KNXNetworkLink;
+import io.calimero.link.medium.TPSettings;
+import io.calimero.log.LogService;
+import io.calimero.mgmt.Destination;
+import io.calimero.mgmt.ManagementClient;
+import io.calimero.mgmt.RemotePropertyServiceAdapter;
+import io.calimero.tools.Main.ShutdownHandler;
 
 /**
  * A tool for accessing KNX device memory.
@@ -73,7 +77,7 @@ import tuwien.auto.calimero.tools.Main.ShutdownHandler;
 public class Memory implements Runnable {
 	private static final String tool = "Memory";
 
-	private static Logger out = LogService.getLogger("calimero.tools");
+	private static final Logger out = LogService.getLogger("io.calimero.tools");
 
 	private ManagementClient mc;
 	private Destination dst;
@@ -145,7 +149,7 @@ public class Memory implements Runnable {
 			sh.unregister();
 		}
 		catch (final Throwable t) {
-			out.error("parsing options", t);
+			out.log(ERROR, "parsing options", t);
 		}
 	}
 
@@ -205,9 +209,9 @@ public class Memory implements Runnable {
 	 */
 	protected void onCompletion(final Exception thrown, final boolean canceled) {
 		if (canceled)
-			out.info("memory access canceled");
+			out.log(INFO, "memory access canceled");
 		if (thrown != null)
-			out.error("completed", thrown);
+			out.log(ERROR, "completed", thrown);
 	}
 
 	private void out(final byte[] data) {
@@ -215,7 +219,7 @@ public class Memory implements Runnable {
 		if (options.containsKey("dec"))
 			s = new BigInteger(1, data).toString();
 		else
-			s = "0x" + DataUnitBuilder.toHex(data, "");
+			s = "0x" + HexFormat.of().formatHex(data);
 		out(s);
 	}
 
@@ -224,7 +228,7 @@ public class Memory implements Runnable {
 		if (read) {
 			final int startAddr = (Integer) options.get("read");
 			final int bytes = (Integer) options.get("bytes");
-			out.debug("read {} 0x{}..0x{}", dst.getAddress(), Long.toHexString(startAddr),
+			out.log(DEBUG, "read {0} 0x{1}..0x{2}", dst.getAddress(), Long.toHexString(startAddr),
 					Long.toHexString(startAddr + bytes - 1));
 			final byte[] data = mc.readMemory(dst, startAddr, bytes);
 			onMemoryRead(data);
@@ -237,8 +241,8 @@ public class Memory implements Runnable {
 				data = new BigInteger(input).toByteArray();
 			else
 				data = DataUnitBuilder.fromHex(input);
-			out.debug("write to {} 0x{}..0x{}: {}", dst.getAddress(), Long.toHexString(startAddr),
-					Long.toHexString(startAddr + data.length - 1), DataUnitBuilder.toHex(data, " "));
+			out.log(DEBUG, "write to {0} 0x{1}..0x{2}: {3}", dst.getAddress(), Long.toHexString(startAddr),
+					Long.toHexString(startAddr + data.length - 1), HexFormat.ofDelimiter(" ").formatHex(data));
 			mc.writeMemory(dst, startAddr, data);
 		}
 	}
@@ -289,7 +293,7 @@ public class Memory implements Runnable {
 					options.put("device", new IndividualAddress(arg));
 				}
 				catch (final KNXFormatException e) {
-					throw new KNXIllegalArgumentException("KNX device " + e.toString(), e);
+					throw new KNXIllegalArgumentException("KNX device " + e, e);
 				}
 			else
 				throw new KNXIllegalArgumentException("unknown option " + arg);

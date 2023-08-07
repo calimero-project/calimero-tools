@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2015, 2022 B. Malinowsky
+    Copyright (c) 2015, 2023 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -34,7 +34,7 @@
     version.
 */
 
-package tuwien.auto.calimero.tools;
+package io.calimero.tools;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -45,17 +45,16 @@ import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
-import tuwien.auto.calimero.IndividualAddress;
-import tuwien.auto.calimero.KNXException;
-import tuwien.auto.calimero.KNXFormatException;
-import tuwien.auto.calimero.KNXIllegalArgumentException;
-import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
-import tuwien.auto.calimero.link.KNXLinkClosedException;
-import tuwien.auto.calimero.link.KNXNetworkLink;
-import tuwien.auto.calimero.link.medium.TPSettings;
-import tuwien.auto.calimero.mgmt.ManagementProceduresImpl;
-import tuwien.auto.calimero.mgmt.PropertyAccess;
-import tuwien.auto.calimero.mgmt.PropertyClient;
+import io.calimero.IndividualAddress;
+import io.calimero.KNXException;
+import io.calimero.KNXFormatException;
+import io.calimero.KNXIllegalArgumentException;
+import io.calimero.knxnetip.KNXnetIPConnection;
+import io.calimero.link.KNXNetworkLink;
+import io.calimero.link.medium.TPSettings;
+import io.calimero.mgmt.ManagementProceduresImpl;
+import io.calimero.mgmt.PropertyAccess;
+import io.calimero.mgmt.PropertyClient;
 
 /**
  * ProgMode lists the current KNX devices in programming mode, and allows to set the programming mode of a device. The
@@ -190,7 +189,7 @@ public class ProgMode implements Runnable
 		}
 	}
 
-	private void progMode() throws KNXException, InterruptedException, KNXLinkClosedException {
+	private void progMode() throws KNXException, InterruptedException {
 		try (var link = createLink();
 			 var mgmt = new ManagementProceduresImpl(link)) {
 

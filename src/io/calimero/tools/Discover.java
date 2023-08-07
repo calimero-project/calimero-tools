@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2022 B. Malinowsky
+    Copyright (c) 2006, 2023 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -34,9 +34,13 @@
     version.
 */
 
-package tuwien.auto.calimero.tools;
+package io.calimero.tools;
+
+import static java.lang.System.Logger.Level.ERROR;
+import static java.lang.System.Logger.Level.INFO;
 
 import java.io.IOException;
+import java.lang.System.Logger;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
@@ -57,42 +61,40 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
-import org.slf4j.Logger;
-
-import tuwien.auto.calimero.KNXException;
-import tuwien.auto.calimero.KNXIllegalArgumentException;
-import tuwien.auto.calimero.KNXTimeoutException;
-import tuwien.auto.calimero.KnxRuntimeException;
-import tuwien.auto.calimero.knxnetip.Discoverer;
-import tuwien.auto.calimero.knxnetip.Discoverer.Result;
-import tuwien.auto.calimero.knxnetip.DiscovererTcp;
-import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
-import tuwien.auto.calimero.knxnetip.servicetype.DescriptionResponse;
-import tuwien.auto.calimero.knxnetip.servicetype.SearchResponse;
-import tuwien.auto.calimero.knxnetip.util.DIB;
-import tuwien.auto.calimero.knxnetip.util.DeviceDIB;
-import tuwien.auto.calimero.knxnetip.util.HPAI;
-import tuwien.auto.calimero.knxnetip.util.ServiceFamiliesDIB;
-import tuwien.auto.calimero.knxnetip.util.ServiceFamiliesDIB.ServiceFamily;
-import tuwien.auto.calimero.knxnetip.util.Srp;
-import tuwien.auto.calimero.log.LogService;
-import tuwien.auto.calimero.tools.Main.ShutdownHandler;
+import io.calimero.KNXException;
+import io.calimero.KNXIllegalArgumentException;
+import io.calimero.KNXTimeoutException;
+import io.calimero.KnxRuntimeException;
+import io.calimero.knxnetip.Discoverer;
+import io.calimero.knxnetip.Discoverer.Result;
+import io.calimero.knxnetip.DiscovererTcp;
+import io.calimero.knxnetip.KNXnetIPConnection;
+import io.calimero.knxnetip.servicetype.DescriptionResponse;
+import io.calimero.knxnetip.servicetype.SearchResponse;
+import io.calimero.knxnetip.util.DIB;
+import io.calimero.knxnetip.util.DeviceDIB;
+import io.calimero.knxnetip.util.HPAI;
+import io.calimero.knxnetip.util.ServiceFamiliesDIB;
+import io.calimero.knxnetip.util.ServiceFamiliesDIB.ServiceFamily;
+import io.calimero.knxnetip.util.Srp;
+import io.calimero.log.LogService;
+import io.calimero.tools.Main.ShutdownHandler;
 
 /**
- * A tool for Calimero showing the KNXnet/IP discovery and self description feature.
+ * A tool for Calimero showing the KNXnet/IP discovery and self-description feature.
  * <p>
  * Discover is a {@link Runnable} tool implementation allowing a user to do KNXnet/IP discovery and
- * self description of KNXnet/IP capable devices. As the protocol name already implies, this is done
+ * self-description of KNXnet/IP capable devices. As the protocol name already implies, this is done
  * using the IP protocol. This tool shows the necessary interaction with the Calimero 2 API for
  * discovering KNXnet/IP capable devices and query descriptions. The main part of this tool
  * implementation interacts with the type {@link Discoverer} in the library, which implements the
- * necessary discovery and self description features.<br>
+ * necessary discovery and self-description features.<br>
  * When running this tool from the console, the <code>main</code>- method of this class is invoked,
  * otherwise use it in the context appropriate to a {@link Runnable}.
  * <p>
  * To cancel a running discovery/description request on the console, use a user interrupt for
  * termination, for example, <code>^C</code>.<br>
- * In console mode, discovery and self description responses, as well as errors and problems during
+ * In console mode, discovery and self-description responses, as well as errors and problems during
  * discovery/description are written to <code>System.out</code>.
  *
  * @author B. Malinowsky
@@ -102,9 +104,10 @@ public class Discover implements Runnable
 	private static final String tool = "Discover";
 	private static final String sep = System.getProperty("line.separator");
 
-	private static Logger out = LogService.getLogger(Discoverer.LOG_SERVICE);
+	private static final Logger out = LogService.getLogger(Discoverer.LOG_SERVICE);
 
 	private final Discoverer d;
+	private final DiscovererTcp tcp;
 	private final Map<String, Object> options = new HashMap<>();
 	private final List<Srp> searchParameters = new ArrayList<>();
 	private final boolean reuseForDescription;
@@ -140,7 +143,7 @@ public class Discover implements Runnable
 		if (tcpSearch || options.containsKey("tcp")) {
 			final InetAddress server = (InetAddress) options.get("host");
 			final var ctrlEndpoint = new InetSocketAddress(server, (int) options.get("serverport"));
-			final var localEp = new InetSocketAddress(local, lp != null ? lp.intValue() : 0);
+			final var localEp = new InetSocketAddress(local, lp != null ? lp : 0);
 			final var connection = Main.tcpConnection(localEp, ctrlEndpoint);
 
 			Main.lookupKeyring(options);
@@ -151,25 +154,30 @@ public class Discover implements Runnable
 				final int user = (int) options.getOrDefault("user", 0);
 
 				final var session = connection.newSecureSession(user, userKey, devAuth);
-				d = Discoverer.secure(session);
+				tcp = Discoverer.secure(session);
 			}
 			else
-				d = Discoverer.tcp(connection);
+				tcp = Discoverer.tcp(connection);
 			reuseForDescription = true;
+			tcp.timeout((Duration) options.get("timeout"));
+
+			d = null;
 		}
 		else {
-			d = new Discoverer(local, lp != null ? lp.intValue() : 0, options.containsKey("nat"), mcast);
+			d = new Discoverer(local, lp != null ? lp : 0, options.containsKey("nat"), mcast);
 			reuseForDescription = false;
+			d.timeout((Duration) options.get("timeout"));
+
+			tcp = null;
 		}
-		d.timeout((Duration) options.get("timeout"));
 	}
 
 	/**
 	 * Entry point for running Discover.
 	 * <p>
 	 * To show usage message of the tool on the console, supply the command line option --help (or -h).<br>
-	 * Command line arguments are treated case sensitive; if no command is given, the tool only shows a short
-	 * description and version info. Available commands and options for discovery/self description:
+	 * Command line arguments are treated case-sensitive; if no command is given, the tool only shows a short
+	 * description and version info. Available commands and options for discovery/self-description:
 	 * <ul>
 	 * <li><code>search [<i>host</i>]</code> start a discovery search
 	 * <ul>
@@ -198,7 +206,7 @@ public class Discover implements Runnable
 	 * <li><code>--udp</code> request UDP communication</li>
 	 * </ul>
 	 *
-	 * @param args command line options for discovery or self description
+	 * @param args command line options for discovery or self-description
 	 */
 	public static void main(final String[] args)
 	{
@@ -209,7 +217,7 @@ public class Discover implements Runnable
 			sh.unregister();
 		}
 		catch (final Throwable t) {
-			out.error("parsing options", t);
+			out.log(ERROR, "parsing options", t);
 		}
 	}
 
@@ -237,17 +245,13 @@ public class Discover implements Runnable
 				out("Type --help for help message");
 			}
 		}
-		catch (final KNXException e) {
+		catch (final KNXException | RuntimeException e) {
 			thrown = e;
 		}
 		catch (final InterruptedException e) {
 			canceled = true;
 			Thread.currentThread().interrupt();
-		}
-		catch (final RuntimeException e) {
-			thrown = e;
-		}
-		finally {
+		} finally {
 			onCompletion(thrown, canceled);
 		}
 	}
@@ -348,10 +352,10 @@ public class Discover implements Runnable
 	{
 		if (canceled) {
 			final String msg = options.containsKey("search") ? "stopped discovery" : "self description canceled";
-			out.info(msg);
+			out.log(INFO, msg);
 		}
 		if (thrown != null)
-			out.error("completed", thrown);
+			out.log(ERROR, "completed", thrown);
 	}
 
 	/**
@@ -364,8 +368,8 @@ public class Discover implements Runnable
 	{
 		final Srp[] srps = searchParameters.toArray(new Srp[0]);
 
-		if (d instanceof DiscovererTcp) {
-			final var result = d.search(srps).thenApply(list -> list.get(0)).thenAccept(this::onEndpointReceived);
+		if (tcp != null) {
+			final var result = tcp.search(srps).thenApply(list -> list.get(0)).thenAccept(this::onEndpointReceived);
 			joinOnResult(result);
 			return;
 		}
@@ -445,7 +449,7 @@ public class Discover implements Runnable
 		}
 		finally {
 			if (processed == 0)
-				out.info("search stopped after {} seconds with 0 responses", timeout.toSeconds());
+				out.log(INFO, "search stopped after {0} seconds with 0 responses", timeout.toSeconds());
 		}
 	}
 
@@ -464,21 +468,21 @@ public class Discover implements Runnable
 	}
 
 	/**
-	 * Requests a self description using the supplied options.
+	 * Requests a self-description using the supplied options.
 	 *
 	 * @throws KNXException on problem requesting the description
 	 * @throws InterruptedException
 	 */
 	private void description() throws KNXException, InterruptedException
 	{
-		if (d instanceof DiscovererTcp) {
-			final var res = ((DiscovererTcp) d).description();
+		if (tcp != null) {
+			final var res = tcp.description();
 			onDescriptionReceived(res);
 			return;
 		}
-		// create socket address of server to request self description from
+		// create socket address of server to request self-description from
 		final InetSocketAddress host = new InetSocketAddress((InetAddress) options.get("host"),
-				((Integer) options.get("serverport")).intValue());
+				(Integer) options.get("serverport"));
 		final var timeout = ((Duration) options.get("timeout"));
 		// request description
 		final Result<DescriptionResponse> res = d.getDescription(host, (int) timeout.toSeconds());
@@ -492,28 +496,32 @@ public class Discover implements Runnable
 		final List<Result<SearchResponse>> res;
 		// start the search, using a particular network interface if supplied
 		if (options.containsKey("if")) {
-			if (d instanceof DiscovererTcp) {
-				res = searchWithParams();
+			if (tcp != null) {
+				try {
+					res = tcp.search(searchParameters.toArray(Srp[]::new)).get();
+				}
+				catch (final ExecutionException e) {
+					if (e.getCause() instanceof KNXException)
+						throw (KNXException) e.getCause();
+					throw new KnxRuntimeException("waiting for search response", e);
+				}
 			}
 			else {
 				d.startSearch(0, (NetworkInterface) options.get("if"), (int) timeout.toSeconds(), true);
 				res = d.getSearchResponses();
 			}
 		}
-		else
-			res = searchWithParams();
+		else {
+			try {
+				res = d.search(searchParameters.toArray(Srp[]::new)).get();
+			}
+			catch (final ExecutionException e) {
+				if (e.getCause() instanceof KNXException)
+					throw (KNXException) e.getCause();
+				throw new KnxRuntimeException("waiting for search response", e);
+			}
+		}
 		new HashSet<>(res).parallelStream().forEach(this::description);
-	}
-
-	private List<Result<SearchResponse>> searchWithParams() throws InterruptedException, KNXException {
-		try {
-			return d.search(searchParameters.toArray(Srp[]::new)).get();
-		}
-		catch (final ExecutionException e) {
-			if (e.getCause() instanceof KNXException)
-				throw (KNXException) e.getCause();
-			throw new KnxRuntimeException("waiting for search response", e);
-		}
 	}
 
 	private void description(final Result<SearchResponse> r)
@@ -529,9 +537,9 @@ public class Discover implements Runnable
 			server = new InetSocketAddress(hpai.getAddress(), hpai.getPort());
 
 		try {
-			if (d instanceof DiscovererTcp) {
+			if (tcp != null) {
 				try {
-					final var description = ((DiscovererTcp) d).description();
+					final var description = tcp.description();
 					onDescriptionReceived(description, new HPAI(hpai.getHostProtocol(), server));
 				}
 				catch (final InterruptedException e) {
@@ -565,8 +573,8 @@ public class Discover implements Runnable
 	private void parseOptions(final String[] args)
 	{
 		// add defaults
-		options.put("localport", Integer.valueOf(0));
-		options.put("serverport", Integer.valueOf(KNXnetIPConnection.DEFAULT_PORT));
+		options.put("localport", 0);
+		options.put("serverport", KNXnetIPConnection.DEFAULT_PORT);
 		options.put("timeout", Duration.ofSeconds(3));
 		options.put("mcastResponse", true);
 
@@ -595,7 +603,7 @@ public class Discover implements Runnable
 			else if (Main.isOption(arg, "netif", "i"))
 				options.put("if", getNetworkIF(i.next()));
 			else if (Main.isOption(arg, "timeout", "t")) {
-				final var timeout = Duration.ofSeconds(Long.valueOf(i.next()));
+				final var timeout = Duration.ofSeconds(Long.parseLong(i.next()));
 				// a value of 0 means infinite timeout
 				if (timeout.toMillis() > 0)
 					options.put("timeout", timeout);
@@ -621,15 +629,18 @@ public class Discover implements Runnable
 			else if ("describe".equals(arg)) {
 				if (!i.hasNext())
 					throw new KNXIllegalArgumentException("specify remote host");
-				options.put("host", Main.parseHost(i.next()));
+				options.put("describe", null);
 			}
 			else if (Main.isOption(arg, "serverport", "p"))
 				options.put("serverport", Integer.decode(i.next()));
-			else if (options.containsKey("search"))
-				options.put("host", Main.parseHost(arg)); // update to unicast search with server control endpoint
+			else if (options.containsKey("search") || options.containsKey("describe"))
+				options.put("host", Main.parseHost(arg));
 			else
 				throw new KNXIllegalArgumentException("unknown option " + arg);
 		}
+
+		if (options.containsKey("describe") && !options.containsKey("host"))
+			throw new KNXIllegalArgumentException("specify remote host");
 	}
 
 	private static String nameOf(final NetworkInterface nif)
@@ -653,7 +664,7 @@ public class Discover implements Runnable
 	/**
 	 * Gets the local network interface using the supplied identifier.
 	 *
-	 * @param id identifier associated with the network interface, either an network interface name,
+	 * @param id identifier associated with the network interface, either a network interface name,
 	 *        a host name, or an IP address bound to that interface
 	 * @return the network interface
 	 * @throws KNXIllegalArgumentException if no network interface found

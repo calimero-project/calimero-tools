@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2010, 2022 B. Malinowsky
+    Copyright (c) 2010, 2023 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -34,7 +34,10 @@
     version.
 */
 
-package tuwien.auto.calimero.tools;
+package io.calimero.tools;
+
+
+import static java.lang.System.Logger.Level.INFO;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -53,6 +56,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -61,34 +65,32 @@ import java.util.StringJoiner;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import org.slf4j.LoggerFactory;
-
-import tuwien.auto.calimero.CloseEvent;
-import tuwien.auto.calimero.DataUnitBuilder;
-import tuwien.auto.calimero.IndividualAddress;
-import tuwien.auto.calimero.KNXException;
-import tuwien.auto.calimero.KNXFormatException;
-import tuwien.auto.calimero.KNXIllegalArgumentException;
-import tuwien.auto.calimero.Settings;
-import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
-import tuwien.auto.calimero.knxnetip.SecureConnection;
-import tuwien.auto.calimero.knxnetip.TcpConnection;
-import tuwien.auto.calimero.link.Connector;
-import tuwien.auto.calimero.link.KNXNetworkLink;
-import tuwien.auto.calimero.link.KNXNetworkLinkFT12;
-import tuwien.auto.calimero.link.KNXNetworkLinkIP;
-import tuwien.auto.calimero.link.KNXNetworkLinkTpuart;
-import tuwien.auto.calimero.link.KNXNetworkLinkUsb;
-import tuwien.auto.calimero.link.LinkEvent;
-import tuwien.auto.calimero.link.NetworkLinkListener;
-import tuwien.auto.calimero.link.medium.KNXMediumSettings;
-import tuwien.auto.calimero.link.medium.PLSettings;
-import tuwien.auto.calimero.link.medium.RFSettings;
-import tuwien.auto.calimero.mgmt.LocalDeviceManagementIp;
-import tuwien.auto.calimero.secure.Keyring;
-import tuwien.auto.calimero.secure.Keyring.Interface;
-import tuwien.auto.calimero.secure.Security;
-import tuwien.auto.calimero.serial.ConnectionStatus;
+import io.calimero.CloseEvent;
+import io.calimero.IndividualAddress;
+import io.calimero.KNXException;
+import io.calimero.KNXFormatException;
+import io.calimero.KNXIllegalArgumentException;
+import io.calimero.Settings;
+import io.calimero.knxnetip.KNXnetIPConnection;
+import io.calimero.knxnetip.SecureConnection;
+import io.calimero.knxnetip.TcpConnection;
+import io.calimero.link.Connector;
+import io.calimero.link.KNXNetworkLink;
+import io.calimero.link.KNXNetworkLinkFT12;
+import io.calimero.link.KNXNetworkLinkIP;
+import io.calimero.link.KNXNetworkLinkTpuart;
+import io.calimero.link.KNXNetworkLinkUsb;
+import io.calimero.link.LinkEvent;
+import io.calimero.link.NetworkLinkListener;
+import io.calimero.link.medium.KNXMediumSettings;
+import io.calimero.link.medium.PLSettings;
+import io.calimero.link.medium.RFSettings;
+import io.calimero.log.LogService;
+import io.calimero.mgmt.LocalDeviceManagementIp;
+import io.calimero.secure.Keyring;
+import io.calimero.secure.Keyring.Interface;
+import io.calimero.secure.Security;
+import io.calimero.serial.ConnectionStatus;
 
 /**
  * @author B. Malinowsky
@@ -126,9 +128,7 @@ final class Main
 	private static final Map<InetSocketAddress, TcpConnection> tcpConnectionPool = new HashMap<>();
 	private static boolean registeredTcpShutdownHook;
 
-	@SuppressWarnings("preview")
-	static synchronized TcpConnection tcpConnection(final InetSocketAddress local, final InetSocketAddress server)
-			throws KNXException {
+	static synchronized TcpConnection tcpConnection(final InetSocketAddress local, final InetSocketAddress server) {
 		if (!registeredTcpShutdownHook) {
 			Runtime.getRuntime().addShutdownHook(Thread.ofVirtual().allowSetThreadLocals(false)
 					.unstarted(Main::closeTcpConnections));
@@ -164,16 +164,22 @@ final class Main
 	 */
 	public static void main(final String[] args)
 	{
+		if (args.length == 1 && (args[0].equals("-v") || args[0].equals("--version"))) {
+			System.out.println(Settings.getLibraryHeader(false));
+			return;
+		}
 		final boolean help = args.length >= 1 && (args[0].equals("--help") || args[0].equals("-h"));
 		if (args.length == 0 || help) {
 			usage();
 			return;
 		}
+
+		System.setProperty("jdk.system.logger.format", "%1$tT.%1$tL [%4$-7s] %3$s: %5$s%6$s%n");
 		int cmdIdx = 0;
-		if (args.length > 0 && args[0].startsWith("-v")) {
+		if (args[0].startsWith("-v")) {
 			final String vs = args[0];
-			final String level = vs.startsWith("-vvv") ? "trace" : vs.startsWith("-vv") ? "debug" : "info";
-			System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", level);
+			final String level = vs.startsWith("-vvv") ? "TRACE" : vs.startsWith("-vv") ? "DEBUG" : "INFO";
+			System.setProperty("jdk.system.logger.level", level);
 			cmdIdx++;
 		}
 
@@ -214,8 +220,8 @@ final class Main
 		final StringBuilder sb = new StringBuilder();
 		final String sep = System.lineSeparator();
 		sb.append("Supported commands (always safe without further options, use -h for help):").append(sep);
-		for (int i = 0; i < cmds.length; i++) {
-			sb.append(cmds[i][0]).append(" - ").append(cmds[i][1]).append(sep);
+		for (final String[] cmd : cmds) {
+			sb.append(cmd[0]).append(" - ").append(cmd[1]).append(sep);
 		}
 		System.out.println(sb);
 	}
@@ -234,7 +240,7 @@ final class Main
 
 	static InetSocketAddress createLocalSocket(final InetAddress host, final Integer port)
 	{
-		final int p = port != null ? port.intValue() : 0;
+		final int p = port != null ? port : 0;
 		return host != null ? new InetSocketAddress(host, p) : new InetSocketAddress(p);
 	}
 
@@ -413,14 +419,9 @@ final class Main
 		final KNXMediumSettings medium = (KNXMediumSettings) options.get("medium");
 
 		// check for FT1.2 network link
-		if (options.containsKey("ft12")) {
-			try {
-				return new KNXNetworkLinkFT12(Integer.parseInt(host), medium);
-			}
-			catch (final NumberFormatException e) {
-				return new KNXNetworkLinkFT12(host, medium);
-			}
-		}
+		if (options.containsKey("ft12"))
+			return new KNXNetworkLinkFT12(host, medium);
+
 		// check for FT1.2 cEMI network link
 		if (options.containsKey("ft12-cemi"))
 			return KNXNetworkLinkFT12.newCemiLink(host, medium);
@@ -438,7 +439,7 @@ final class Main
 		if (options.containsKey("tpuart")) {
 			final var link = new KNXNetworkLinkTpuart(host, medium, Collections.emptyList());
 			if (device == null)
-				LoggerFactory.getLogger("calimero.tools").info("TP-UART sends without assigned KNX address (--knx-address)");
+				LogService.getLogger("io.calimero.tools").log(INFO, "TP-UART sends without assigned KNX address (--knx-address)");
 			return link;
 		}
 
@@ -469,7 +470,7 @@ final class Main
 		}
 
 		// IP tunneling
-		final InetSocketAddress remote = new InetSocketAddress(addr, ((Integer) options.get("port")).intValue());
+		final InetSocketAddress remote = new InetSocketAddress(addr, (Integer) options.get("port"));
 		final boolean nat = options.containsKey("nat");
 
 		// supported combination of options for secure connection:
@@ -501,7 +502,7 @@ final class Main
 
 		final InetSocketAddress local = createLocalSocket(options);
 		final InetSocketAddress host = new InetSocketAddress((String) options.get("host"),
-				((Integer) options.get("port")).intValue());
+				(Integer) options.get("port"));
 		final boolean nat = options.containsKey("nat");
 		final Optional<byte[]> optUserKey = deviceMgmtKey(options);
 		if (optUserKey.isPresent()) {
@@ -534,7 +535,7 @@ final class Main
 					toolKeyring = keyring;
 			});
 		}
-		else if (gotPwd ^ optKeyring.isPresent()) // should maybe make this an exception, too
+		else if (optKeyring.isPresent()) // should maybe make this an exception, too
 			System.out.println("both keyring and keyring password are required, secure communication won't be available!");
 	}
 
@@ -669,7 +670,7 @@ final class Main
 		final int len = hex.length();
 		if (len != 0 && len != 32)
 			throw new KNXIllegalArgumentException("wrong KNX key length, requires 16 bytes (32 hex chars)");
-		return DataUnitBuilder.fromHex(hex);
+		return HexFormat.of().parseHex(hex);
 	}
 
 	static final class ShutdownHandler {

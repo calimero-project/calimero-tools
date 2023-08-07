@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2019, 2022 B. Malinowsky
+    Copyright (c) 2019, 2023 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -34,11 +34,15 @@
     version.
 */
 
-package tuwien.auto.calimero.tools;
+package io.calimero.tools;
+
+import static java.lang.System.Logger.Level.ERROR;
+import static java.lang.System.Logger.Level.INFO;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.System.Logger;
 import java.lang.invoke.MethodHandles;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -55,6 +59,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -65,35 +70,33 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
-import org.slf4j.Logger;
-
-import tuwien.auto.calimero.CloseEvent;
-import tuwien.auto.calimero.DataUnitBuilder;
-import tuwien.auto.calimero.KNXException;
-import tuwien.auto.calimero.KNXFormatException;
-import tuwien.auto.calimero.KNXIllegalArgumentException;
-import tuwien.auto.calimero.KNXTimeoutException;
-import tuwien.auto.calimero.KnxRuntimeException;
-import tuwien.auto.calimero.baos.BaosLink;
-import tuwien.auto.calimero.baos.BaosLinkAdapter;
-import tuwien.auto.calimero.baos.BaosService;
-import tuwien.auto.calimero.baos.BaosService.DatapointCommand;
-import tuwien.auto.calimero.baos.BaosService.ErrorCode;
-import tuwien.auto.calimero.baos.BaosService.HistoryCommand;
-import tuwien.auto.calimero.baos.BaosService.Item;
-import tuwien.auto.calimero.baos.BaosService.Property;
-import tuwien.auto.calimero.baos.BaosService.Timer;
-import tuwien.auto.calimero.baos.BaosService.ValueFilter;
-import tuwien.auto.calimero.baos.ip.BaosLinkIp;
-import tuwien.auto.calimero.dptxlator.DPT;
-import tuwien.auto.calimero.dptxlator.DPTXlator;
-import tuwien.auto.calimero.dptxlator.TranslatorTypes;
-import tuwien.auto.calimero.link.KNXNetworkLink;
-import tuwien.auto.calimero.link.LinkEvent;
-import tuwien.auto.calimero.link.NetworkLinkListener;
-import tuwien.auto.calimero.link.medium.TPSettings;
-import tuwien.auto.calimero.log.LogService;
-import tuwien.auto.calimero.tools.Main.ShutdownHandler;
+import io.calimero.CloseEvent;
+import io.calimero.DataUnitBuilder;
+import io.calimero.KNXException;
+import io.calimero.KNXFormatException;
+import io.calimero.KNXIllegalArgumentException;
+import io.calimero.KNXTimeoutException;
+import io.calimero.KnxRuntimeException;
+import io.calimero.baos.BaosLink;
+import io.calimero.baos.BaosLinkAdapter;
+import io.calimero.baos.BaosService;
+import io.calimero.baos.BaosService.DatapointCommand;
+import io.calimero.baos.BaosService.ErrorCode;
+import io.calimero.baos.BaosService.HistoryCommand;
+import io.calimero.baos.BaosService.Item;
+import io.calimero.baos.BaosService.Property;
+import io.calimero.baos.BaosService.Timer;
+import io.calimero.baos.BaosService.ValueFilter;
+import io.calimero.baos.ip.BaosLinkIp;
+import io.calimero.dptxlator.DPT;
+import io.calimero.dptxlator.DPTXlator;
+import io.calimero.dptxlator.TranslatorTypes;
+import io.calimero.link.KNXNetworkLink;
+import io.calimero.link.LinkEvent;
+import io.calimero.link.NetworkLinkListener;
+import io.calimero.link.medium.TPSettings;
+import io.calimero.log.LogService;
+import io.calimero.tools.Main.ShutdownHandler;
 
 /**
  * A tool for Calimero providing KNX BAOS (Bus Access and Object Server) communication.
@@ -102,7 +105,7 @@ import tuwien.auto.calimero.tools.Main.ShutdownHandler;
 public class BaosClient implements Runnable
 {
 	private static final String tool = MethodHandles.lookup().lookupClass().getSimpleName();
-	private static final Logger out = LogService.getLogger("calimero.tools." + tool);
+	private static final Logger out = LogService.getLogger(MethodHandles.lookup().lookupClass());
 
 	private static final Duration defaultTimeout = Duration.ofSeconds(2);
 
@@ -142,7 +145,7 @@ public class BaosClient implements Runnable
 	 * for IP, USB, or FT1.2. Use the command line option <code>--help</code> (or <code>-h</code>) to show the
 	 * usage of this tool.
 	 * <p>
-	 * Command line options are treated case sensitive. Available options for communication:
+	 * Command line options are treated case-sensitive. Available options for communication:
 	 * <ul>
 	 * <li><code>--help -h</code> show help message</li>
 	 * <li><code>--version</code> show tool/library version and exit</li>
@@ -189,7 +192,7 @@ public class BaosClient implements Runnable
 			sh.unregister();
 		}
 		catch (final Throwable t) {
-			out.error("tool options", t);
+			out.log(ERROR, "tool options", t);
 		}
 	}
 
@@ -286,7 +289,7 @@ public class BaosClient implements Runnable
 					}
 					else if (subService == BaosService.GetDatapointHistoryState) {
 						final String state = datapointHistoryState((int) item.info());
-						final int entries = ByteBuffer.wrap(item.data()).getInt() & 0xffff_ffff;
+						final int entries = ByteBuffer.wrap(item.data()).getInt();
 						out("DP #" + item.id() + " history " + state + ", " + entries + " entries");
 					}
 					else {
@@ -310,9 +313,9 @@ public class BaosClient implements Runnable
 	protected void onCompletion(final Exception thrown, final boolean canceled)
 	{
 		if (canceled)
-			out.info("BAOS communication was stopped");
+			out.log(INFO, "BAOS communication was stopped");
 		if (thrown != null)
-			out.error("completed with error", thrown);
+			out.log(ERROR, "completed with error", thrown);
 	}
 
 	private BaosLink newBaosLink() throws KNXException, InterruptedException {
@@ -340,7 +343,7 @@ public class BaosClient implements Runnable
 			return xlator.getValue();
 		}
 		catch (final KNXException e) {
-			return DataUnitBuilder.toHex(data, " ");
+			return HexFormat.ofDelimiter(" ").formatHex(data);
 		}
 	}
 
@@ -382,11 +385,11 @@ public class BaosClient implements Runnable
 	private BaosService parse(final String[] args) throws KNXException, InterruptedException {
 		if (args.length < 2)
 			throw new KNXIllegalArgumentException("command too short: " + List.of(args));
-		switch (args[0]) {
-		case "get": return get(args);
-		case "set": return set(args);
-		default: throw new KNXIllegalArgumentException("unknown command " + args[0]);
-		}
+		return switch (args[0]) {
+			case "get" -> get(args);
+			case "set" -> set(args);
+			default -> throw new KNXIllegalArgumentException("unknown command " + args[0]);
+		};
 	}
 
 	private static BaosService get(final String[] args) {
@@ -394,92 +397,88 @@ public class BaosClient implements Runnable
 		final int id = unsigned(args[2]);
 		final int items = args.length > 3 ? unsigned(args[3]) : 1;
 
-		switch (svc) {
-			case "property": return BaosService.getServerItem(Property.of(id), items);
-			case "value":
+		return switch (svc) {
+			case "property" -> BaosService.getServerItem(Property.of(id), items);
+			case "value" -> {
 				final var filter = args.length > 4 ? valueFilter(args[4]) : ValueFilter.All;
-				return BaosService.getDatapointValue(id, items, filter);
-			case "timer": return BaosService.getTimer(id, items);
-			case "desc":
-			case "description": return BaosService.getDatapointDescription(id, items);
-			case "history":
+				yield BaosService.getDatapointValue(id, items, filter);
+			}
+			case "timer" -> BaosService.getTimer(id, items);
+			case "desc", "description" -> BaosService.getDatapointDescription(id, items);
+			case "history" -> {
 				// NYI what format to expect
 				final var start = Instant.EPOCH; //Instant.parse(args[4]);
 				final var end = Instant.now(); //Instant.parse(args[5]);
-				return BaosService.getDatapointHistory(id, items, start, end);
-			case "hs":
-				return BaosService.getDatapointHistoryState(id, items);
-			default: throw new KNXIllegalArgumentException("unsupported BAOS service '" + svc + "'");
-		}
+				yield BaosService.getDatapointHistory(id, items, start, end);
+			}
+			case "hs" -> BaosService.getDatapointHistoryState(id, items);
+			default -> throw new KNXIllegalArgumentException("unsupported BAOS service '" + svc + "'");
+		};
 	}
 
 	private BaosService set(final String[] args) throws KNXException, InterruptedException {
 		final String svc = args[1];
 		final int id = unsigned(args[2]);
 
-		switch (svc) {
-			case "property": return BaosService.setServerItem(Item.property(Property.of(id), DataUnitBuilder.fromHex(args[3])));
-			case "value": return BaosService.setDatapointValue(
+		return switch (svc) {
+			case "property" -> BaosService.setServerItem(Item.property(Property.of(id), DataUnitBuilder.fromHex(args[3])));
+			case "value" -> BaosService.setDatapointValue(
 					parseDatapointValue(id, Arrays.copyOfRange(args, 3, args.length)));
-			case "timer": return setTimer(id, args);
-			case "history":
+			case "timer" -> setTimer(id, args);
+			case "history" -> {
 				final String cmd = args[4] + (args.length > 5 ? args[5] : "");
-				return BaosService.setDatapointHistoryCommand(id, unsigned(args[3]), HistoryCommand.of(cmd));
-			default: throw new KNXIllegalArgumentException("unsupported BAOS service '" + svc + "'");
-		}
+				yield BaosService.setDatapointHistoryCommand(id, unsigned(args[3]), HistoryCommand.of(cmd));
+			}
+			default -> throw new KNXIllegalArgumentException("unsupported BAOS service '" + svc + "'");
+		};
 	}
 
 	private static ValueFilter valueFilter(final String arg) {
-		switch (arg) {
-		case "all": return ValueFilter.All;
-		case "valid": return ValueFilter.ValidOnly;
-		case "updated": return ValueFilter.UpdatedOnly;
-		default: throw new KNXIllegalArgumentException("unknown value filter " + arg);
-		}
+		return switch (arg) {
+			case "all" -> ValueFilter.All;
+			case "valid" -> ValueFilter.ValidOnly;
+			case "updated" -> ValueFilter.UpdatedOnly;
+			default -> throw new KNXIllegalArgumentException("unknown value filter " + arg);
+		};
 	}
 
 	// format: <datapoint id> <datapoint cmd> [value]
 	private Item<DatapointCommand> parseDatapointValue(final int dpId, final String[] args)
 			throws KNXException, InterruptedException {
 		final var cmd = DatapointCommand.of(unsigned(args[0]));
-		switch (cmd) {
-		case NoCommand:
-		case SendValueOnBus:
-		case ReadValueViaBus:
-		case ClearTransmissionState:
-			return Item.datapoint(dpId, cmd, new byte[0]);
-
-		case SetValue:
-		case SetValueAndSendOnBus:
-			final DPTXlator xlator;
-			if (isDpt(args[1])) {
-				final var dptId = fromDptName(args[1]);
-				xlator = TranslatorTypes.createTranslator(dptId);
-				dpIdToDpt.put(dpId, xlator.getType());
-				xlator.setValue(args[2]);
+		return switch (cmd) {
+			case NoCommand, SendValueOnBus, ReadValueViaBus, ClearTransmissionState -> Item.datapoint(dpId, cmd, new byte[0]);
+			case SetValue, SetValueAndSendOnBus -> {
+				final DPTXlator xlator;
+				if (isDpt(args[1])) {
+					final var dptId = fromDptName(args[1]);
+					xlator = TranslatorTypes.createTranslator(dptId);
+					dpIdToDpt.put(dpId, xlator.getType());
+					xlator.setValue(args[2]);
+				}
+				else {
+					xlator = translatorFor(dpId);
+					xlator.setValue(args[1]);
+				}
+				yield Item.datapoint(dpId, cmd, xlator.getData());
 			}
-			else {
-				xlator = translatorFor(dpId);
-				xlator.setValue(args[1]);
-			}
-			return Item.datapoint(dpId, cmd, xlator.getData());
-		default: throw new IllegalStateException(cmd.toString());
-		}
+			default -> throw new IllegalStateException(cmd.toString());
+		};
 	}
 
 	private BaosService setTimer(final int id, final String[] args) throws KNXException, InterruptedException {
 		final String action = args[3];
-		switch (action) {
-			case "delete": return BaosService.setTimer(Timer.delete(id));
-			case "oneshot": {
+		return switch (action) {
+			case "delete" -> BaosService.setTimer(Timer.delete(id));
+			case "oneshot" -> {
 				final var dateTime = parseDateTime(args[4]);
 				final int dpId = unsigned(args[5]);
 				final var valueItem = parseDatapointValue(dpId, Arrays.copyOfRange(args, 6, args.length));
 				final var job = timerJobSetValue(valueItem);
 				final var description = ""; // NYI
-				return BaosService.setTimer(Timer.oneShot(id, dateTime, job, description));
+				yield BaosService.setTimer(Timer.oneShot(id, dateTime, job, description));
 			}
-			case "interval": {
+			case "interval" -> {
 				final var start = parseDateTime(args[4]);
 				final var end = parseDateTime(args[5]);
 				final var interval = Duration.parse(args[6]);
@@ -487,10 +486,10 @@ public class BaosClient implements Runnable
 				final var valueItem = parseDatapointValue(dpId, Arrays.copyOfRange(args, 8, args.length));
 				final var job = timerJobSetValue(valueItem);
 				final var description = ""; // NYI
-				return BaosService.setTimer(Timer.interval(id, start, end, interval, job, description));
+				yield BaosService.setTimer(Timer.interval(id, start, end, interval, job, description));
 			}
-			default: throw new KNXIllegalArgumentException("unsupported timer action '" + action + "'");
-		}
+			default -> throw new KNXIllegalArgumentException("unsupported timer action '" + action + "'");
+		};
 	}
 
 	private static byte[] timerJobSetValue(final Item<DatapointCommand> value) {
@@ -500,48 +499,37 @@ public class BaosClient implements Runnable
 	}
 
 	private static String datapointHistoryState(final int state) {
-		switch (state) {
-		case 0: return "inactive";
-		case 1: return "available";
-		case 2: return "active";
-		case 3: return "active available";
-		default: return state + " (unknown)";
-		}
+		return switch (state) {
+			case 0 -> "inactive";
+			case 1 -> "available";
+			case 2 -> "active";
+			case 3 -> "active available";
+			default -> state + " (unknown)";
+		};
 	}
 
-	private static String fromDptName(final String id)
-	{
-		if ("switch".equals(id))
-			return "1.001";
-		if ("bool".equals(id))
-			return "1.002";
-		if ("dimmer".equals(id))
-			return "3.007";
-		if ("blinds".equals(id))
-			return "3.008";
-		if ("string".equals(id))
-			return "16.001";
-		if ("temp".equals(id))
-			return "9.001";
-		if ("float".equals(id))
-			return "9.002";
-		if ("float2".equals(id))
-			return "9.002";
-		if ("float4".equals(id))
-			return "14.005";
-		if ("ucount".equals(id))
-			return "5.010";
-		if ("int".equals(id))
-			return "13.001";
-		if ("angle".equals(id))
-			return "5.003";
-		if ("percent".equals(id))
-			return "5.001";
-		if ("%".equals(id))
-			return "5.001";
-		if (!"-".equals(id) && !Character.isDigit(id.charAt(0)))
-			throw new KnxRuntimeException("unrecognized DPT '" + id + "'");
-		return id;
+	private static String fromDptName(final String id) {
+		return switch (id) {
+			case "switch" -> "1.001";
+			case "bool" -> "1.002";
+			case "dimmer" -> "3.007";
+			case "blinds" -> "3.008";
+			case "string" -> "16.001";
+			case "temp" -> "9.001";
+			case "float" -> "9.002";
+			case "float2" -> "9.002";
+			case "float4" -> "14.005";
+			case "ucount" -> "5.010";
+			case "int" -> "13.001";
+			case "angle" -> "5.003";
+			case "percent" -> "5.001";
+			case "%" -> "5.001";
+			default -> {
+				if (!"-".equals(id) && !Character.isDigit(id.charAt(0)))
+					throw new KnxRuntimeException("unrecognized DPT '" + id + "'");
+				yield id;
+			}
+		};
 	}
 
 	private void issueBaosService() throws KNXException, InterruptedException
@@ -558,7 +546,7 @@ public class BaosClient implements Runnable
 		waitForResponse(svc.subService());
 	}
 
-	private void runRepl() throws IOException, KNXException, InterruptedException {
+	private void runRepl() throws IOException, InterruptedException {
 		final BufferedReader in = new BufferedReader(new InputStreamReader(System.in, Charset.defaultCharset()));
 		while (true) {
 			while (!in.ready() && !closed)
@@ -592,7 +580,7 @@ public class BaosClient implements Runnable
 					out(e.getMessage());
 				}
 				catch (KNXException | RuntimeException e) {
-					out.error("[{}]", line, e);
+					out.log(ERROR, "[{0}]", line, e);
 				}
 			}
 		}

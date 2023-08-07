@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2022 B. Malinowsky
+    Copyright (c) 2006, 2023 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -34,10 +34,13 @@
     version.
 */
 
-package tuwien.auto.calimero.tools;
+package io.calimero.tools;
 
-import static tuwien.auto.calimero.tools.Main.setDomainAddress;
+import static io.calimero.tools.Main.setDomainAddress;
+import static java.lang.System.Logger.Level.ERROR;
+import static java.lang.System.Logger.Level.INFO;
 
+import java.lang.System.Logger;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -48,20 +51,18 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.StringJoiner;
 
-import org.slf4j.Logger;
-
-import tuwien.auto.calimero.IndividualAddress;
-import tuwien.auto.calimero.KNXException;
-import tuwien.auto.calimero.KNXIllegalArgumentException;
-import tuwien.auto.calimero.KNXRemoteException;
-import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
-import tuwien.auto.calimero.link.KNXNetworkLink;
-import tuwien.auto.calimero.link.medium.TPSettings;
-import tuwien.auto.calimero.log.LogService;
-import tuwien.auto.calimero.mgmt.PropertyAccess;
-import tuwien.auto.calimero.mgmt.PropertyAdapter;
-import tuwien.auto.calimero.mgmt.PropertyClient;
-import tuwien.auto.calimero.mgmt.RemotePropertyServiceAdapter;
+import io.calimero.IndividualAddress;
+import io.calimero.KNXException;
+import io.calimero.KNXIllegalArgumentException;
+import io.calimero.KNXRemoteException;
+import io.calimero.knxnetip.KNXnetIPConnection;
+import io.calimero.link.KNXNetworkLink;
+import io.calimero.link.medium.TPSettings;
+import io.calimero.log.LogService;
+import io.calimero.mgmt.PropertyAccess;
+import io.calimero.mgmt.PropertyAdapter;
+import io.calimero.mgmt.PropertyClient;
+import io.calimero.mgmt.RemotePropertyServiceAdapter;
 
 /**
  * A tool for Calimero to read/set the IP configuration of a KNXnet/IP server using KNX properties.
@@ -89,7 +90,7 @@ public class IPConfig implements Runnable
 	private static final String sep = System.getProperty("line.separator");
 	private static final int IPObjType = 11;
 
-	private static Logger out = LogService.getLogger("calimero.tools");
+	private static final Logger out = LogService.getLogger("io.calimero.tools");
 
 	private KNXNetworkLink lnk;
 	private PropertyClient pc;
@@ -182,7 +183,7 @@ public class IPConfig implements Runnable
 			new IPConfig(args).run();
 		}
 		catch (final Throwable t) {
-			out.error("IP config", t);
+			out.log(ERROR, "IP config", t);
 		}
 	}
 
@@ -214,7 +215,7 @@ public class IPConfig implements Runnable
 					objIndex = d.getObjectIndex();
 			});
 			if (objIndex == -1) {
-				out.error(PropertyClient.getObjectTypeName(IPObjType) + " not found");
+				out.log(ERROR, PropertyClient.getObjectTypeName(IPObjType) + " not found");
 				return;
 			}
 			setIPAssignment();
@@ -264,9 +265,9 @@ public class IPConfig implements Runnable
 		for (int i = 2; i < config.size(); ++i) {
 			final String[] s = config.get(i);
 			final String value = s[2].isEmpty() ? "n/a" : s[2];
-			sb.append(s[1]).append(padding.substring(s[1].length()) + value).append(sep);
+			sb.append(s[1]).append(padding.substring(s[1].length())).append(value).append(sep);
 		}
-		System.out.println(sb.toString());
+		System.out.println(sb);
 	}
 
 	/**
@@ -280,9 +281,9 @@ public class IPConfig implements Runnable
 	protected void onCompletion(final Exception thrown, final boolean canceled)
 	{
 		if (canceled)
-			out.info("configuration canceled");
+			out.log(INFO, "configuration canceled");
 		if (thrown != null)
-			out.error("completed", thrown);
+			out.log(ERROR, "completed", thrown);
 	}
 
 	private void setIPAssignment() throws KNXException, InterruptedException
@@ -298,7 +299,7 @@ public class IPConfig implements Runnable
 			assignment |= 0x08;
 		if (assignment != 0)
 			pc.setProperty(objIndex, PropertyAccess.PID.IP_ASSIGNMENT_METHOD, 1, 1,
-					new byte[] { (byte) assignment });
+					(byte) assignment);
 	}
 
 	private void setIP(final int pid, final String key) throws InterruptedException
@@ -308,7 +309,7 @@ public class IPConfig implements Runnable
 				pc.setProperty(objIndex, pid, 1, 1, ((InetAddress) options.get(key)).getAddress());
 			}
 			catch (final KNXException e) {
-				out.error("setting " + key + " failed, " + e.getMessage());
+				out.log(ERROR, "setting " + key + " failed, " + e.getMessage());
 			}
 	}
 
@@ -383,7 +384,7 @@ public class IPConfig implements Runnable
 			return pc.getProperty(objIndex, pid, 1, 1);
 		}
 		catch (final KNXRemoteException e) {
-			out.error("getting property with ID " + pid + " failed: {}", e.getMessage());
+			out.log(ERROR, "getting property with ID " + pid + " failed: {0}", e.getMessage());
 			return null;
 		}
 	}
@@ -394,8 +395,7 @@ public class IPConfig implements Runnable
 			final byte[] data = query(pid);
 			return data == null ? "" : InetAddress.getByAddress(data).getHostAddress();
 		}
-		catch (final UnknownHostException e) {}
-		catch (final KNXException e) {}
+		catch (final UnknownHostException | KNXException e) {}
 		return "-";
 	}
 
@@ -484,7 +484,7 @@ public class IPConfig implements Runnable
 	{
 		// remove empty arguments
 		final List<String> l = new ArrayList<>(Arrays.asList(args));
-		l.removeAll(Arrays.asList(""));
+		l.removeAll(List.of(""));
 		if (l.size() == 0)
 			return;
 
@@ -577,7 +577,7 @@ public class IPConfig implements Runnable
 
 	private static byte[] getAuthorizeKey(final String key)
 	{
-		final long value = Long.decode(key).longValue();
+		final long value = Long.decode(key);
 		if (value < 0 || value > 0xFFFFFFFFL)
 			throw new KNXIllegalArgumentException("invalid authorize key");
 		return new byte[] { (byte) (value >> 24), (byte) (value >> 16), (byte) (value >> 8),

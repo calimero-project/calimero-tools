@@ -19,4 +19,4 @@ Otherwise, connection timeouts will occur.</li>
 <li>With NAT enabled, KNXnet/IP also accepts IPv6 addresses.</li>
 </ul>
 */
-package tuwien.auto.calimero.tools;
+package io.calimero.tools;

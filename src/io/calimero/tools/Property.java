@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2010, 2021 B. Malinowsky
+    Copyright (c) 2010, 2023 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -34,14 +34,16 @@
     version.
 */
 
-package tuwien.auto.calimero.tools;
+package io.calimero.tools;
 
+import static java.lang.System.Logger.Level.ERROR;
+import static java.lang.System.Logger.Level.INFO;
 import static java.util.stream.Collectors.joining;
-import static tuwien.auto.calimero.DataUnitBuilder.toHex;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.System.Logger;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
@@ -49,46 +51,45 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import tuwien.auto.calimero.CloseEvent;
-import tuwien.auto.calimero.DataUnitBuilder;
-import tuwien.auto.calimero.DeviceDescriptor;
-import tuwien.auto.calimero.GroupAddress;
-import tuwien.auto.calimero.IndividualAddress;
-import tuwien.auto.calimero.KNXException;
-import tuwien.auto.calimero.KNXFormatException;
-import tuwien.auto.calimero.KNXIllegalArgumentException;
-import tuwien.auto.calimero.KnxRuntimeException;
-import tuwien.auto.calimero.Priority;
-import tuwien.auto.calimero.dptxlator.DPTXlator;
-import tuwien.auto.calimero.dptxlator.PropertyTypes;
-import tuwien.auto.calimero.dptxlator.TranslatorTypes;
-import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
-import tuwien.auto.calimero.link.KNXNetworkLink;
-import tuwien.auto.calimero.link.medium.TPSettings;
-import tuwien.auto.calimero.mgmt.Description;
-import tuwien.auto.calimero.mgmt.LocalDeviceManagementIp;
-import tuwien.auto.calimero.mgmt.LocalDeviceManagementUsb;
-import tuwien.auto.calimero.mgmt.PropertyAccess.PID;
-import tuwien.auto.calimero.mgmt.PropertyAdapter;
-import tuwien.auto.calimero.mgmt.PropertyClient;
-import tuwien.auto.calimero.mgmt.PropertyClient.PropertyKey;
-import tuwien.auto.calimero.mgmt.PropertyClient.XmlPropertyDefinitions;
-import tuwien.auto.calimero.mgmt.RemotePropertyServiceAdapter;
-import tuwien.auto.calimero.serial.usb.UsbConnection;
-import tuwien.auto.calimero.tools.Main.PeekingIterator;
-import tuwien.auto.calimero.xml.KNXMLException;
-import tuwien.auto.calimero.xml.XmlInputFactory;
-import tuwien.auto.calimero.xml.XmlReader;
+import io.calimero.CloseEvent;
+import io.calimero.DeviceDescriptor;
+import io.calimero.GroupAddress;
+import io.calimero.IndividualAddress;
+import io.calimero.KNXException;
+import io.calimero.KNXFormatException;
+import io.calimero.KNXIllegalArgumentException;
+import io.calimero.KnxRuntimeException;
+import io.calimero.Priority;
+import io.calimero.Settings;
+import io.calimero.dptxlator.DPTXlator;
+import io.calimero.dptxlator.PropertyTypes;
+import io.calimero.dptxlator.TranslatorTypes;
+import io.calimero.knxnetip.KNXnetIPConnection;
+import io.calimero.link.KNXNetworkLink;
+import io.calimero.link.medium.TPSettings;
+import io.calimero.log.LogService;
+import io.calimero.mgmt.Description;
+import io.calimero.mgmt.LocalDeviceManagementIp;
+import io.calimero.mgmt.LocalDeviceManagementUsb;
+import io.calimero.mgmt.PropertyAccess.PID;
+import io.calimero.mgmt.PropertyAdapter;
+import io.calimero.mgmt.PropertyClient;
+import io.calimero.mgmt.PropertyClient.PropertyKey;
+import io.calimero.mgmt.PropertyClient.XmlPropertyDefinitions;
+import io.calimero.mgmt.RemotePropertyServiceAdapter;
+import io.calimero.serial.usb.UsbConnection;
+import io.calimero.serial.usb.UsbConnectionFactory;
+import io.calimero.tools.Main.PeekingIterator;
+import io.calimero.xml.KNXMLException;
+import io.calimero.xml.XmlInputFactory;
+import io.calimero.xml.XmlReader;
 
 /**
  * A tool for Calimero showing features of the {@link PropertyClient} used for KNX property access.
@@ -112,7 +113,7 @@ public class Property implements Runnable
 	private static final String tool = "Property";
 	private static final String sep = System.getProperty("line.separator");
 
-	static Logger out = LoggerFactory.getLogger("calimero.tools");
+	static Logger out = LogService.getLogger("io.calimero.tools");
 
 	/** Contains tool options after parsing command line. */
 	protected final Map<String, Object> options = new HashMap<>();
@@ -161,7 +162,7 @@ public class Property implements Runnable
 	 * for KNX network access.<br>
 	 * To show the usage message of this tool on the console, supply the command line option --help
 	 * (or -h).<br>
-	 * Command line options are treated case sensitive. Available options are:
+	 * Command line options are treated case-sensitive. Available options are:
 	 * <ul>
 	 * <li><code>--help -h</code> show help message</li>
 	 * <li><code>--version</code> show tool/library version and exit</li>
@@ -215,7 +216,7 @@ public class Property implements Runnable
 			new Property(args).run();
 		}
 		catch (final Throwable t) {
-			out.error("parsing option", t);
+			out.log(ERROR, "parsing option", t);
 		}
 	}
 
@@ -238,9 +239,8 @@ public class Property implements Runnable
 
 			final PropertyAdapter adapter = createAdapter();
 
-			if (options.containsKey("reset") && adapter instanceof LocalDeviceManagementIp) {
+			if (options.containsKey("reset") && adapter instanceof final LocalDeviceManagementIp ldm) {
 				out("send local device management reset request to " + options.get("host") + ":" + options.get("port"));
-				final LocalDeviceManagementIp ldm = (LocalDeviceManagementIp) adapter;
 				ldm.reset();
 				while (ldm.isOpen())
 					Thread.sleep(1000);
@@ -249,14 +249,14 @@ public class Property implements Runnable
 			pc = new PropertyClient(adapter);
 			String resource = "";
 			try {
-				// check if user supplied a XML resource with property definitions
+				// check if user supplied an XML resource with property definitions
 				if (options.containsKey("definitions")) {
 					resource = (String) options.get("definitions");
 					pc.addDefinitions(new XmlPropertyDefinitions().load(resource));
 				}
 				else {
 					resource = "/properties.xml";
-					try (InputStream is = Property.class.getResourceAsStream(resource);
+					try (InputStream is = Settings.class.getResourceAsStream(resource);
 							XmlReader r = XmlInputFactory.newInstance().createXMLStreamReader(is)) {
 						pc.addDefinitions(new XmlPropertyDefinitions().load(r));
 					}
@@ -264,7 +264,7 @@ public class Property implements Runnable
 				definitions = pc.getDefinitions();
 			}
 			catch (IOException | KNXMLException e) {
-				out.error("loading definitions from " + resource + " failed", e);
+				out.log(ERROR, "loading definitions from " + resource + " failed", e);
 			}
 
 			// run the user command
@@ -319,10 +319,10 @@ public class Property implements Runnable
 				out("unknown command ('?' or 'help' shows help)");
 		}
 		catch (final NumberFormatException e) {
-			out.error("invalid number (" + e.getMessage() + ")");
+			out.log(ERROR, "invalid number (" + e.getMessage() + ")");
 		}
 		catch (final KNXException | RuntimeException e) {
-			out.error(e.getMessage());
+			out.log(ERROR, e.getMessage());
 		}
 	}
 
@@ -363,7 +363,7 @@ public class Property implements Runnable
 		buf.append(", max. " + d.getMaxElements());
 		buf.append(", r/w access " + d.getReadLevel() + "/" + d.getWriteLevel());
 		buf.append(d.isWriteEnabled() ? ", w.enabled" : ", r.only");
-		System.out.println(buf.toString());
+		System.out.println(buf);
 	}
 
 	/**
@@ -376,7 +376,7 @@ public class Property implements Runnable
 	 */
 	protected void onPropertyValue(final int idx, final int pid, final String value, final List<byte[]> raw)
 	{
-		final String rawValue = raw.stream().map(e -> toHex(e, "")).collect(joining(delimiter, " (", ")"));
+		final String rawValue = raw.stream().map(HexFormat.of()::formatHex).collect(joining(delimiter, " (", ")"));
 		System.out.println(value + rawValue);
 	}
 
@@ -392,7 +392,7 @@ public class Property implements Runnable
 		if (canceled)
 			out("reading property canceled");
 		if (thrown != null)
-			out.error("on completion", thrown);
+			out.log(ERROR, "on completion", thrown);
 	}
 
 	/** @return the network link used by this tool */
@@ -435,7 +435,7 @@ public class Property implements Runnable
 	private PropertyAdapter createUsbAdapter(final String device) throws KNXException,
 		InterruptedException
 	{
-		final UsbConnection usb = new UsbConnection(device);
+		final UsbConnection usb = UsbConnectionFactory.open(device);
 		return new LocalDeviceManagementUsb(usb, this::adapterClosed, options.containsKey("emulatewriteenable"));
 	}
 
@@ -458,7 +458,7 @@ public class Property implements Runnable
 		final byte[] authKey = (byte[]) options.get("authorize");
 		if (authKey != null) {
 			final RemotePropertyServiceAdapter adapter = new RemotePropertyServiceAdapter(link, remote, this::adapterClosed, authKey);
-			out.info("{} granted access level {}", remote, adapter.accessLevel());
+			out.log(INFO, "{0} granted access level {1}", remote, adapter.accessLevel());
 			return adapter;
 		}
 		return new RemotePropertyServiceAdapter(link, remote, this::adapterClosed, options.containsKey("connect"));
@@ -466,7 +466,7 @@ public class Property implements Runnable
 
 	private static String alignRight(final int value, final int width)
 	{
-		return String.format("%1$" + width + "s", Integer.toString(value));
+		return String.format("%1$" + width + "s", value);
 	}
 
 	private PropertyClient.Property getPropertyDef(final int objType, final int pid)
@@ -590,7 +590,7 @@ public class Property implements Runnable
 						final String[] allValues = translator.getAllValues();
 						if (!s.isEmpty())
 							s += ", ";
-						s += Arrays.asList(allValues).stream().collect(Collectors.joining(delimiter));
+						s += String.join(delimiter, allValues);
 						for (int from = 0; from < data.length; from += size)
 							raw.add(Arrays.copyOfRange(data, from, from + size));
 					}
@@ -632,7 +632,7 @@ public class Property implements Runnable
 				if (args.length == 3) {
 					final byte[] data = pc.getProperty(oi, pid, 1, 1);
 
-					s = customFormatter(objType, pid).map(f -> f.apply(data)).orElseGet(() -> "0x" + toHex(data, ""));
+					s = customFormatter(objType, pid).map(f -> f.apply(data)).orElseGet(() -> "0x" + HexFormat.of().formatHex(data));
 					raw.add(data);
 				}
 				else {
@@ -648,12 +648,12 @@ public class Property implements Runnable
 					final var data = collect.toByteArray();
 					if (data.length > 0) {
 						s = customFormatter(objType, pid).map(f -> f.apply(data)).orElseGet(() -> {
-							String tmp = "";
-							final String hex = toHex(data, "");
+							final StringBuilder tmp = new StringBuilder();
+							final String hex = HexFormat.of().formatHex(data);
 							final int chars = hex.length() / elements;
 							for (int k = 0; k < elements; ++k)
-								tmp += "0x" + hex.substring(k * chars, (k + 1) * chars) + " ";
-							return tmp;
+								tmp.append("0x").append(hex, k * chars, (k + 1) * chars).append(" ");
+							return tmp.toString();
 						});
 
 						final int size = data.length / elements;
@@ -795,7 +795,7 @@ public class Property implements Runnable
 
 	private static byte[] getAuthorizeKey(final String key)
 	{
-		final long value = Long.decode(key).longValue();
+		final long value = Long.decode(key);
 		if (value < 0 || value > 0xFFFFFFFFL)
 			throw new KNXIllegalArgumentException("invalid authorize key");
 		return new byte[] { (byte) (value >> 24), (byte) (value >> 16), (byte) (value >> 8), (byte) value };
@@ -803,7 +803,7 @@ public class Property implements Runnable
 
 	private static int toInt(final String number)
 	{
-		return Integer.decode(number).intValue();
+		return Integer.decode(number);
 	}
 
 	private static byte[] toByteArray(final String s)
@@ -886,7 +886,7 @@ public class Property implements Runnable
 		customFormatter.put(key(8, PID.DEVICE_DESCRIPTOR), Property::deviceDescriptor);
 		customFormatter.put(key(11, PID.DEVICE_DESCRIPTOR), Property::deviceDescriptor);
 
-		customFormatter.put(key(11, PID.MAC_ADDRESS), data -> toHex(data, ":"));
+		customFormatter.put(key(11, PID.MAC_ADDRESS), HexFormat.ofDelimiter(":")::formatHex);
 		customFormatter.put(key(11, PID.KNXNETIP_DEVICE_CAPABILITIES), Property::deviceCapabilities);
 		customFormatter.put(key(11, PID.KNXNETIP_ROUTING_CAPABILITIES), Property::routingCapabilities);
 		customFormatter.put(key(11, PID.CURRENT_IP_ADDRESS), Property::ipAddress);
@@ -910,7 +910,7 @@ public class Property implements Runnable
 	private static final String delimiter = ", ";
 
 	private static String knxSerialNumber(final byte[] data) {
-		final var hex = toHex(data, "");
+		final var hex = HexFormat.of().formatHex(data);
 		return hex.substring(0, 4) + ":" + hex.substring(4);
 	}
 
@@ -1013,7 +1013,7 @@ public class Property implements Runnable
 				bitsize = translatorBitSize(dptId);
 				break;
 			default:
-				return DataUnitBuilder.toHex(data, " ");
+				return HexFormat.ofDelimiter(" ").formatHex(data);
 			}
 
 			final var priority = Priority.get(config & 0x03);
@@ -1114,7 +1114,7 @@ public class Property implements Runnable
 
 	private static String programVersion(final byte[] data) {
 		if (data.length != 5)
-			return toHex(data, "");
+			return HexFormat.of().formatHex(data);
 		final int mfr = (data[0] & 0xff) << 8 | data[1] & 0xff;
 		return String.format("%s %02x%02x v%d.%d", DeviceInfo.manufacturer(mfr), data[2], data[3],
 				(data[4] & 0xff) >> 4, data[4] & 0xf);
@@ -1184,7 +1184,7 @@ public class Property implements Runnable
 			return DeviceDescriptor.from(data).toString();
 		}
 		catch (final KNXFormatException e) {
-			return toHex(data, "");
+			return HexFormat.of().formatHex(data);
 		}
 	}
 
@@ -1232,22 +1232,15 @@ public class Property implements Runnable
 
 	private static String loadState(final byte[] data) {
 		final int state = data[0] & 0xff;
-		switch (state) {
-		case 0:
-			return "unloaded";
-		case 1:
-			return "loaded";
-		case 2:
-			return "loading";
-		case 3:
-			return "error (during load process)";
-		case 4:
-			return "unloading";
-		case 5:
-			return "load completing";
-		default:
-			return "invalid load status " + state;
-		}
+		return switch (state) {
+			case 0 -> "unloaded";
+			case 1 -> "loaded";
+			case 2 -> "loading";
+			case 3 -> "error (during load process)";
+			case 4 -> "unloading";
+			case 5 -> "load completing";
+			default -> "invalid load status " + state;
+		};
 	}
 
 	private static boolean bitSet(final byte value, final int bit) {

@@ -1,5 +1,7 @@
 plugins {
-  id "com.github.ben-manes.versions" version "0.42.0"
+  id "com.github.ben-manes.versions" version "0.46.0"
+  id 'java-library'
+  id 'application'
   id 'maven-publish'
   id 'signing'
 }
@@ -8,13 +10,11 @@ repositories {
 	mavenLocal()
 	mavenCentral()
 	maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+	maven { url 'https://s01.oss.sonatype.org/content/repositories/snapshots' }
 }
 
-apply plugin:'java-library'
-apply plugin:'application'
-
-group = 'com.github.calimero'
-version = '2.6-SNAPSHOT'
+group = 'io.calimero'
+version = '3.0-SNAPSHOT'
 
 sourceCompatibility = 19
 targetCompatibility = 19
@@ -24,29 +24,39 @@ compileTestJava.options.encoding = 'UTF-8'
 javadoc.options.encoding = 'UTF-8'
 
 
-mainClassName = System.getProperty("mainClass") ?: 'tuwien.auto.calimero.tools.Main'
+application {
+	mainModule = "io.calimero.tools"
+	mainClass = System.getProperty("mainClass") ?: 'io.calimero.tools.Main'
+}
 
 run {
-	// for passing program arguments, use -Dexec.args="..."
-	args System.getProperty("exec.args", "").split() 
+	// allows to pass -Djava.util.logging.config.file=resources/logging.properties
+	systemProperties System.properties
 	standardInput = System.in
 }
 
 java {
     withSourcesJar()
     withJavadocJar()
+    
+    registerFeature('serial') {
+        usingSourceSet(sourceSets.main)
+    }
+    registerFeature('usb') {
+        usingSourceSet(sourceSets.main)
+    }
 }
 
 tasks.withType(JavaExec) { jvmArgs += "--enable-preview" }
 
-tasks.withType(Jar) {
-	from("${projectDir}") {
+tasks.withType(Jar).configureEach {
+    from("${projectDir}") {
         include 'LICENSE.txt'
         into "META-INF"
     }
-    if (name.equals('sourcesJar')) {
-    	from("${projectDir}") {
-		    include 'README.md'
+    if (name == 'sourcesJar') {
+        from("${projectDir}") {
+            include 'README.md'
         }
     }
 }
@@ -54,6 +64,8 @@ tasks.withType(Jar) {
 compileJava.options*.compilerArgs = [
 	'-Xlint:all',
 	'-Xlint:-try',
+	'-Xlint:-options',
+	"--add-reads", "io.calimero.tools=ALL-UNNAMED",
 	'--enable-preview',
 ]
 
@@ -62,6 +74,10 @@ compileTestJava.options*.compilerArgs = [
 	'-Xlint:-try',
 	'--enable-preview',
 ]
+
+tasks.named('compileJava') {
+    options.javaModuleVersion = provider { project.version }
+}
 
 sourceSets {
 	main {
@@ -73,27 +89,51 @@ sourceSets {
 	}
 }
 
-tasks.withType(Javadoc) {
+tasks.withType(Javadoc).configureEach {
     options.addStringOption("Xdoclint:-missing", '-quiet')
     options.addBooleanOption('-enable-preview', true)
 	options.addStringOption("-release", "${targetCompatibility}")
+    options.addStringOption("-add-reads", "io.calimero.tools=ALL-UNNAMED") // zip4j
+}
+
+def addReads = [ "--add-reads", "io.calimero.tools=ALL-UNNAMED", // zip4j
+                 "--add-reads", "io.calimero.core=io.calimero.tools", // @LinkEvent
+                 "--add-reads", "io.calimero.serial.provider.rxtx=ALL-UNNAMED",
+                 "--add-reads", "io.calimero.usb.provider.javax=ALL-UNNAMED" ]
+
+tasks.withType(JavaExec).configureEach {
+    jvmArgs += addReads
+}
+
+startScripts {
+    defaultJvmOpts = addReads
 }
 
 dependencies {
-	api "com.github.calimero:calimero-core-loom:${version}"
-	runtimeOnly "com.github.calimero:calimero-rxtx:${version}"
-	implementation 'org.slf4j:slf4j-api:1.7.36'
-	runtimeOnly 'org.slf4j:slf4j-simple:1.7.36'
-	implementation 'net.lingala.zip4j:zip4j:2.11.2'
+	api "io.calimero:calimero-core-loom:${version}"
+	implementation 'net.lingala.zip4j:zip4j:2.11.5'
+	serialRuntimeOnly "io.calimero:calimero-rxtx:${version}"
+	serialRuntimeOnly "io.calimero:serial-native:${version}"
+	usbRuntimeOnly "io.calimero:calimero-usb:${version}"
+//	runtimeOnly 'org.slf4j:slf4j-jdk-platform-logging:2.0.6'
+//	runtimeOnly 'org.slf4j:slf4j-simple:2.0.6'
 }
 
 jar {
 	manifest {
 		attributes(
-			'Main-Class': mainClassName,
+			'Main-Class': application.mainClass,
 			'Class-Path': configurations.runtimeClasspath.collect { it.getName() }.join(' ')
 		)
 	}
+}
+
+distTar {
+    duplicatesStrategy = 'EXCLUDE'
+}
+
+distZip {
+    duplicatesStrategy = 'EXCLUDE'
 }
 
 publishing {
@@ -119,7 +159,7 @@ publishing {
                     }
                 }
                 scm {
-                    connection = 'scm:git:git://github.com:calimero-project/calimero-tools.git'
+                    connection = 'scm:git:git://github.com/calimero-project/calimero-tools.git'
                     url = 'https://github.com/calimero-project/calimero-tools.git'
                 }
             }
@@ -128,8 +168,8 @@ publishing {
     repositories {
         maven {
             name 'maven'
-            def releasesRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
-            def snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots/"
+            def releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2"
+            def snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots"
             url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
             credentials(PasswordCredentials)
         }

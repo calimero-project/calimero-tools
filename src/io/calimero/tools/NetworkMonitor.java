@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2022 B. Malinowsky
+    Copyright (c) 2006, 2023 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -34,45 +34,47 @@
     version.
 */
 
-package tuwien.auto.calimero.tools;
+package io.calimero.tools;
 
-import static tuwien.auto.calimero.tools.Main.tcpConnection;
+import static io.calimero.tools.Main.tcpConnection;
+import static java.lang.System.Logger.Level.ERROR;
+import static java.lang.System.Logger.Level.INFO;
+import static java.lang.System.Logger.Level.WARNING;
 
+import java.lang.System.Logger;
 import java.net.InetSocketAddress;
 import java.time.LocalTime;
-import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
 
-import org.slf4j.Logger;
-
-import tuwien.auto.calimero.CloseEvent;
-import tuwien.auto.calimero.DataUnitBuilder;
-import tuwien.auto.calimero.FrameEvent;
-import tuwien.auto.calimero.GroupAddress;
-import tuwien.auto.calimero.KNXAddress;
-import tuwien.auto.calimero.KNXException;
-import tuwien.auto.calimero.KNXFormatException;
-import tuwien.auto.calimero.KNXIllegalArgumentException;
-import tuwien.auto.calimero.LteHeeTag;
-import tuwien.auto.calimero.cemi.CEMIBusMon;
-import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
-import tuwien.auto.calimero.link.KNXNetworkMonitor;
-import tuwien.auto.calimero.link.KNXNetworkMonitorFT12;
-import tuwien.auto.calimero.link.KNXNetworkMonitorIP;
-import tuwien.auto.calimero.link.KNXNetworkMonitorTpuart;
-import tuwien.auto.calimero.link.KNXNetworkMonitorUsb;
-import tuwien.auto.calimero.link.LinkListener;
-import tuwien.auto.calimero.link.MonitorFrameEvent;
-import tuwien.auto.calimero.link.medium.KNXMediumSettings;
-import tuwien.auto.calimero.link.medium.RFLData;
-import tuwien.auto.calimero.link.medium.RFLData.Tpci;
-import tuwien.auto.calimero.link.medium.RawFrame;
-import tuwien.auto.calimero.link.medium.RawFrameBase;
-import tuwien.auto.calimero.link.medium.TPSettings;
-import tuwien.auto.calimero.log.LogService;
+import io.calimero.CloseEvent;
+import io.calimero.DataUnitBuilder;
+import io.calimero.FrameEvent;
+import io.calimero.GroupAddress;
+import io.calimero.KNXAddress;
+import io.calimero.KNXException;
+import io.calimero.KNXFormatException;
+import io.calimero.KNXIllegalArgumentException;
+import io.calimero.LteHeeTag;
+import io.calimero.cemi.CEMIBusMon;
+import io.calimero.knxnetip.KNXnetIPConnection;
+import io.calimero.link.KNXNetworkMonitor;
+import io.calimero.link.KNXNetworkMonitorFT12;
+import io.calimero.link.KNXNetworkMonitorIP;
+import io.calimero.link.KNXNetworkMonitorTpuart;
+import io.calimero.link.KNXNetworkMonitorUsb;
+import io.calimero.link.LinkListener;
+import io.calimero.link.MonitorFrameEvent;
+import io.calimero.link.medium.KNXMediumSettings;
+import io.calimero.link.medium.RFLData;
+import io.calimero.link.medium.RFLData.Tpci;
+import io.calimero.link.medium.RawFrame;
+import io.calimero.link.medium.RawFrameBase;
+import io.calimero.link.medium.TPSettings;
+import io.calimero.log.LogService;
 
 /**
  * A tool for Calimero allowing monitoring of KNX network messages.
@@ -107,7 +109,7 @@ public class NetworkMonitor implements Runnable
 	private static final String tool = "NetworkMonitor";
 	private static final String sep = System.getProperty("line.separator");
 
-	private static Logger out = LogService.getLogger("calimero.tools");
+	private static final Logger out = LogService.getLogger("io.calimero.tools");
 
 	private final Map<String, Object> options = new HashMap<>();
 	private KNXNetworkMonitor m;
@@ -120,13 +122,13 @@ public class NetworkMonitor implements Runnable
 				NetworkMonitor.this.onIndication(e);
 			}
 			catch (final RuntimeException rte) {
-				out.warn("on indication", rte);
+				out.log(WARNING, "on indication", rte);
 			}
 		}
 		@Override
 		public void linkClosed(final CloseEvent e)
 		{
-			out.info("network monitor closed (" + e.getReason() + ")");
+			out.log(INFO, "network monitor closed (" + e.getReason() + ")");
 			synchronized (NetworkMonitor.this) {
 				NetworkMonitor.this.notify();
 			}
@@ -190,7 +192,7 @@ public class NetworkMonitor implements Runnable
 			sh.unregister();
 		}
 		catch (final KNXIllegalArgumentException e) {
-			out.error("parsing options", e);
+			out.log(ERROR, "parsing options", e);
 		}
 	}
 
@@ -283,7 +285,6 @@ public class NetworkMonitor implements Runnable
 
 	/**
 	 * Called by this tool on receiving a monitor indication frame.
-	 * <p>
 	 *
 	 * @param e the frame event
 	 */
@@ -304,15 +305,13 @@ public class NetworkMonitor implements Runnable
 		final RawFrame raw = ((MonitorFrameEvent) e).getRawFrame();
 		if (raw != null) {
 			sb.append(compact ? " " : " = ");
-			sb.append(raw.toString());
-			if (raw instanceof RawFrameBase) {
-				final RawFrameBase f = (RawFrameBase) raw;
+			sb.append(raw);
+			if (raw instanceof final RawFrameBase f) {
 				sb.append(": ").append(DataUnitBuilder.decode(f.getTPDU(), f.getDestination()));
-				sb.append(" ").append(
-						DataUnitBuilder.toHex(DataUnitBuilder.extractASDU(f.getTPDU()), " "));
+				sb.append(" ");
+				HexFormat.ofDelimiter(" ").formatHex(sb, DataUnitBuilder.extractASDU(f.getTPDU()));
 			}
-			else if (raw instanceof RFLData) {
-				final RFLData rf = (RFLData) raw;
+			else if (raw instanceof final RFLData rf) {
 				try {
 					sb.append(": ");
 					final String bibat = decodeBibat(rf);
@@ -324,11 +323,11 @@ public class NetworkMonitor implements Runnable
 					}
 				}
 				catch (final Exception ex) {
-					out.error("decoding RF frame", ex);
+					out.log(ERROR, "decoding RF frame", ex);
 				}
 			}
 		}
-		System.out.println(LocalTime.now() + " " + sb.toString());
+		System.out.println(LocalTime.now() + " " + sb);
 	}
 
 	/**
@@ -341,10 +340,9 @@ public class NetworkMonitor implements Runnable
 	protected void onCompletion(final Exception thrown, final boolean canceled)
 	{
 		if (canceled)
-			out.info(tool + " stopped");
+			out.log(INFO, tool + " stopped");
 		if (thrown != null)
-			out.error(thrown.getMessage() != null ? thrown.getMessage() : thrown.getClass()
-					.getName());
+			out.log(ERROR, thrown.getMessage() != null ? thrown.getMessage() : thrown.getClass().getName());
 	}
 
 	/**
@@ -359,14 +357,9 @@ public class NetworkMonitor implements Runnable
 		final String host = (String) options.get("host");
 		final KNXMediumSettings medium = (KNXMediumSettings) options.get("medium");
 		// check for FT1.2 monitor link
-		if (options.containsKey("ft12")) {
-			try {
-				return new KNXNetworkMonitorFT12(Integer.parseInt(host), medium);
-			}
-			catch (final NumberFormatException e) {
-				return new KNXNetworkMonitorFT12(host, medium);
-			}
-		}
+		if (options.containsKey("ft12"))
+			return new KNXNetworkMonitorFT12(host, medium);
+
 		if (options.containsKey("ft12-cemi"))
 			return KNXNetworkMonitorFT12.newCemiMonitor(host, medium);
 
@@ -489,11 +482,11 @@ public class NetworkMonitor implements Runnable
 			final int companyCode = ((asdu[4] & 0xff) << 8) | (asdu[5] & 0xff);
 			final int privatePid = asdu[6] & 0xff;
 			sb.append("IOT " + iot + " OI " + ioi + " Company " + companyCode + " PID " + privatePid + ": "
-					+ DataUnitBuilder.toHex(Arrays.copyOfRange(asdu, 7, asdu.length), ""));
+					+ HexFormat.of().formatHex(asdu, 7, asdu.length));
 		}
 		else
 			sb.append("IOT " + iot + " OI " + ioi + " PID " + pid + ": "
-					+ DataUnitBuilder.toHex(Arrays.copyOfRange(asdu, 4, asdu.length), ""));
+					+ HexFormat.of().formatHex(asdu, 4, asdu.length));
 
 		return sb.toString();
 	}

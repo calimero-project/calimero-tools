@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2019, 2022 B. Malinowsky
+    Copyright (c) 2019, 2023 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -34,13 +34,16 @@
     version.
 */
 
-package tuwien.auto.calimero.tools;
+package io.calimero.tools;
 
-import static tuwien.auto.calimero.tools.Main.setDomainAddress;
+import static io.calimero.tools.Main.setDomainAddress;
+import static java.lang.System.Logger.Level.ERROR;
+import static java.lang.System.Logger.Level.INFO;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.System.Logger;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -49,46 +52,45 @@ import java.time.Duration;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
 
-import org.slf4j.Logger;
-
-import tuwien.auto.calimero.DataUnitBuilder;
-import tuwien.auto.calimero.FrameEvent;
-import tuwien.auto.calimero.GroupAddress;
-import tuwien.auto.calimero.IndividualAddress;
-import tuwien.auto.calimero.KNXAddress;
-import tuwien.auto.calimero.KNXException;
-import tuwien.auto.calimero.KNXFormatException;
-import tuwien.auto.calimero.KNXIllegalArgumentException;
-import tuwien.auto.calimero.KnxRuntimeException;
-import tuwien.auto.calimero.SerialNumber;
-import tuwien.auto.calimero.cemi.CEMILData;
-import tuwien.auto.calimero.cemi.CEMILDataEx;
-import tuwien.auto.calimero.datapoint.Datapoint;
-import tuwien.auto.calimero.datapoint.DatapointMap;
-import tuwien.auto.calimero.datapoint.DatapointModel;
-import tuwien.auto.calimero.datapoint.StateDP;
-import tuwien.auto.calimero.dptxlator.DPTXlator;
-import tuwien.auto.calimero.dptxlator.TranslatorTypes;
-import tuwien.auto.calimero.dptxlator.TranslatorTypes.MainType;
-import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
-import tuwien.auto.calimero.knxnetip.LostMessageEvent;
-import tuwien.auto.calimero.knxnetip.RoutingBusyEvent;
-import tuwien.auto.calimero.knxnetip.servicetype.TunnelingFeature;
-import tuwien.auto.calimero.link.KNXNetworkLink;
-import tuwien.auto.calimero.link.LinkEvent;
-import tuwien.auto.calimero.link.NetworkLinkListener;
-import tuwien.auto.calimero.link.medium.KNXMediumSettings;
-import tuwien.auto.calimero.link.medium.RFSettings;
-import tuwien.auto.calimero.link.medium.TPSettings;
-import tuwien.auto.calimero.log.LogService;
-import tuwien.auto.calimero.tools.Main.ShutdownHandler;
-import tuwien.auto.calimero.xml.KNXMLException;
-import tuwien.auto.calimero.xml.XmlInputFactory;
-import tuwien.auto.calimero.xml.XmlReader;
+import io.calimero.DataUnitBuilder;
+import io.calimero.FrameEvent;
+import io.calimero.GroupAddress;
+import io.calimero.IndividualAddress;
+import io.calimero.KNXAddress;
+import io.calimero.KNXException;
+import io.calimero.KNXFormatException;
+import io.calimero.KNXIllegalArgumentException;
+import io.calimero.KnxRuntimeException;
+import io.calimero.SerialNumber;
+import io.calimero.cemi.CEMILData;
+import io.calimero.cemi.CEMILDataEx;
+import io.calimero.datapoint.Datapoint;
+import io.calimero.datapoint.DatapointMap;
+import io.calimero.datapoint.DatapointModel;
+import io.calimero.datapoint.StateDP;
+import io.calimero.dptxlator.DPTXlator;
+import io.calimero.dptxlator.TranslatorTypes;
+import io.calimero.dptxlator.TranslatorTypes.MainType;
+import io.calimero.knxnetip.KNXnetIPConnection;
+import io.calimero.knxnetip.LostMessageEvent;
+import io.calimero.knxnetip.RoutingBusyEvent;
+import io.calimero.knxnetip.servicetype.TunnelingFeature;
+import io.calimero.link.KNXNetworkLink;
+import io.calimero.link.LinkEvent;
+import io.calimero.link.NetworkLinkListener;
+import io.calimero.link.medium.KNXMediumSettings;
+import io.calimero.link.medium.RFSettings;
+import io.calimero.link.medium.TPSettings;
+import io.calimero.log.LogService;
+import io.calimero.tools.Main.ShutdownHandler;
+import io.calimero.xml.KNXMLException;
+import io.calimero.xml.XmlInputFactory;
+import io.calimero.xml.XmlReader;
 
 /**
  * A tool for showing KNX network traffic &amp; link status information.
@@ -107,7 +109,7 @@ import tuwien.auto.calimero.xml.XmlReader;
  */
 public class TrafficMonitor implements Runnable {
 	private static final String tool = MethodHandles.lookup().lookupClass().getSimpleName();
-	private static final Logger out = LogService.getLogger("calimero.tools." + tool);
+	private static final Logger out = LogService.getLogger("io.calimero.tools." + tool);
 
 
 	private final Map<String, Object> options = new HashMap<>();
@@ -183,7 +185,7 @@ public class TrafficMonitor implements Runnable {
 			sh.unregister();
 		}
 		catch (final Throwable t) {
-			out.error("tool options", t);
+			out.log(ERROR, "tool options", t);
 		}
 	}
 
@@ -254,9 +256,9 @@ public class TrafficMonitor implements Runnable {
 	 */
 	protected void onCompletion(final Exception thrown, final boolean canceled) {
 		if (canceled)
-			out.info("traffic monitor was stopped");
+			out.log(INFO, "traffic monitor was stopped");
 		if (thrown != null)
-			out.error("completed with error", thrown);
+			out.log(ERROR, "completed with error", thrown);
 	}
 
 	private String asString(final byte[] asdu, final int dptMainNumber, final String dptID) throws KNXException {
@@ -303,8 +305,7 @@ public class TrafficMonitor implements Runnable {
 		final var joiner = new StringJoiner(" ");
 		final var frame = e.getFrame();
 
-		if (frame instanceof CEMILData) {
-			final var ldata = (CEMILData) frame;
+		if (frame instanceof final CEMILData ldata) {
 			final var dst = ldata.getDestination();
 			final var payload = frame.getPayload();
 
@@ -318,7 +319,7 @@ public class TrafficMonitor implements Runnable {
 			if (payload.length > 1) {
 				final byte[] asdu = DataUnitBuilder.extractASDU(payload);
 				if (asdu.length > 0)
-					joiner.add(DataUnitBuilder.toHex(asdu, " "));
+					joiner.add(HexFormat.ofDelimiter(" ").formatHex(asdu));
 				final int apduSvc = DataUnitBuilder.getAPDUService(payload);
 
 				try {
@@ -340,12 +341,12 @@ public class TrafficMonitor implements Runnable {
 							if (dp != null)
 								joiner.add(asString(asdu, 0, dp.getDPT()));
 							else
-								joiner.add(decodeAsduByLength(asdu, payload.length <= 2));
+								joiner.add(decodeAsduByLength(asdu, payload.length == 2));
 						}
 					}
 				}
 				catch (KNXException | RuntimeException ex) {
-					out.info("error parsing group event {} {}", joiner, ex.toString());
+					out.log(INFO, "error parsing group event {0} {1}", joiner, ex.toString());
 				}
 			}
 		}
@@ -361,7 +362,7 @@ public class TrafficMonitor implements Runnable {
 	}
 
 	// shows one DPT of each matching main type based on the length of the supplied ASDU
-	private static String decodeAsduByLength(final byte[] asdu, final boolean optimized) throws KNXFormatException {
+	private static String decodeAsduByLength(final byte[] asdu, final boolean optimized) {
 		final var joiner = new StringJoiner(", ");
 		final List<MainType> typesBySize = TranslatorTypes.getMainTypesBySize(optimized ? 0 : asdu.length);
 		for (final var mainType : typesBySize) {
@@ -376,7 +377,7 @@ public class TrafficMonitor implements Runnable {
 		return joiner.toString();
 	}
 
-	private void runMonitorLoop() throws IOException, KNXException, InterruptedException {
+	private void runMonitorLoop() throws IOException, InterruptedException {
 		final BufferedReader in = new BufferedReader(new InputStreamReader(System.in, Charset.defaultCharset()));
 		while (true) {
 			while (!in.ready() && link.isOpen())
@@ -406,7 +407,7 @@ public class TrafficMonitor implements Runnable {
 					}
 				}
 				catch (final RuntimeException e) {
-					out.info("[{}] {}", line, e.toString());
+					out.log(INFO, "[{0}] {1}", line, e.toString());
 				}
 			}
 		}
@@ -419,7 +420,7 @@ public class TrafficMonitor implements Runnable {
 				datapoints.load(r);
 			}
 			catch (final KNXMLException e) {
-				out.info("failed to load datapoint information from {}: {}", datapointsFile, e.getMessage());
+				out.log(INFO, "failed to load datapoint information from {0}: {1}", datapointsFile, e.getMessage());
 			}
 		}
 	}
