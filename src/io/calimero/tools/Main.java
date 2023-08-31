@@ -130,8 +130,7 @@ final class Main
 
 	static synchronized TcpConnection tcpConnection(final InetSocketAddress local, final InetSocketAddress server) {
 		if (!registeredTcpShutdownHook) {
-			Runtime.getRuntime().addShutdownHook(Thread.ofVirtual().allowSetThreadLocals(false)
-					.unstarted(Main::closeTcpConnections));
+			Runtime.getRuntime().addShutdownHook(Thread.ofVirtual().unstarted(Main::closeTcpConnections));
 			registeredTcpShutdownHook = true;
 		}
 
@@ -676,10 +675,9 @@ final class Main
 	static final class ShutdownHandler {
 		private final Thread hook;
 
-		@SuppressWarnings("preview")
 		ShutdownHandler() {
 			final Thread t = Thread.currentThread();
-			hook = Thread.ofVirtual().allowSetThreadLocals(false).unstarted(t::interrupt);
+			hook = Thread.ofVirtual().unstarted(t::interrupt);
 			Runtime.getRuntime().addShutdownHook(hook);
 		}
 

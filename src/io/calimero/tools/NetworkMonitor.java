@@ -512,9 +512,8 @@ public class NetworkMonitor implements Runnable
 	private final class ShutdownHandler {
 		private final Thread hook;
 
-		@SuppressWarnings("preview")
 		ShutdownHandler() {
-			hook = Thread.ofVirtual().allowSetThreadLocals(false).unstarted(NetworkMonitor.this::quit);
+			hook = Thread.ofVirtual().unstarted(NetworkMonitor.this::quit);
 			Runtime.getRuntime().addShutdownHook(hook);
 		}
 

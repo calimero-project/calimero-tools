@@ -16,9 +16,6 @@ repositories {
 group = 'io.calimero'
 version = '3.0-SNAPSHOT'
 
-sourceCompatibility = 19
-targetCompatibility = 19
-
 compileJava.options.encoding = 'UTF-8'
 compileTestJava.options.encoding = 'UTF-8'
 javadoc.options.encoding = 'UTF-8'
@@ -36,6 +33,9 @@ run {
 }
 
 java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(21))
+    }
     withSourcesJar()
     withJavadocJar()
     
@@ -46,8 +46,6 @@ java {
         usingSourceSet(sourceSets.main)
     }
 }
-
-tasks.withType(JavaExec) { jvmArgs += "--enable-preview" }
 
 tasks.withType(Jar).configureEach {
     from("${projectDir}") {
@@ -66,13 +64,11 @@ compileJava.options*.compilerArgs = [
 	'-Xlint:-try',
 	'-Xlint:-options',
 	"--add-reads", "io.calimero.tools=ALL-UNNAMED",
-	'--enable-preview',
 ]
 
 compileTestJava.options*.compilerArgs = [
 	'-Xlint:all',
 	'-Xlint:-try',
-	'--enable-preview',
 ]
 
 tasks.named('compileJava') {
@@ -91,8 +87,7 @@ sourceSets {
 
 tasks.withType(Javadoc).configureEach {
     options.addStringOption("Xdoclint:-missing", '-quiet')
-    options.addBooleanOption('-enable-preview', true)
-	options.addStringOption("-release", "${targetCompatibility}")
+	options.addStringOption("-release", "${java.targetCompatibility}")
     options.addStringOption("-add-reads", "io.calimero.tools=ALL-UNNAMED") // zip4j
 }
 

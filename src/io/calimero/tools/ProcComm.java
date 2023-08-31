@@ -1089,9 +1089,8 @@ public class ProcComm implements Runnable
 	private final class ShutdownHandler {
 		private final Thread hook;
 
-		@SuppressWarnings("preview")
 		ShutdownHandler() {
-			hook = Thread.ofVirtual().allowSetThreadLocals(false).unstarted(ProcComm.this::quit);
+			hook = Thread.ofVirtual().unstarted(ProcComm.this::quit);
 			Runtime.getRuntime().addShutdownHook(hook);
 		}
 
