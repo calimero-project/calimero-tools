@@ -297,23 +297,31 @@ public class Discover implements Runnable
 
 		sb.append("Using ").append(localEndpoint).append(sep);
 		sb.append("-".repeat(sb.length() - 2)).append(sep);
-		sb.append("\"").append(device.getName()).append("\"");
+		if (device != null)
+			sb.append("\"").append(device.getName()).append("\" ");
 		if (controlEp != null) {
 			var endpoint = controlEp.toString();
-			final var tcp = serviceFamilies.families().getOrDefault(ServiceFamily.Core, 0) > 1;
-			if (tcp)
-				endpoint = endpoint.replace("UDP", "UDP & TCP");
-			sb.append(" endpoint ").append(endpoint);
+			if (serviceFamilies != null) {
+				final var tcp = serviceFamilies.families().getOrDefault(ServiceFamily.Core, 0) > 1;
+				if (tcp)
+					endpoint = endpoint.replace("UDP", "UDP & TCP");
+			}
+			sb.append("endpoint ").append(endpoint);
 		}
-		final String info = device.toString();
-		// device name is already there
-		final String withoutName = info.substring(info.indexOf(","));
-		// skip SN in search responses
-		final boolean search = r.getResponse() instanceof SearchResponse;
-		final String formatted = search ? withoutName.substring(0, withoutName.lastIndexOf(",")) : withoutName;
-		sb.append(formatted).append(sep);
-		sb.append("Supported services: ");
-		final String basic = sb.toString().replaceAll(", ", sep) + serviceFamilies.toString();
+
+		if (device != null) {
+			final String info = device.toString();
+			// device name is already there
+			final String withoutName = info.substring(info.indexOf(","));
+			// skip SN in search responses
+			final boolean search = r.getResponse() instanceof SearchResponse;
+			final String formatted = search ? withoutName.substring(0, withoutName.lastIndexOf(",")) : withoutName;
+			sb.append(formatted).append(sep);
+		}
+
+		String basic = sb.toString().replaceAll(", ", sep);
+		if (serviceFamilies != null)
+			basic += "Supported services: " + serviceFamilies.toString();
 
 		final var joiner = new StringJoiner(sep);
 		joiner.add(basic);
@@ -326,7 +334,7 @@ public class Discover implements Runnable
 		extractDib(DIB.AdditionalDeviceInfo, desc).map(dib -> dib.toString().replace(", ", sep)).ifPresent(joiner::add);
 		extractDib(DIB.TunnelingInfo, desc).map(dib -> dib.toString().replaceFirst(", ", sep)).ifPresent(joiner::add);
 		desc.forEach(dib -> joiner.add(dib.toString()));
-		return joiner.add("").toString();
+		return joiner.toString();
 	}
 
 	private static Optional<DIB> extractDib(final int typeCode, final Collection<DIB> description) {
