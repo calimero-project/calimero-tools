@@ -296,7 +296,7 @@ public class Discover implements Runnable
 				: addr.getHostAddress() + " (" + nameOf(r.getNetworkInterface()) + ")";
 
 		sb.append("Using ").append(localEndpoint).append(sep);
-		sb.append("-".repeat(sb.length() - 2)).append(sep);
+		sb.append("-".repeat(sb.length() - 1)).append(sep);
 		if (device != null)
 			sb.append("\"").append(device.getName()).append("\" ");
 		if (controlEp != null) {
@@ -334,7 +334,8 @@ public class Discover implements Runnable
 		extractDib(DIB.AdditionalDeviceInfo, desc).map(dib -> dib.toString().replace(", ", sep)).ifPresent(joiner::add);
 		extractDib(DIB.TunnelingInfo, desc).map(dib -> dib.toString().replaceFirst(", ", sep)).ifPresent(joiner::add);
 		desc.forEach(dib -> joiner.add(dib.toString()));
-		return joiner.toString();
+		// add empty line for visual gap with subsequent responses
+		return joiner.add("").toString();
 	}
 
 	private static Optional<DIB> extractDib(final int typeCode, final Collection<DIB> description) {
