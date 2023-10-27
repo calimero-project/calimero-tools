@@ -582,6 +582,11 @@ public class Property implements Runnable
 				else {
 					final int start = toInt(args[3]);
 					final int elements = toInt(args[4]);
+					if (start == 0 && elements != 1) {
+						out("reading number of property elements (start-idx 0) requires elements = 1");
+						return;
+					}
+
 					for (int i = 0; i < elements; i += maxElements) {
 						final int min = Math.min(maxElements, elements - i);
 						final DPTXlator translator = pc.getPropertyTranslated(oi, pid, start + i, min);
@@ -638,6 +643,11 @@ public class Property implements Runnable
 				else {
 					final int start = toInt(args[3]);
 					final int elements = toInt(args[4]);
+					if (start == 0 && elements != 1) {
+						out("reading number of property elements (start-idx 0) requires elements = 1");
+						return;
+					}
+
 					final var collect = new ByteArrayOutputStream();
 					for (int i = 0; i < elements; i += maxElements) {
 						final int min = Math.min(maxElements, elements - i);
