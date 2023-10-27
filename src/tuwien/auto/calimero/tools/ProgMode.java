@@ -270,6 +270,10 @@ public class ProgMode implements Runnable
 			else
 				options.put("device", new IndividualAddress(arg));
 		}
+		// we allow a default usb config where the first found knx usb device is used
+		if (options.containsKey("usb") && !options.containsKey("host"))
+			options.put("host", "");
+
 		if (!options.containsKey("host"))
 			throw new KNXIllegalArgumentException("no communication device/host specified");
 		if (options.containsKey("ft12") && !options.containsKey("remote"))

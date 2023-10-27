@@ -985,7 +985,7 @@ public class ProcComm implements Runnable
 			else
 				throw new KNXIllegalArgumentException("unknown option " + arg);
 		}
-		// we allow a default usb config where the first knx usb device is used
+		// we allow a default usb config where the first found knx usb device is used
 		if (options.containsKey("usb") && !options.containsKey("host"))
 			options.put("host", "");
 
