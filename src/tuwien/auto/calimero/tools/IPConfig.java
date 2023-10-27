@@ -417,18 +417,18 @@ public class IPConfig implements Runnable
 	private static String getRoutingCaps(final byte[] value)
 	{
 		final int bitset = value[0] & 0xff;
-		String caps = "";
+		final var caps = new StringJoiner(", ");
 		if ((bitset & 0x01) != 0)
-			caps += "queue overflow statistics, ";
+			caps.add("queue overflow statistics");
 		if ((bitset & 0x02) != 0)
-			caps += "transmitted telegrams statistics, ";
+			caps.add("transmitted telegrams statistics");
 		if ((bitset & 0x04) != 0)
-			caps += "priority/FIFO, ";
+			caps.add("priority/FIFO");
 		if ((bitset & 0x08) != 0)
-			caps += "multiple KNX installations, ";
+			caps.add("multiple KNX installations");
 		if ((bitset & 0x10) != 0)
-			caps += "group address mapping";
-		return caps;
+			caps.add("group address mapping");
+		return caps.toString();
 	}
 
 	/**
