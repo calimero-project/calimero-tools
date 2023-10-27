@@ -1419,6 +1419,9 @@ public class DeviceInfo implements Runnable
 			else
 				throw new KNXIllegalArgumentException("unknown option " + arg);
 		}
+		// we allow a default usb config where the first found knx usb device is used
+		if (options.containsKey("usb") && !options.containsKey("host"))
+			options.put("host", "");
 
 		if (!options.containsKey("host") || (options.containsKey("ft12") && options.containsKey("usb")))
 			throw new KNXIllegalArgumentException("specify either IP host, serial port, or device");

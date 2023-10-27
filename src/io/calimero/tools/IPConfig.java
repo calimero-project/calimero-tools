@@ -536,6 +536,9 @@ public class IPConfig implements Runnable
 		}
 		if (!options.containsKey("remote"))
 			options.put("localDM", null);
+		// we allow a default usb config where the first found knx usb device is used
+		if (options.containsKey("usb") && !options.containsKey("host"))
+			options.put("host", "");
 
 		if (!options.containsKey("localDM") && !options.containsKey("remote"))
 			throw new KNXIllegalArgumentException("no connection category specified");
