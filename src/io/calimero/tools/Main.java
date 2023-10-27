@@ -61,7 +61,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.StringJoiner;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -362,41 +361,43 @@ final class Main
 		return true;
 	}
 
-	static void printCommonOptions(final StringJoiner joiner) {
-		joiner.add("Options:");
-		joiner.add("  --help -h                  show this help message");
-		joiner.add("  --version                  show tool/library version and exit");
-		joiner.add("  --localhost <id>           local IP/host name");
-		joiner.add("  --localport <number>       local UDP port (default system assigned)");
-		joiner.add("  --port -p <number>         UDP/TCP port on <host> (default " + KNXnetIPConnection.DEFAULT_PORT + ")");
-		joiner.add("  --udp                      use UDP (default for unsecure communication)");
-		joiner.add("  --tcp                      use TCP (default for KNX IP secure)");
-		joiner.add("  --nat -n                   enable Network Address Translation");
-		joiner.add("  --ft12 -f                  use FT1.2 serial communication");
-		joiner.add("  --usb -u                   use KNX USB communication");
-		joiner.add("  --tpuart                   use TP-UART communication");
-		joiner.add("  --medium -m <id>           KNX medium [tp1|p110|knxip|rf] (default tp1)");
-		joiner.add("  --domain <address>         domain address on KNX PL/RF medium (defaults to broadcast domain)");
-		joiner.add("  --knx-address -k <addr>    KNX device address of local endpoint");
+	static String printCommonOptions() {
+		return """
+				Options:
+				  --help -h                  show this help message
+				  --version                  show tool/library version and exit
+				  --localhost <id>           local IP/host name
+				  --localport <number>       local UDP port (default system assigned)
+				  --port -p <number>         UDP/TCP port on <host> (default %d)
+				  --udp                      use UDP (default for unsecure communication)
+				  --tcp                      use TCP (default for KNX IP secure)
+				  --nat -n                   enable Network Address Translation
+				  --ft12 -f                  use FT1.2 serial communication
+				  --usb -u                   use KNX USB communication
+				  --tpuart                   use TP-UART communication
+				  --medium -m <id>           KNX medium [tp1|p110|knxip|rf] (default tp1)
+				  --domain <address>         domain address on KNX PL/RF medium (defaults to broadcast domain)
+				  --knx-address -k <addr>    KNX device address of local endpoint"""
+				.formatted(KNXnetIPConnection.DEFAULT_PORT);
 	}
 
-	static void printSecureOptions(final StringJoiner joiner, final boolean printGroupKey) {
-		joiner.add("KNX Secure:");
-		joiner.add("  --keyring <path>           *.knxkeys file for secure communication (defaults to keyring in current working directory)");
-		joiner.add("  --keyring-pwd <password>   keyring password");
-
-		joiner.add("KNX IP Secure specific:");
-		if (printGroupKey)
-			joiner.add("  --group-key <key>          multicast group key (backbone key, 32 hexadecimal digits)");
-		joiner.add("  --user <id>                tunneling user identifier (1..127)");
-		joiner.add("  --user-pwd <password>      tunneling user password");
-		joiner.add("  --user-key <key>           tunneling user password hash (32 hexadecimal digits)");
-		joiner.add("  --device-pwd <password>    device authentication password");
-		joiner.add("  --device-key <key>         device authentication code (32 hexadecimal digits)");
+	static String printSecureOptions(final boolean printGroupKey) {
+		final var optGroupKey = "\n  --group-key <key>          multicast group key (backbone key, 32 hexadecimal digits)";
+		return """
+				KNX Secure:
+				  --keyring <path>           *.knxkeys file for secure communication (defaults to keyring in current working directory)
+				  --keyring-pwd <password>   keyring password
+				KNX IP Secure specific:%s
+				  --user <id>                tunneling user identifier (1..127)
+				  --user-pwd <password>      tunneling user password
+				  --user-key <key>           tunneling user password hash (32 hexadecimal digits)
+				  --device-pwd <password>    device authentication password
+				  --device-key <key>         device authentication code (32 hexadecimal digits)"""
+				.formatted(printGroupKey ? optGroupKey : "");
 	}
 
-	static void printSecureOptions(final StringJoiner joiner) {
-		printSecureOptions(joiner, true);
+	static String printSecureOptions() {
+		return printSecureOptions(true);
 	}
 
 	static KNXNetworkLink newLink(final Map<String, Object> options) throws KNXException, InterruptedException {

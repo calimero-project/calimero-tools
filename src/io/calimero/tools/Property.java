@@ -764,28 +764,29 @@ public class Property implements Runnable
 	{
 		final var joiner = new StringJoiner(sep);
 		joiner.add("Usage: " + tool + " [options] <host|port> <command>");
-		Main.printCommonOptions(joiner);
-		joiner.add("  --local -l                 local device management");
-		joiner.add("  --remote -r <KNX addr>     remote property service");
-		joiner.add("  --definitions -d <file>    use property definition file");
-		joiner.add("Options for local device management only:");
-		joiner.add("  --emulatewriteenable -e    check write-enable of a property");
-		joiner.add("Options for remote property services only:");
-		joiner.add("  --connect -c               connection oriented mode");
-		joiner.add("  --authorize -a <key>       authorize key to access KNX device");
-		Main.printSecureOptions(joiner);
-		joiner.add("Available commands:");
-		joiner.add("  get <object-idx> <pid> [<start-idx> <elements>]     get the property value(s)");
-		joiner.add("  set <object-idx> <pid> [start-idx] <string-value>   "
-				+ "set the formatted property value (according to PDT)");
-		joiner.add("  set <object-idx> <pid> <start-idx> <elements> [\"0x\"|\"0\"|\"b\"]<data>    "
-				+ "set the property data");
-		joiner.add("  desc <object-idx> <pid>                get the property description of the property ID");
-		joiner.add("  desc <object-idx> \"i\" <prop-idx>       get the property description of the property index");
-		joiner.add("  scan [<object-idx>]                    list interface object type descriptions");
-		joiner.add("  scan [<object-idx>] \"all\"              list all property descriptions");
-		joiner.add("  ?                                      show command help");
-
+		joiner.add(Main.printCommonOptions());
+		final var options = """
+				  --local -l                 local device management
+				  --remote -r <KNX addr>     remote property service
+				  --definitions -d <file>    use property definition file
+				Options for local device management only:
+				  --emulatewriteenable -e    check write-enable of a property
+				Options for remote property services only:
+				  --connect -c               connection oriented mode
+				  --authorize -a <key>       authorize key to access KNX device""";
+		joiner.add(options);
+		joiner.add(Main.printSecureOptions());
+		final var commands = """
+				Available commands:
+				  get <object-idx> <pid> [<start-idx> <elements>]     get the property value(s)
+				  set <object-idx> <pid> [start-idx] <string-value>   set the formatted property value (according to PDT)
+				  set <object-idx> <pid> <start-idx> <elements> ["0x"|"0"|"b"]<data>    set the property data
+				  desc <object-idx> <pid>                get the property description of the property ID
+				  desc <object-idx> "i" <prop-idx>       get the property description of the property index
+				  scan [<object-idx>]                    list interface object type description
+				  scan [<object-idx>] "all"              list all property descriptions
+				  ?                                      show command help""";
+		joiner.add(commands);
 		out(joiner.toString());
 	}
 

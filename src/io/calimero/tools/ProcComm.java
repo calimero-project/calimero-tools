@@ -1051,10 +1051,10 @@ public class ProcComm implements Runnable
 	{
 		final var joiner = new StringJoiner(sep);
 		joiner.add("Usage: " + tool + " [options] <host|port> <command>");
-		Main.printCommonOptions(joiner);
+		joiner.add(Main.printCommonOptions());
 		joiner.add("  --compact -c               show incoming indications in compact format");
 		joiner.add("  --lte                      enable LTE commands, decode LTE messages");
-		Main.printSecureOptions(joiner);
+		joiner.add(Main.printSecureOptions());
 		listCommandsAndDptAliases(joiner, true);
 		out(joiner);
 	}

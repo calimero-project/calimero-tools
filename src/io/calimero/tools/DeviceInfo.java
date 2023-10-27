@@ -1443,8 +1443,8 @@ public class DeviceInfo implements Runnable
 	{
 		final var joiner = new StringJoiner(System.lineSeparator());
 		joiner.add("Usage: " + tool + " [options] <host|port> [KNX device address]");
-		Main.printCommonOptions(joiner);
-		Main.printSecureOptions(joiner);
+		joiner.add(Main.printCommonOptions());
+		joiner.add(Main.printSecureOptions());
 		out(joiner.toString());
 	}
 

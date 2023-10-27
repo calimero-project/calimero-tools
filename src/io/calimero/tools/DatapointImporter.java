@@ -209,15 +209,16 @@ public class DatapointImporter implements Runnable {
 
 	private static void showUsage() {
 		final var name = MethodHandles.lookup().lookupClass().getSimpleName();
-		final var joiner = new StringJoiner(System.getProperty("line.separator"));
-		joiner.add("Usage: " + name + " [options] <project.knxproj or group addresses file [.xml|.csv]> [<output file (xml)>]");
-		joiner.add("       if no output file is specified, imported datapoints are written to the standard output");
-		joiner.add("Options:");
-		joiner.add("  -h --help                  show this help and exit");
-		joiner.add("  --version                  show tool/library version and exit");
-		joiner.add("  --pwd                      password for encrypted KNX projects");
-		joiner.add("  --freestyle                use unformatted KNX address presentation in the output");
-		System.out.println(joiner);
+		final String usage = """
+				Usage: %s [options] <project.knxproj or group addresses file [.xml|.csv]> [<output file (xml)>]
+				       if no output file is specified, imported datapoints are written to the standard output
+				Options:
+				  -h --help                  show this help and exit
+				  --version                  show tool/library version and exit
+				  --pwd                      password for encrypted KNX projects
+				  --freestyle                use unformatted KNX address presentation in the output"""
+				.formatted(name);
+		out(usage);
 	}
 
 	private static void out(final Object o) {

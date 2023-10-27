@@ -295,9 +295,9 @@ public class ProgMode implements Runnable
 	{
 		final var joiner = new StringJoiner(sep);
 		joiner.add("Usage: " + tool + " [options] <host|port> [on|off [<device address>]]");
-		Main.printCommonOptions(joiner);
+		joiner.add(Main.printCommonOptions());
 		joiner.add("  --local                    use local device management");
-		Main.printSecureOptions(joiner);
+		joiner.add(Main.printSecureOptions());
 		joiner.add("Commands (local device management does not need a device address):");
 		joiner.add("  on  [<device address>]     switch programming mode on");
 		joiner.add("  off [<device address>]     switch programming mode off");

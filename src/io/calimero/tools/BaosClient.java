@@ -560,7 +560,7 @@ public class BaosClient implements Runnable
 			if (s.length == 1 && "exit".equalsIgnoreCase(s[0]))
 				return;
 			if (s.length == 1 && ("?".equals(s[0]) || "help".equals(s[0])))
-				out(listCommandsAndDptAliases(new StringJoiner(System.lineSeparator()), false));
+				out(listCommandsAndDptAliases());
 			if (s.length == 1 && ("properties".equals(s[0])))
 				out(listSupportedProperties());
 			if (s.length == 1 && ("commands".equals(s[0])))
@@ -672,28 +672,28 @@ public class BaosClient implements Runnable
 	{
 		final var joiner = new StringJoiner(System.lineSeparator());
 		joiner.add("Usage: " + tool + " [options] <host|port> <command>");
-		Main.printCommonOptions(joiner);
-		listCommandsAndDptAliases(joiner, true);
+		joiner.add(Main.printCommonOptions());
+		joiner.add(listCommandsAndDptAliases());
 		out(joiner);
 	}
 
-	private static StringJoiner listCommandsAndDptAliases(final StringJoiner joiner, final boolean showMonitor) {
-		joiner.add("Supported BAOS commands:");
-		joiner.add("  get {property|value|timer|history|description}  get a property, value, timer, history, or description");
-		joiner.add("  set {property|value|timer|history}              set a property, value, timer, or history");
-		joiner.add("");
-		joiner.add("get property <id> [<items>]");
-		joiner.add("set property <id> <hex value>");
-		joiner.add("get description <id> [<items>]");
-		joiner.add("get value <id> [<items> [all|valid|updated]]");
-		joiner.add("set value <id> <cmd> [value]");
-		joiner.add("get history <id> [items]");
-		joiner.add("set history <id> <items> <clear [start] | start | stop [clear]>");
-		joiner.add("get timer <id> [<items>]");
-		joiner.add("set timer <id> delete");
-		joiner.add("set timer <id> oneshot <date/time> <dpId> <cmd> [<value>]");
-		joiner.add("set timer <id> interval <start date/time> <end date/time> ... <dpId> [<value>]");
-		return joiner;
+	private static String listCommandsAndDptAliases() {
+		return """
+				Supported BAOS commands:
+				  get {property|value|timer|history|description}  get a property, value, timer, history, or description
+				  set {property|value|timer|history}              set a property, value, timer, or history
+				
+				get property <id> [<items>]
+				set property <id> <hex value>
+				get description <id> [<items>]
+				get value <id> [<items> [all|valid|updated]]
+				set value <id> <cmd> [value]
+				get history <id> [items]
+				set history <id> <items> <clear [start] | start | stop [clear]>
+				get timer <id> [<items>]
+				set timer <id> delete
+				set timer <id> oneshot <date/time> <dpId> <cmd> [<value>]
+				set timer <id> interval <start date/time> <end date/time> ... <dpId> [<value>]""";
 	}
 
 	private static StringJoiner listSupportedProperties() {

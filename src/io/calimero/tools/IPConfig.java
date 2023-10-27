@@ -550,13 +550,13 @@ public class IPConfig implements Runnable
 	{
 		final var joiner = new StringJoiner(sep);
 		joiner.add("Usage: " + tool + " [options] <host|port>");
-		Main.printCommonOptions(joiner);
+		joiner.add(Main.printCommonOptions());
 		joiner.add("  --local -l                 local device management (default)");
 		joiner.add("  --remote -r <KNX addr>     remote property service");
 		joiner.add("Options for remote property services only:");
 		joiner.add("  --connect -c               connection oriented mode");
 		joiner.add("  --authorize -a <key>       authorize key to access KNX device");
-		Main.printSecureOptions(joiner);
+		joiner.add(Main.printSecureOptions());
 		joiner.add("Commands to change the IP configuration:");
 		joiner.add("  ip <address>               set the configured fixed IP address");
 		joiner.add("  subnet <address>           set the configured IP subnet mask");

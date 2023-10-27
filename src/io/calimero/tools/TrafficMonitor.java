@@ -391,7 +391,7 @@ public class TrafficMonitor implements Runnable {
 			if (s.length == 1 && "exit".equalsIgnoreCase(s[0]))
 				return;
 			if (s.length == 1 && ("?".equals(s[0]) || "help".equals(s[0])))
-				out(listCommands(new StringJoiner(System.lineSeparator()), false));
+				out(listCommands());
 			if (s.length > 1) {
 				final String cmd = s[0];
 				try {
@@ -490,16 +490,15 @@ public class TrafficMonitor implements Runnable {
 	private static void showUsage() {
 		final var joiner = new StringJoiner(System.lineSeparator());
 		joiner.add("Usage: " + tool + " [options] <host|port> <command>");
-		Main.printCommonOptions(joiner);
+		joiner.add(Main.printCommonOptions());
 		joiner.add("  --compact -c               show incoming indications in compact format");
-		Main.printSecureOptions(joiner);
-		listCommands(joiner, true);
+		joiner.add(Main.printSecureOptions());
+		joiner.add(listCommands());
 		out(joiner);
 	}
 
-	private static StringJoiner listCommands(final StringJoiner joiner, final boolean showMonitor) {
-		joiner.add("Available commands for filtering traffic: none");
-		return joiner;
+	private static String listCommands() {
+		return "Available commands for filtering traffic: none";
 	}
 
 	private static void outTimestamped(final String s) {
