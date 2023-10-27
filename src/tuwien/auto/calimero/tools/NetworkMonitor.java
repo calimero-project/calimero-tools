@@ -441,9 +441,9 @@ public class NetworkMonitor implements Runnable
 	{
 		final var joiner = new StringJoiner(sep);
 		joiner.add("Usage: " + tool + " [options] <host|port>");
-		Main.printCommonOptions(joiner);
+		joiner.add(Main.printCommonOptions());
 		joiner.add("  --compact -c               show incoming busmonitor indications in compact format");
-		Main.printSecureOptions(joiner, false);
+		joiner.add(Main.printSecureOptions(false));
 		out(joiner.toString());
 	}
 

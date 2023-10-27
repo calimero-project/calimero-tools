@@ -694,33 +694,30 @@ public class Discover implements Runnable
 	}
 
 	private static void showUsage() {
-		final var sb = new StringJoiner(sep);
-		sb.add("Usage: " + tool + " {search | describe} [options]");
-		sb.add("Supported commands:");
-		sb.add("  search [<host>]            start a discovery search");
-		sb.add("    --withDescription        query self description for each search result");
-		sb.add("    --unicast -u             request unicast response (where multicast would be used)");
-		sb.add("    --netif -i <interface/host name | IP address>    local multicast network interface");
-		sb.add("    --mac <address>          extended search requesting the specified MAC address");
-		sb.add("    --progmode               extended search requesting devices in programming mode");
+		final var usage = """
+				Usage: %s {search | describe} [options]
+				Supported commands:
+				  search [<host>]            start a discovery search
+				    --withDescription        query self description for each search result
+				    --unicast -u             request unicast response (where multicast would be used)
+				    --netif -i <interface/host name | IP address>    local multicast network interface
+				    --mac <address>          extended search requesting the specified MAC address
+				    --progmode               extended search requesting devices in programming mode
+				  describe <host>            query self description from host
+				    --netif -i <interface/host name | IP address>    local outgoing network interface
+				    --serverport -p <number> server UDP/TCP port (default %d)
+				  sd                         shortcut for 'search --withDescription'
+				Other options:
+				  --localport <number>       local UDP/TCP port (default system assigned)
+				  --nat -n                   enable Network Address Translation
+				  --timeout -t               discovery/description response timeout in seconds
+				  --tcp                      request TCP communication
+				  --udp                      request UDP communication
+				  --version                  show tool/library version and exit
+				  --help -h                  show this help message"""
+				.formatted(tool, KNXnetIPConnection.DEFAULT_PORT);
 
-		sb.add("  describe <host>            query self description from host");
-		sb.add("    --netif -i <interface/host name | IP address>    local outgoing network interface");
-		sb.add("    --serverport -p <number> server UDP/TCP port (default " + KNXnetIPConnection.DEFAULT_PORT + ")");
-		sb.add("  sd                         shortcut for 'search --withDescription'");
-
-		sb.add("Other options:");
-		sb.add("  --localport <number>       local UDP/TCP port (default system assigned)");
-		sb.add("  --nat -n                   enable Network Address Translation");
-		sb.add("  --timeout -t               discovery/description response timeout in seconds");
-		sb.add("  --tcp                      request TCP communication");
-		sb.add("  --udp                      request UDP communication");
-		sb.add("  --version                  show tool/library version and exit");
-		sb.add("  --help -h                  show this help message");
-
-		Main.printSecureOptions(sb, false);
-
-		out(sb.toString());
+		out(usage + "\n" + Main.printSecureOptions(false));
 	}
 
 	private static void out(final String s)

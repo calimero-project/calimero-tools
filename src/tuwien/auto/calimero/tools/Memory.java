@@ -313,9 +313,9 @@ public class Memory implements Runnable {
 		joiner.add("Commands:");
 		joiner.add("  read <address> [bytes]     read number of bytes (default 1) starting at memory address");
 		joiner.add("  write <address> data       write data (hex default) to memory starting at address");
-		Main.printCommonOptions(joiner);
+		joiner.add(Main.printCommonOptions());
 		joiner.add("  --dec                      interpret memory data in decimal format");
-		Main.printSecureOptions(joiner);
+		joiner.add(Main.printSecureOptions());
 		out(joiner.toString());
 	}
 
