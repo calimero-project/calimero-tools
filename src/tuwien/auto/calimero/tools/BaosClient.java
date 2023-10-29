@@ -460,7 +460,6 @@ public class BaosClient implements Runnable
 				}
 				yield Item.datapoint(dpId, cmd, xlator.getData());
 			}
-			default -> throw new IllegalStateException(cmd.toString());
 		};
 	}
 
