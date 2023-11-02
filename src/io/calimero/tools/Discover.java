@@ -266,7 +266,7 @@ public class Discover implements Runnable
 	 */
 	protected void onEndpointReceived(final Result<SearchResponse> result)
 	{
-		final SearchResponse sr = result.getResponse();
+		final SearchResponse sr = result.response();
 		System.out.println(formatResponse(result, sr.getControlEndpoint(), sr.getDevice(), sr.getServiceFamilies(),
 				sr.description()));
 	}
@@ -285,7 +285,7 @@ public class Discover implements Runnable
 
 	private static void onDescriptionReceived(final Result<DescriptionResponse> result, final HPAI hpai)
 	{
-		final DescriptionResponse dr = result.getResponse();
+		final DescriptionResponse dr = result.response();
 		System.out.println(formatResponse(result, hpai, dr.getDevice(), dr.getServiceFamilies(), dr.getDescription()));
 	}
 
@@ -295,7 +295,7 @@ public class Discover implements Runnable
 
 		final var addr = r.localEndpoint().getAddress();
 		final var localEndpoint = addr instanceof Inet6Address ? addr.toString()
-				: addr.getHostAddress() + " (" + nameOf(r.getNetworkInterface()) + ")";
+				: addr.getHostAddress() + " (" + nameOf(r.networkInterface()) + ")";
 
 		sb.append("Using ").append(localEndpoint).append(sep);
 		sb.append("-".repeat(sb.length() - 1)).append(sep);
@@ -316,7 +316,7 @@ public class Discover implements Runnable
 			// device name is already there
 			final String withoutName = info.substring(info.indexOf(","));
 			// skip SN in search responses
-			final boolean search = r.getResponse() instanceof SearchResponse;
+			final boolean search = r.response() instanceof SearchResponse;
 			final String formatted = search ? withoutName.substring(0, withoutName.lastIndexOf(",")) : withoutName;
 			sb.append(formatted).append(sep);
 		}
@@ -433,7 +433,7 @@ public class Discover implements Runnable
 					final var result = res.get(processed);
 					final var timestampedResponse = new TimestampedResponse(result);
 					// always use v2 response if supported by the server, otherwise store v1
-					if (result.getResponse().v2()) {
+					if (result.response().v2()) {
 						responses.put(result.remoteEndpoint(), timestampedResponse);
 						onEndpointReceived(timestampedResponse.result);
 						timestampedResponse.shown = true;
@@ -446,7 +446,7 @@ public class Discover implements Runnable
 				final Instant notificationThreshold = Instant.now().minus(waitForV2Response);
 				for (final var timestampedResponse : responses.values()) {
 					final var result = timestampedResponse.result;
-					if (!timestampedResponse.shown && !result.getResponse().v2()
+					if (!timestampedResponse.shown && !result.response().v2()
 							&& !Duration.between(timestampedResponse.received, notificationThreshold).isNegative()) {
 						onEndpointReceived(result);
 						timestampedResponse.shown = true;
@@ -535,7 +535,7 @@ public class Discover implements Runnable
 
 	private void description(final Result<SearchResponse> r)
 	{
-		final SearchResponse sr = r.getResponse();
+		final SearchResponse sr = r.response();
 		final HPAI hpai = sr.getControlEndpoint();
 
 		final InetSocketAddress server;
@@ -565,7 +565,7 @@ public class Discover implements Runnable
 		}
 		catch (final KNXException e) {
 			System.out.println("description failed for server " + server + " using " + r.localEndpoint().getAddress()
-					+ " at " + r.getNetworkInterface().getName() + ": " + e.getMessage());
+					+ " at " + r.networkInterface().getName() + ": " + e.getMessage());
 		}
 	}
 
