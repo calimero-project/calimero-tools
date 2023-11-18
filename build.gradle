@@ -1,5 +1,5 @@
 plugins {
-  id "com.github.ben-manes.versions" version "0.49.0"
+  id "com.github.ben-manes.versions" version "0.50.0"
   id 'java-library'
   id 'application'
   id 'maven-publish'
@@ -99,7 +99,7 @@ tasks.withType(JavaExec).configureEach {
 
 startScripts {
     defaultJvmOpts = addReads
-    
+
 	doLast {
 		// put commons-lang jar also on the classpath, used by libusb4java (which is in UNNAMED module)
 		def commonsLang3 = configurations.runtimeClasspath.filter { it.name.startsWith("commons-lang3") }
