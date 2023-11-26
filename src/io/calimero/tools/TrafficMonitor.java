@@ -49,6 +49,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
@@ -66,6 +67,7 @@ import io.calimero.KNXException;
 import io.calimero.KNXFormatException;
 import io.calimero.KNXIllegalArgumentException;
 import io.calimero.KnxRuntimeException;
+import io.calimero.Priority;
 import io.calimero.SerialNumber;
 import io.calimero.cemi.CEMILData;
 import io.calimero.cemi.CEMILDataEx;
@@ -85,6 +87,7 @@ import io.calimero.link.LinkEvent;
 import io.calimero.link.NetworkLinkListener;
 import io.calimero.link.medium.KNXMediumSettings;
 import io.calimero.link.medium.RFSettings;
+import io.calimero.link.medium.RawFrame;
 import io.calimero.link.medium.TPSettings;
 import io.calimero.log.LogService;
 import io.calimero.tools.Main.ShutdownHandler;
@@ -301,10 +304,39 @@ public class TrafficMonitor implements Runnable {
 		return id;
 	}
 
+	private record JsonTrafficEvent(Instant time, JsonRawFrame frame) implements Json {}
+
+	// TODO move below into raw frame for proc.comm like structure, and merge with netmon?
+	// boolean lengthOptimizedApdu, String decodedAsdu
+	private record JsonRawFrame(int frameType, int mc, IndividualAddress source, KNXAddress destination, boolean repetition,
+	                            int hopCount, Priority priority, boolean ack, boolean sysBcast, boolean con,
+	                            String tpciApci, byte[] asdu, int svcCode, String svc) implements Json {}
+
 	private void onFrameEvent(final FrameEvent e) {
-		final var joiner = new StringJoiner(" ");
 		final var frame = e.getFrame();
 
+		if (options.containsKey("json")) {
+			if (frame instanceof final CEMILData ldata) {
+				final var payload = frame.getPayload();
+				final var tpciApci = DataUnitBuilder.decode(payload, ldata.getDestination());
+				int apduSvc = 0;
+				byte[] asdu = null;
+				if (payload.length > 1) {
+					asdu = DataUnitBuilder.extractASDU(payload);
+					apduSvc = DataUnitBuilder.getAPDUService(payload);
+				}
+				final var json = new JsonRawFrame(RawFrame.LDATA_FRAME, ldata.getMessageCode(), ldata.getSource(),
+						ldata.getDestination(), ldata.isRepetition(), ldata.getHopCount(), ldata.getPriority(),
+						ldata.isAckRequested(), ldata.isSystemBroadcast(), ldata.isPositiveConfirmation(), tpciApci,
+						asdu, apduSvc, DataUnitBuilder.decodeAPCI(apduSvc));
+				final var jsonTraffic = new JsonTrafficEvent(Instant.now(), json);
+				System.out.println(jsonTraffic.toJson());
+			}
+			// NYI
+			return;
+		}
+
+		final var joiner = new StringJoiner(" ");
 		if (frame instanceof final CEMILData ldata) {
 			final var dst = ldata.getDestination();
 			final var payload = frame.getPayload();

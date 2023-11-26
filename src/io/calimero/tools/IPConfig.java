@@ -50,6 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.StringJoiner;
+import java.util.stream.Collectors;
 
 import io.calimero.IndividualAddress;
 import io.calimero.KNXException;
@@ -97,6 +98,9 @@ public class IPConfig implements Runnable
 	private int objIndex = -1;
 
 	private final Map<String, Object> options = new HashMap<>();
+
+	private record JsonIpConfig(String remoteEndpoint, IndividualAddress device, Map<String, String> ipConfig)
+			implements Json {}
 
 	/**
 	 * Creates a new IPConfig instance using the supplied options.
@@ -258,6 +262,14 @@ public class IPConfig implements Runnable
 	 */
 	protected void onConfigurationReceived(final List<String[]> config)
 	{
+		if (options.containsKey("json")) {
+			// convert String[2] entries into key/value pairs and put them in a map
+			final var map = config.stream().collect(Collectors.toMap(sa -> sa[1], sa -> sa[2]));
+			final var jsonIpConfig = new JsonIpConfig((String) options.get("host"), (IndividualAddress) options.get("remote"),
+					map);
+			System.out.println(jsonIpConfig.toJson());
+			return;
+		}
 		final StringBuilder sb = new StringBuilder();
 		sb.append("KNX IP device ").append(config.get(0)[2]).append(" ")
 				.append(config.get(1)[2]).append(sep);
@@ -407,11 +419,11 @@ public class IPConfig implements Runnable
 		if ((bitset & 0x01) != 0)
 			s = "manual";
 		if ((bitset & 0x02) != 0)
-			s += (s.length() == 0 ? "" : div) + "Bootstrap Protocol";
+			s += (s.isEmpty() ? "" : div) + "Bootstrap Protocol";
 		if ((bitset & 0x04) != 0)
-			s += (s.length() == 0 ? "" : div) + "DHCP";
+			s += (s.isEmpty() ? "" : div) + "DHCP";
 		if ((bitset & 0x08) != 0)
-			s += (s.length() == 0 ? "" : div) + "Auto IP";
+			s += (s.isEmpty() ? "" : div) + "Auto IP";
 		return s;
 	}
 
@@ -485,7 +497,7 @@ public class IPConfig implements Runnable
 		// remove empty arguments
 		final List<String> l = new ArrayList<>(Arrays.asList(args));
 		l.removeAll(List.of(""));
-		if (l.size() == 0)
+		if (l.isEmpty())
 			return;
 
 		// add defaults

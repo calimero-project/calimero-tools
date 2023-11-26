@@ -195,9 +195,15 @@ public class Memory implements Runnable {
 	/**
 	 * Invoked on each successfully memory read.
 	 *
-	 * @param data memory data
+	 * @param address   start address of read memory
+	 * @param data      memory data
 	 */
-	protected void onMemoryRead(final byte[] data) {
+	protected void onMemoryRead(final int address, final byte[] data) {
+		if (options.containsKey("json")) {
+			record JsonMemory(int address, byte[] data) implements Json {}
+			out(new JsonMemory(address, data).toJson());
+			return;
+		}
 		out(data);
 	}
 
@@ -231,7 +237,7 @@ public class Memory implements Runnable {
 			out.log(DEBUG, "read {0} 0x{1}..0x{2}", dst.getAddress(), Long.toHexString(startAddr),
 					Long.toHexString(startAddr + bytes - 1));
 			final byte[] data = mc.readMemory(dst, startAddr, bytes);
-			onMemoryRead(data);
+			onMemoryRead(startAddr, data);
 		}
 		else {
 			final int startAddr = (Integer) options.get("write");

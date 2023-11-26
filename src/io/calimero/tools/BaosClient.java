@@ -273,6 +273,13 @@ public class BaosClient implements Runnable
 	 * @param svc the baos service
 	 */
 	protected void onBaosEvent(final BaosService svc) {
+		if (options.containsKey("json")) {
+			// TODO extract items into more json keys
+			record JsonBaosService(Instant time, BaosService svc, int subService, boolean response,
+			                       BaosService.ErrorCode error, List<Item<?>> items) implements Json {}
+			out(new JsonBaosService(Instant.now(), svc, svc.subService(), svc.isResponse(), svc.error(), svc.items()).toJson());
+			return;
+		}
 		out(LocalTime.now().truncatedTo(ChronoUnit.MILLIS) + " " + svc);
 		if (svc.error() != ErrorCode.NoError)
 			return;
@@ -681,7 +688,7 @@ public class BaosClient implements Runnable
 				Supported BAOS commands:
 				  get {property|value|timer|history|description}  get a property, value, timer, history, or description
 				  set {property|value|timer|history}              set a property, value, timer, or history
-				
+
 				get property <id> [<items>]
 				set property <id> <hex value>
 				get description <id> [<items>]

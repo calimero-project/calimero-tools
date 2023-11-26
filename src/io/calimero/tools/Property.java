@@ -331,6 +331,10 @@ public class Property implements Runnable
 		onDescription(d);
 	}
 
+	private record JsonDescription(int objIndex, int objType, int objectInstance, int pid, int propIndex, String name,
+	                               String pidName, int maxElems, int currElems, int pdt, String dpt, int readLevel,
+	                               int writeLevel, boolean writeEnabled) implements Json {}
+
 	/**
 	 * Invoked on receiving a property description.
 	 *
@@ -338,15 +342,29 @@ public class Property implements Runnable
 	 */
 	protected void onDescription(final Description d)
 	{
+		PropertyClient.Property p = getPropertyDef(d.getObjectType(), d.getPID());
+		if (p == null)
+			p = getPropertyDef(PropertyKey.GLOBAL_OBJTYPE, d.getPID());
+
+		final int pdtDefault = p != null ? p.getPDT() : -1;
+		final int pdt = d.getPDT() == -1 ? pdtDefault : d.getPDT();
+
+		if (options.containsKey("json")) {
+			final var name = p != null ? p.getName() : null;
+			final var pidName = p != null ? p.getPIDName() : null;
+			final var json = new JsonDescription(d.getObjectIndex(), d.getObjectType(), d.objectInstance(), d.getPID(),
+					d.getPropIndex(), name, pidName, d.getMaxElements(), d.getCurrentElements(), pdt,
+					d.dpt().orElse(null), d.getReadLevel(), d.getWriteLevel(), d.isWriteEnabled());
+			System.out.println(json.toJson());
+			return;
+		}
+
 		final StringBuilder buf = new StringBuilder();
 		buf.append("OI ").append(alignRight(d.getObjectIndex(), 2));
 		buf.append(", PI ").append(alignRight(d.getPropIndex(), 2)).append(" |");
 		buf.append(" OT ").append(alignRight(d.getObjectType(), 3));
 		buf.append(", PID ").append(alignRight(d.getPID(), 3));
 		buf.append(" | ");
-		PropertyClient.Property p = getPropertyDef(d.getObjectType(), d.getPID());
-		if (p == null)
-			p = getPropertyDef(PropertyKey.GLOBAL_OBJTYPE, d.getPID());
 		if (p != null) {
 			buf.append(p.getName());
 			while (buf.length() < 65)
@@ -357,14 +375,15 @@ public class Property implements Runnable
 		}
 		else
 			buf.append(new String(new char[33]).replace('\0', ' ')).append("(n/a)");
-		final String pdtDef = p != null ? Integer.toString(p.getPDT()) : "-";
-		buf.append(", PDT " + (d.getPDT() == -1 ? pdtDef : Integer.toString(d.getPDT())));
+		buf.append(", PDT " + (pdt == -1 ? "-" : pdt));
 		buf.append(", curr. elems " + d.getCurrentElements());
 		buf.append(", max. " + d.getMaxElements());
 		buf.append(", r/w access " + d.getReadLevel() + "/" + d.getWriteLevel());
 		buf.append(d.isWriteEnabled() ? ", w.enabled" : ", r.only");
 		System.out.println(buf);
 	}
+
+	private record JsonProperty(int index, int pid, String value, List<byte[]> raw) implements Json {}
 
 	/**
 	 * Invoked on receiving a property value.
@@ -376,6 +395,11 @@ public class Property implements Runnable
 	 */
 	protected void onPropertyValue(final int idx, final int pid, final String value, final List<byte[]> raw)
 	{
+		if (options.containsKey("json")) {
+			final var json = new JsonProperty(idx, pid, value, raw);
+			System.out.println(json.toJson());
+			return;
+		}
 		final String rawValue = raw.stream().map(HexFormat.of()::formatHex).collect(joining(delimiter, " (", ")"));
 		System.out.println(value + rawValue);
 	}
@@ -426,7 +450,7 @@ public class Property implements Runnable
 				throw new KnxRuntimeException("secure local device management requires user 1 (management user)");
 			return Main.newLocalDeviceMgmtIP(options, this::adapterClosed);
 		}
-		return createRemoteAdapter(host);
+		return createRemoteAdapter();
 	}
 
 	/**
@@ -443,12 +467,11 @@ public class Property implements Runnable
 	 * Creates the KNX network link and remote property service adapter for one device in the KNX
 	 * network. The adapter uses a KNX network link for access, also is created by this method.
 	 *
-	 * @param host remote host
 	 * @return remote property service adapter
 	 * @throws KNXException on adapter creation problem
 	 * @throws InterruptedException on interrupted thread
 	 */
-	private PropertyAdapter createRemoteAdapter(final String host) throws KNXException,
+	private PropertyAdapter createRemoteAdapter() throws KNXException,
 		InterruptedException
 	{
 		link = Main.newLink(options);
@@ -760,13 +783,12 @@ public class Property implements Runnable
 
 	private static void showCommandList()
 	{
-		final StringBuilder buf = new StringBuilder();
-		buf.append("commands: get | set | desc | scan (append ? for help)" + sep);
-		buf.append("get  - read property value(s)" + sep);
-		buf.append("set  - write property value(s)" + sep);
-		buf.append("desc - read one property description" + sep);
-		buf.append("scan - read property descriptions");
-		out(buf.toString());
+		out("""
+				commands: get | set | desc | scan (append ? for help)
+				get  - read property value(s)
+				set  - write property value(s)
+				desc - read one property description
+				scan - read property descriptions""");
 	}
 
 	private static void printHelp(final String help)

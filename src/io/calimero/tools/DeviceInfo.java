@@ -49,6 +49,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.HexFormat;
@@ -278,6 +279,11 @@ public class DeviceInfo implements Runnable
 	private final Set<String> categories = new HashSet<>();
 	private String category = "General";
 
+	private record JsonResult(String host, IndividualAddress device, Collection<JsonItem> info) implements Json {}
+	private record JsonItem(String category, Parameter parameter, String value, byte[] raw) implements Json {}
+
+	private final JsonResult jsonResult;
+
 	/**
 	 * Creates a new DeviceInfo instance using the supplied options.
 	 * <p>
@@ -293,6 +299,11 @@ public class DeviceInfo implements Runnable
 		// read in user-supplied command line options
 		try {
 			parseOptions(args);
+			if (options.containsKey("json"))
+				jsonResult = new JsonResult((String) options.get("host"), (IndividualAddress) options.get("device"),
+						new ArrayList<>());
+			else
+				jsonResult = null;
 		}
 		catch (final KNXIllegalArgumentException e) {
 			throw e;
@@ -424,7 +435,10 @@ public class DeviceInfo implements Runnable
 	 * @param item device parameter and value
 	 */
 	protected void onDeviceInformation(final Item item) {
-		out(item);
+		if (options.containsKey("json"))
+			jsonResult.info().add(new JsonItem(item.category, item.parameter, item.value, item.raw));
+		else
+			out(item);
 		onDeviceInformation(item.parameter(), item.value(), item.raw());
 	}
 
@@ -437,6 +451,8 @@ public class DeviceInfo implements Runnable
 	 */
 	protected void onCompletion(final Exception thrown, final boolean canceled)
 	{
+		if (options.containsKey("json"))
+			System.out.println(jsonResult.toJson());
 		if (canceled)
 			out.log(INFO, "reading device info canceled");
 		if (thrown != null)

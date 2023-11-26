@@ -195,7 +195,8 @@ public class ProgMode implements Runnable
 
 			final String cmd = (String) options.get("command");
 			if ("status".equals(cmd)) {
-				out("Device(s) in programming mode ...", false);
+				if (!options.containsKey("json"))
+					out("Device(s) in programming mode ...", false);
 				while (true)
 					devicesInProgMode(mgmt.readAddress());
 			}
@@ -208,6 +209,11 @@ public class ProgMode implements Runnable
 
 	protected void devicesInProgMode(final IndividualAddress... devices)
 	{
+		if (options.containsKey("json")) {
+			record JsonDevices(IndividualAddress... devices) implements Json {}
+			out(new JsonDevices(devices).toJson());
+			return;
+		}
 		final String output = devices.length == 0 ? "none"
 				: new TreeSet<>(Arrays.asList(devices)).stream().map(Objects::toString).collect(Collectors.joining(", "));
 		out("\33[2K\rDevice(s) in programming mode: " + output + "\t\t", false);

@@ -36,6 +36,7 @@
 
 package io.calimero.tools;
 
+import static io.calimero.tools.Main.isOption;
 import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.INFO;
 
@@ -256,6 +257,18 @@ public class Discover implements Runnable
 		}
 	}
 
+	private record JsonResult(String netif, InetSocketAddress localEndpoint, InetSocketAddress remoteEndpoint,
+	                          Json response) implements Json {}
+
+	private record JsonDescriptionResponse(DeviceDIB device, Map<ServiceFamily, Integer> svcFamilies, Collection<DIB> dibs)
+			implements Json {
+		JsonDescriptionResponse {
+			dibs = dibs.stream().filter(
+					dib -> dib.getDescTypeCode() != DIB.DEVICE_INFO && dib.getDescTypeCode() != DIB.SUPP_SVC_FAMILIES)
+					.toList();
+		}
+	}
+
 	/**
 	 * Invoked by this tool immediately after receiving a search response.
 	 * <p>
@@ -267,8 +280,20 @@ public class Discover implements Runnable
 	protected void onEndpointReceived(final Result<SearchResponse> result)
 	{
 		final SearchResponse sr = result.response();
-		System.out.println(formatResponse(result, sr.getControlEndpoint(), sr.getDevice(), sr.getServiceFamilies(),
-				sr.description()));
+		if (options.containsKey("json")) {
+			final var jsonDesc = new JsonDescriptionResponse(sr.getDevice(), sr.getServiceFamilies().families(),
+					sr.description());
+
+			record JsonSearchResponse(boolean v2, HPAI ctrlEndpoint, JsonDescriptionResponse description) implements Json {}
+			final var jsonResponse = new JsonSearchResponse(sr.v2(), sr.getControlEndpoint(), jsonDesc);
+
+			final var jsonResult = new JsonResult(result.networkInterface().getName(), result.localEndpoint(),
+					result.remoteEndpoint(), jsonResponse);
+			System.out.println(jsonResult.toJson());
+		}
+		else
+			System.out.println(formatResponse(result, sr.getControlEndpoint(), sr.getDevice(), sr.getServiceFamilies(),
+					sr.description()));
 	}
 
 	/**
@@ -280,6 +305,16 @@ public class Discover implements Runnable
 	 */
 	protected void onDescriptionReceived(final Result<DescriptionResponse> result)
 	{
+		if (options.containsKey("json")) {
+			final var dr = result.response();
+			final var jsonDesc = new JsonDescriptionResponse(dr.getDevice(), dr.getServiceFamilies().families(),
+					dr.getDescription());
+			final var jsonResult = new JsonResult(result.networkInterface().getName(), result.localEndpoint(),
+					result.remoteEndpoint(), jsonDesc);
+			System.out.println(jsonResult.toJson());
+			return;
+		}
+
 		onDescriptionReceived(result, null);
 	}
 
@@ -642,6 +677,8 @@ public class Discover implements Runnable
 			}
 			else if (Main.isOption(arg, "serverport", "p"))
 				options.put("serverport", Integer.decode(i.next()));
+			else if (isOption(arg, "json", null))
+				options.put("json", null);
 			else if (options.containsKey("search") || options.containsKey("describe"))
 				options.put("host", Main.parseHost(arg));
 			else

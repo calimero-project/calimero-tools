@@ -43,6 +43,7 @@ import static java.lang.System.Logger.Level.WARNING;
 
 import java.lang.System.Logger;
 import java.net.InetSocketAddress;
+import java.time.Instant;
 import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.HexFormat;
@@ -54,12 +55,15 @@ import io.calimero.CloseEvent;
 import io.calimero.DataUnitBuilder;
 import io.calimero.FrameEvent;
 import io.calimero.GroupAddress;
+import io.calimero.IndividualAddress;
 import io.calimero.KNXAddress;
 import io.calimero.KNXException;
 import io.calimero.KNXFormatException;
 import io.calimero.KNXIllegalArgumentException;
 import io.calimero.LteHeeTag;
+import io.calimero.Priority;
 import io.calimero.cemi.CEMIBusMon;
+import io.calimero.cemi.RFMediumInfo.RSS;
 import io.calimero.knxnetip.KNXnetIPConnection;
 import io.calimero.link.KNXNetworkMonitor;
 import io.calimero.link.KNXNetworkMonitorFT12;
@@ -283,6 +287,16 @@ public class NetworkMonitor implements Runnable
 		}
 	}
 
+	private record JsonMonitorIndication(Instant time, long timestamp, int seqNumber, boolean bitError, boolean frameError,
+			boolean parityError, boolean lost, byte[] rawFrame, Json raw) implements Json {}
+
+	private record JsonRawFrame(int frameType, IndividualAddress source, KNXAddress destination, boolean repetition,
+			int hopCount, Priority priority, String tpci, String apci, byte[] asdu, int checksum) implements Json {}
+
+	private record JsonRfLData(int frameType, IndividualAddress source, KNXAddress destination, int frameNumber,
+			boolean systemBroadcast, RSS rss, boolean batteryOk, boolean txOnlyDevice, byte[] DoA, byte[] SN, String tpci,
+					String apci, byte[] asdu, int checksum) implements Json {}
+
 	/**
 	 * Called by this tool on receiving a monitor indication frame.
 	 *
@@ -290,8 +304,44 @@ public class NetworkMonitor implements Runnable
 	 */
 	protected void onIndication(final FrameEvent e)
 	{
-		final StringBuilder sb = new StringBuilder();
 		final CEMIBusMon frame = (CEMIBusMon) e.getFrame();
+		// since we specified decoding of raw frames during monitor initialization,
+		// we can get the decoded raw frame here
+		// but note, that on decoding error null is returned
+		final RawFrame raw = ((MonitorFrameEvent) e).getRawFrame();
+
+		if (options.containsKey("json")) {
+			Json jsonRaw = null;
+			if (raw != null) {
+				if (raw instanceof final RawFrameBase f) {
+					final byte[] tpdu = f.getTPDU();
+					final String tpci = DataUnitBuilder.decodeTPCI(DataUnitBuilder.getTPDUService(tpdu), f.getDestination());
+					final String apci = DataUnitBuilder.decodeAPCI(DataUnitBuilder.getAPDUService(tpdu));
+					final byte[] asdu = DataUnitBuilder.extractASDU(tpdu);
+					jsonRaw = new JsonRawFrame(raw.getFrameType(), f.getSource(), f.getDestination(), f.isRepetition(),
+							f.getHopcount(), f.getPriority(), tpci, apci, asdu, f.getChecksum());
+				}
+				else if (raw instanceof final RFLData rf) {
+					final byte[] tpdu = rf.getTpdu();
+					final String tpci = DataUnitBuilder.decodeTPCI(DataUnitBuilder.getTPDUService(tpdu), rf.getDestination());
+					final String apci = DataUnitBuilder.decodeAPCI(DataUnitBuilder.getAPDUService(tpdu));
+					final byte[] asdu = DataUnitBuilder.extractASDU(tpdu);
+					final byte[] doa = rf.domainAddress().orElse(null);
+					final byte[] sn = rf.serialNumber().orElse(null);
+					jsonRaw = new JsonRfLData(raw.getFrameType(), rf.getSource(), rf.getDestination(), rf.getFrameNumber(),
+							rf.isSystemBroadcast(), rf.getRss(), rf.isBatteryOk(), rf.isTransmitOnlyDevice(), doa, sn,
+							tpci, apci, asdu, 0);
+				}
+			}
+
+			final var json = new JsonMonitorIndication(Instant.now(), frame.getTimestamp(), frame.getSequenceNumber(),
+					frame.getBitError(), frame.getFrameError(), frame.getParityError(), frame.getLost(), frame.getPayload(),
+					jsonRaw);
+			System.out.println(json.toJson());
+			return;
+		}
+
+		final StringBuilder sb = new StringBuilder();
 		final boolean compact = options.containsKey("compact");
 		if (compact) {
 			sb.append("Seq ").append(frame.getSequenceNumber());
@@ -299,10 +349,6 @@ public class NetworkMonitor implements Runnable
 		else
 			sb.append(frame);
 
-		// since we specified decoding of raw frames during monitor initialization,
-		// we can get the decoded raw frame here
-		// but note, that on decoding error null is returned
-		final RawFrame raw = ((MonitorFrameEvent) e).getRawFrame();
 		if (raw != null) {
 			sb.append(compact ? " " : " = ");
 			sb.append(raw);
