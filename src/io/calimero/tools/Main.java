@@ -178,6 +178,7 @@ final class Main
 			final String vs = args[0];
 			final String level = vs.startsWith("-vvv") ? "TRACE" : vs.startsWith("-vv") ? "DEBUG" : "INFO";
 			System.setProperty("jdk.system.logger.level", level);
+			System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", level);
 			cmdIdx++;
 		}
 
