@@ -258,7 +258,7 @@ public class BaosClient implements Runnable
 	}
 
 	public static String manufacturer(final int mf) {
-		return DeviceInfo.manufacturer(mf);
+		return Main.manufacturer(mf);
 	}
 
 	protected void executeBaosCommand(final String cmd) throws KNXException, InterruptedException {
@@ -679,7 +679,7 @@ public class BaosClient implements Runnable
 				Supported BAOS commands:
 				  get {property|value|timer|history|description}  get a property, value, timer, history, or description
 				  set {property|value|timer|history}              set a property, value, timer, or history
-				
+
 				get property <id> [<items>]
 				set property <id> <hex value>
 				get description <id> [<items>]

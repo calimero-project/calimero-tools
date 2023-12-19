@@ -36,7 +36,10 @@
 
 package tuwien.auto.calimero.tools;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
@@ -45,6 +48,7 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -60,6 +64,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.slf4j.LoggerFactory;
 
@@ -122,6 +127,7 @@ final class Main
 			Property.class, Property.class, PropClient.class, ProcComm.class, BaosClient.class, DeviceInfo.class,
 			Memory.class, ProgMode.class, Restart.class, DatapointImporter.class);
 
+
 	private static final Map<InetSocketAddress, TcpConnection> tcpConnectionPool = new HashMap<>();
 	private static boolean registeredTcpShutdownHook;
 
@@ -148,6 +154,8 @@ final class Main
 			c.close();
 		}
 	}
+
+
 
 	private Main() {}
 
@@ -227,6 +235,21 @@ final class Main
 	//
 	// Utility methods used by the various tools
 	//
+
+	private static final Map<Integer, String> manufacturer;
+	static {
+		try (var is = Main.class.getResourceAsStream("/knxManufacturers.properties");
+			 var r = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+			manufacturer = r.lines().map(s -> s.split("="))
+					.collect(Collectors.toUnmodifiableMap(s -> Integer.parseUnsignedInt(s[0]), s -> s[1]));
+		}
+		catch (final IOException e) {
+			throw new UncheckedIOException(e);
+		}
+	}
+
+	static String manufacturer(final int id) { return manufacturer.getOrDefault(id, "Unknown"); }
+
 
 	static InetSocketAddress createLocalSocket(final Map<String, Object> options) {
 		return createLocalSocket((InetAddress) options.get("localhost"), (Integer) options.get("localport"));

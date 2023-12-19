@@ -870,7 +870,7 @@ public class Property implements Runnable
 		customFormatter.put(key(PID.PROGRAM_VERSION), Property::programVersion);
 		customFormatter.put(key(PID.OBJECT_NAME), Property::string);
 		customFormatter.put(key(PID.MANUFACTURER_ID),
-				data -> DeviceInfo.manufacturer((data[0] & 0xff) << 8 | data[1] & 0xff));
+				data -> Main.manufacturer((data[0] & 0xff) << 8 | data[1] & 0xff));
 		customFormatter.put(key(PID.LOAD_STATE_CONTROL), Property::loadState);
 		customFormatter.put(key(PID.VERSION), Property::version);
 		customFormatter.put(key(1, PID.TABLE), Property::groupAddresses);
@@ -1132,7 +1132,7 @@ public class Property implements Runnable
 		if (data.length != 5)
 			return HexFormat.of().formatHex(data);
 		final int mfr = (data[0] & 0xff) << 8 | data[1] & 0xff;
-		return String.format("%s %02x%02x v%d.%d", DeviceInfo.manufacturer(mfr), data[2], data[3],
+		return String.format("%s %02x%02x v%d.%d", Main.manufacturer(mfr), data[2], data[3],
 				(data[4] & 0xff) >> 4, data[4] & 0xf);
 	}
 
