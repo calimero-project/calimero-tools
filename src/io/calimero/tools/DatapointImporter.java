@@ -25,7 +25,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
-import java.util.StringJoiner;
 
 import io.calimero.GroupAddress;
 import io.calimero.GroupAddress.Presentation;
