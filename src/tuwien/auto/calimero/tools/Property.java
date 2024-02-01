@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2010, 2023 B. Malinowsky
+    Copyright (c) 2010, 2024 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -328,7 +328,7 @@ public class Property implements Runnable
 	}
 
 	private void notifyDescription(final Description d) {
-		objIndexToType.put(d.getObjectIndex(), d.getObjectType());
+		objIndexToType.put(d.objectIndex(), d.objectType());
 		onDescription(d);
 	}
 
@@ -340,30 +340,30 @@ public class Property implements Runnable
 	protected void onDescription(final Description d)
 	{
 		final StringBuilder buf = new StringBuilder();
-		buf.append("OI ").append(alignRight(d.getObjectIndex(), 2));
-		buf.append(", PI ").append(alignRight(d.getPropIndex(), 2)).append(" |");
-		buf.append(" OT ").append(alignRight(d.getObjectType(), 3));
-		buf.append(", PID ").append(alignRight(d.getPID(), 3));
+		buf.append("OI ").append(alignRight(d.objectIndex(), 2));
+		buf.append(", PI ").append(alignRight(d.propIndex(), 2)).append(" |");
+		buf.append(" OT ").append(alignRight(d.objectType(), 3));
+		buf.append(", PID ").append(alignRight(d.pid(), 3));
 		buf.append(" | ");
-		PropertyClient.Property p = getPropertyDef(d.getObjectType(), d.getPID());
+		PropertyClient.Property p = getPropertyDef(d.objectType(), d.pid());
 		if (p == null)
-			p = getPropertyDef(PropertyKey.GLOBAL_OBJTYPE, d.getPID());
+			p = getPropertyDef(PropertyKey.GLOBAL_OBJTYPE, d.pid());
 		if (p != null) {
-			buf.append(p.getName());
+			buf.append(p.propertyName());
 			while (buf.length() < 65)
 				buf.append(' ');
 			buf.append(" (");
-			buf.append(p.getPIDName());
+			buf.append(p.pidName());
 			buf.append(")");
 		}
 		else
 			buf.append(new String(new char[33]).replace('\0', ' ')).append("(n/a)");
-		final String pdtDef = p != null ? Integer.toString(p.getPDT()) : "-";
-		buf.append(", PDT " + (d.getPDT() == -1 ? pdtDef : Integer.toString(d.getPDT())));
-		buf.append(", curr. elems " + d.getCurrentElements());
-		buf.append(", max. " + d.getMaxElements());
-		buf.append(", r/w access " + d.getReadLevel() + "/" + d.getWriteLevel());
-		buf.append(d.isWriteEnabled() ? ", w.enabled" : ", r.only");
+		final String pdtDef = p != null ? Integer.toString(p.pdt()) : "-";
+		buf.append(", PDT " + (d.pdt() == -1 ? pdtDef : Integer.toString(d.pdt())));
+		buf.append(", curr. elems " + d.currentElements());
+		buf.append(", max. " + d.maxElements());
+		buf.append(", r/w access " + d.readLevel() + "/" + d.writeLevel());
+		buf.append(d.writeEnabled() ? ", w.enabled" : ", r.only");
 		System.out.println(buf);
 	}
 
@@ -610,13 +610,13 @@ public class Property implements Runnable
 				// if we're reading association table content, figure out table format size before
 				if (objType == 2 && pid == PID.TABLE) {
 					final var desc = pc.getDescription(oi, PID.TABLE);
-					final int pdt = desc.getPDT();
+					final int pdt = desc.pdt();
 					associationTableFormat1 = pdt == PropertyTypes.PDT_GENERIC_04;
 				}
 				// if we're reading group object table content, figure out GO descriptor size before
 				if (objType == 9 && pid == PID.TABLE) {
 					final var desc = pc.getDescription(oi, PID.TABLE);
-					final int pdt = desc.getPDT();
+					final int pdt = desc.pdt();
 					switch (pdt) {
 					case PropertyTypes.PDT_GENERIC_02:
 						groupDescriptorSize = 2;
