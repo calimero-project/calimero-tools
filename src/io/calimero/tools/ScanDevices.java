@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2013, 2023 B. Malinowsky
+    Copyright (c) 2013, 2024 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -83,7 +83,7 @@ import io.calimero.tools.Main.ShutdownHandler;
 public class ScanDevices implements Runnable
 {
 	private static final String tool = "ScanDevices";
-	private static final String sep = System.getProperty("line.separator");
+	private static final String sep = System.lineSeparator();
 
 	private static final Logger out = LogService.getLogger("io.calimero.tools");
 

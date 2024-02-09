@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2011, 2023 B. Malinowsky
+    Copyright (c) 2011, 2024 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -799,9 +799,8 @@ public class DeviceInfo implements Runnable
 		final boolean raw = (modes & 0x04) == 0x04;
 		final boolean bm = (modes & 0x02) == 0x02;
 		final boolean dll = (modes & 0x01) == 0x01;
-		final String s = "Transport layer local " + tll + ", Data link layer modes: normal " + dll + ", busmonitor "
+		return "Transport layer local " + tll + ", Data link layer modes: normal " + dll + ", busmonitor "
 				+ bm + ", raw mode " + raw;
-		return s;
 	}
 
 	private static String commMode(final byte[] data) {
@@ -983,7 +982,7 @@ public class DeviceInfo implements Runnable
 	{
 		final int addrDoA = 0x0102; // length 2
 
-		readMem(addrDoA, 2, "DoA ", true, CommonParameter.DomainAddress);
+		readMem(addrDoA, 2, true, CommonParameter.DomainAddress);
 		readBcuInfo(true);
 	}
 
@@ -996,7 +995,7 @@ public class DeviceInfo implements Runnable
 //		final int addrConfigDesc = 0x0110;
 //		final int addrAssocTablePtr = 0x0111;
 
-		readMem(addrManufactData, 3, "KNX manufacturer data ", true, CommonParameter.ManufacturerData);
+		readMem(addrManufactData, 3, true, CommonParameter.ManufacturerData);
 
 		readBcuInfo(true);
 	}
@@ -1017,7 +1016,7 @@ public class DeviceInfo implements Runnable
 //		final int addrPeiInterface = 0x00c4; // if used
 //		final int addrPeiInfo = 0x00c5; // if used
 
-		readMem(addrManufacturer, 2, "KNX manufacturer ", Main::manufacturer, CommonParameter.Manufacturer);
+		readMem(addrManufacturer, 2, Main::manufacturer, CommonParameter.Manufacturer);
 		final long appId = readMemLong(addrAppId, 5);
 		final String appMf = manufacturer((int) appId >> (3 * 8));
 		final long swDev = (appId >> 8) & 0xff;
@@ -1035,21 +1034,21 @@ public class DeviceInfo implements Runnable
 	private void readBcuInfo(final boolean bcu1) throws InterruptedException
 	{
 		if (bcu1) {
-			readMem(addrManufact, 1, "KNX manufacturer ", Main::manufacturer, CommonParameter.Manufacturer);
-			readMem(addrDevType, 2, "Device type number ", true, CommonParameter.DeviceTypeNumber);
+			readMem(addrManufact, 1, Main::manufacturer, CommonParameter.Manufacturer);
+			readMem(addrDevType, 2, true, CommonParameter.DeviceTypeNumber);
 		}
-		readMem(addrVersion, 1, "SW version ", i -> version(new byte[] { (byte) (int) i }), CommonParameter.SoftwareVersion);
+		readMem(addrVersion, 1, i -> version(new byte[] { (byte) (int) i }), CommonParameter.SoftwareVersion);
 		// mechanical PEI type required by the application SW
-		readMem(addrPeiType, 1, "Hardware PEI type ", DeviceInfo::toPeiTypeString, CommonParameter.RequiredPeiType);
-		readMem(addrRunError, 1, "Run error 0x", DeviceInfo::decodeRunError, CommonParameter.RunError);
+		readMem(addrPeiType, 1, DeviceInfo::toPeiTypeString, CommonParameter.RequiredPeiType);
+		readMem(addrRunError, 1, DeviceInfo::decodeRunError, CommonParameter.RunError);
 
 		readSystemState();
 
-		readMem(addrRoutingCnt, 1, "Routing count ", v -> Integer.toString((v >> 4) & 0x7),
+		readMem(addrRoutingCnt, 1, v -> Integer.toString((v >> 4) & 0x7),
 				CommonParameter.RoutingCount);
 		// realization type 1
 		// Location of group object table
-		readMem(addrGroupObjTablePtr, 1, "Group object table location ", true, CommonParameter.GroupObjTableLocation);
+		readMem(addrGroupObjTablePtr, 1, true, CommonParameter.GroupObjTableLocation);
 		readGroupAddresses();
 
 		// Location of user program 0x100 + progptr
@@ -1086,13 +1085,13 @@ public class DeviceInfo implements Runnable
 
 		// realization type 1
 		final int lengthSize = isSystemB ? 2 : 1;
-		final int entries = readMem(memLocation, lengthSize, "Group address table entries ", false,
+		final int entries = readMem(memLocation, lengthSize, false,
 				CommonParameter.GroupAddressTableEntries);
 
 		int startAddr = memLocation + lengthSize;
 		if (!isSystemB && entries > 0) {
 			// address of device address
-			readMem(startAddr, 2, "", v -> new IndividualAddress(v & 0x7fff).toString(), CommonParameter.DeviceAddress);
+			readMem(startAddr, 2, v -> new IndividualAddress(v & 0x7fff).toString(), CommonParameter.DeviceAddress);
 			startAddr += 2;
 		}
 
@@ -1222,12 +1221,13 @@ public class DeviceInfo implements Runnable
 	}
 
 	private byte[] readFunctionPropertyState(final Parameter p, final int objectType, final int propertyId,
-		final int service, final byte... info) throws InterruptedException {
+			final int service, final byte... info) throws InterruptedException {
 		if (mc == null)
 			return null;
 
 		final int oinstance = 1;
-		out.log(DEBUG, "read function property state {0}({1})|{2} service {3}", objectType, oinstance, propertyId, service);
+		out.log(DEBUG, "read {0} function property state {1}({2})|{3} service {4}", p.friendlyName(), objectType,
+				oinstance, propertyId, service);
 		try {
 			return mc.readFunctionPropertyState(d, objectType, oinstance, propertyId, service, info);
 		}
@@ -1331,8 +1331,8 @@ public class DeviceInfo implements Runnable
 		}
 	}
 
-	private int readMem(final int startAddr, final int bytes, final String prefix, final boolean hex, final Parameter p)
-		throws InterruptedException
+	private int readMem(final int startAddr, final int bytes, final boolean hex, final Parameter p)
+			throws InterruptedException
 	{
 		out.log(DEBUG, "read 0x{0}..0x{1} {2}", Long.toHexString(startAddr), Long.toHexString(startAddr + bytes), p.friendlyName());
 		final long v = readMemLong(startAddr, bytes);
@@ -1341,8 +1341,8 @@ public class DeviceInfo implements Runnable
 		return (int) v;
 	}
 
-	private void readMem(final int startAddr, final int bytes, final String prefix,
-		final Function<Integer, String> representation, final Parameter p) throws InterruptedException
+	private void readMem(final int startAddr, final int bytes, final Function<Integer, String> representation,
+			final Parameter p) throws InterruptedException
 	{
 		final int v = readMem(startAddr, bytes);
 		putResult(p, representation.apply(v), v);

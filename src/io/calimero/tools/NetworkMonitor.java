@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2023 B. Malinowsky
+    Copyright (c) 2006, 2024 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -107,7 +107,7 @@ import io.calimero.log.LogService;
 public class NetworkMonitor implements Runnable
 {
 	private static final String tool = "NetworkMonitor";
-	private static final String sep = System.getProperty("line.separator");
+	private static final String sep = System.lineSeparator();
 
 	private static final Logger out = LogService.getLogger("io.calimero.tools");
 
@@ -485,12 +485,13 @@ public class NetworkMonitor implements Runnable
 		if (pid == 0xff) {
 			final int companyCode = ((asdu[4] & 0xff) << 8) | (asdu[5] & 0xff);
 			final int privatePid = asdu[6] & 0xff;
-			sb.append("IOT " + iot + " OI " + ioi + " Company " + companyCode + " PID " + privatePid + ": "
-					+ HexFormat.of().formatHex(asdu, 7, asdu.length));
+			sb.append("IOT ").append(iot).append(" OI ").append(ioi).append(" Company ").append(companyCode)
+					.append(" PID ").append(privatePid).append(": ").append(HexFormat.of()
+							.formatHex(asdu, 7, asdu.length));
 		}
 		else
-			sb.append("IOT " + iot + " OI " + ioi + " PID " + pid + ": "
-					+ HexFormat.of().formatHex(asdu, 4, asdu.length));
+			sb.append("IOT ").append(iot).append(" OI ").append(ioi).append(" PID ").append(pid).append(": ")
+					.append(HexFormat.of().formatHex(asdu, 4, asdu.length));
 
 		return sb.toString();
 	}

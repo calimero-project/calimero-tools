@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2023 B. Malinowsky
+    Copyright (c) 2006, 2024 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -102,7 +102,7 @@ import io.calimero.tools.Main.ShutdownHandler;
 public class Discover implements Runnable
 {
 	private static final String tool = "Discover";
-	private static final String sep = System.getProperty("line.separator");
+	private static final String sep = System.lineSeparator();
 
 	private static final Logger out = LogService.getLogger(Discoverer.LOG_SERVICE);
 
@@ -116,11 +116,8 @@ public class Discover implements Runnable
 	 * Creates a new Discover instance using the supplied options; see {@link #main(String[])} for a list of options.
 	 *
 	 * @param args list with options
-	 * @throws KNXException on instantiation problems
-	 * @throws KNXIllegalArgumentException on unknown/invalid options
 	 */
-	public Discover(final String[] args) throws KNXException
-	{
+	public Discover(final String[] args) {
 		// read in user-supplied command line options
 		try {
 			parseOptions(args);
@@ -323,7 +320,7 @@ public class Discover implements Runnable
 
 		String basic = sb.toString().replaceAll(", ", sep);
 		if (serviceFamilies != null)
-			basic += "Supported services: " + serviceFamilies.toString();
+			basic += "Supported services: " + serviceFamilies;
 
 		final var joiner = new StringJoiner(sep);
 		joiner.add(basic);

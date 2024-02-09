@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2019, 2023 B. Malinowsky
+    Copyright (c) 2019, 2024 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -144,8 +144,11 @@ public class DatapointImporter implements Runnable {
 	}
 
 	private void importAddressesFromCsv(final String file) throws IOException {
-		Files.lines(Path.of(file), StandardCharsets.UTF_8).map(line -> line.split("\"[\t;]\""))
-				.map(DatapointImporter::parseDatapoint).flatMap(Optional::stream).forEach(datapoints::add);
+		try (var lines = Files.lines(Path.of(file), StandardCharsets.UTF_8)) {
+			lines.map(line -> line.split("\"[\t;]\""))
+					.map(DatapointImporter::parseDatapoint)
+					.flatMap(Optional::stream).forEach(datapoints::add);
+		}
 	}
 
 	private void importAddressesFromXml(final String uri) {

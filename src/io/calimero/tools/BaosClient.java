@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2019, 2023 B. Malinowsky
+    Copyright (c) 2019, 2024 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -515,14 +515,12 @@ public class BaosClient implements Runnable
 			case "blinds" -> "3.008";
 			case "string" -> "16.001";
 			case "temp" -> "9.001";
-			case "float" -> "9.002";
-			case "float2" -> "9.002";
+			case "float", "float2" -> "9.002";
 			case "float4" -> "14.005";
 			case "ucount" -> "5.010";
 			case "int" -> "13.001";
 			case "angle" -> "5.003";
-			case "percent" -> "5.001";
-			case "%" -> "5.001";
+			case "percent", "%" -> "5.001";
 			default -> {
 				if (!"-".equals(id) && !Character.isDigit(id.charAt(0)))
 					throw new KnxRuntimeException("unrecognized DPT '" + id + "'");
