@@ -183,7 +183,7 @@ public class BaosClient implements Runnable
 	 *
 	 * @param args command line options for BAOS communication
 	 */
-	public static void main(final String[] args)
+	public static void main(final String... args)
 	{
 		try {
 			final BaosClient baos = new BaosClient(args);

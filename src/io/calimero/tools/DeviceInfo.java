@@ -333,7 +333,7 @@ public class DeviceInfo implements Runnable
 	 *
 	 * @param args command line options for running the device info tool
 	 */
-	public static void main(final String[] args)
+	public static void main(final String... args)
 	{
 		try {
 			final DeviceInfo d = new DeviceInfo(args);

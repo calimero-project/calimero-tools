@@ -122,7 +122,7 @@ public class Restart implements Runnable {
 	 *
 	 * @param args command line arguments for the tool
 	 */
-	public static void main(final String[] args) {
+	public static void main(final String... args) {
 		try {
 			new Restart(args).run();
 		}

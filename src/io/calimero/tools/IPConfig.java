@@ -177,7 +177,7 @@ public class IPConfig implements Runnable
 	 *
 	 * @param args command line options to run the tool
 	 */
-	public static void main(final String[] args)
+	public static void main(final String... args)
 	{
 		try {
 			new IPConfig(args).run();

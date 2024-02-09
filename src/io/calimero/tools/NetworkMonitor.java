@@ -182,7 +182,7 @@ public class NetworkMonitor implements Runnable
 	 *
 	 * @param args command line options for network monitoring
 	 */
-	public static void main(final String[] args)
+	public static void main(final String... args)
 	{
 		try {
 			// if listener is null, we create our default one
