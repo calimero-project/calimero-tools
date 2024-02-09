@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2015, 2023 B. Malinowsky
+    Copyright (c) 2015, 2024 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -65,7 +65,7 @@ import tuwien.auto.calimero.mgmt.PropertyClient;
 public class ProgMode implements Runnable
 {
 	private static final String tool = "ProgMode";
-	private static final String sep = System.getProperty("line.separator");
+	private static final String sep = System.lineSeparator();
 
 	/** Contains tool options after parsing command line. */
 	private final Map<String, Object> options = new HashMap<>();

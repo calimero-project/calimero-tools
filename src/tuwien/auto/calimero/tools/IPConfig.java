@@ -86,7 +86,7 @@ public class IPConfig implements Runnable
 {
 	private static final String tool = "IPConfig";
 
-	private static final String sep = System.getProperty("line.separator");
+	private static final String sep = System.lineSeparator();
 	private static final int IPObjType = 11;
 
 	private static Logger out = LogService.getLogger("calimero.tools");
@@ -406,11 +406,11 @@ public class IPConfig implements Runnable
 		if ((bitset & 0x01) != 0)
 			s = "manual";
 		if ((bitset & 0x02) != 0)
-			s += (s.length() == 0 ? "" : div) + "Bootstrap Protocol";
+			s += (s.isEmpty() ? "" : div) + "Bootstrap Protocol";
 		if ((bitset & 0x04) != 0)
-			s += (s.length() == 0 ? "" : div) + "DHCP";
+			s += (s.isEmpty() ? "" : div) + "DHCP";
 		if ((bitset & 0x08) != 0)
-			s += (s.length() == 0 ? "" : div) + "Auto IP";
+			s += (s.isEmpty() ? "" : div) + "Auto IP";
 		return s;
 	}
 
@@ -484,7 +484,7 @@ public class IPConfig implements Runnable
 		// remove empty arguments
 		final List<String> l = new ArrayList<>(Arrays.asList(args));
 		l.removeAll(List.of(""));
-		if (l.size() == 0)
+		if (l.isEmpty())
 			return;
 
 		// add defaults

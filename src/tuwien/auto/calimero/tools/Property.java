@@ -37,7 +37,6 @@
 package tuwien.auto.calimero.tools;
 
 import static java.util.stream.Collectors.joining;
-import static tuwien.auto.calimero.DataUnitBuilder.toHex;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -60,7 +59,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import tuwien.auto.calimero.CloseEvent;
-import tuwien.auto.calimero.DataUnitBuilder;
 import tuwien.auto.calimero.DeviceDescriptor;
 import tuwien.auto.calimero.GroupAddress;
 import tuwien.auto.calimero.IndividualAddress;
@@ -112,7 +110,7 @@ import tuwien.auto.calimero.xml.XmlReader;
 public class Property implements Runnable
 {
 	private static final String tool = "Property";
-	private static final String sep = System.getProperty("line.separator");
+	private static final String sep = System.lineSeparator();
 
 	static Logger out = LoggerFactory.getLogger("calimero.tools");
 
@@ -359,10 +357,10 @@ public class Property implements Runnable
 		else
 			buf.append(new String(new char[33]).replace('\0', ' ')).append("(n/a)");
 		final String pdtDef = p != null ? Integer.toString(p.pdt()) : "-";
-		buf.append(", PDT " + (d.pdt() == -1 ? pdtDef : Integer.toString(d.pdt())));
-		buf.append(", curr. elems " + d.currentElements());
-		buf.append(", max. " + d.maxElements());
-		buf.append(", r/w access " + d.readLevel() + "/" + d.writeLevel());
+		buf.append(", PDT ").append(d.pdt() == -1 ? pdtDef : Integer.toString(d.pdt()));
+		buf.append(", curr. elems ").append(d.currentElements());
+		buf.append(", max. ").append(d.maxElements());
+		buf.append(", r/w access ").append(d.readLevel()).append("/").append(d.writeLevel());
 		buf.append(d.writeEnabled() ? ", w.enabled" : ", r.only");
 		System.out.println(buf);
 	}
@@ -427,7 +425,7 @@ public class Property implements Runnable
 				throw new KnxRuntimeException("secure local device management requires user 1 (management user)");
 			return Main.newLocalDeviceMgmtIP(options, this::adapterClosed);
 		}
-		return createRemoteAdapter(host);
+		return createRemoteAdapter();
 	}
 
 	/**
@@ -444,13 +442,11 @@ public class Property implements Runnable
 	 * Creates the KNX network link and remote property service adapter for one device in the KNX
 	 * network. The adapter uses a KNX network link for access, also is created by this method.
 	 *
-	 * @param host remote host
 	 * @return remote property service adapter
 	 * @throws KNXException on adapter creation problem
 	 * @throws InterruptedException on interrupted thread
 	 */
-	private PropertyAdapter createRemoteAdapter(final String host) throws KNXException,
-		InterruptedException
+	private PropertyAdapter createRemoteAdapter() throws KNXException, InterruptedException
 	{
 		link = Main.newLink(options);
 		final IndividualAddress remote = (IndividualAddress) options.get("remote");
@@ -761,13 +757,12 @@ public class Property implements Runnable
 
 	private static void showCommandList()
 	{
-		final StringBuilder buf = new StringBuilder();
-		buf.append("commands: get | set | desc | scan (append ? for help)" + sep);
-		buf.append("get  - read property value(s)" + sep);
-		buf.append("set  - write property value(s)" + sep);
-		buf.append("desc - read one property description" + sep);
-		buf.append("scan - read property descriptions");
-		out(buf.toString());
+		out("""
+				commands: get | set | desc | scan (append ? for help)
+				  get  - read property value(s)
+				  set  - write property value(s)
+				  desc - read one property description
+				  scan - read property descriptions""");
 	}
 
 	private static void printHelp(final String help)
