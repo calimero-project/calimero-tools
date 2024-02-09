@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2023 B. Malinowsky
+    Copyright (c) 2006, 2024 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -181,7 +181,7 @@ public class IPConfig implements Runnable
 	 *
 	 * @param args command line options to run the tool
 	 */
-	public static void main(final String[] args)
+	public static void main(final String... args)
 	{
 		try {
 			new IPConfig(args).run();
@@ -215,8 +215,8 @@ public class IPConfig implements Runnable
 
 			// get object type with KNXnet/IP parameters
 			pc.scanProperties(false, d -> {
-				if (d.getObjectType() == IPObjType)
-					objIndex = d.getObjectIndex();
+				if (d.objectType() == IPObjType)
+					objIndex = d.objectIndex();
 			});
 			if (objIndex == -1) {
 				out.log(ERROR, PropertyClient.getObjectTypeName(IPObjType) + " not found");

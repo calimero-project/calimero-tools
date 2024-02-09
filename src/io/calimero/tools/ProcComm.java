@@ -266,7 +266,7 @@ public class ProcComm implements Runnable
 	 *
 	 * @param args command line options for process communication
 	 */
-	public static void main(final String[] args)
+	public static void main(final String... args)
 	{
 		try {
 			final ProcComm pc = new ProcComm(args);
@@ -699,7 +699,7 @@ public class ProcComm implements Runnable
 		final boolean tp1 = link.getKNXMedium().getMedium() == KNXMediumSettings.MEDIUM_TP1;
 		final var priority = service == groupPropInfo || service == groupPropWrite ? Priority.NORMAL : Priority.LOW;
 		final boolean repeat = !knxip;
-		final boolean domainBroadcast = tp1 ? true : false;
+		final boolean domainBroadcast = tp1;
 
 		final var ldata = CEMILDataEx.newLte(knxip ? CEMILData.MC_LDATA_IND : CEMILData.MC_LDATA_REQ,
 				KNXMediumSettings.BackboneRouter, tagAddr, tpdu, priority, repeat, domainBroadcast, false, 6);

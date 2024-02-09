@@ -186,7 +186,7 @@ public class NetworkMonitor implements Runnable
 	 *
 	 * @param args command line options for network monitoring
 	 */
-	public static void main(final String[] args)
+	public static void main(final String... args)
 	{
 		try {
 			// if listener is null, we create our default one
@@ -326,8 +326,8 @@ public class NetworkMonitor implements Runnable
 					final String tpci = DataUnitBuilder.decodeTPCI(DataUnitBuilder.getTPDUService(tpdu), rf.getDestination());
 					final String apci = DataUnitBuilder.decodeAPCI(DataUnitBuilder.getAPDUService(tpdu));
 					final byte[] asdu = DataUnitBuilder.extractASDU(tpdu);
-					final byte[] doa = rf.domainAddress().orElse(null);
-					final byte[] sn = rf.serialNumber().orElse(null);
+					final byte[] doa = rf.isSystemBroadcast() ? null : rf.getDoAorSN();
+					final byte[] sn = rf.isSystemBroadcast() ? rf.getDoAorSN() : null;
 					jsonRaw = new JsonRfLData(raw.getFrameType(), rf.getSource(), rf.getDestination(), rf.getFrameNumber(),
 							rf.isSystemBroadcast(), rf.getRss(), rf.isBatteryOk(), rf.isTransmitOnlyDevice(), doa, sn,
 							tpci, apci, asdu, 0);

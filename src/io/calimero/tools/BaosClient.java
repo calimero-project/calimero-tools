@@ -183,7 +183,7 @@ public class BaosClient implements Runnable
 	 *
 	 * @param args command line options for BAOS communication
 	 */
-	public static void main(final String[] args)
+	public static void main(final String... args)
 	{
 		try {
 			final BaosClient baos = new BaosClient(args);
@@ -260,7 +260,7 @@ public class BaosClient implements Runnable
 	}
 
 	public static String manufacturer(final int mf) {
-		return DeviceInfo.manufacturer(mf);
+		return Main.manufacturer(mf);
 	}
 
 	protected void executeBaosCommand(final String cmd) throws KNXException, InterruptedException {

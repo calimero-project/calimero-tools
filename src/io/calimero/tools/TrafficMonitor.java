@@ -180,7 +180,7 @@ public class TrafficMonitor implements Runnable {
 	 *
 	 * @param args command line options for traffic monitoring
 	 */
-	public static void main(final String[] args) {
+	public static void main(final String... args) {
 		try {
 			final TrafficMonitor pc = new TrafficMonitor(args);
 			final ShutdownHandler sh = new Main.ShutdownHandler().register();

@@ -209,7 +209,7 @@ public class Discover implements Runnable
 	 *
 	 * @param args command line options for discovery or self-description
 	 */
-	public static void main(final String[] args)
+	public static void main(final String... args)
 	{
 		try {
 			final Discover d = new Discover(args);

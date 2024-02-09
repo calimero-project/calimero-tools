@@ -159,7 +159,7 @@ public class PropClient implements Runnable
 	 *
 	 * @param args command line options for property client
 	 */
-	public static void main(final String[] args)
+	public static void main(final String... args)
 	{
 		Property.out = LogService.getLogger("io.calimero.tools");
 		try {

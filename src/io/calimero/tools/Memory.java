@@ -141,7 +141,7 @@ public class Memory implements Runnable {
 	 *
 	 * @param args command line options for running the device info tool
 	 */
-	public static void main(final String[] args) {
+	public static void main(final String... args) {
 		try {
 			final Memory d = new Memory(args);
 			final ShutdownHandler sh = new ShutdownHandler().register();

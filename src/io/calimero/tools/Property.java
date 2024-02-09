@@ -210,7 +210,7 @@ public class Property implements Runnable
 	 *
 	 * @param args command line options for the property tool
 	 */
-	public static void main(final String[] args)
+	public static void main(final String... args)
 	{
 		try {
 			new Property(args).run();
@@ -327,7 +327,7 @@ public class Property implements Runnable
 	}
 
 	private void notifyDescription(final Description d) {
-		objIndexToType.put(d.getObjectIndex(), d.getObjectType());
+		objIndexToType.put(d.objectIndex(), d.objectType());
 		onDescription(d);
 	}
 
@@ -342,44 +342,44 @@ public class Property implements Runnable
 	 */
 	protected void onDescription(final Description d)
 	{
-		PropertyClient.Property p = getPropertyDef(d.getObjectType(), d.getPID());
+		PropertyClient.Property p = getPropertyDef(d.objectType(), d.pid());
 		if (p == null)
-			p = getPropertyDef(PropertyKey.GLOBAL_OBJTYPE, d.getPID());
+			p = getPropertyDef(PropertyKey.GLOBAL_OBJTYPE, d.pid());
 
-		final int pdtDefault = p != null ? p.getPDT() : -1;
-		final int pdt = d.getPDT() == -1 ? pdtDefault : d.getPDT();
+		final int pdtDefault = p != null ? p.pdt() : -1;
+		final int pdt = d.pdt() == -1 ? pdtDefault : d.pdt();
 
 		if (options.containsKey("json")) {
-			final var name = p != null ? p.getName() : null;
-			final var pidName = p != null ? p.getPIDName() : null;
-			final var json = new JsonDescription(d.getObjectIndex(), d.getObjectType(), d.objectInstance(), d.getPID(),
-					d.getPropIndex(), name, pidName, d.getMaxElements(), d.getCurrentElements(), pdt,
-					d.dpt().orElse(null), d.getReadLevel(), d.getWriteLevel(), d.isWriteEnabled());
+			final var name = p != null ? p.propertyName() : null;
+			final var pidName = p != null ? p.pidName() : null;
+			final var json = new JsonDescription(d.objectIndex(), d.objectType(), d.objectInstance(), d.pid(),
+					d.propIndex(), name, pidName, d.maxElements(), d.currentElements(), pdt,
+					d.dpt().orElse(null), d.readLevel(), d.writeLevel(), d.writeEnabled());
 			System.out.println(json.toJson());
 			return;
 		}
 
 		final StringBuilder buf = new StringBuilder();
-		buf.append("OI ").append(alignRight(d.getObjectIndex(), 2));
-		buf.append(", PI ").append(alignRight(d.getPropIndex(), 2)).append(" |");
-		buf.append(" OT ").append(alignRight(d.getObjectType(), 3));
-		buf.append(", PID ").append(alignRight(d.getPID(), 3));
+		buf.append("OI ").append(alignRight(d.objectIndex(), 2));
+		buf.append(", PI ").append(alignRight(d.propIndex(), 2)).append(" |");
+		buf.append(" OT ").append(alignRight(d.objectType(), 3));
+		buf.append(", PID ").append(alignRight(d.pid(), 3));
 		buf.append(" | ");
 		if (p != null) {
-			buf.append(p.getName());
+			buf.append(p.propertyName());
 			while (buf.length() < 65)
 				buf.append(' ');
 			buf.append(" (");
-			buf.append(p.getPIDName());
+			buf.append(p.pidName());
 			buf.append(")");
 		}
 		else
 			buf.append(new String(new char[33]).replace('\0', ' ')).append("(n/a)");
 		buf.append(", PDT " + (pdt == -1 ? "-" : pdt));
-		buf.append(", curr. elems " + d.getCurrentElements());
-		buf.append(", max. " + d.getMaxElements());
-		buf.append(", r/w access " + d.getReadLevel() + "/" + d.getWriteLevel());
-		buf.append(d.isWriteEnabled() ? ", w.enabled" : ", r.only");
+		buf.append(", curr. elems " + d.currentElements());
+		buf.append(", max. " + d.maxElements());
+		buf.append(", r/w access " + d.readLevel() + "/" + d.writeLevel());
+		buf.append(d.writeEnabled() ? ", w.enabled" : ", r.only");
 		System.out.println(buf);
 	}
 
@@ -632,13 +632,13 @@ public class Property implements Runnable
 				// if we're reading association table content, figure out table format size before
 				if (objType == 2 && pid == PID.TABLE) {
 					final var desc = pc.getDescription(oi, PID.TABLE);
-					final int pdt = desc.getPDT();
+					final int pdt = desc.pdt();
 					associationTableFormat1 = pdt == PropertyTypes.PDT_GENERIC_04;
 				}
 				// if we're reading group object table content, figure out GO descriptor size before
 				if (objType == 9 && pid == PID.TABLE) {
 					final var desc = pc.getDescription(oi, PID.TABLE);
-					final int pdt = desc.getPDT();
+					final int pdt = desc.pdt();
 					switch (pdt) {
 					case PropertyTypes.PDT_GENERIC_02:
 						groupDescriptorSize = 2;
@@ -891,7 +891,7 @@ public class Property implements Runnable
 		customFormatter.put(key(PID.PROGRAM_VERSION), Property::programVersion);
 		customFormatter.put(key(PID.OBJECT_NAME), Property::string);
 		customFormatter.put(key(PID.MANUFACTURER_ID),
-				data -> DeviceInfo.manufacturer((data[0] & 0xff) << 8 | data[1] & 0xff));
+				data -> Main.manufacturer((data[0] & 0xff) << 8 | data[1] & 0xff));
 		customFormatter.put(key(PID.LOAD_STATE_CONTROL), Property::loadState);
 		customFormatter.put(key(PID.VERSION), Property::version);
 		customFormatter.put(key(1, PID.TABLE), Property::groupAddresses);
@@ -1153,7 +1153,7 @@ public class Property implements Runnable
 		if (data.length != 5)
 			return HexFormat.of().formatHex(data);
 		final int mfr = (data[0] & 0xff) << 8 | data[1] & 0xff;
-		return String.format("%s %02x%02x v%d.%d", DeviceInfo.manufacturer(mfr), data[2], data[3],
+		return String.format("%s %02x%02x v%d.%d", Main.manufacturer(mfr), data[2], data[3],
 				(data[4] & 0xff) >> 4, data[4] & 0xf);
 	}
 
