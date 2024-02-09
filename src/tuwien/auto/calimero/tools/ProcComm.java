@@ -262,7 +262,7 @@ public class ProcComm implements Runnable
 	 *
 	 * @param args command line options for process communication
 	 */
-	public static void main(final String[] args)
+	public static void main(final String... args)
 	{
 		try {
 			final ProcComm pc = new ProcComm(args);

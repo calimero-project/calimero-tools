@@ -166,7 +166,7 @@ final class Main
 	 *
 	 * @param args the first argument being the tool to invoke, followed by the command line options of that tool
 	 */
-	public static void main(final String[] args)
+	public static void main(final String... args)
 	{
 		if (args.length == 1 && (args[0].equals("-v") || args[0].equals("--version"))) {
 			System.out.println(Settings.getLibraryHeader(false));

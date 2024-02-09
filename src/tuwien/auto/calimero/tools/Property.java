@@ -211,7 +211,7 @@ public class Property implements Runnable
 	 *
 	 * @param args command line options for the property tool
 	 */
-	public static void main(final String[] args)
+	public static void main(final String... args)
 	{
 		try {
 			new Property(args).run();
