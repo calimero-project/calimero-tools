@@ -426,6 +426,7 @@ final class Main
 	}
 
 	static KNXNetworkLink newLink(final Map<String, Object> options) throws KNXException, InterruptedException {
+		@SuppressWarnings("resource")
 		final var link = new Connector().reconnectOn(false, true, true).reconnectDelay(Duration.ofSeconds(4))
 				.newLink(() -> createNewLink(options));
 		link.addLinkListener(new NetworkLinkListener() {
