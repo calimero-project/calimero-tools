@@ -532,13 +532,7 @@ public class Discover implements Runnable
 	{
 		final SearchResponse sr = r.response();
 		final HPAI hpai = sr.getControlEndpoint();
-
-		final InetSocketAddress server;
-		// check NAT with unicast response
-		if (hpai.getAddress().isAnyLocalAddress() || hpai.getPort() == 0)
-			server = r.remoteEndpoint();
-		else
-			server = new InetSocketAddress(hpai.getAddress(), hpai.getPort());
+		final InetSocketAddress server = hpai.nat() ? r.remoteEndpoint() : hpai.endpoint();
 
 		try {
 			if (tcp != null) {
