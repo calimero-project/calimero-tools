@@ -546,7 +546,7 @@ public class Discover implements Runnable
 			if (tcp != null) {
 				try {
 					final var description = tcp.description();
-					onDescriptionReceived(description, new HPAI(hpai.getHostProtocol(), server));
+					onDescriptionReceived(description, new HPAI(hpai.hostProtocol(), server));
 				}
 				catch (final InterruptedException e) {
 					Thread.currentThread().interrupt();
@@ -558,7 +558,7 @@ public class Discover implements Runnable
 					: new Discoverer(r.localEndpoint().getAddress(), 0, options.containsKey("nat"), false);
 			final int timeout = 2;
 			final Result<DescriptionResponse> dr = discoverer.getDescription(server, timeout);
-			onDescriptionReceived(dr, new HPAI(hpai.getHostProtocol(), server));
+			onDescriptionReceived(dr, new HPAI(hpai.hostProtocol(), server));
 		}
 		catch (final KNXException e) {
 			System.out.println("description failed for server " + server + " using " + r.localEndpoint().getAddress()
