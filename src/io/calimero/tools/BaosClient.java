@@ -76,7 +76,6 @@ import io.calimero.KNXException;
 import io.calimero.KNXFormatException;
 import io.calimero.KNXIllegalArgumentException;
 import io.calimero.KNXTimeoutException;
-import io.calimero.KnxRuntimeException;
 import io.calimero.baos.BaosLink;
 import io.calimero.baos.BaosLinkAdapter;
 import io.calimero.baos.BaosService;
@@ -451,7 +450,7 @@ public class BaosClient implements Runnable
 			case SetValue, SetValueAndSendOnBus -> {
 				final DPTXlator xlator;
 				if (isDpt(args[1])) {
-					final var dptId = fromDptName(args[1]);
+					final var dptId = Main.fromDptName(args[1]);
 					xlator = TranslatorTypes.createTranslator(dptId);
 					dpIdToDpt.put(dpId, xlator.getType());
 					xlator.setValue(args[2]);
@@ -504,28 +503,6 @@ public class BaosClient implements Runnable
 			case 2 -> "active";
 			case 3 -> "active available";
 			default -> state + " (unknown)";
-		};
-	}
-
-	private static String fromDptName(final String id) {
-		return switch (id) {
-			case "switch" -> "1.001";
-			case "bool" -> "1.002";
-			case "dimmer" -> "3.007";
-			case "blinds" -> "3.008";
-			case "string" -> "16.001";
-			case "temp" -> "9.001";
-			case "float", "float2" -> "9.002";
-			case "float4" -> "14.005";
-			case "ucount" -> "5.010";
-			case "int" -> "13.001";
-			case "angle" -> "5.003";
-			case "percent", "%" -> "5.001";
-			default -> {
-				if (!"-".equals(id) && !Character.isDigit(id.charAt(0)))
-					throw new KnxRuntimeException("unrecognized DPT '" + id + "'");
-				yield id;
-			}
 		};
 	}
 
@@ -654,7 +631,7 @@ public class BaosClient implements Runnable
 	private static boolean isDpt(final String s) {
 		if (s.startsWith("-"))
 			return false;
-		final var id = fromDptName(s);
+		final var id = Main.fromDptName(s);
 		final var regex = "[0-9][0-9]*\\.[0-9][0-9][0-9]";
 		return Pattern.matches(regex, id);
 	}

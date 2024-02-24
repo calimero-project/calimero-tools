@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2019, 2023 B. Malinowsky
+    Copyright (c) 2019, 2024 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -65,7 +65,6 @@ import io.calimero.KNXAddress;
 import io.calimero.KNXException;
 import io.calimero.KNXFormatException;
 import io.calimero.KNXIllegalArgumentException;
-import io.calimero.KnxRuntimeException;
 import io.calimero.SerialNumber;
 import io.calimero.cemi.CEMILData;
 import io.calimero.cemi.CEMILDataEx;
@@ -267,40 +266,6 @@ public class TrafficMonitor implements Runnable {
 		return t.getValue();
 	}
 
-	private static String fromDptName(final String id) {
-		if ("switch".equals(id))
-			return "1.001";
-		if ("bool".equals(id))
-			return "1.002";
-		if ("dimmer".equals(id))
-			return "3.007";
-		if ("blinds".equals(id))
-			return "3.008";
-		if ("string".equals(id))
-			return "16.001";
-		if ("temp".equals(id))
-			return "9.001";
-		if ("float".equals(id))
-			return "9.002";
-		if ("float2".equals(id))
-			return "9.002";
-		if ("float4".equals(id))
-			return "14.005";
-		if ("ucount".equals(id))
-			return "5.010";
-		if ("int".equals(id))
-			return "13.001";
-		if ("angle".equals(id))
-			return "5.003";
-		if ("percent".equals(id))
-			return "5.001";
-		if ("%".equals(id))
-			return "5.001";
-		if (!"-".equals(id) && !Character.isDigit(id.charAt(0)))
-			throw new KnxRuntimeException("unrecognized DPT '" + id + "'");
-		return id;
-	}
-
 	private void onFrameEvent(final FrameEvent e) {
 		final var joiner = new StringJoiner(" ");
 		final var frame = e.getFrame();
@@ -397,7 +362,7 @@ public class TrafficMonitor implements Runnable {
 				try {
 					try {
 						final var ga = new GroupAddress(cmd);
-						final var dpt = fromDptName(s[1]);
+						final var dpt = Main.fromDptName(s[1]);
 						final var dp = new StateDP(ga, "tmp", 0, dpt);
 						datapoints.remove(dp);
 						datapoints.add(dp);

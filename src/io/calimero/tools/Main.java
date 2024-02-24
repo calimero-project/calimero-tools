@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2010, 2023 B. Malinowsky
+    Copyright (c) 2010, 2024 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -74,6 +74,7 @@ import io.calimero.IndividualAddress;
 import io.calimero.KNXException;
 import io.calimero.KNXFormatException;
 import io.calimero.KNXIllegalArgumentException;
+import io.calimero.KnxRuntimeException;
 import io.calimero.Settings;
 import io.calimero.knxnetip.KNXnetIPConnection;
 import io.calimero.knxnetip.SecureConnection;
@@ -696,6 +697,29 @@ final class Main
 			throw new KNXIllegalArgumentException("wrong KNX key length, requires 16 bytes (32 hex chars)");
 		return HexFormat.of().parseHex(hex);
 	}
+
+	static String fromDptName(final String id) {
+		return switch (id) {
+			case "switch" -> "1.001";
+			case "bool" -> "1.002";
+			case "dimmer" -> "3.007";
+			case "blinds" -> "3.008";
+			case "string" -> "16.001";
+			case "temp" -> "9.001";
+			case "float", "float2" -> "9.002";
+			case "float4" -> "14.005";
+			case "ucount" -> "5.010";
+			case "int" -> "13.001";
+			case "angle" -> "5.003";
+			case "percent", "%" -> "5.001";
+			default -> {
+				if (!"-".equals(id) && !Character.isDigit(id.charAt(0)))
+					throw new KnxRuntimeException("unrecognized DPT '" + id + "'");
+				yield id;
+			}
+		};
+	}
+
 
 	static final class ShutdownHandler extends Thread
 	{
