@@ -71,7 +71,6 @@ import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.KNXTimeoutException;
-import tuwien.auto.calimero.KnxRuntimeException;
 import tuwien.auto.calimero.LteHeeTag;
 import tuwien.auto.calimero.Priority;
 import tuwien.auto.calimero.SerialNumber;
@@ -409,7 +408,7 @@ public class ProcComm implements Runnable
 				StateDP dp;
 
 				final GroupAddress ga = new GroupAddress(addr);
-				dp = new StateDP(ga, "tmp", 0, withDpt ? fromDptName(s[2]) : null);
+				dp = new StateDP(ga, "tmp", 0, withDpt ? Main.fromDptName(s[2]) : null);
 				if (withDpt && !s[2].equals("-")) {
 					datapoints.remove(dp);
 					datapoints.add(dp);
@@ -528,46 +527,11 @@ public class ProcComm implements Runnable
 		final var datapoint = datapoints.get(group);
 		if (dpt == null)
 			return datapoint != null ? datapoint.getDPT() : null;
-		final var id = fromDptName(dpt);
+		final var id = Main.fromDptName(dpt);
 		if (datapoint != null)
 			datapoint.setDPT(0, id);
 		else
 			datapoints.add(new StateDP(group, "", 0, id));
-		return id;
-	}
-
-	private static String fromDptName(final String id)
-	{
-		if ("switch".equals(id))
-			return "1.001";
-		if ("bool".equals(id))
-			return "1.002";
-		if ("dimmer".equals(id))
-			return "3.007";
-		if ("blinds".equals(id))
-			return "3.008";
-		if ("string".equals(id))
-			return "16.001";
-		if ("temp".equals(id))
-			return "9.001";
-		if ("float".equals(id))
-			return "9.002";
-		if ("float2".equals(id))
-			return "9.002";
-		if ("float4".equals(id))
-			return "14.005";
-		if ("ucount".equals(id))
-			return "5.010";
-		if ("int".equals(id))
-			return "13.001";
-		if ("angle".equals(id))
-			return "5.003";
-		if ("percent".equals(id))
-			return "5.001";
-		if ("%".equals(id))
-			return "5.001";
-		if (!"-".equals(id) && !Character.isDigit(id.charAt(0)))
-			throw new KnxRuntimeException("unrecognized DPT '" + id + "'");
 		return id;
 	}
 
@@ -1031,7 +995,7 @@ public class ProcComm implements Runnable
 	private static boolean isDpt(final String s) {
 		if (s.startsWith("-"))
 			return false;
-		final var id = fromDptName(s);
+		final var id = Main.fromDptName(s);
 		final var regex = "[0-9][0-9]*\\.[0-9][0-9][0-9]";
 		return Pattern.matches(regex, id);
 	}
