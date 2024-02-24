@@ -304,9 +304,6 @@ final class Main
 		final boolean lo = arg.startsWith("--") && arg.regionMatches(2, longOpt, 0, arg.length() - 2);
 		final boolean so = shortOpt != null && arg.startsWith("-")
 				&& arg.regionMatches(1, shortOpt, 0, arg.length() - 1);
-		// notify about change of prefix for long options
-		if (arg.equals("-" + longOpt))
-			throw new KNXIllegalArgumentException("use --" + longOpt);
 		return lo || so;
 	}
 
