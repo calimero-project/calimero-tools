@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2021, 2023 B. Malinowsky
+    Copyright (c) 2021, 2024 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -57,9 +57,9 @@ import io.calimero.knxnetip.KNXnetIPConnection;
 import io.calimero.link.KNXNetworkLink;
 import io.calimero.link.medium.TPSettings;
 import io.calimero.log.LogService;
-import io.calimero.mgmt.Destination;
 import io.calimero.mgmt.ManagementClient;
-import io.calimero.mgmt.RemotePropertyServiceAdapter;
+import io.calimero.mgmt.ManagementProcedures;
+import io.calimero.mgmt.ManagementProceduresImpl;
 import io.calimero.tools.Main.ShutdownHandler;
 
 /**
@@ -79,8 +79,7 @@ public class Memory implements Runnable {
 
 	private static final Logger out = LogService.getLogger("io.calimero.tools");
 
-	private ManagementClient mc;
-	private Destination dst;
+	private ManagementProcedures mp;
 
 	private final Map<String, Object> options = new HashMap<>();
 
@@ -170,13 +169,9 @@ public class Memory implements Runnable {
 				return;
 			}
 
-			final IndividualAddress device = (IndividualAddress) options.get("device");
 			// setup for reading device info of remote device
-			try (KNXNetworkLink link = Main.newLink(options);
-					var adapter = new RemotePropertyServiceAdapter(link, device, e -> {}, true)) {
-				mc = adapter.managementClient();
-				dst = adapter.destination();
-
+			try (KNXNetworkLink link = Main.newLink(options)) {
+				mp = new ManagementProceduresImpl(link);
 				readWriteMemory();
 			}
 		}
@@ -190,6 +185,23 @@ public class Memory implements Runnable {
 		finally {
 			onCompletion(thrown, canceled);
 		}
+	}
+
+	public sealed interface Command {}
+	public record Read(int startAddress, int length) implements Command {}
+	public record Write(int startAddress, byte... data) implements Command {}
+	private record Done() implements Command {}
+	public static final Command Done = new Done();
+
+	protected Command fetchCommand() {
+		if (options.remove("read") instanceof final Integer startAddr)
+			return new Read(startAddr, (int) options.get("bytes"));
+		if (options.remove("write") instanceof final Integer startAddr) {
+			final String s = (String) options.get("data");
+			final byte[] data = options.containsKey("dec") ? new BigInteger(s).toByteArray() : DataUnitBuilder.fromHex(s);
+			return new Write(startAddr, data);
+		}
+		return Done;
 	}
 
 	/**
@@ -224,26 +236,21 @@ public class Memory implements Runnable {
 	}
 
 	private void readWriteMemory() throws KNXException, InterruptedException {
-		final boolean read = options.containsKey("read");
-		if (read) {
-			final int startAddr = (Integer) options.get("read");
-			final int bytes = (Integer) options.get("bytes");
-			out.log(DEBUG, "read {0} 0x{1}..0x{2}", dst.getAddress(), Long.toHexString(startAddr),
-					Long.toHexString(startAddr + bytes - 1));
-			final byte[] data = mc.readMemory(dst, startAddr, bytes);
-			onMemoryRead(data);
-		}
-		else {
-			final int startAddr = (Integer) options.get("write");
-			final String input = (String) options.get("data");
-			final byte[] data;
-			if (options.containsKey("dec"))
-				data = new BigInteger(input).toByteArray();
-			else
-				data = DataUnitBuilder.fromHex(input);
-			out.log(DEBUG, "write to {0} 0x{1}..0x{2}: {3}", dst.getAddress(), Long.toHexString(startAddr),
-					Long.toHexString(startAddr + data.length - 1), HexFormat.ofDelimiter(" ").formatHex(data));
-			mc.writeMemory(dst, startAddr, data);
+		final IndividualAddress device = (IndividualAddress) options.get("device");
+		for (var cmd = fetchCommand(); cmd != Done; cmd = fetchCommand()) {
+			if (cmd instanceof final Read read) {
+				out.log(DEBUG, "read {0} 0x{1}..0x{2}", device, Long.toHexString(read.startAddress()),
+						Long.toHexString(read.startAddress() + read.length() - 1));
+				onMemoryRead(mp.readMemory(device, read.startAddress(), read.length()));
+			}
+			else {
+				final var write = (Write) cmd;
+				final int startAddr = write.startAddress();
+				final byte[] data = write.data();
+				out.log(DEBUG, "write to {0} 0x{1}..0x{2}: {3}", device, Long.toHexString(startAddr),
+						Long.toHexString(startAddr + data.length - 1), HexFormat.ofDelimiter(" ").formatHex(data));
+				mp.writeMemory(device, startAddr, data, false, false);
+			}
 		}
 	}
 
@@ -302,8 +309,6 @@ public class Memory implements Runnable {
 		if (options.containsKey("usb") && !options.containsKey("host"))
 			options.put("host", "");
 
-		if (options.containsKey("read") == options.containsKey("write"))
-			throw new KNXIllegalArgumentException("specify either read or write");
 		if (!options.containsKey("host") || (options.containsKey("ft12") && options.containsKey("usb")))
 			throw new KNXIllegalArgumentException("specify either IP host, serial port, or device");
 		if (!options.containsKey("device"))
