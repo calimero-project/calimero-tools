@@ -37,6 +37,7 @@
 package io.calimero.tools;
 
 import static io.calimero.tools.Main.setDomainAddress;
+import static java.lang.System.Logger.Level.DEBUG;
 import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.INFO;
 
@@ -49,6 +50,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
@@ -65,7 +67,9 @@ import io.calimero.KNXAddress;
 import io.calimero.KNXException;
 import io.calimero.KNXFormatException;
 import io.calimero.KNXIllegalArgumentException;
+import io.calimero.Priority;
 import io.calimero.SerialNumber;
+import io.calimero.cemi.CEMI;
 import io.calimero.cemi.CEMILData;
 import io.calimero.cemi.CEMILDataEx;
 import io.calimero.datapoint.Datapoint;
@@ -267,9 +271,14 @@ public class TrafficMonitor implements Runnable {
 	}
 
 	private void onFrameEvent(final FrameEvent e) {
-		final var joiner = new StringJoiner(" ");
 		final var frame = e.getFrame();
 
+		if (options.containsKey("json")) {
+			System.out.println(toJson(frame));
+			return;
+		}
+
+		final var joiner = new StringJoiner(" ");
 		if (frame instanceof final CEMILData ldata) {
 			final var dst = ldata.getDestination();
 			final var payload = frame.getPayload();
@@ -319,6 +328,57 @@ public class TrafficMonitor implements Runnable {
 			joiner.add(frame.toString());
 		}
 		outTimestamped(joiner.toString());
+	}
+
+	private static String toJson(final CEMI frame) {
+		if (frame instanceof final CEMILData ldata) {
+			final var payload = frame.getPayload();
+			String tpci = "";
+			String apci = "";
+			byte[] asdu = null;
+			if (payload.length > 1) {
+				tpci = DataUnitBuilder.decodeTPCI(DataUnitBuilder.getTPDUService(payload), ldata.getDestination());
+				apci = DataUnitBuilder.decodeAPCI(DataUnitBuilder.getAPDUService(payload));
+				asdu = DataUnitBuilder.extractASDU(payload);
+			}
+			final boolean extended = ldata instanceof CEMILDataEx;
+
+			// ??? add boolean lengthOptimizedApdu, String decodedAsdu
+			record JsonRawFrame(String svc, boolean extended, IndividualAddress src, KNXAddress dst,
+					boolean repetition, int hopCount, Priority priority, boolean ack, boolean sysBcast, boolean con,
+					String tpci, String apci, byte[] asdu) implements Json {}
+			record JsonTrafficEvent(Instant time, JsonRawFrame frame) implements Json {}
+
+			final var json = new JsonRawFrame(svcPrimitive(ldata.getMessageCode()), extended,
+					ldata.getSource(), ldata.getDestination(), ldata.isRepetition(), ldata.getHopCount(), ldata.getPriority(),
+					ldata.isAckRequested(), ldata.isSystemBroadcast(), ldata.isPositiveConfirmation(), tpci, apci,
+					asdu);
+			final var jsonTraffic = new JsonTrafficEvent(Instant.now(), json);
+			return jsonTraffic.toJson();
+		}
+		else { // we shouldn't receive CEMIBusMon, CEMIDevMgmt, or CemiTData here
+			out.log(DEBUG, "unsupported cEMI frame format " + frame);
+			return null;
+		}
+	}
+
+	static String svcPrimitive(final int msgCode) {
+		return switch (msgCode) {
+			case 0x2B -> "L_Busmon.ind";
+			case 0x11 -> "L_Data.req";
+			case 0x2E -> "L_Data.con";
+			case 0x29 -> "L_Data.ind";
+			case 0x10 -> "L_Raw.req";
+			case 0x2D -> "L_Raw.ind";
+			case 0x2F -> "L_Raw.con";
+			case 0x13 -> "L_Poll_Data.req";
+			case 0x25 -> "L_Poll_Data.con";
+			case 0x41 -> "T_Data_Connected.req";
+			case 0x89 -> "T_Data_Connected.ind";
+			case 0x4A -> "T_Data_Individual.req";
+			case 0x94 -> "T_Data_Individual.ind";
+			default -> "0x" + Integer.toHexString(msgCode);
+		};
 	}
 
 	private static String decodeLteFrame(final int extFormat, final KNXAddress dst, final byte[] asdu)

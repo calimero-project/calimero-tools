@@ -209,7 +209,12 @@ public class Memory implements Runnable {
 	 *
 	 * @param data memory data
 	 */
-	protected void onMemoryRead(final byte[] data) {
+	protected void onMemoryRead(final int address, final byte[] data) {
+		if (options.containsKey("json")) {
+			record JsonMemory(String startAddress, int length, byte[] data) implements Json {}
+			out(new JsonMemory(Integer.toHexString(address), data.length, data).toJson());
+			return;
+		}
 		out(data);
 	}
 
@@ -241,7 +246,7 @@ public class Memory implements Runnable {
 			if (cmd instanceof final Read read) {
 				out.log(DEBUG, "read {0} 0x{1}..0x{2}", device, Long.toHexString(read.startAddress()),
 						Long.toHexString(read.startAddress() + read.length() - 1));
-				onMemoryRead(mp.readMemory(device, read.startAddress(), read.length()));
+				onMemoryRead(read.startAddress(), mp.readMemory(device, read.startAddress(), read.length()));
 			}
 			else {
 				final var write = (Write) cmd;
