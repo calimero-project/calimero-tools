@@ -37,6 +37,7 @@
 package tuwien.auto.calimero.tools;
 
 import static java.util.Map.entry;
+import static tuwien.auto.calimero.tools.Main.isOption;
 import static tuwien.auto.calimero.tools.Main.setDomainAddress;
 
 import java.io.BufferedReader;
@@ -46,6 +47,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -428,18 +430,36 @@ public class ProcComm implements Runnable
 	 */
 	protected void onGroupEvent(final ProcessEvent e)
 	{
+		final int svcCode = e.getServiceCode();
 		final byte[] asdu = e.getASDU();
+
+		if (options.containsKey("json")) {
+			record JsonGroupEvent(Instant time, IndividualAddress src, GroupAddress dst, int svcCode, String svc,
+					boolean lengthOptimizedApdu, byte[] asdu, String decodedAsdu) implements Json {}
+			final var json = new JsonGroupEvent(Instant.now(), e.getSourceAddr(), e.getDestination(), svcCode,
+					DataUnitBuilder.decodeAPCI(svcCode), e.isLengthOptimizedAPDU(), asdu,
+					decodeAsdu(e, asdu, new StringBuilder()).toString());
+			System.out.println(json.toJson());
+			return;
+		}
 		final StringBuilder sb = new StringBuilder();
 		sb.append(e.getSourceAddr()).append("->");
 		if (!options.containsKey("lte"))
 			sb.append(e.getDestination());
 		if (!options.containsKey("compact")) {
-			sb.append(" ").append(DataUnitBuilder.decodeAPCI(e.getServiceCode())).append(" ");
+			sb.append(" ").append(DataUnitBuilder.decodeAPCI(svcCode)).append(" ");
 			HexFormat.ofDelimiter(" ").formatHex(sb, asdu);
 		}
 		if (asdu.length > 0) {
+			sb.append(options.containsKey("compact") ? " " : ": ");
+			decodeAsdu(e, asdu, sb);
+		}
+		System.out.println(LocalTime.now().truncatedTo(ChronoUnit.MILLIS) + " " + sb);
+	}
+
+	private StringBuilder decodeAsdu(final ProcessEvent e, final byte[] asdu, final StringBuilder sb) {
+		if (asdu.length > 0) {
 			try {
-				sb.append(options.containsKey("compact") ? " " : ": ");
 				if ((e.getServiceCode() & 0b1111111100) == 0b1111101000) {
 					// group property service
 					sb.append(decodeLteFrame((LteProcessEvent) e));
@@ -457,7 +477,7 @@ public class ProcComm implements Runnable
 				out.info("error parsing group event {}", sb, ex);
 			}
 		}
-		System.out.println(LocalTime.now().truncatedTo(ChronoUnit.MILLIS) + " " + sb);
+		return sb;
 	}
 
 	/**
@@ -857,7 +877,7 @@ public class ProcComm implements Runnable
 
 		for (final var i = new Main.PeekingIterator<>(List.of(args).iterator()); i.hasNext();) {
 			final String arg = i.next();
-			if (Main.isOption(arg, "help", "h")) {
+			if (isOption(arg, "help", "h")) {
 				options.put("about", (Runnable) ProcComm::showUsage);
 				return;
 			}
@@ -865,9 +885,9 @@ public class ProcComm implements Runnable
 				;
 			else if (Main.parseSecureOption(arg, i, options))
 				;
-			else if (Main.isOption(arg, "compact", "c"))
+			else if (isOption(arg, "compact", "c"))
 				options.put("compact", null);
-			else if (lte || Main.isOption(arg, "lte", null)) {
+			else if (lte || isOption(arg, "lte", null)) {
 				lte = false;
 				options.put("lte", null);
 				if (options.containsKey("tag")) {
@@ -937,13 +957,13 @@ public class ProcComm implements Runnable
 			}
 			else if (arg.equals("monitor"))
 				options.put("monitor", null);
-			else if (Main.isOption(arg, "sn", null))
+			else if (isOption(arg, "sn", null))
 				options.put("sn", SerialNumber.of(Long.decode(i.next())));
-			else if (Main.isOption(arg, "knx-address", "k"))
+			else if (isOption(arg, "knx-address", "k"))
 				options.put("knx-address", Main.getAddress(i.next()));
-			else if (Main.isOption(arg, "timeout", "t"))
+			else if (isOption(arg, "timeout", "t"))
 				options.put("timeout", Duration.ofSeconds(Integer.decode(i.next())));
-			else if (Main.isOption(arg, "datapoints", null))
+			else if (isOption(arg, "datapoints", null))
 				options.put("datapoints", i.next());
 			else if (!options.containsKey("host"))
 				options.put("host", arg);

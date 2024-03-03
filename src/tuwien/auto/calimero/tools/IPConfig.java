@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.StringJoiner;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 
@@ -96,6 +97,7 @@ public class IPConfig implements Runnable
 	private int objIndex = -1;
 
 	private final Map<String, Object> options = new HashMap<>();
+
 
 	/**
 	 * Creates a new IPConfig instance using the supplied options.
@@ -257,6 +259,10 @@ public class IPConfig implements Runnable
 	 */
 	protected void onConfigurationReceived(final List<String[]> config)
 	{
+		if (options.containsKey("json")) {
+			System.out.println(toJson(config));
+			return;
+		}
 		final StringBuilder sb = new StringBuilder();
 		sb.append("KNX IP device ").append(config.get(0)[2]).append(" ")
 				.append(config.get(1)[2]).append(sep);
@@ -283,6 +289,16 @@ public class IPConfig implements Runnable
 			out.info("configuration canceled");
 		if (thrown != null)
 			out.error("completed", thrown);
+	}
+
+	private String toJson(final List<String[]> config) {
+		final var device = options.containsKey("remote") ? options.get("remote") : options.get("host");
+		// convert String[2] entries into key/value pairs and put them in a map
+		final var map = config.stream().collect(Collectors.toMap(sa -> sa[1], sa -> sa[2]));
+
+		record JsonIpConfig(String device, Map<String, String> ipConfig) implements Json {}
+		final var jsonIpConfig = new JsonIpConfig(device.toString(), map);
+		return jsonIpConfig.toJson();
 	}
 
 	private void setIPAssignment() throws KNXException, InterruptedException

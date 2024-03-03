@@ -214,6 +214,8 @@ public class ScanDevices implements Runnable
 		return Main.newLink(options);
 	}
 
+	private record JsonDevice(String range, IndividualAddress device, DeviceDescriptor.DD0 dd0) implements Json {}
+
 	/**
 	 * Called on receiving a device response during the scan.
 	 *
@@ -223,13 +225,19 @@ public class ScanDevices implements Runnable
 	{
 		if (options.containsKey("requireDD0"))
 			return;
-		System.out.println(device);
+		if (options.containsKey("json"))
+			out(new JsonDevice((String) options.get("range"), device, null).toJson());
+		else
+			out(device);
 	}
 
 	protected void onDeviceFound(final IndividualAddress device, final DeviceDescriptor.DD0 dd0) {
 		if (!options.containsKey("requireDD0"))
 			return;
-		System.out.println(device + " (DD0 " + dd0 + (")"));
+		if (options.containsKey("json"))
+			out(new JsonDevice((String) options.get("range"), device, dd0).toJson());
+		else
+			out(device + " (DD0 " + dd0 + (")"));
 	}
 
 	/**
@@ -308,7 +316,7 @@ public class ScanDevices implements Runnable
 		out(joiner.toString());
 	}
 
-	private static void out(final String s)
+	private static void out(final Object s)
 	{
 		System.out.println(s);
 	}

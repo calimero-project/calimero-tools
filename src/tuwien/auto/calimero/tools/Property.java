@@ -330,6 +330,10 @@ public class Property implements Runnable
 		onDescription(d);
 	}
 
+	private record JsonDescription(int objIndex, int objType, int objInstance, int pid, int propIndex, String name,
+	                               String pidName, int maxElems, int currElems, int pdt, String dpt, int readLevel,
+	                               int writeLevel, boolean writeEnabled) implements Json {}
+
 	/**
 	 * Invoked on receiving a property description.
 	 *
@@ -337,15 +341,29 @@ public class Property implements Runnable
 	 */
 	protected void onDescription(final Description d)
 	{
+		PropertyClient.Property p = getPropertyDef(d.objectType(), d.pid());
+		if (p == null)
+			p = getPropertyDef(PropertyKey.GLOBAL_OBJTYPE, d.pid());
+
+		final int pdtDefault = p != null ? p.pdt() : -1;
+		final int pdt = d.pdt() == -1 ? pdtDefault : d.pdt();
+
+		if (options.containsKey("json")) {
+			final var name = p != null ? p.propertyName() : null;
+			final var pidName = p != null ? p.pidName() : null;
+			final var json = new JsonDescription(d.objectIndex(), d.objectType(), d.objectInstance(), d.pid(),
+					d.propIndex(), name, pidName, d.maxElements(), d.currentElements(), pdt,
+					d.dpt().orElse(null), d.readLevel(), d.writeLevel(), d.writeEnabled());
+			System.out.println(json.toJson());
+			return;
+		}
+
 		final StringBuilder buf = new StringBuilder();
 		buf.append("OI ").append(alignRight(d.objectIndex(), 2));
 		buf.append(", PI ").append(alignRight(d.propIndex(), 2)).append(" |");
 		buf.append(" OT ").append(alignRight(d.objectType(), 3));
 		buf.append(", PID ").append(alignRight(d.pid(), 3));
 		buf.append(" | ");
-		PropertyClient.Property p = getPropertyDef(d.objectType(), d.pid());
-		if (p == null)
-			p = getPropertyDef(PropertyKey.GLOBAL_OBJTYPE, d.pid());
 		if (p != null) {
 			buf.append(p.propertyName());
 			while (buf.length() < 65)
@@ -356,8 +374,7 @@ public class Property implements Runnable
 		}
 		else
 			buf.append(new String(new char[33]).replace('\0', ' ')).append("(n/a)");
-		final String pdtDef = p != null ? Integer.toString(p.pdt()) : "-";
-		buf.append(", PDT ").append(d.pdt() == -1 ? pdtDef : Integer.toString(d.pdt()));
+		buf.append(", PDT ").append(pdt == -1 ? "-" : pdt);
 		buf.append(", curr. elems ").append(d.currentElements());
 		buf.append(", max. ").append(d.maxElements());
 		buf.append(", r/w access ").append(d.readLevel()).append("/").append(d.writeLevel());
@@ -375,8 +392,19 @@ public class Property implements Runnable
 	 */
 	protected void onPropertyValue(final int idx, final int pid, final String value, final List<byte[]> raw)
 	{
-		final String rawValue = raw.stream().map(HexFormat.of()::formatHex).collect(joining(delimiter, " (", ")"));
-		System.out.println(value + rawValue);
+		if (options.containsKey("json"))
+			System.out.println(toJson(idx, pid, value, raw));
+		else {
+			final String rawValue = raw.stream().map(HexFormat.of()::formatHex).collect(joining(delimiter, " (", ")"));
+			System.out.println(value + rawValue);
+		}
+	}
+
+	private static String toJson(final int idx, final int pid, final String value, final List<byte[]> raw) {
+		record JsonProperty(int index, int pid, String value, List<byte[]> data) implements Json {}
+
+		final var json = new JsonProperty(idx, pid, value, raw);
+		return json.toJson();
 	}
 
 	/**

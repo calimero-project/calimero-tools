@@ -36,12 +36,15 @@
 
 package tuwien.auto.calimero.tools;
 
+import static tuwien.auto.calimero.tools.Main.isOption;
+
 import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
+import java.net.UnknownHostException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -59,10 +62,12 @@ import java.util.concurrent.TimeoutException;
 
 import org.slf4j.Logger;
 
+import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.KNXTimeoutException;
 import tuwien.auto.calimero.KnxRuntimeException;
+import tuwien.auto.calimero.SerialNumber;
 import tuwien.auto.calimero.knxnetip.Discoverer;
 import tuwien.auto.calimero.knxnetip.Discoverer.Result;
 import tuwien.auto.calimero.knxnetip.DiscovererTcp;
@@ -251,6 +256,21 @@ public class Discover implements Runnable
 		}
 	}
 
+	private record JsonResult(String netif, InetSocketAddress localEndpoint, InetSocketAddress remoteEndpoint,
+			Json response) implements Json {}
+
+	private record JsonDeviceInfo(String name, IndividualAddress address, String macAddress, String multicast,
+			SerialNumber sn, String knxMedium, boolean programmingMode, int installationId, int projectId) implements Json {}
+
+	private record JsonDescriptionResponse(JsonDeviceInfo device, Map<ServiceFamily, Integer> svcFamilies, Collection<DIB> dibs)
+			implements Json {
+		JsonDescriptionResponse {
+			dibs = dibs.stream().filter(
+					dib -> dib.getDescTypeCode() != DIB.DEVICE_INFO && dib.getDescTypeCode() != DIB.SUPP_SVC_FAMILIES)
+					.toList();
+		}
+	}
+
 	/**
 	 * Invoked by this tool immediately after receiving a search response.
 	 * <p>
@@ -261,9 +281,13 @@ public class Discover implements Runnable
 	 */
 	protected void onEndpointReceived(final Result<SearchResponse> result)
 	{
-		final SearchResponse sr = result.response();
-		System.out.println(formatResponse(result, sr.getControlEndpoint(), sr.getDevice(), sr.getServiceFamilies(),
-				sr.description()));
+		if (options.containsKey("json"))
+			System.out.println(endpointToJson(result));
+		else {
+			final SearchResponse sr = result.response();
+			System.out.println(formatResponse(result, sr.getControlEndpoint(), sr.getDevice(), sr.getServiceFamilies(),
+					sr.description()));
+		}
 	}
 
 	/**
@@ -275,7 +299,46 @@ public class Discover implements Runnable
 	 */
 	protected void onDescriptionReceived(final Result<DescriptionResponse> result)
 	{
-		onDescriptionReceived(result, null);
+		if (options.containsKey("json"))
+			descriptionToJson(result);
+		else
+			onDescriptionReceived(result, null);
+	}
+
+	private static String endpointToJson(final Result<SearchResponse> result) {
+		final SearchResponse sr = result.response();
+		final var jsonDesc = new JsonDescriptionResponse(toJson(sr.getDevice()), sr.getServiceFamilies().families(),
+				sr.description());
+
+		record JsonSearchResponse(boolean v2, InetSocketAddress ctrlEndpoint, JsonDescriptionResponse description)
+				implements Json {}
+		final var jsonResponse = new JsonSearchResponse(sr.v2(), sr.getControlEndpoint().endpoint(), jsonDesc);
+		return toJson(result, jsonResponse);
+	}
+
+	private static void descriptionToJson(final Result<DescriptionResponse> result) {
+		final var dr = result.response();
+		final var jsonDesc = new JsonDescriptionResponse(toJson(dr.getDevice()), dr.getServiceFamilies().families(),
+				dr.getDescription());
+		System.out.println(toJson(result, jsonDesc));
+	}
+
+	private static String toJson(final Result<?> result, final Json response) {
+		final var jsonResult = new JsonResult(result.networkInterface().getName(), result.localEndpoint(),
+				result.remoteEndpoint(), response);
+		return jsonResult.toJson();
+	}
+
+	private static JsonDeviceInfo toJson(final DeviceDIB device) {
+		String mcast = "";
+		try {
+			mcast = InetAddress.getByAddress(device.getMulticastAddress()).getHostAddress();
+		}
+		catch (final UnknownHostException ignore) {}
+		final boolean progMode = (device.getDeviceStatus() & 0x01) != 0;
+		return new JsonDeviceInfo(device.getName(), device.getAddress(), device.getMACAddressString(),
+				mcast, device.serialNumber(), device.getKNXMediumString(), progMode, device.getInstallation(),
+				device.getProject());
 	}
 
 	private static void onDescriptionReceived(final Result<DescriptionResponse> result, final HPAI hpai)
@@ -581,11 +644,11 @@ public class Discover implements Runnable
 
 		for (final var i = List.of(args).iterator(); i.hasNext();) {
 			final String arg = i.next();
-			if (Main.isOption(arg, "help", "h")) {
+			if (isOption(arg, "help", "h")) {
 				options.put("help", null);
 				return;
 			}
-			if (Main.isOption(arg, "version", null)) {
+			if (isOption(arg, "version", null)) {
 				options.put("version", null);
 				return;
 			}
@@ -594,43 +657,45 @@ public class Discover implements Runnable
 				if (options.containsKey("group-key"))
 					throw new KNXIllegalArgumentException("secure multicast is not specified for search & description");
 			}
-			else if (Main.isOption(arg, "localport", null))
+			else if (isOption(arg, "localport", null))
 				options.put("localport", Integer.decode(i.next()));
-			else if (Main.isOption(arg, "nat", "n"))
+			else if (isOption(arg, "nat", "n"))
 				options.put("nat", null);
-			else if (Main.isOption(arg, "netif", "i"))
+			else if (isOption(arg, "netif", "i"))
 				options.put("if", getNetworkIF(i.next()));
-			else if (Main.isOption(arg, "timeout", "t")) {
+			else if (isOption(arg, "timeout", "t")) {
 				final var timeout = Duration.ofSeconds(Long.parseLong(i.next()));
 				// a value of 0 means infinite timeout
 				if (timeout.toMillis() > 0)
 					options.put("timeout", timeout);
 			}
-			else if (Main.isOption(arg, "tcp", null))
+			else if (isOption(arg, "tcp", null))
 				options.put("tcp", null);
-			else if (Main.isOption(arg, "udp", null))
+			else if (isOption(arg, "udp", null))
 				options.put("udp", null);
 			else if ("search".equals(arg))
 				options.put("search", null);
-			else if (Main.isOption(arg, "unicast", "u"))
+			else if (isOption(arg, "unicast", "u"))
 				options.put("mcastResponse", Boolean.FALSE);
-			else if (Main.isOption(arg, "withDescription", null))
+			else if (isOption(arg, "withDescription", null))
 				options.put("withDescription", Boolean.FALSE);
 			else if (arg.equals("sd")) {
 				options.put("search", null);
 				options.put("withDescription", null);
 			}
-			else if (Main.isOption(arg, "progmode", null))
+			else if (isOption(arg, "progmode", null))
 				searchParameters.add(Srp.withProgrammingMode());
-			else if (Main.isOption(arg, "mac", null))
+			else if (isOption(arg, "mac", null))
 				searchParameters.add(Srp.withMacAddress(fromHex(i.next())));
 			else if ("describe".equals(arg)) {
 				if (!i.hasNext())
 					throw new KNXIllegalArgumentException("specify remote host");
 				options.put("describe", null);
 			}
-			else if (Main.isOption(arg, "serverport", "p"))
+			else if (isOption(arg, "serverport", "p"))
 				options.put("serverport", Integer.decode(i.next()));
+			else if (isOption(arg, "json", null))
+				options.put("json", null);
 			else if (options.containsKey("search") || options.containsKey("describe"))
 				options.put("host", Main.parseHost(arg));
 			else

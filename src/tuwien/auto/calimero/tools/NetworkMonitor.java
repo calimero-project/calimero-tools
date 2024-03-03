@@ -39,6 +39,7 @@ package tuwien.auto.calimero.tools;
 import static tuwien.auto.calimero.tools.Main.tcpConnection;
 
 import java.net.InetSocketAddress;
+import java.time.Instant;
 import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.HexFormat;
@@ -52,12 +53,15 @@ import tuwien.auto.calimero.CloseEvent;
 import tuwien.auto.calimero.DataUnitBuilder;
 import tuwien.auto.calimero.FrameEvent;
 import tuwien.auto.calimero.GroupAddress;
+import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.KNXAddress;
 import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.LteHeeTag;
+import tuwien.auto.calimero.Priority;
 import tuwien.auto.calimero.cemi.CEMIBusMon;
+import tuwien.auto.calimero.cemi.RFMediumInfo.RSS;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.link.KNXNetworkMonitor;
 import tuwien.auto.calimero.link.KNXNetworkMonitorFT12;
@@ -69,8 +73,10 @@ import tuwien.auto.calimero.link.MonitorFrameEvent;
 import tuwien.auto.calimero.link.medium.KNXMediumSettings;
 import tuwien.auto.calimero.link.medium.RFLData;
 import tuwien.auto.calimero.link.medium.RFLData.Tpci;
+import tuwien.auto.calimero.link.medium.RawAckBase;
 import tuwien.auto.calimero.link.medium.RawFrame;
 import tuwien.auto.calimero.link.medium.RawFrameBase;
+import tuwien.auto.calimero.link.medium.TP1Ack;
 import tuwien.auto.calimero.link.medium.TPSettings;
 import tuwien.auto.calimero.log.LogService;
 
@@ -288,8 +294,18 @@ public class NetworkMonitor implements Runnable
 	 */
 	protected void onIndication(final FrameEvent e)
 	{
-		final StringBuilder sb = new StringBuilder();
 		final CEMIBusMon frame = (CEMIBusMon) e.getFrame();
+		// since we specified decoding of raw frames during monitor initialization,
+		// we can get the decoded raw frame here
+		// but note, that on decoding error null is returned
+		final RawFrame raw = ((MonitorFrameEvent) e).getRawFrame();
+
+		if (options.containsKey("json")) {
+			System.out.println(toJson(raw, frame));
+			return;
+		}
+
+		final StringBuilder sb = new StringBuilder();
 		final boolean compact = options.containsKey("compact");
 		if (compact) {
 			sb.append("Seq ").append(frame.getSequenceNumber());
@@ -297,10 +313,6 @@ public class NetworkMonitor implements Runnable
 		else
 			sb.append(frame);
 
-		// since we specified decoding of raw frames during monitor initialization,
-		// we can get the decoded raw frame here
-		// but note, that on decoding error null is returned
-		final RawFrame raw = ((MonitorFrameEvent) e).getRawFrame();
 		if (raw != null) {
 			sb.append(compact ? " " : " = ");
 			sb.append(raw);
@@ -326,6 +338,88 @@ public class NetworkMonitor implements Runnable
 			}
 		}
 		System.out.println(LocalTime.now() + " " + sb);
+	}
+
+	private static String toJson(final RawFrame raw, final CEMIBusMon frame) {
+		Json jsonRaw = null;
+		if (raw != null) {
+			if (raw instanceof final RawFrameBase f) {
+				final byte[] tpdu = f.getTPDU();
+				final String tpci = DataUnitBuilder.decodeTPCI(DataUnitBuilder.getTPDUService(tpdu), f.getDestination());
+				final String apci = DataUnitBuilder.decodeAPCI(DataUnitBuilder.getAPDUService(tpdu));
+				final byte[] asdu = DataUnitBuilder.extractASDU(tpdu);
+
+				record JsonRawFrame(String svc, boolean extended, IndividualAddress src, KNXAddress dst,
+						boolean repetition, int hopCount, Priority priority, String tpci, String apci, byte[] asdu,
+						int checksum) implements Json {}
+				jsonRaw = new JsonRawFrame(frameFormat(f.getFrameType()), f.extended(), f.getSource(), f.getDestination(),
+						f.isRepetition(), f.getHopcount(), f.getPriority(), tpci, apci, asdu, f.getChecksum());
+			}
+			else if (raw instanceof final RawAckBase ack) {
+				record JsonRawAck(String svc, String ackType) implements Json {}
+				jsonRaw = new JsonRawAck(frameFormat(ack.getFrameType()), ackType(ack.getAckType()));
+			}
+			else if (raw instanceof final RFLData rf) {
+				final byte[] tpdu = rf.getTpdu();
+				final String tpci = DataUnitBuilder.decodeTPCI(DataUnitBuilder.getTPDUService(tpdu), rf.getDestination());
+				final String apci = DataUnitBuilder.decodeAPCI(DataUnitBuilder.getAPDUService(tpdu));
+				final byte[] asdu = DataUnitBuilder.extractASDU(tpdu);
+				final byte[] doa = rf.isSystemBroadcast() ? null : rf.getDoAorSN();
+				final byte[] sn = rf.isSystemBroadcast() ? rf.getDoAorSN() : null;
+
+				record JsonRfLData(String svc, IndividualAddress src, KNXAddress dst, int frameNumber,
+						boolean systemBroadcast, RSS rss, boolean batteryOk, boolean txOnlyDevice, byte[] doa,
+						byte[] sn, String tpci, String apci, byte[] asdu, int checksum) implements Json {}
+				jsonRaw = new JsonRfLData(frameFormatRf(rf.getFrameType()), rf.getSource(), rf.getDestination(), rf.getFrameNumber(),
+						rf.isSystemBroadcast(), rf.getRss(), rf.isBatteryOk(), rf.isTransmitOnlyDevice(), doa, sn,
+						tpci, apci, asdu, 0);
+			}
+			else {
+				out.info("unsupported frame type " + raw);
+			}
+		}
+
+		record JsonMonitorIndication(Instant time, String svc, long relativeTimestamp, int seqNumber, boolean frameError,
+				boolean bitError, boolean parityError, boolean lost, byte[] data, Json rawFrame) implements Json {}
+		final var json = new JsonMonitorIndication(Instant.now(), TrafficMonitor.svcPrimitive(frame.getMessageCode()), frame.getTimestamp(), frame.getSequenceNumber(),
+				frame.getFrameError(), frame.getBitError(), frame.getParityError(), frame.getLost(), frame.getPayload(),
+				jsonRaw);
+		return json.toJson();
+	}
+
+	private static String frameFormat(final int format) {
+		return switch (format) {
+			case RawFrame.LDATA_FRAME -> "L-Data";
+			case RawFrame.LPOLLDATA_FRAME -> "L-PollData";
+			case RawFrame.ACK_FRAME -> "Ack";
+			default -> "" + format;
+		};
+	}
+
+	private static String frameFormatRf(final int format) {
+		final String lte = (format & 0x0c) == 0x04 ? "LTE " : "";
+		return lte + switch (format) {
+			case 0 -> "L-Data (async)";
+			case 1 -> "Fast Ack";
+			case 4 -> "L-Data (sync)";
+			case 5 -> "BiBat Sync";
+			case 6 -> "BiBat Help Call";
+			case 7 -> "BiBat Help Call Res";
+			case 8 -> "RF Multi L-Data (async)";
+			case 9 -> "RF Multi L-Data (async, Ack.req)";
+			case 10 -> "RF Multi Repeater Ack";
+			default -> "" + format;
+		};
+	}
+
+	private static String ackType(final int ackType) {
+		return switch (ackType) {
+			case RawAckBase.ACK -> "ACK";
+			case RawAckBase.NAK -> "NAK";
+			case TP1Ack.BUSY -> "BUSY";
+			case TP1Ack.NAK_BUSY -> "NAK_BUSY";
+			default -> "" + ackType;
+		};
 	}
 
 	/**
