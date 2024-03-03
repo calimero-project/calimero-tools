@@ -401,7 +401,8 @@ final class Main
 				  --tpuart                   use TP-UART communication
 				  --medium -m <id>           KNX medium [tp1|p110|knxip|rf] (default tp1)
 				  --domain <address>         domain address on KNX PL/RF medium (defaults to broadcast domain)
-				  --knx-address -k <addr>    KNX device address of local endpoint"""
+				  --knx-address -k <addr>    KNX device address of local endpoint
+				  --json                     show JSON-formatted output"""
 				.formatted(KNXnetIPConnection.DEFAULT_PORT);
 	}
 
