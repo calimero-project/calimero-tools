@@ -200,8 +200,8 @@ public class Memory implements Runnable {
 	 */
 	protected void onMemoryRead(final int address, final byte[] data) {
 		if (options.containsKey("json")) {
-			record JsonMemory(int address, byte[] data) implements Json {}
-			out(new JsonMemory(address, data).toJson());
+			record JsonMemory(String startAddress, int length, byte[] data) implements Json {}
+			out(new JsonMemory(Integer.toHexString(address), data.length, data).toJson());
 			return;
 		}
 		out(data);

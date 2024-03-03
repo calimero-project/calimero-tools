@@ -331,7 +331,7 @@ public class Property implements Runnable
 		onDescription(d);
 	}
 
-	private record JsonDescription(int objIndex, int objType, int objectInstance, int pid, int propIndex, String name,
+	private record JsonDescription(int objIndex, int objType, int objInstance, int pid, int propIndex, String name,
 	                               String pidName, int maxElems, int currElems, int pdt, String dpt, int readLevel,
 	                               int writeLevel, boolean writeEnabled) implements Json {}
 
@@ -383,8 +383,6 @@ public class Property implements Runnable
 		System.out.println(buf);
 	}
 
-	private record JsonProperty(int index, int pid, String value, List<byte[]> raw) implements Json {}
-
 	/**
 	 * Invoked on receiving a property value.
 	 *
@@ -395,13 +393,19 @@ public class Property implements Runnable
 	 */
 	protected void onPropertyValue(final int idx, final int pid, final String value, final List<byte[]> raw)
 	{
-		if (options.containsKey("json")) {
-			final var json = new JsonProperty(idx, pid, value, raw);
-			System.out.println(json.toJson());
-			return;
+		if (options.containsKey("json"))
+			System.out.println(toJson(idx, pid, value, raw));
+		else {
+			final String rawValue = raw.stream().map(HexFormat.of()::formatHex).collect(joining(delimiter, " (", ")"));
+			System.out.println(value + rawValue);
 		}
-		final String rawValue = raw.stream().map(HexFormat.of()::formatHex).collect(joining(delimiter, " (", ")"));
-		System.out.println(value + rawValue);
+	}
+
+	private static String toJson(final int idx, final int pid, final String value, final List<byte[]> raw) {
+		record JsonProperty(int index, int pid, String value, List<byte[]> data) implements Json {}
+
+		final var json = new JsonProperty(idx, pid, value, raw);
+		return json.toJson();
 	}
 
 	/**

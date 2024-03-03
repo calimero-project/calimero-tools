@@ -216,7 +216,7 @@ public class ScanDevices implements Runnable
 		return Main.newLink(options);
 	}
 
-	private record JsonDevices(String range, IndividualAddress device, DeviceDescriptor.DD0 dd0) implements Json {}
+	private record JsonDevice(String range, IndividualAddress device, DeviceDescriptor.DD0 dd0) implements Json {}
 
 	/**
 	 * Called on receiving a device response during the scan.
@@ -228,7 +228,7 @@ public class ScanDevices implements Runnable
 		if (options.containsKey("requireDD0"))
 			return;
 		if (options.containsKey("json"))
-			out(new JsonDevices((String) options.get("range"), device, null).toJson());
+			out(new JsonDevice((String) options.get("range"), device, null).toJson());
 		else
 			out(device);
 	}
@@ -237,7 +237,7 @@ public class ScanDevices implements Runnable
 		if (!options.containsKey("requireDD0"))
 			return;
 		if (options.containsKey("json"))
-			out(new JsonDevices((String) options.get("range"), device, dd0).toJson());
+			out(new JsonDevice((String) options.get("range"), device, dd0).toJson());
 		else
 			out(device + " (DD0 " + dd0 + (")"));
 	}

@@ -99,8 +99,6 @@ public class IPConfig implements Runnable
 
 	private final Map<String, Object> options = new HashMap<>();
 
-	private record JsonIpConfig(String remoteEndpoint, IndividualAddress device, Map<String, String> ipConfig)
-			implements Json {}
 
 	/**
 	 * Creates a new IPConfig instance using the supplied options.
@@ -263,11 +261,7 @@ public class IPConfig implements Runnable
 	protected void onConfigurationReceived(final List<String[]> config)
 	{
 		if (options.containsKey("json")) {
-			// convert String[2] entries into key/value pairs and put them in a map
-			final var map = config.stream().collect(Collectors.toMap(sa -> sa[1], sa -> sa[2]));
-			final var jsonIpConfig = new JsonIpConfig((String) options.get("host"), (IndividualAddress) options.get("remote"),
-					map);
-			System.out.println(jsonIpConfig.toJson());
+			System.out.println(toJson(config));
 			return;
 		}
 		final StringBuilder sb = new StringBuilder();
@@ -296,6 +290,16 @@ public class IPConfig implements Runnable
 			out.log(INFO, "configuration canceled");
 		if (thrown != null)
 			out.log(ERROR, "completed", thrown);
+	}
+
+	private String toJson(final List<String[]> config) {
+		final var device = options.containsKey("remote") ? options.get("remote") : options.get("host");
+		// convert String[2] entries into key/value pairs and put them in a map
+		final var map = config.stream().collect(Collectors.toMap(sa -> sa[1], sa -> sa[2]));
+
+		record JsonIpConfig(String device, Map<String, String> ipConfig) implements Json {}
+		final var jsonIpConfig = new JsonIpConfig(device.toString(), map);
+		return jsonIpConfig.toJson();
 	}
 
 	private void setIPAssignment() throws KNXException, InterruptedException

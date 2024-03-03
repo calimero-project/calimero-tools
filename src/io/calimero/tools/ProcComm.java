@@ -426,9 +426,6 @@ public class ProcComm implements Runnable
 		}
 	}
 
-	private record JsonGroupEvent(Instant time, IndividualAddress src, GroupAddress dst, int svcCode, String svc,
-	                      boolean lengthOptimizedApdu, byte[] asdu, String decodedAsdu) implements Json {}
-
 	/**
 	 * Called by this tool on receiving a process communication group event.
 	 *
@@ -440,6 +437,8 @@ public class ProcComm implements Runnable
 		final byte[] asdu = e.getASDU();
 
 		if (options.containsKey("json")) {
+			record JsonGroupEvent(Instant time, IndividualAddress src, GroupAddress dst, int svcCode, String svc,
+					boolean lengthOptimizedApdu, byte[] asdu, String decodedAsdu) implements Json {}
 			final var json = new JsonGroupEvent(Instant.now(), e.getSourceAddr(), e.getDestination(), svcCode,
 					DataUnitBuilder.decodeAPCI(svcCode), e.isLengthOptimizedAPDU(), asdu,
 					decodeAsdu(e, asdu, new StringBuilder()).toString());

@@ -280,8 +280,8 @@ public class DeviceInfo implements Runnable
 	private final Set<String> categories = new HashSet<>();
 	private String category = "General";
 
-	private record JsonResult(String host, IndividualAddress device, Collection<JsonItem> info) implements Json {}
-	private record JsonItem(String category, Parameter parameter, String value, byte[] raw) implements Json {}
+	private record JsonResult(String device, Collection<JsonItem> info) implements Json {}
+	private record JsonItem(String category, Parameter parameter, String value, byte[] data) implements Json {}
 
 	private final JsonResult jsonResult;
 
@@ -300,9 +300,10 @@ public class DeviceInfo implements Runnable
 		// read in user-supplied command line options
 		try {
 			parseOptions(args);
-			if (options.containsKey("json"))
-				jsonResult = new JsonResult((String) options.get("host"), (IndividualAddress) options.get("device"),
-						new ArrayList<>());
+			if (options.containsKey("json")) {
+				final var dev = options.containsKey("device") ? options.get("device") : options.get("host");
+				jsonResult = new JsonResult(dev.toString(), new ArrayList<>());
+			}
 			else
 				jsonResult = null;
 		}

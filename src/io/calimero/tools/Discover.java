@@ -47,6 +47,7 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
+import java.net.UnknownHostException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -62,10 +63,12 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
+import io.calimero.IndividualAddress;
 import io.calimero.KNXException;
 import io.calimero.KNXIllegalArgumentException;
 import io.calimero.KNXTimeoutException;
 import io.calimero.KnxRuntimeException;
+import io.calimero.SerialNumber;
 import io.calimero.knxnetip.Discoverer;
 import io.calimero.knxnetip.Discoverer.Result;
 import io.calimero.knxnetip.DiscovererTcp;
@@ -258,9 +261,12 @@ public class Discover implements Runnable
 	}
 
 	private record JsonResult(String netif, InetSocketAddress localEndpoint, InetSocketAddress remoteEndpoint,
-	                          Json response) implements Json {}
+			Json response) implements Json {}
 
-	private record JsonDescriptionResponse(DeviceDIB device, Map<ServiceFamily, Integer> svcFamilies, Collection<DIB> dibs)
+	private record JsonDeviceInfo(String name, IndividualAddress address, String macAddress, String multicast,
+			SerialNumber sn, String knxMedium, boolean programmingMode, int installationId, int projectId) implements Json {}
+
+	private record JsonDescriptionResponse(JsonDeviceInfo device, Map<ServiceFamily, Integer> svcFamilies, Collection<DIB> dibs)
 			implements Json {
 		JsonDescriptionResponse {
 			dibs = dibs.stream().filter(
@@ -279,21 +285,13 @@ public class Discover implements Runnable
 	 */
 	protected void onEndpointReceived(final Result<SearchResponse> result)
 	{
-		final SearchResponse sr = result.response();
-		if (options.containsKey("json")) {
-			final var jsonDesc = new JsonDescriptionResponse(sr.getDevice(), sr.getServiceFamilies().families(),
-					sr.description());
-
-			record JsonSearchResponse(boolean v2, HPAI ctrlEndpoint, JsonDescriptionResponse description) implements Json {}
-			final var jsonResponse = new JsonSearchResponse(sr.v2(), sr.getControlEndpoint(), jsonDesc);
-
-			final var jsonResult = new JsonResult(result.networkInterface().getName(), result.localEndpoint(),
-					result.remoteEndpoint(), jsonResponse);
-			System.out.println(jsonResult.toJson());
-		}
-		else
+		if (options.containsKey("json"))
+			System.out.println(endpointToJson(result));
+		else {
+			final SearchResponse sr = result.response();
 			System.out.println(formatResponse(result, sr.getControlEndpoint(), sr.getDevice(), sr.getServiceFamilies(),
 					sr.description()));
+		}
 	}
 
 	/**
@@ -305,17 +303,46 @@ public class Discover implements Runnable
 	 */
 	protected void onDescriptionReceived(final Result<DescriptionResponse> result)
 	{
-		if (options.containsKey("json")) {
-			final var dr = result.response();
-			final var jsonDesc = new JsonDescriptionResponse(dr.getDevice(), dr.getServiceFamilies().families(),
-					dr.getDescription());
-			final var jsonResult = new JsonResult(result.networkInterface().getName(), result.localEndpoint(),
-					result.remoteEndpoint(), jsonDesc);
-			System.out.println(jsonResult.toJson());
-			return;
-		}
+		if (options.containsKey("json"))
+			descriptionToJson(result);
+		else
+			onDescriptionReceived(result, null);
+	}
 
-		onDescriptionReceived(result, null);
+	private static String endpointToJson(final Result<SearchResponse> result) {
+		final SearchResponse sr = result.response();
+		final var jsonDesc = new JsonDescriptionResponse(toJson(sr.getDevice()), sr.getServiceFamilies().families(),
+				sr.description());
+
+		record JsonSearchResponse(boolean v2, InetSocketAddress ctrlEndpoint, JsonDescriptionResponse description)
+				implements Json {}
+		final var jsonResponse = new JsonSearchResponse(sr.v2(), sr.getControlEndpoint().endpoint(), jsonDesc);
+		return toJson(result, jsonResponse);
+	}
+
+	private static void descriptionToJson(final Result<DescriptionResponse> result) {
+		final var dr = result.response();
+		final var jsonDesc = new JsonDescriptionResponse(toJson(dr.getDevice()), dr.getServiceFamilies().families(),
+				dr.getDescription());
+		System.out.println(toJson(result, jsonDesc));
+	}
+
+	private static String toJson(final Result<?> result, final Json response) {
+		final var jsonResult = new JsonResult(result.networkInterface().getName(), result.localEndpoint(),
+				result.remoteEndpoint(), response);
+		return jsonResult.toJson();
+	}
+
+	private static JsonDeviceInfo toJson(final DeviceDIB device) {
+		String mcast = "";
+		try {
+			mcast = InetAddress.getByAddress(device.getMulticastAddress()).getHostAddress();
+		}
+		catch (final UnknownHostException ignore) {}
+		final boolean progMode = (device.getDeviceStatus() & 0x01) != 0;
+		return new JsonDeviceInfo(device.getName(), device.getAddress(), device.getMACAddressString(),
+				mcast, device.serialNumber(), device.getKNXMediumString(), progMode, device.getInstallation(),
+				device.getProject());
 	}
 
 	private static void onDescriptionReceived(final Result<DescriptionResponse> result, final HPAI hpai)

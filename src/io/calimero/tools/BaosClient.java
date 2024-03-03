@@ -274,10 +274,7 @@ public class BaosClient implements Runnable
 	 */
 	protected void onBaosEvent(final BaosService svc) {
 		if (options.containsKey("json")) {
-			// TODO extract items into more json keys
-			record JsonBaosService(Instant time, BaosService svc, int subService, boolean response,
-			                       BaosService.ErrorCode error, List<Item<?>> items) implements Json {}
-			out(new JsonBaosService(Instant.now(), svc, svc.subService(), svc.isResponse(), svc.error(), svc.items()).toJson());
+			System.out.println(toJson(svc));
 			return;
 		}
 		out(LocalTime.now().truncatedTo(ChronoUnit.MILLIS) + " " + svc);
@@ -309,6 +306,13 @@ public class BaosClient implements Runnable
 				Thread.currentThread().interrupt();
 			}
 		}
+	}
+
+	private static String toJson(final BaosService svc) {
+		// TODO extract items into more json keys
+		record JsonBaosService(Instant time, BaosService svc, int subSvc, boolean response,
+		                       ErrorCode error, List<Item<?>> items) implements Json {}
+		return new JsonBaosService(Instant.now(), svc, svc.subService(), svc.isResponse(), svc.error(), svc.items()).toJson();
 	}
 
 	/**
