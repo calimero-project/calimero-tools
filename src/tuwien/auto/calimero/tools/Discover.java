@@ -62,6 +62,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.slf4j.Logger;
 
+import tuwien.auto.calimero.DataUnitBuilder;
 import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
@@ -685,8 +686,8 @@ public class Discover implements Runnable
 			}
 			else if (isOption(arg, "progmode", null))
 				searchParameters.add(Srp.withProgrammingMode());
-			else if (isOption(arg, "mac", null))
-				searchParameters.add(Srp.withMacAddress(fromHex(i.next())));
+			else if (Main.isOption(arg, "mac", null))
+				searchParameters.add(Srp.withMacAddress(DataUnitBuilder.fromHex(i.next().replaceAll(":", ""))));
 			else if ("describe".equals(arg)) {
 				if (!i.hasNext())
 					throw new KNXIllegalArgumentException("specify remote host");
@@ -779,15 +780,5 @@ public class Discover implements Runnable
 	private static void out(final String s)
 	{
 		System.out.println(s);
-	}
-
-	private static byte[] fromHex(final String hex) {
-		final String s = hex.replaceAll(" |:", "");
-		final int len = s.length();
-
-		final byte[] data = new byte[len / 2];
-		for (int i = 0; i < len; i += 2)
-			data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4) + Character.digit(s.charAt(i + 1), 16));
-		return data;
 	}
 }
