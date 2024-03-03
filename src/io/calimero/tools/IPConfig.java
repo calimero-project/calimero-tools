@@ -278,7 +278,6 @@ public class IPConfig implements Runnable
 
 	/**
 	 * Called by this tool on completion.
-	 * <p>
 	 *
 	 * @param thrown the thrown exception if operation completed due to an raised exception,
 	 *        <code>null</code> otherwise

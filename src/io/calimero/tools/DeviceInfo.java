@@ -574,7 +574,7 @@ public class DeviceInfo implements Runnable
 			iterate(knxnetipObject, this::readKnxipInfo);
 		}
 		catch (InterruptedException | KNXException e) { throw e; }
-		catch (final Exception e) { e.printStackTrace(); }
+		catch (final Exception e) { out.log(WARNING, e); }
 
 		iterate(securityObject, this::readSecurityObject);
 	}
@@ -605,7 +605,7 @@ public class DeviceInfo implements Runnable
 				return;
 			}
 		}
-		catch (final KNXException e) {}
+		catch (final KNXException ignore) {}
 
 		// fall back and read memory location (remote device info only)
 		try {
@@ -668,7 +668,7 @@ public class DeviceInfo implements Runnable
 			final IndividualAddress ia = new IndividualAddress(profileAddr);
 			putResult(CommonParameter.DeviceAddress, "Additional profile address " + ia, ia.toByteArray());
 		}
-		catch (final Exception e) {}
+		catch (final Exception ignore) {}
 
 		// read device service control
 		try {
@@ -681,7 +681,7 @@ public class DeviceInfo implements Runnable
 					"Disabled services on EMI [Mgmt App TL-conn Switch TL-group Network Link User]: " + formatted,
 					services);
 		}
-		catch (final Exception e) {}
+		catch (final Exception ignore) {}
 
 		// RF domain address
 		// Device object RF domain address is mandatory if the cEMI server supports RF.
@@ -691,7 +691,7 @@ public class DeviceInfo implements Runnable
 			read(CommonParameter.DomainAddress, objectIdx, PID.RF_DOMAIN_ADDRESS,
 					bytes -> HexFormat.of().formatHex(bytes));
 		}
-		catch (final Exception e) {}
+		catch (final Exception ignore) {}
 
 		read(CommonParameter.SoftwareVersion, objectIdx, PID.VERSION, DeviceInfo::version);
 
@@ -723,7 +723,7 @@ public class DeviceInfo implements Runnable
 			final IndividualAddress ia = new IndividualAddress(addr);
 			putResult(CemiParameter.ClientAddress, "USB cEMI client address " + ia, ia.toByteArray());
 		}
-		catch (final Exception e) {}
+		catch (final Exception ignore) {}
 
 		// filtering modes
 		readSupportedFilteringModes(objectIndex, PID.FILTERING_MODE_SUPPORT);
@@ -737,7 +737,7 @@ public class DeviceInfo implements Runnable
 		try {
 			cEmiExtensionRfBiBat(objectIndex);
 		}
-		catch (final Exception e) {}
+		catch (final Exception ignore) {}
 
 		try {
 			final byte[] data = read(objectIndex, PID.RF_MODE_SELECT);
@@ -748,7 +748,7 @@ public class DeviceInfo implements Runnable
 			final String formatted = "BiBat slave " + slave + ", BiBat master " + master + ", async " + async;
 			putResult(CemiParameter.SelectedRfMode, formatted, selected);
 		}
-		catch (final Exception e) {}
+		catch (final Exception ignore) {}
 	}
 
 	//         		Supports/Disable filtering on:
@@ -769,7 +769,7 @@ public class DeviceInfo implements Runnable
 						+ ", own individual address " + ownIa;
 			});
 		}
-		catch (final Exception e) {}
+		catch (final Exception ignore) {}
 	}
 
 	// Check disabled frame filters in the device
@@ -788,7 +788,7 @@ public class DeviceInfo implements Runnable
 						+ ", repeated frames " + rep + ", own individual address " + ownIa;
 			});
 		}
-		catch (final Exception e) {}
+		catch (final Exception ignore) {}
 	}
 
 	private void cEmiExtensionRfBiBat(final int objectIndex) throws InterruptedException {
@@ -838,7 +838,7 @@ public class DeviceInfo implements Runnable
 			final int pidRfDomainAddress = 56;
 			read(RfParameter.DomainAddress, objectIndex, pidRfDomainAddress, doa -> "0x" + HexFormat.of().formatHex(doa));
 		}
-		catch (final Exception e) {}
+		catch (final Exception ignore) {}
 	}
 
 	// verbose info what the BCU is currently doing
@@ -1492,7 +1492,7 @@ public class DeviceInfo implements Runnable
 			if (data != null)
 				return InetAddress.getByAddress(data).getHostAddress();
 		}
-		catch (final UnknownHostException e) {}
+		catch (final UnknownHostException ignore) {}
 		return "n/a";
 	}
 
