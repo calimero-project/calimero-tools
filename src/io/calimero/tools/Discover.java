@@ -424,7 +424,7 @@ public class Discover implements Runnable
 			out.log(INFO, msg);
 		}
 		if (thrown != null)
-			out.log(ERROR, "completed", thrown);
+			out.log(ERROR, "completed with error", thrown);
 	}
 
 	/**

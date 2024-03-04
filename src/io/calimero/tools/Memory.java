@@ -228,7 +228,7 @@ public class Memory implements Runnable {
 		if (canceled)
 			out.log(INFO, "memory access canceled");
 		if (thrown != null)
-			out.log(ERROR, "completed", thrown);
+			out.log(ERROR, "completed with error", thrown);
 	}
 
 	private void out(final byte[] data) {

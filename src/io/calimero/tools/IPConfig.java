@@ -288,7 +288,7 @@ public class IPConfig implements Runnable
 		if (canceled)
 			out.log(INFO, "configuration canceled");
 		if (thrown != null)
-			out.log(ERROR, "completed", thrown);
+			out.log(ERROR, "completed with error", thrown);
 	}
 
 	private String toJson(final List<String[]> config) {

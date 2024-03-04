@@ -458,7 +458,7 @@ public class DeviceInfo implements Runnable
 		if (canceled)
 			out.log(INFO, "reading device info canceled");
 		if (thrown != null)
-			out.log(ERROR, "completed", thrown);
+			out.log(ERROR, "completed with error", thrown);
 	}
 
 	private void out(final Item item) {
