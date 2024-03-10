@@ -39,8 +39,10 @@ package tuwien.auto.calimero.tools;
 import static tuwien.auto.calimero.tools.Main.tcpConnection;
 
 import java.net.InetSocketAddress;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.List;
@@ -63,11 +65,13 @@ import tuwien.auto.calimero.Priority;
 import tuwien.auto.calimero.cemi.CEMIBusMon;
 import tuwien.auto.calimero.cemi.RFMediumInfo.RSS;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
+import tuwien.auto.calimero.link.Connector;
 import tuwien.auto.calimero.link.KNXNetworkMonitor;
 import tuwien.auto.calimero.link.KNXNetworkMonitorFT12;
 import tuwien.auto.calimero.link.KNXNetworkMonitorIP;
 import tuwien.auto.calimero.link.KNXNetworkMonitorTpuart;
 import tuwien.auto.calimero.link.KNXNetworkMonitorUsb;
+import tuwien.auto.calimero.link.LinkEvent;
 import tuwien.auto.calimero.link.LinkListener;
 import tuwien.auto.calimero.link.MonitorFrameEvent;
 import tuwien.auto.calimero.link.medium.KNXMediumSettings;
@@ -79,6 +83,7 @@ import tuwien.auto.calimero.link.medium.RawFrameBase;
 import tuwien.auto.calimero.link.medium.TP1Ack;
 import tuwien.auto.calimero.link.medium.TPSettings;
 import tuwien.auto.calimero.log.LogService;
+import tuwien.auto.calimero.serial.ConnectionStatus;
 
 /**
  * A tool for Calimero allowing monitoring of KNX network messages.
@@ -265,7 +270,7 @@ public class NetworkMonitor implements Runnable
 			return;
 		}
 
-		m = createMonitor();
+		m = newMonitor();
 
 		// on console we want to have all possible information, so enable
 		// decoding of a received raw frame by the monitor link
@@ -436,6 +441,19 @@ public class NetworkMonitor implements Runnable
 		if (thrown != null)
 			out.error(thrown.getMessage() != null ? thrown.getMessage() : thrown.getClass()
 					.getName());
+	}
+
+	private KNXNetworkMonitor newMonitor() throws KNXException, InterruptedException {
+		@SuppressWarnings("resource")
+		final var monitor = new Connector().reconnectOn(false, true, true).reconnectDelay(Duration.ofSeconds(4))
+				.maxConnectAttempts(3).newMonitor(() -> createMonitor());
+		monitor.addMonitorListener(new LinkListener() {
+			@LinkEvent
+			void connectionStatus(final ConnectionStatus status) {
+				System.out.println(LocalTime.now().truncatedTo(ChronoUnit.MILLIS) + " connection status KNX " + status);
+			}
+		});
+		return monitor;
 	}
 
 	/**
