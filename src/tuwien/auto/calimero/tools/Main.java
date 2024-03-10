@@ -354,6 +354,10 @@ final class Main
 			options.put("ft12-cemi", null);
 		else if (isOption(arg, "json", null))
 			options.put("json", null);
+		else if (isOption(arg, "reconnect-delay", null))
+			options.put("reconnectDelay", Duration.ofSeconds(Long.parseLong(i.next())));
+		else if (isOption(arg, "max-connect-attempts", null))
+			options.put("maxConnectAttempts", Long.parseLong(i.next()));
 		else
 			return false;
 		return true;
@@ -425,7 +429,9 @@ final class Main
 
 	static KNXNetworkLink newLink(final Map<String, Object> options) throws KNXException, InterruptedException {
 		@SuppressWarnings("resource")
-		final var link = new Connector().reconnectOn(false, true, true).reconnectDelay(Duration.ofSeconds(4))
+		final var link = new Connector().reconnectOn(false, true, true)
+				.reconnectDelay((Duration) options.getOrDefault("reconnectDelay", Duration.ofSeconds(4)))
+				.maxConnectAttempts((long) options.getOrDefault("maxConnectAttempts", 3L))
 				.newLink(() -> createNewLink(options));
 		link.addLinkListener(new NetworkLinkListener() {
 			@LinkEvent
