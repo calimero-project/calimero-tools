@@ -43,8 +43,10 @@ import static java.lang.System.Logger.Level.WARNING;
 
 import java.lang.System.Logger;
 import java.net.InetSocketAddress;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.List;
@@ -65,11 +67,13 @@ import io.calimero.Priority;
 import io.calimero.cemi.CEMIBusMon;
 import io.calimero.cemi.RFMediumInfo.RSS;
 import io.calimero.knxnetip.KNXnetIPConnection;
+import io.calimero.link.Connector;
 import io.calimero.link.KNXNetworkMonitor;
 import io.calimero.link.KNXNetworkMonitorFT12;
 import io.calimero.link.KNXNetworkMonitorIP;
 import io.calimero.link.KNXNetworkMonitorTpuart;
 import io.calimero.link.KNXNetworkMonitorUsb;
+import io.calimero.link.LinkEvent;
 import io.calimero.link.LinkListener;
 import io.calimero.link.MonitorFrameEvent;
 import io.calimero.link.medium.KNXMediumSettings;
@@ -81,6 +85,7 @@ import io.calimero.link.medium.RawFrameBase;
 import io.calimero.link.medium.TP1Ack;
 import io.calimero.link.medium.TPSettings;
 import io.calimero.log.LogService;
+import io.calimero.serial.ConnectionStatus;
 
 /**
  * A tool for Calimero allowing monitoring of KNX network messages.
@@ -267,7 +272,7 @@ public class NetworkMonitor implements Runnable
 			return;
 		}
 
-		m = createMonitor();
+		m = newMonitor();
 
 		// on console we want to have all possible information, so enable
 		// decoding of a received raw frame by the monitor link
@@ -437,6 +442,19 @@ public class NetworkMonitor implements Runnable
 			out.log(INFO, tool + " stopped");
 		if (thrown != null)
 			out.log(ERROR, thrown.getMessage() != null ? thrown.getMessage() : thrown.getClass().getName());
+	}
+
+	private KNXNetworkMonitor newMonitor() throws KNXException, InterruptedException {
+		@SuppressWarnings("resource")
+		final var monitor = new Connector().reconnectOn(false, true, true).reconnectDelay(Duration.ofSeconds(4))
+				.maxConnectAttempts(3).newMonitor(() -> createMonitor());
+		monitor.addMonitorListener(new LinkListener() {
+			@LinkEvent
+			void connectionStatus(final ConnectionStatus status) {
+				System.out.println(LocalTime.now().truncatedTo(ChronoUnit.MILLIS) + " connection status KNX " + status);
+			}
+		});
+		return monitor;
 	}
 
 	/**
