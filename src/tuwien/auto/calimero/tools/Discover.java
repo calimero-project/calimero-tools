@@ -423,7 +423,7 @@ public class Discover implements Runnable
 			out.info(msg);
 		}
 		if (thrown != null)
-			out.error("completed", thrown);
+			out.error("completed with error", thrown);
 	}
 
 	/**

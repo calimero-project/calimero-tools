@@ -251,7 +251,7 @@ public class ScanDevices implements Runnable
 		if (canceled)
 			out.info("scanning for devices canceled");
 		if (thrown != null)
-			out.error("completed", thrown);
+			out.error("completed with error", thrown);
 	}
 
 	/**
