@@ -433,7 +433,7 @@ final class Main
 		@SuppressWarnings("resource")
 		final var link = new Connector().reconnectOn(false, true, true)
 				.reconnectDelay((Duration) options.getOrDefault("reconnectDelay", Duration.ofSeconds(4)))
-				.maxConnectAttempts((long) options.getOrDefault("maxConnectAttempts", 3))
+				.maxConnectAttempts((long) options.getOrDefault("maxConnectAttempts", 3L))
 				.newLink(() -> createNewLink(options));
 		link.addLinkListener(new NetworkLinkListener() {
 			@LinkEvent
