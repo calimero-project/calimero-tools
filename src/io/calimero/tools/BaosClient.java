@@ -47,6 +47,7 @@ import java.lang.invoke.MethodHandles;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.text.MessageFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -565,7 +566,7 @@ public class BaosClient implements Runnable
 					out(e.getMessage());
 				}
 				catch (KNXException | RuntimeException e) {
-					out.log(ERROR, "[{0}]", line, e);
+					out.log(ERROR, MessageFormat.format("[{0}]", line), e);
 				}
 			}
 		}

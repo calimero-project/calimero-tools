@@ -48,6 +48,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -887,7 +888,7 @@ public class DeviceInfo implements Runnable
 			putResult(CommonParameter.ActualPeiType, toPeiTypeString(peitype), peitype);
 		}
 		catch (final KNXException e) {
-			out.log(ERROR, "reading actual PEI type (A/D converter channel {0}, repeat {1})", channel, repeat, e);
+			out.log(ERROR, MessageFormat.format("reading actual PEI type (A/D converter channel {0}, repeat {1})", channel, repeat), e);
 		}
 	}
 
@@ -1275,7 +1276,7 @@ public class DeviceInfo implements Runnable
 			out.log(WARNING, "reading {0}: {1}", p, e.getMessage());
 		}
 		catch (final Exception e) {
-			out.log(ERROR, "error reading {0}", p, e);
+			out.log(ERROR, "error reading " + p, e);
 		}
 	}
 
