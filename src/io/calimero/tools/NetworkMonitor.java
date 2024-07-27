@@ -388,7 +388,8 @@ public class NetworkMonitor implements Runnable
 
 		record JsonMonitorIndication(Instant time, String svc, long relativeTimestamp, int seqNumber, boolean frameError,
 				boolean bitError, boolean parityError, boolean lost, byte[] data, Json rawFrame) implements Json {}
-		final var json = new JsonMonitorIndication(Instant.now(), TrafficMonitor.svcPrimitive(frame.getMessageCode()), frame.getTimestamp(), frame.getSequenceNumber(),
+		final var json = new JsonMonitorIndication(Instant.now(), TrafficMonitor.svcPrimitive(frame.getMessageCode()),
+				frame.getTimestamp(), frame.getSequenceNumber(),
 				frame.getFrameError(), frame.getBitError(), frame.getParityError(), frame.getLost(), frame.getPayload(),
 				jsonRaw);
 		return json.toJson();
@@ -485,6 +486,19 @@ public class NetworkMonitor implements Runnable
 			// create TP-UART busmonitor
 			return new KNXNetworkMonitorTpuart(host, true);
 		}
+
+		final byte[] devAuth = (byte[]) options.getOrDefault("device-key", new byte[0]);
+		final byte[] userKey = (byte[]) options.getOrDefault("user-key", new byte[0]);
+		final int user = (int) options.getOrDefault("user", 0);
+
+		if (options.containsKey("unix-socket")) {
+			final var conn = Main.udsConnection(host);
+			if (options.containsKey("user")) {
+				final var session = conn.newSecureSession(user, userKey, devAuth);
+				return KNXNetworkMonitorIP.newSecureMonitorLink(session, medium);
+			}
+			return KNXNetworkMonitorIP.newMonitorLink(conn, medium);
+		}
 		// create local and remote socket address for monitor link
 		final InetSocketAddress local = Main.createLocalSocket(options);
 		final InetSocketAddress remote = new InetSocketAddress(Main.parseHost(host), (Integer) options.get("port"));
@@ -493,10 +507,6 @@ public class NetworkMonitor implements Runnable
 		// and tell the physical medium of the KNX network
 		final boolean nat = options.containsKey("nat");
 		if (options.containsKey("user")) {
-			final byte[] devAuth = (byte[]) options.getOrDefault("device-key", new byte[0]);
-			final byte[] userKey = (byte[]) options.getOrDefault("user-key", new byte[0]);
-			final int user = (int) options.getOrDefault("user", 0);
-
 			if (options.containsKey("udp"))
 				return KNXNetworkMonitorIP.newSecureMonitorLink(local, remote, nat, devAuth, user, userKey, medium);
 

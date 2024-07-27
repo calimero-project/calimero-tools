@@ -79,6 +79,7 @@ import io.calimero.Settings;
 import io.calimero.knxnetip.KNXnetIPConnection;
 import io.calimero.knxnetip.SecureConnection;
 import io.calimero.knxnetip.TcpConnection;
+import io.calimero.knxnetip.UnixDomainSocketConnection;
 import io.calimero.link.Connector;
 import io.calimero.link.KNXNetworkLink;
 import io.calimero.link.KNXNetworkLinkFT12;
@@ -92,6 +93,8 @@ import io.calimero.link.medium.PLSettings;
 import io.calimero.link.medium.RFSettings;
 import io.calimero.log.LogService;
 import io.calimero.mgmt.LocalDeviceManagementIp;
+import io.calimero.mgmt.LocalDeviceManagementUds;
+import io.calimero.mgmt.PropertyAdapter;
 import io.calimero.secure.Keyring;
 import io.calimero.secure.Keyring.Interface;
 import io.calimero.secure.Security;
@@ -350,6 +353,8 @@ final class Main
 			options.put("domain", Long.decode(i.next()));
 		else if (isOption(arg, "tcp", null))
 			options.put("tcp", null);
+		else if (isOption(arg, "unix-socket", null))
+			options.put("unix-socket", null);
 		else if (isOption(arg, "udp", null))
 			options.put("udp", null);
 		else if (isOption(arg, "ft12-cemi", null))
@@ -399,10 +404,11 @@ final class Main
 				  --port -p <number>         UDP/TCP port on <host> (default %d)
 				  --udp                      use UDP (default for unsecure communication)
 				  --tcp                      use TCP (default for KNX IP secure)
-				  --nat -n                   enable Network Address Translation
 				  --ft12 -f                  use FT1.2 serial communication
 				  --usb -u                   use KNX USB communication
 				  --tpuart                   use TP-UART communication
+				  --unix-socket              use Unix domain sockets
+				  --nat -n                   enable Network Address Translation (UDP only)
 				  --medium -m <id>           KNX medium [tp1|p110|knxip|rf] (default tp1)
 				  --domain <address>         domain address on KNX PL/RF medium (defaults to broadcast domain)
 				  --knx-address -k <addr>    KNX device address of local endpoint
@@ -475,6 +481,9 @@ final class Main
 			return link;
 		}
 
+		if (options.containsKey("unix-socket"))
+			return KNXNetworkLinkIP.newTunnelingLink(udsConnection(host), medium);
+
 		// we have an IP link
 		final InetSocketAddress local = createLocalSocket(options);
 		final InetAddress addr = parseHost(host);
@@ -528,7 +537,7 @@ final class Main
 		return KNXNetworkLinkIP.newTunnelingLink(local, remote, nat, medium);
 	}
 
-	static LocalDeviceManagementIp newLocalDeviceMgmtIP(final Map<String, Object> options,
+	static PropertyAdapter newLocalDeviceMgmt(final Map<String, Object> options,
 			final Consumer<CloseEvent> adapterClosed) throws KNXException, InterruptedException {
 		lookupKeyring(options);
 
@@ -544,15 +553,30 @@ final class Main
 			if (options.containsKey("udp"))
 				return LocalDeviceManagementIp.newSecureAdapter(local, host, nat, devAuth, userKey, adapterClosed);
 
-			final var session = tcpConnection(local, host).newSecureSession(1, userKey, devAuth);
+			final var conn = options.containsKey("unix-socket") ? udsConnection((String) options.get("host"))
+					: tcpConnection(local, host);
+			final var session = conn.newSecureSession(1, userKey, devAuth);
+			if (options.containsKey("unix-socket"))
+				return LocalDeviceManagementUds.newSecureAdapter(session, adapterClosed);
 			return LocalDeviceManagementIp.newSecureAdapter(session, adapterClosed);
 		}
 		if (options.containsKey("tcp")) {
-			final var c = tcpConnection(local, host);
-			return LocalDeviceManagementIp.newAdapter(c, adapterClosed);
+			return LocalDeviceManagementIp.newAdapter(tcpConnection(local, host), adapterClosed);
 		}
+		if (options.containsKey("unix-socket"))
+			return LocalDeviceManagementUds.newAdapter(udsConnection((String) options.get("host")), adapterClosed);
+
 		final boolean queryWriteEnable = options.containsKey("emulatewriteenable");
 		return LocalDeviceManagementIp.newAdapter(local, host, nat, queryWriteEnable, adapterClosed);
+	}
+
+	static UnixDomainSocketConnection udsConnection(final String host) throws KNXException {
+		try {
+			return UnixDomainSocketConnection.newConnection(Path.of(host));
+		}
+		catch (final IOException e) {
+			throw new KNXException("create Unix domain socket connection " + host, e);
+		}
 	}
 
 	private static Keyring toolKeyring;

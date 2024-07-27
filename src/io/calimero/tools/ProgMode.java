@@ -162,7 +162,7 @@ public class ProgMode implements Runnable
 	}
 
 	private void knxipServerProgMode() throws KNXException, InterruptedException {
-		try (var devmgmt = Main.newLocalDeviceMgmtIP(options, closed -> {});
+		try (var devmgmt = Main.newLocalDeviceMgmt(options, closed -> {});
 			 var pc = new PropertyClient(devmgmt)) {
 
 			final String cmd = (String) options.get("command");
