@@ -45,6 +45,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.UnknownHostException;
+import java.text.DecimalFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -485,6 +486,7 @@ public class Discover implements Runnable
 
 		// wait until search finished, polling the search responses
 		int processed = 0;
+		final long start = System.nanoTime();
 		try {
 			while (d.isSearching()) {
 				final var res = d.getSearchResponses();
@@ -516,8 +518,11 @@ public class Discover implements Runnable
 			}
 		}
 		finally {
-			if (processed == 0)
-				out.info("search stopped after {} seconds with 0 responses", timeout.toSeconds());
+			if (processed == 0) {
+				final double sec = (System.nanoTime() - start) / 1_000_000_000d;
+				out.info("search stopped after {} seconds with 0 responses",
+						new DecimalFormat("0.#").format(sec));
+			}
 		}
 	}
 
