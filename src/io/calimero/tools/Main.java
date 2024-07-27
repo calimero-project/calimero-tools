@@ -75,7 +75,7 @@ import io.calimero.KNXException;
 import io.calimero.KNXFormatException;
 import io.calimero.KNXIllegalArgumentException;
 import io.calimero.KnxRuntimeException;
-import io.calimero.Settings;
+import io.calimero.internal.Manifest;
 import io.calimero.knxnetip.KNXnetIPConnection;
 import io.calimero.knxnetip.SecureConnection;
 import io.calimero.knxnetip.TcpConnection;
@@ -172,7 +172,7 @@ final class Main
 	public static void main(final String... args)
 	{
 		if (args.length == 1 && (args[0].equals("-v") || args[0].equals("--version"))) {
-			System.out.println(Settings.getLibraryHeader(false));
+			showVersion();
 			return;
 		}
 		final boolean help = args.length >= 1 && (args[0].equals("--help") || args[0].equals("-h"));
@@ -235,7 +235,7 @@ final class Main
 	}
 
 	static void showVersion() {
-		System.out.println(Settings.getLibraryHeader(false));
+		System.out.println(Manifest.buildInfo(Main.class));
 	}
 
 	//
