@@ -389,8 +389,6 @@ public class ProcComm implements Runnable
 	 */
 	protected void issueCommand(final String line) throws KNXException, InterruptedException {
 		final String[] s = line.trim().split(" +");
-		if (s.length == 1 && "exit".equalsIgnoreCase(s[0]))
-			return;
 		if (s.length == 1 && ("?".equals(s[0]) || "help".equals(s[0])))
 			out(listCommandsAndDptAliases(new StringJoiner(System.lineSeparator()), false));
 		if (s.length > 1) {
@@ -808,6 +806,8 @@ public class ProcComm implements Runnable
 			final String line = in.readLine();
 			if (line == null)
 				continue;
+			if ("exit".equalsIgnoreCase(line))
+				return;
 			try {
 				issueCommand(line);
 			}
