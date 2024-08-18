@@ -75,6 +75,9 @@ import io.calimero.knxnetip.Discoverer;
 import io.calimero.knxnetip.Discoverer.Result;
 import io.calimero.knxnetip.DiscovererTcp;
 import io.calimero.knxnetip.KNXnetIPConnection;
+import io.calimero.knxnetip.StreamConnection;
+import io.calimero.knxnetip.TcpConnection;
+import io.calimero.knxnetip.UnixDomainSocketConnection;
 import io.calimero.knxnetip.servicetype.DescriptionResponse;
 import io.calimero.knxnetip.servicetype.SearchResponse;
 import io.calimero.knxnetip.util.DIB;
@@ -143,11 +146,23 @@ public class Discover implements Runnable
 		final InetAddress local = nif != null ? inetAddress(nif) : null;
 		final boolean mcast = (boolean) options.get("mcastResponse");
 		final boolean tcpSearch = options.containsKey("search") && options.containsKey("host") && !options.containsKey("udp");
-		if (tcpSearch || options.containsKey("tcp")) {
-			final InetAddress server = (InetAddress) options.get("host");
-			final var ctrlEndpoint = new InetSocketAddress(server, (int) options.get("serverport"));
-			final var localEp = new InetSocketAddress(local, lp != null ? lp : 0);
-			final var connection = Main.tcpConnection(localEp, ctrlEndpoint);
+		if (tcpSearch || options.containsKey("tcp") || options.containsKey("unix-socket")) {
+			final var host = options.get("host");
+			final StreamConnection conn;
+			if (host instanceof final String s) {
+				try {
+					conn = Main.udsConnection(s);
+				}
+				catch (final KNXException e) {
+					throw new KNXIllegalArgumentException(e.getMessage(), e);
+				}
+			}
+			else {
+				final InetAddress server = (InetAddress) host;
+				final var ctrlEndpoint = new InetSocketAddress(server, (int) options.get("serverport"));
+				final var localEp = new InetSocketAddress(local, lp != null ? lp : 0);
+				conn = Main.tcpConnection(localEp, ctrlEndpoint);
+			}
 
 			Main.lookupKeyring(options);
 			final var optUserKey = Main.userKey(options);
@@ -156,11 +171,16 @@ public class Discover implements Runnable
 				final byte[] devAuth = Main.deviceAuthentication(options);
 				final int user = (int) options.getOrDefault("user", 0);
 
-				final var session = connection.newSecureSession(user, userKey, devAuth);
+				final var session = conn.newSecureSession(user, userKey, devAuth);
 				tcp = Discoverer.secure(session);
 			}
+			else if (conn instanceof final TcpConnection tcpConn)
+				tcp = Discoverer.tcp(tcpConn);
+			else if (conn instanceof final UnixDomainSocketConnection uds)
+				tcp = Discoverer.uds(uds);
 			else
-				tcp = Discoverer.tcp(connection);
+				throw new IllegalStateException();
+
 			reuseForDescription = true;
 			tcp.timeout((Duration) options.get("timeout"));
 
@@ -680,6 +700,8 @@ public class Discover implements Runnable
 				options.put("tcp", null);
 			else if (Main.isOption(arg, "udp", null))
 				options.put("udp", null);
+			else if (isOption(arg, "unix-socket", null))
+				options.put("unix-socket", null);
 			else if ("search".equals(arg))
 				options.put("search", null);
 			else if (Main.isOption(arg, "unicast", "u"))
@@ -703,8 +725,12 @@ public class Discover implements Runnable
 				options.put("serverport", Integer.decode(i.next()));
 			else if (isOption(arg, "json", null))
 				options.put("json", null);
-			else if (options.containsKey("search") || options.containsKey("describe"))
-				options.put("host", Main.parseHost(arg));
+			else if (options.containsKey("search") || options.containsKey("describe")) {
+				if (options.containsKey("unix-socket"))
+					options.put("host", arg);
+				else
+					options.put("host", Main.parseHost(arg));
+			}
 			else
 				throw new KNXIllegalArgumentException("unknown option " + arg);
 		}

@@ -473,7 +473,7 @@ public class IPConfig implements Runnable
 	 * @throws InterruptedException on interrupted thread
 	 */
 	private PropertyAdapter createLocalDMAdapter() throws KNXException, InterruptedException {
-		return Main.newLocalDeviceMgmtIP(options, closed -> {});
+		return Main.newLocalDeviceMgmt(options, closed -> {});
 	}
 
 	/**

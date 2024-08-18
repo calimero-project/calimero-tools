@@ -402,7 +402,7 @@ public class DeviceInfo implements Runnable
 				}
 			}
 			else {
-				try (PropertyAdapter adapter = Main.newLocalDeviceMgmtIP(options, closed -> {})) {
+				try (PropertyAdapter adapter = Main.newLocalDeviceMgmt(options, closed -> {})) {
 					pc = new PropertyClient(adapter);
 
 					out.log(INFO, "Reading info of KNXnet/IP {0}, might take some seconds ...", adapter.getName());

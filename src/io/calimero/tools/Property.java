@@ -452,7 +452,7 @@ public class Property implements Runnable
 				return createUsbAdapter(host);
 			if (!options.getOrDefault("user", 1).equals(1))
 				throw new KnxRuntimeException("secure local device management requires user 1 (management user)");
-			return Main.newLocalDeviceMgmtIP(options, this::adapterClosed);
+			return Main.newLocalDeviceMgmt(options, this::adapterClosed);
 		}
 		return createRemoteAdapter();
 	}

@@ -51,6 +51,8 @@ import io.calimero.KNXIllegalArgumentException;
 import io.calimero.knxnetip.KNXnetIPConnection;
 import io.calimero.link.medium.TPSettings;
 import io.calimero.mgmt.Destination;
+import io.calimero.mgmt.LocalDeviceManagementIp;
+import io.calimero.mgmt.LocalDeviceManagementUds;
 import io.calimero.mgmt.ManagementClientImpl;
 
 /**
@@ -184,11 +186,14 @@ public class Restart implements Runnable {
 
 	private void localDeviceMgmtReset()
 			throws InterruptedException, KNXException {
-		try (var mgmt = Main.newLocalDeviceMgmtIP(options, __ -> {})) {
+		try (var mgmt = Main.newLocalDeviceMgmt(options, __ -> {})) {
 			final int restartType = (Integer) options.get("restart-type");
 			if (restartType != 0)
 				System.out.println("Using local device management, ignore restart type");
-			mgmt.reset();
+			if (mgmt instanceof final LocalDeviceManagementIp ldmIp)
+				ldmIp.reset();
+			else if (mgmt instanceof final LocalDeviceManagementUds ldmUds)
+				ldmUds.reset();
 		}
 	}
 
