@@ -448,7 +448,7 @@ public class NetworkMonitor implements Runnable
 		final var monitor = new Connector().reconnectOn(false, true, true)
 				.reconnectDelay((Duration) options.getOrDefault("reconnectDelay", Duration.ofSeconds(4)))
 				.maxConnectAttempts((long) options.getOrDefault("maxConnectAttempts", 3L))
-				.newMonitor(() -> createMonitor());
+				.newMonitor(this::createMonitor);
 		monitor.addMonitorListener(new LinkListener() {
 			@LinkEvent
 			void connectionStatus(final ConnectionStatus status) {
