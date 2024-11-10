@@ -178,7 +178,7 @@ With Gradle installed, copy the following snippet into a file named *build.gradl
 
 ```gradle
 plugins { id 'application' }
-repositories { mavenCentral() }
+repositories { mavenCentral(); maven { url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots") } }
 mainClassName = "io.calimero.tools.Main"
 dependencies {
   runtimeOnly group: 'io.calimero', name: 'calimero-tools', version: '3.0-SNAPSHOT'
