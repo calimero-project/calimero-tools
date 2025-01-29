@@ -92,13 +92,6 @@ tasks.named<JavaCompile>("compileJava") {
 	options.javaModuleVersion = project.version.toString()
 }
 
-tasks.named<JavaCompile>("compileTestJava") {
-	options.compilerArgs.addAll(listOf(
-		"-Xlint:all",
-		"-Xlint:-try"
-	))
-}
-
 tasks.withType<Javadoc>().configureEach {
     (options as CoreJavadocOptions).addStringOption("Xdoclint:-missing", "-quiet")
     (options as CoreJavadocOptions).addStringOption("-add-reads", "io.calimero.tools=ALL-UNNAMED") // zip4j
