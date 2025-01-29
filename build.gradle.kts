@@ -140,6 +140,8 @@ dependencies {
 
 	add("serialRuntimeOnly", "io.calimero:calimero-rxtx:$version")
 	add("serialRuntimeOnly", "io.calimero:serial-native:$version")
+	if (JavaLanguageVersion.current() >= JavaLanguageVersion.of(23))
+		add("serialRuntimeOnly", "io.calimero:calimero-serial-ffm:$version")
 	add("usbRuntimeOnly", "io.calimero:calimero-usb:$version")
 	runtimeOnly(sourceSets["serial"].runtimeClasspath)
 	runtimeOnly(sourceSets["usb"].runtimeClasspath)

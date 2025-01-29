@@ -5,4 +5,5 @@ def safeIncludeBuild(String dir) {
 safeIncludeBuild '../calimero-core'
 safeIncludeBuild '../calimero-rxtx'
 safeIncludeBuild '../serial-native'
+safeIncludeBuild '../calimero-serial-ffm'
 safeIncludeBuild '../calimero-usb'
