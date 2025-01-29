@@ -104,14 +104,19 @@ val addReads = listOf(
 	"--add-reads", "io.calimero.usb.provider.javax=ALL-UNNAMED"
 )
 
+// avoid jvm warning about native access
+val enableNativeAccess = if (JavaLanguageVersion.current() >= JavaLanguageVersion.of(23))
+		listOf("--enable-native-access", "serial.ffm") else listOf()
+
 tasks.withType<JavaExec>().configureEach {
 	jvmArgs(addReads)
+	jvmArgs(enableNativeAccess)
 	// add as root module because it is required by non-modularized usb4java
 	jvmArgs("--add-modules", "org.apache.commons.lang3")
 }
 
 tasks.startScripts {
-	defaultJvmOpts = addReads
+	defaultJvmOpts = addReads + enableNativeAccess
 
 	val rtClasspath = configurations.runtimeClasspath.get().files
 	val unixScriptFile = unixScript
