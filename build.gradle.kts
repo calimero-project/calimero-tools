@@ -86,13 +86,6 @@ tasks.withType<JavaCompile>().configureEach {
 	))
 }
 
-tasks.named<JavaCompile>("compileTestJava") {
-	options.compilerArgs.addAll(listOf(
-		"-Xlint:all",
-		"-Xlint:-try"
-	))
-}
-
 tasks.withType<Javadoc>().configureEach {
     (options as CoreJavadocOptions).addStringOption("Xdoclint:-missing", "-quiet")
 }
