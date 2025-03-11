@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2024 B. Malinowsky
+    Copyright (c) 2006, 2025 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -183,7 +183,7 @@ public class Discover implements Runnable
 	 * <ul>
 	 * <li><code>search [<i>host</i>]</code> start a discovery search
 	 * <ul>
-	 * <li><code>--withDescription</code> query self description for each search result</li>
+	 * <li><code>--withDescription</code> query self-description for each search result</li>
 	 * <li><code>--netif -i</code> <i>interface name</i> | <i>IP address</i> &nbsp;local multicast network interface</li>
 	 * <li><code>--unicast -u</code> request unicast responses</li>
 	 * <li><code>--mac</code> <i>address</i> &nbsp;extended search requesting the specified MAC address</li>
@@ -203,7 +203,7 @@ public class Discover implements Runnable
 	 * <li><code>--version</code> show tool/library version and exit</li>
 	 * <li><code>--localport</code> <i>number</i> &nbsp;local UDP/TCP port (default system assigned)</li>
 	 * <li><code>--nat -n</code> enable Network Address Translation</li>
-	 * <li><code>--timeout -t</code> discovery/self description response timeout in seconds</li>
+	 * <li><code>--timeout -t</code> discovery/self-description response timeout in seconds</li>
 	 * <li><code>--tcp</code> request TCP communication</li>
 	 * <li><code>--udp</code> request UDP communication</li>
 	 * </ul>

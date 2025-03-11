@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2024 B. Malinowsky
+    Copyright (c) 2006, 2025 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -119,7 +119,7 @@ import tuwien.auto.calimero.xml.XmlWriter;
  * When in group monitor mode, process communication lists group write, read, and read response
  * commands issued on the KNX network. Datapoint values in monitored group commands are decoded for
  * appropriate KNX datapoint types (DPT). In addition, a user can issue read and write commands on
- * the terminal. Commands have the the following syntax: <code>cmd datapoint [DPT] [value]</code>,
+ * the terminal. Commands have the following syntax: <code>cmd datapoint [DPT] [value]</code>,
  * with <code>cmd = ("r"|"read") | ("w"|"write")</code>. For example, <code>r 1/0/3</code> will read
  * the current value of datapoint <code>1/0/3</code>. The command <code>w 1/0/3 1.002 true</code>
  * will write the boolean value <code>true</code> for datapoint <code>1/0/3</code>.<br>
@@ -207,7 +207,7 @@ public class ProcComm implements Runnable
 	 * IP, USB, FT1.2 or TP-UART communication. Use the command line option <code>--help</code> (or <code>-h</code>) to show the
 	 * usage of this tool.
 	 * <p>
-	 * Command line options are treated case sensitive. Available options for communication:
+	 * Command line options are treated case-sensitive. Available options for communication:
 	 * <ul>
 	 * <li><code>--help -h</code> show help message</li>
 	 * <li><code>--version</code> show tool/library version and exit</li>
@@ -508,7 +508,7 @@ public class ProcComm implements Runnable
 	 *
 	 * @param asdu the process event ASDU with the datapoint data
 	 * @param dptMainNumber DPT main number &ge; 0, can be 0 if the <code>dptID</code> is unique
-	 * @param dptID datapoint type ID to lookup the translator
+	 * @param dptID datapoint type ID to look up the translator
 	 * @return the datapoint value
 	 * @throws KNXException on failed creation of translator, or translator not available
 	 */
@@ -582,8 +582,8 @@ public class ProcComm implements Runnable
 						+ " because DPT is not known yet, retry and specify DPT once");
 				return;
 			}
-			// note, a write to a non existing datapoint might finish successfully,
-			// too.. no check for existence or read back of a written value is done
+			// note, a write to a non-existing datapoint might finish successfully,
+			// too... no check for existence or read back of a written value is done
 			pc.write(dp, value);
 			System.out.println("write to " + dp.getMainAddress() + " successful");
 		}

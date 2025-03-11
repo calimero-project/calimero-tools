@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2013, 2024 B. Malinowsky
+    Copyright (c) 2013, 2025 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -95,7 +95,7 @@ public class ScanDevices implements Runnable
 	 * The area and line are expected as numbers in the range [0..0x0F]; the (optional) device address part is in the
 	 * range [0..0x0FF]. Accepted are decimal, hexadecimal (0x), or octal (0) representations.<br>
 	 * To show usage message of the tool on the console, supply the command line option --help (or -h).<br>
-	 * Command line options are treated case sensitive. Available options for connecting to the KNX device in question:
+	 * Command line options are treated case-sensitive. Available options for connecting to the KNX device in question:
 	 * <ul>
 	 * <li>no arguments: only show short description and version info</li>
 	 * <li><code>--help -h</code> show help message</li>

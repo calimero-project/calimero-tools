@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2019, 2024 B. Malinowsky
+    Copyright (c) 2019, 2025 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -158,7 +158,7 @@ public class BaosClient implements Runnable
 	 * Available commands for BAOS communication:
 	 * <ul>
 	 * <li>get {property|value|timer|history|description}: get a property, value, timer, history, or description</li>
-	 * <li>set {property|value|timer|history}: set a property, value, timer, or history"</li>
+	 * <li>set {property|value|timer|history}: set a property, value, timer, or history</li>
 	 * </ul>
 	 * For common datapoint types (DPTs) the following name aliases can be used instead of the general DPT number
 	 * string:
