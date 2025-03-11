@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2019 B. Malinowsky
+    Copyright (c) 2006, 2025 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -129,7 +129,7 @@ public class PropClient implements Runnable
 	 * access.<br>
 	 * To show the usage message of this tool on the console, supply the command line option -help
 	 * (or -h).<br>
-	 * Command line options are treated case sensitive. Available options for the property client:
+	 * Command line options are treated case-sensitive. Available options for the property client:
 	 * <ul>
 	 * <li><code>--help -h</code> show help message</li>
 	 * <li><code>--version</code> show tool/library version and exit</li>

@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2024 B. Malinowsky
+    Copyright (c) 2006, 2025 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -175,7 +175,7 @@ public class NetworkMonitor implements Runnable
 	 * access.<br>
 	 * To show the usage message of this tool on the console, supply the command line option --help
 	 * (or -h).<br>
-	 * Command line options are treated case sensitive. Available options for network monitoring:
+	 * Command line options are treated case-sensitive. Available options for network monitoring:
 	 * <ul>
 	 * <li><code>--help -h</code> show help message</li>
 	 * <li><code>--version</code> show tool/library version and exit</li>
@@ -433,8 +433,7 @@ public class NetworkMonitor implements Runnable
 	/**
 	 * Called by this tool on completion.
 	 *
-	 * @param thrown the thrown exception if operation completed due to an raised exception,
-	 *        <code>null</code> otherwise
+	 * @param thrown the thrown exception if operation completed due to a raised exception, <code>null</code> otherwise
 	 * @param canceled whether the operation got canceled before its planned end
 	 */
 	protected void onCompletion(final Exception thrown, final boolean canceled)
