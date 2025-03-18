@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2011, 2024 B. Malinowsky
+    Copyright (c) 2011, 2025 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -43,6 +43,7 @@ import static java.lang.System.Logger.Level.INFO;
 import static java.lang.System.Logger.Level.WARNING;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.lang.System.Logger;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -73,6 +74,7 @@ import io.calimero.KNXException;
 import io.calimero.KNXFormatException;
 import io.calimero.KNXIllegalArgumentException;
 import io.calimero.KNXRemoteException;
+import io.calimero.Settings;
 import io.calimero.dptxlator.DPTXlatorBoolean;
 import io.calimero.dptxlator.DptXlator16BitSet;
 import io.calimero.dptxlator.TranslatorTypes;
@@ -88,10 +90,13 @@ import io.calimero.mgmt.PropertyAccess;
 import io.calimero.mgmt.PropertyAccess.PID;
 import io.calimero.mgmt.PropertyAdapter;
 import io.calimero.mgmt.PropertyClient;
+import io.calimero.mgmt.PropertyClient.PropertyKey;
 import io.calimero.mgmt.RemotePropertyServiceAdapter;
 import io.calimero.serial.usb.UsbConnection;
 import io.calimero.serial.usb.UsbConnectionFactory;
 import io.calimero.tools.Main.ShutdownHandler;
+import io.calimero.xml.KNXMLException;
+import io.calimero.xml.XmlInputFactory;
 
 /**
  * A tool for Calimero showing device information of a device in a KNX network.
@@ -384,10 +389,7 @@ public class DeviceInfo implements Runnable
 						var adapter = new RemotePropertyServiceAdapter(link, device, e -> {}, true)) {
 					mc = adapter.managementClient();
 					d = adapter.destination();
-					pc = new PropertyClient(adapter);
-
-					out.log(INFO, "Reading data from device {0}, might take some seconds ...", device);
-					readDeviceInfo();
+					readDeviceInfo(adapter, "device " + device);
 				}
 			}
 			else if (options.containsKey("usb")) {
@@ -395,18 +397,12 @@ public class DeviceInfo implements Runnable
 				try (UsbConnection conn = UsbConnectionFactory.open((String) options.get("host"));
 						PropertyAdapter adapter = new LocalDeviceManagementUsb(conn, e -> {}, false)) {
 					dd = conn.deviceDescriptor();
-					pc = new PropertyClient(adapter);
-
-					out.log(INFO, "Reading info of KNX USB adapter {0}, might take some seconds ...", dd);
-					readDeviceInfo();
+					readDeviceInfo(adapter, "KNX USB adapter " + dd);
 				}
 			}
 			else {
 				try (PropertyAdapter adapter = Main.newLocalDeviceMgmt(options, closed -> {})) {
-					pc = new PropertyClient(adapter);
-
-					out.log(INFO, "Reading info of KNXnet/IP {0}, might take some seconds ...", adapter.getName());
-					readDeviceInfo();
+					readDeviceInfo(adapter, "KNXnet/IP " + adapter.getName());
 				}
 			}
 		}
@@ -478,11 +474,15 @@ public class DeviceInfo implements Runnable
 	}
 
 	private String interfaceObjectName(final int objectIndex) {
+		return interfaceObjectType(objectIndex).map(PropertyClient::getObjectTypeName).orElse("");
+	}
+
+	private Optional<Integer> interfaceObjectType(final int objectIndex) {
 		for (final var entry : ifObjects.entrySet()) {
 			if (entry.getValue().contains(objectIndex))
-				return PropertyClient.getObjectTypeName(entry.getKey());
+				return Optional.of(entry.getKey());
 		}
-		return "";
+		return Optional.empty();
 	}
 
 	private void findInterfaceObjects() throws InterruptedException
@@ -517,6 +517,24 @@ public class DeviceInfo implements Runnable
 				out.log(INFO, "Device implements only Device Object and cEMI Object");
 			}
 		}
+	}
+
+	private void createPropertyClient(final PropertyAdapter adapter) throws KNXFormatException {
+		pc = new PropertyClient(adapter);
+
+		final String resource = "/properties.xml";
+		try (var is = Settings.class.getResourceAsStream(resource);
+		     var r = XmlInputFactory.newInstance().createXMLStreamReader(is)) {
+			pc.addDefinitions(new PropertyClient.XmlPropertyDefinitions().load(r));
+		} catch (IOException | RuntimeException e) {
+			out.log(DEBUG, "failed to load property definitions: {0}", e.toString());
+		}
+	}
+
+	private void readDeviceInfo(final PropertyAdapter adapter, final String device) throws KNXException, InterruptedException {
+		createPropertyClient(adapter);
+		out.log(INFO, "Reading info of {0}, might take some seconds ...", device);
+		readDeviceInfo();
 	}
 
 	private void readDeviceInfo() throws KNXException, InterruptedException
@@ -1322,8 +1340,22 @@ public class DeviceInfo implements Runnable
 	private byte[] read(final int objectIndex, final int pid, final int start, final int elements, final boolean log)
 		throws InterruptedException
 	{
-		if (log)
-			out.log(DEBUG, "read {0}|{1}", objectIndex, pid);
+		if (log) {
+			final PropertyKey key;
+			if (pid <= 50)
+				key = new PropertyKey(pid);
+			else if (objectIndex == 0)
+				key = new PropertyKey(0, pid);
+			else
+				key = interfaceObjectType(objectIndex).map(ot -> new PropertyKey(ot, pid)).orElse(null);
+
+			final var property = pc.getDefinitions().get(key);
+			String friendlyName = "";
+			if (property != null && !property.propertyName().isEmpty())
+				friendlyName = " " + property.propertyName();
+
+			out.log(DEBUG, "read {0}|{1}{2}", objectIndex, pid, friendlyName);
+		}
 		try {
 			// since we don't know the max. allowed APDU length, play it safe
 			final ByteArrayOutputStream res = new ByteArrayOutputStream();
