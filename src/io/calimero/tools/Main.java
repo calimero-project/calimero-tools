@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2010, 2024 B. Malinowsky
+    Copyright (c) 2010, 2025 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -231,8 +231,9 @@ final class Main
 		final StringBuilder sb = new StringBuilder();
 		final String sep = System.lineSeparator();
 		sb.append("Supported commands (always safe without further options, use -h for help):").append(sep);
+		int maxLength = Arrays.stream(cmds).mapToInt(cmd -> cmd[0].length()).max().orElseThrow();
 		for (final String[] cmd : cmds) {
-			sb.append(cmd[0]).append(" - ").append(cmd[1]).append(sep);
+			sb.append(cmd[0]).append(" ".repeat(maxLength - cmd[0].length())).append(" - ").append(cmd[1]).append(sep);
 		}
 		System.out.println(sb);
 	}
