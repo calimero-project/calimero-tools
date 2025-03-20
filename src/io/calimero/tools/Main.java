@@ -110,7 +110,8 @@ final class Main
 		{ "describe", "KNXnet/IP device self-description", "describe" },
 		{ "scan", "Determine the existing KNX devices on a KNX subnetwork" },
 		{ "ipconfig", "KNXnet/IP device address configuration" },
-		{ "monitor", "Open network monitor (passive) for KNX network traffic" },
+		{ "netmon", "Open network monitor (passive) for KNX network traffic" },
+		{ "monitor", "Alias for netmon" },
 		{ "read", "Read a value using KNX process communication", "read" },
 		{ "write", "Write a value using KNX process communication", "write" },
 		{ "groupmon", "Open group monitor for KNX process communication", "monitor" },
@@ -128,7 +129,8 @@ final class Main
 	};
 
 	private static final List<Class<? extends Runnable>> tools = Arrays.asList(Discover.class, Discover.class,
-			ScanDevices.class, IPConfig.class, NetworkMonitor.class, ProcComm.class, ProcComm.class, ProcComm.class,
+			ScanDevices.class, IPConfig.class, NetworkMonitor.class, NetworkMonitor.class,
+			ProcComm.class, ProcComm.class, ProcComm.class,
 			TrafficMonitor.class,
 			Property.class, Property.class, PropClient.class, ProcComm.class, BaosClient.class, DeviceInfo.class,
 			Memory.class, ProgMode.class, Restart.class, DatapointImporter.class);
