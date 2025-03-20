@@ -62,9 +62,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.StringJoiner;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.slf4j.LoggerFactory;
 
@@ -100,36 +102,30 @@ import tuwien.auto.calimero.serial.ConnectionStatus;
  */
 final class Main
 {
-	private static final String[][] cmds = new String[][] {
-		{ "discover", "Discover KNXnet/IP devices", "search" },
-		{ "describe", "KNXnet/IP device self-description", "describe" },
-		{ "scan", "Determine the existing KNX devices on a KNX subnetwork" },
-		{ "ipconfig", "KNXnet/IP device address configuration" },
-		{ "netmon", "Open network monitor (passive) for KNX network traffic" },
-		{ "monitor", "Alias for netmon" },
-		{ "read", "Read a value using KNX process communication", "read" },
-		{ "write", "Write a value using KNX process communication", "write" },
-		{ "groupmon", "Open group monitor for KNX process communication", "monitor" },
-		{ "trafficmon", "KNX link-layer traffic & link status monitor" },
-		{ "get", "Read a KNX property", "get" },
-		{ "set", "Write a KNX property", "set" },
-		{ "properties", "Open KNX property client", },
-		{ "info", "Send an LTE info command", "info" },
-		{ "baos", "Communicate with a KNX BAOS device" },
-		{ "devinfo", "Read KNX device information" },
-		{ "mem", "Access KNX device memory" },
-		{ "progmode", "Check/set device(s) in programming mode" },
-		{ "restart", "Restart a KNX interface/device" },
-		{ "import", "Import datapoints from a KNX project (.knxproj) or group addresses file (.xml|.csv)" },
-	};
+	private record Tool(String name, Class<? extends Runnable> toolClass, String description, String... defaultArgs) {}
 
-	private static final List<Class<? extends Runnable>> tools = Arrays.asList(Discover.class, Discover.class,
-			ScanDevices.class, IPConfig.class, NetworkMonitor.class, NetworkMonitor.class,
-			ProcComm.class, ProcComm.class, ProcComm.class,
-			TrafficMonitor.class,
-			Property.class, Property.class, PropClient.class, ProcComm.class, BaosClient.class, DeviceInfo.class,
-			Memory.class, ProgMode.class, Restart.class, DatapointImporter.class);
-
+	private static final List<Tool> tools = List.of(
+			new Tool("discover", Discover.class, "Discover KNXnet/IP devices", "search"),
+			new Tool("describe", Discover.class, "KNXnet/IP device self-description", "describe"),
+			new Tool("scan", ScanDevices.class, "Determine the existing KNX devices in a KNX subnetwork"),
+			new Tool("ipconfig", IPConfig.class, "KNXnet/IP device address configuration"),
+			new Tool("netmon", NetworkMonitor.class, "Open network monitor (passive) for KNX network traffic"),
+			new Tool("monitor", NetworkMonitor.class, "Alias for netmon"),
+			new Tool("read", ProcComm.class, "Read a value using KNX process communication", "read"),
+			new Tool("write", ProcComm.class, "Write a value using KNX process communication", "write"),
+			new Tool("groupmon", ProcComm.class, "Open group monitor for KNX process communication", "monitor"),
+			new Tool("trafficmon", TrafficMonitor.class, "KNX link-layer traffic & link status monitor"),
+			new Tool("get", Property.class, "Read a KNX property", "get"),
+			new Tool("set", Property.class, "Write a KNX property", "set"),
+			new Tool("properties", PropClient.class, "Open KNX property client"),
+			new Tool("info", ProcComm.class, "Send an LTE info command", "info"),
+			new Tool("baos", BaosClient.class, "Communicate with a KNX BAOS device"),
+			new Tool("devinfo", DeviceInfo.class, "Read KNX device information"),
+			new Tool("mem", Memory.class, "Access KNX device memory"),
+			new Tool("progmode", ProgMode.class, "Check/set device(s) in programming mode"),
+			new Tool("restart", Restart.class, "Restart a KNX interface/device"),
+			new Tool("import", DatapointImporter.class, "Import datapoints from a KNX project (.knxproj) or group addresses file (.xml|.csv)")
+	);
 
 	private static final Map<InetSocketAddress, TcpConnection> tcpConnectionPool = new HashMap<>();
 	private static boolean registeredTcpShutdownHook;
@@ -189,23 +185,17 @@ final class Main
 		}
 
 		final String cmd = args[cmdIdx];
-		for (int i = 0; i < cmds.length; i++) {
-			if (cmds[i][0].equals(cmd)) {
+		for (final var tool : tools) {
+			if (tool.name().equals(cmd)) {
 				try {
-					final Method m = tools.get(i).getMethod("main", String[].class);
 					final String[] toolargs;
 					if (args.length > 1 && (args[1].equals("--help") || args[1].equals("-h")))
-						toolargs = new String[] { "-h" };
-					else {
-						final int defaultArgsStart = 2;
-						final int defaultArgs = cmds[i].length - defaultArgsStart;
-						final int startArgs = cmdIdx + 1;
-						final int userArgs = args.length - startArgs;
-						toolargs = Arrays.copyOfRange(cmds[i], defaultArgsStart,
-								defaultArgsStart + defaultArgs + userArgs);
-						System.arraycopy(args, startArgs, toolargs, defaultArgs, userArgs);
-					}
-					m.invoke(null, new Object[] { toolargs });
+						toolargs = new String[]{ "-h" };
+					else
+						toolargs = Stream.concat(Stream.of(tool.defaultArgs()), Arrays.stream(args, cmdIdx + 1, args.length))
+								.toArray(String[]::new);
+					final Method main = tool.toolClass().getMethod("main", String[].class);
+					main.invoke(null, new Object[]{ toolargs });
 				}
 				catch (final Exception e) {
 					System.err.print("internal error initializing tool \"" + cmd + "\": ");
@@ -222,14 +212,13 @@ final class Main
 
 	private static void usage()
 	{
-		final StringBuilder sb = new StringBuilder();
-		final String sep = System.lineSeparator();
-		sb.append("Supported commands (always safe without further options, use -h for help):").append(sep);
-		int maxLength = Arrays.stream(cmds).mapToInt(cmd -> cmd[0].length()).max().orElseThrow();
-		for (final String[] cmd : cmds) {
-			sb.append(cmd[0]).append(" ".repeat(maxLength - cmd[0].length())).append(" - ").append(cmd[1]).append(sep);
+		final var joiner = new StringJoiner(System.lineSeparator());
+		joiner.add("Supported commands (always safe without further options, use -h for help):");
+		int maxLength = tools.stream().mapToInt(cmd -> cmd.name().length()).max().orElseThrow();
+		for (final var tool : tools) {
+			joiner.add(String.format("%-" + maxLength + "s - %s", tool.name(), tool.description()));
 		}
-		System.out.println(sb);
+		System.out.println(joiner);
 	}
 
 	static void showVersion() {
