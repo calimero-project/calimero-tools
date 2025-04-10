@@ -1,6 +1,6 @@
 /*
     Calimero 3 - A library for KNX network access
-    Copyright (c) 2010, 2024 B. Malinowsky
+    Copyright (c) 2010, 2025 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -38,6 +38,7 @@ package io.calimero.tools;
 
 import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.INFO;
+import static java.util.Map.entry;
 import static java.util.stream.Collectors.joining;
 
 import java.io.ByteArrayOutputStream;
@@ -886,69 +887,59 @@ public class Property implements Runnable
 
 	private static PropertyKey key(final int pid) { return new PropertyKey(PropertyKey.GLOBAL_OBJTYPE, pid); }
 	private static PropertyKey key(final int objectType, final int pid) { return new PropertyKey(objectType, pid); }
-
-	private final Map<PropertyKey, Function<byte[], String>> customFormatter = new HashMap<>();
-
-	{
-		customFormatter.put(key(PID.DESCRIPTION), Property::string);
-		customFormatter.put(key(PID.PROGRAM_VERSION), Property::programVersion);
-		customFormatter.put(key(PID.OBJECT_NAME), Property::string);
-		customFormatter.put(key(PID.MANUFACTURER_ID),
-				data -> Main.manufacturer((data[0] & 0xff) << 8 | data[1] & 0xff));
-		customFormatter.put(key(PID.LOAD_STATE_CONTROL), Property::loadState);
-		customFormatter.put(key(PID.VERSION), Property::version);
-		customFormatter.put(key(1, PID.TABLE), Property::groupAddresses);
-
-		customFormatter.put(key(0, PID.SERIAL_NUMBER), Property::knxSerialNumber);
-		customFormatter.put(key(0, 52), Property::maxRetryCount);
-		customFormatter.put(key(0, PID.DEVICE_DESCRIPTOR), Property::deviceDescriptor);
-		final int pidErrorFlags = 53;
-		customFormatter.put(key(0, pidErrorFlags), Property::errorFlags);
-		customFormatter.put(key(0, PID.SUBNET_ADDRESS), Property::subnetAddress);
-
-		customFormatter.put(key(2, PID.TABLE), this::associationTable);
-
-		customFormatter.put(key(6, PID.MEDIUM_STATUS),
-				data -> "communication " + (bitSet(data[0], 0) ? "impossible" : "possible"));
-		customFormatter.put(key(6, PID.MAIN_LCCONFIG), Property::lineCouplerConfig);
-		customFormatter.put(key(6, PID.SUB_LCCONFIG), Property::lineCouplerConfig);
-		customFormatter.put(key(6, PID.SUB_LCGROUPCONFIG), Property::lineCouplerGroupConfig);
-		customFormatter.put(key(6, PID.MAIN_LCGROUPCONFIG), Property::lineCouplerGroupConfig);
-		final int pidCouplerServiceControl = 57;
-		customFormatter.put(key(6, pidCouplerServiceControl), Property::couplerServiceControl);
-
-		customFormatter.put(key(9, PID.TABLE), this::groupObjectDescriptors);
-		final int extGroupObjectReference = 52;
-		customFormatter.put(key(9, pidGroupObjectTable), this::groupObjectDescriptors);
-		customFormatter.put(key(9, extGroupObjectReference), this::extGroupObjectReferences);
-
-		// at least jung devices have DD0 also in cEMI server and KNXnet/IP object
-		customFormatter.put(key(8, PID.DEVICE_DESCRIPTOR), Property::deviceDescriptor);
-		customFormatter.put(key(11, PID.DEVICE_DESCRIPTOR), Property::deviceDescriptor);
-
-		customFormatter.put(key(11, PID.MAC_ADDRESS), HexFormat.ofDelimiter(":")::formatHex);
-		customFormatter.put(key(11, PID.KNXNETIP_DEVICE_CAPABILITIES), Property::deviceCapabilities);
-		customFormatter.put(key(11, PID.KNXNETIP_ROUTING_CAPABILITIES), Property::routingCapabilities);
-		customFormatter.put(key(11, PID.CURRENT_IP_ADDRESS), Property::ipAddress);
-		customFormatter.put(key(11, PID.CURRENT_SUBNET_MASK), Property::ipAddress);
-		customFormatter.put(key(11, PID.CURRENT_DEFAULT_GATEWAY), Property::ipAddress);
-		customFormatter.put(key(11, PID.DHCP_BOOTP_SERVER), Property::ipAddress);
-		customFormatter.put(key(11, PID.IP_ADDRESS), Property::ipAddress);
-		customFormatter.put(key(11, PID.SUBNET_MASK), Property::ipAddress);
-		customFormatter.put(key(11, PID.DEFAULT_GATEWAY), Property::ipAddress);
-		customFormatter.put(key(11, PID.ROUTING_MULTICAST_ADDRESS), Property::ipAddress);
-		customFormatter.put(key(11, PID.SYSTEM_SETUP_MULTICAST_ADDRESS), Property::ipAddress);
-		customFormatter.put(key(11, PID.FRIENDLY_NAME), Property::string);
-		customFormatter.put(key(11, PID.CURRENT_IP_ASSIGNMENT_METHOD), Property::ipAssignmentMethod);
-		customFormatter.put(key(11, PID.IP_ASSIGNMENT_METHOD), Property::ipAssignmentMethod); // ??? correct
-		customFormatter.put(key(11, PID.KNX_INDIVIDUAL_ADDRESS), Property::individualAddresses);
-		customFormatter.put(key(11, PID.ADDITIONAL_INDIVIDUAL_ADDRESSES), Property::individualAddresses);
-		customFormatter.put(key(11, PID.IP_CAPABILITIES),
-				data -> ipAssignmentMethod(new byte[] { (byte) ((data[0] << 1) | 0x01) }));
-	}
-
-	private static final String delimiter = ", ";
-
+	
+	private static final int pidErrorFlags = 53;
+	private static final int pidCouplerServiceControl   = 57;
+	private static final int pidExtGroupObjectReference = 52;
+	
+	private final Map<PropertyKey, Function<byte[], String>> customFormatter = Map.ofEntries(
+			entry(key(PID.DESCRIPTION), Property::string),
+			entry(key(PID.PROGRAM_VERSION), Property::programVersion),
+			entry(key(PID.OBJECT_NAME), Property::string),
+			entry(key(PID.MANUFACTURER_ID), data -> Main.manufacturer((data[0] & 0xff) << 8 | data[1] & 0xff)),
+			entry(key(PID.LOAD_STATE_CONTROL), Property::loadState),
+			entry(key(PID.VERSION), Property::version),
+			entry(key(1, PID.TABLE), Property::groupAddresses),
+			entry(key(0, PID.SERIAL_NUMBER), Property::knxSerialNumber),
+			entry(key(0, 52), Property::maxRetryCount),
+			entry(key(0, PID.DEVICE_DESCRIPTOR), Property::deviceDescriptor),
+			entry(key(0, pidErrorFlags), Property::errorFlags),
+			entry(key(0, PID.SUBNET_ADDRESS), Property::subnetAddress),
+			entry(key(2, PID.TABLE), this::associationTable),
+			entry(key(6, PID.MEDIUM_STATUS), data -> "communication " + (bitSet(data[0], 0) ? "impossible" : "possible")),
+			entry(key(6, PID.MAIN_LCCONFIG), Property::lineCouplerConfig),
+			entry(key(6, PID.SUB_LCCONFIG), Property::lineCouplerConfig),
+			entry(key(6, PID.SUB_LCGROUPCONFIG), Property::lineCouplerGroupConfig),
+			entry(key(6, PID.MAIN_LCGROUPCONFIG), Property::lineCouplerGroupConfig),
+			entry(key(6, pidCouplerServiceControl), Property::couplerServiceControl),
+			entry(key(9, PID.TABLE), this::groupObjectDescriptors),
+			entry(key(9, pidGroupObjectTable), this::groupObjectDescriptors),
+			entry(key(9, pidExtGroupObjectReference), this::extGroupObjectReferences),
+		
+			// at least jung devices have DD0 also in cEMI server and KNXnet/IP object
+			entry(key(8, PID.DEVICE_DESCRIPTOR), Property::deviceDescriptor),
+			entry(key(11, PID.DEVICE_DESCRIPTOR), Property::deviceDescriptor),
+			
+			entry(key(11, PID.MAC_ADDRESS), HexFormat.ofDelimiter(":")::formatHex),
+			entry(key(11, PID.KNXNETIP_DEVICE_CAPABILITIES), Property::deviceCapabilities),
+			entry(key(11, PID.KNXNETIP_ROUTING_CAPABILITIES), Property::routingCapabilities),
+			entry(key(11, PID.CURRENT_IP_ADDRESS), Property::ipAddress),
+			entry(key(11, PID.CURRENT_SUBNET_MASK), Property::ipAddress),
+			entry(key(11, PID.CURRENT_DEFAULT_GATEWAY), Property::ipAddress),
+			entry(key(11, PID.DHCP_BOOTP_SERVER), Property::ipAddress),
+			entry(key(11, PID.IP_ADDRESS), Property::ipAddress),
+			entry(key(11, PID.SUBNET_MASK), Property::ipAddress),
+			entry(key(11, PID.DEFAULT_GATEWAY), Property::ipAddress),
+			entry(key(11, PID.ROUTING_MULTICAST_ADDRESS), Property::ipAddress),
+			entry(key(11, PID.SYSTEM_SETUP_MULTICAST_ADDRESS), Property::ipAddress),
+			entry(key(11, PID.FRIENDLY_NAME), Property::string),
+			entry(key(11, PID.CURRENT_IP_ASSIGNMENT_METHOD), Property::ipAssignmentMethod),
+			entry(key(11, PID.IP_ASSIGNMENT_METHOD), Property::ipAssignmentMethod),
+			entry(key(11, PID.KNX_INDIVIDUAL_ADDRESS), Property::individualAddresses),
+			entry(key(11, PID.ADDITIONAL_INDIVIDUAL_ADDRESSES), Property::individualAddresses),
+			entry(key(11, PID.IP_CAPABILITIES), data -> ipAssignmentMethod(new byte[] { (byte) ((data[0] << 1) | 0x01) }))
+	);
+	
 	private static String knxSerialNumber(final byte[] data) {
 		final var hex = HexFormat.of().formatHex(data);
 		return hex.substring(0, 4) + ":" + hex.substring(4);
@@ -957,6 +948,8 @@ public class Property implements Runnable
 	private static String maxRetryCount(final byte[] data) {
 		return "Busy: " + (data[0] >> 4) + ", NAK: " + (data[0] & 0x7);
 	}
+
+	private static final String delimiter = ", ";
 
 	private static String couplerServiceControl(final byte[] data) {
 		final var v = data[0];
