@@ -1,5 +1,5 @@
 /*
-    Calimero 2 - A library for KNX network access
+    Calimero 3 - A library for KNX network access
     Copyright (c) 2006, 2025 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
@@ -94,7 +94,7 @@ import io.calimero.tools.Main.ShutdownHandler;
  * <p>
  * Discover is a {@link Runnable} tool implementation allowing a user to do KNXnet/IP discovery and
  * self-description of KNXnet/IP capable devices. As the protocol name already implies, this is done
- * using the IP protocol. This tool shows the necessary interaction with the Calimero 2 API for
+ * using the IP protocol. This tool shows the necessary interaction with the Calimero API for
  * discovering KNXnet/IP capable devices and query descriptions. The main part of this tool
  * implementation interacts with the type {@link Discoverer} in the library, which implements the
  * necessary discovery and self-description features.<br>

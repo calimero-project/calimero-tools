@@ -1,5 +1,5 @@
 /*
-    Calimero 2 - A library for KNX network access
+    Calimero 3 - A library for KNX network access
     Copyright (c) 2013, 2025 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
@@ -67,7 +67,7 @@ import io.calimero.tools.Main.ShutdownHandler;
  * <code>area.line</code> of the network.<br>
  * Alternatively, ScanDevices allows to check whether a specific KNX individual address is currently
  * assigned to a device, i.e, occupied in the KNX network.<br>
- * This tool shows the necessary interaction with the Calimero 2 API for management procedures. The
+ * This tool shows the necessary interaction with the Calimero API for management procedures. The
  * main part of this tool implementation interacts with the type {@link ManagementProcedures} in the
  * library.<br>
  * When running this tool from the terminal, the <code>main</code>- method of this class is invoked,

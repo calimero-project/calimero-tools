@@ -1,5 +1,5 @@
 /*
-    Calimero 2 - A library for KNX network access
+    Calimero 3 - A library for KNX network access
     Copyright (c) 2006, 2025 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
@@ -78,7 +78,7 @@ import io.calimero.mgmt.RemotePropertyServiceAdapter;
  * <code>System.out</code> (console mode), or the log writer supplied by the user. See the tool
  * options for a list of communication settings.
  * <p>
- * The main part of this tool interacts with the Calimero 2 {@link PropertyClient} interface, which
+ * The main part of this tool interacts with the Calimero {@link PropertyClient} interface, which
  * offers high level access to KNX property information. It shows creation of the
  * {@link PropertyAdapter}, necessary for a property client to work.
  *
