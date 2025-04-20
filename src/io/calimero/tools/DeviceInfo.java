@@ -95,7 +95,6 @@ import io.calimero.mgmt.RemotePropertyServiceAdapter;
 import io.calimero.serial.usb.UsbConnection;
 import io.calimero.serial.usb.UsbConnectionFactory;
 import io.calimero.tools.Main.ShutdownHandler;
-import io.calimero.xml.KNXMLException;
 import io.calimero.xml.XmlInputFactory;
 
 /**
@@ -935,7 +934,7 @@ public class DeviceInfo implements Runnable
 
 	// for function property response only
 	private static String toOnOff(final byte[] data) {
-		return (data[2] & 0x01) != 0 ? "on" : "off";
+		return (data[1] & 0x01) != 0 ? "on" : "off";
 	}
 
 	private static String toYesNo(final byte[] data) {
@@ -943,7 +942,7 @@ public class DeviceInfo implements Runnable
 	}
 
 	private static String securityFailureCounters(final byte[] data) {
-		final var counters = ByteBuffer.wrap(data, 3, data.length - 3);
+		final var counters = ByteBuffer.wrap(data, 2, data.length - 2);
 		final int scfErrors = counters.getShort() & 0xffff;
 		final int seqNoErrors = counters.getShort() & 0xffff;
 		final int cryptoErrors = counters.getShort() & 0xffff;
@@ -953,7 +952,7 @@ public class DeviceInfo implements Runnable
 	}
 
 	private static String latestSecurityFailure(final byte[] data) {
-		final var msgInfo = ByteBuffer.wrap(data, 3, data.length - 3);
+		final var msgInfo = ByteBuffer.wrap(data, 2, data.length - 2);
 
 		final var src = new IndividualAddress(msgInfo.getShort() & 0xffff);
 		final var dstRaw = msgInfo.getShort() & 0xffff;
@@ -1265,7 +1264,7 @@ public class DeviceInfo implements Runnable
 		out.log(DEBUG, "read {0} function property state {1}({2})|{3} service {4}", p.friendlyName(), objectType,
 				oinstance, propertyId, service);
 		try {
-			return mc.readFunctionPropertyState(d, objectType, oinstance, propertyId, service, info);
+			return mc.readFunctionPropertyState(d, objectType, oinstance, propertyId, service, info).result();
 		}
 		catch (final KNXException e) {
 			out.log(DEBUG, e.getMessage());
