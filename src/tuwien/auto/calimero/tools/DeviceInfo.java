@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2011, 2024 B. Malinowsky
+    Copyright (c) 2011, 2025 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -911,7 +911,7 @@ public class DeviceInfo implements Runnable
 
 	// for function property response only
 	private static String toOnOff(final byte[] data) {
-		return (data[2] & 0x01) != 0 ? "on" : "off";
+		return (data[1] & 0x01) != 0 ? "on" : "off";
 	}
 
 	private static String toYesNo(final byte[] data) {
@@ -919,7 +919,7 @@ public class DeviceInfo implements Runnable
 	}
 
 	private static String securityFailureCounters(final byte[] data) {
-		final var counters = ByteBuffer.wrap(data, 3, data.length - 3);
+		final var counters = ByteBuffer.wrap(data, 2, data.length - 2);
 		final int scfErrors = counters.getShort() & 0xffff;
 		final int seqNoErrors = counters.getShort() & 0xffff;
 		final int cryptoErrors = counters.getShort() & 0xffff;
@@ -929,7 +929,7 @@ public class DeviceInfo implements Runnable
 	}
 
 	private static String latestSecurityFailure(final byte[] data) {
-		final var msgInfo = ByteBuffer.wrap(data, 3, data.length - 3);
+		final var msgInfo = ByteBuffer.wrap(data, 2, data.length - 2);
 
 		final var src = new IndividualAddress(msgInfo.getShort() & 0xffff);
 		final var dstRaw = msgInfo.getShort() & 0xffff;
@@ -1241,7 +1241,7 @@ public class DeviceInfo implements Runnable
 		out.debug("read {} function property state {}({})|{} service {}", p.friendlyName(), objectType,
 				oinstance, propertyId, service);
 		try {
-			return mc.readFunctionPropertyState(d, objectType, oinstance, propertyId, service, info);
+			return mc.readFunctionPropertyState(d, objectType, oinstance, propertyId, service, info).result();
 		}
 		catch (final KNXException e) {
 			out.debug(e.getMessage());
