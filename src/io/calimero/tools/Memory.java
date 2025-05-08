@@ -290,7 +290,7 @@ public class Memory implements Runnable {
 			else if (arg.equals("read") || arg.equals("r")) {
 				options.put("read", Integer.decode(i.next()));
 				if (i.hasNext())
-					options.put("bytes", Integer.parseInt(i.next()));
+					options.put("bytes", Integer.parseUnsignedInt(i.next()));
 			}
 			else if (arg.equals("write") || arg.equals("w")) {
 				options.put("write", Integer.decode(i.next()));

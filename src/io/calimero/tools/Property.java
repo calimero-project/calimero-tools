@@ -855,7 +855,7 @@ public class Property implements Runnable
 			final byte[] d = new byte[(s.length() - 1) / 2];
 			int k = (s.length() & 0x01) != 0 ? 3 : 4;
 			for (int i = 2; i < s.length(); i = k, k += 2)
-				d[(i - 1) / 2] = (byte) Integer.parseInt(s.substring(i, k), 16);
+				d[(i - 1) / 2] = (byte) Integer.parseUnsignedInt(s.substring(i, k), 16);
 			return d;
 		}
 		else if (s.length() > 1 && s.startsWith("0"))
