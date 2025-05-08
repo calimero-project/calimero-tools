@@ -595,11 +595,11 @@ public class ProcComm implements Runnable
 			System.out.println("LTE-HEE command: r|w|i address IOT OI [\"company\" company] PID [hex values]");
 			return;
 		}
-		final int iot = Integer.parseInt(s[2]);
-		final int oi = Integer.parseInt(s[3]);
+		final int iot = Integer.parseUnsignedInt(s[2]);
+		final int oi = Integer.parseUnsignedInt(s[3]);
 		final int privatePidOffset = "company".equals(s[4]) ? 2 : 0;
-		final int company = privatePidOffset > 0 ? Integer.parseInt(s[5]) : 0;
-		final int pid = Integer.parseInt(s[4 + privatePidOffset]);
+		final int company = privatePidOffset > 0 ? Integer.parseUnsignedInt(s[5]) : 0;
+		final int pid = Integer.parseUnsignedInt(s[4 + privatePidOffset]);
 		final String data = String.join("", Arrays.copyOfRange(s, 5 + privatePidOffset, s.length)).replaceAll("0x", "");
 
 		final String cmd = s[0];
@@ -642,7 +642,7 @@ public class ProcComm implements Runnable
 		}
 
 		for (int k = 0; k < data.length(); k+= 2)
-			asdu[i++] = (byte) Integer.parseInt(data.substring(k, k + 2), 16);
+			asdu[i++] = (byte) Integer.parseUnsignedInt(data.substring(k, k + 2), 16);
 
 		// create tpdu
 		final int groupPropRead = 0b1111101000;

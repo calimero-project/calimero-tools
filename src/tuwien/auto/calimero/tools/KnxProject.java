@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2019, 2021 B. Malinowsky
+    Copyright (c) 2019, 2025 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -252,9 +252,9 @@ public final class KnxProject {
 		int main = 0;
 		var dptId = "";
 		if (mainSub.length >= 1 && !mainSub[0].isEmpty())
-			main = Integer.parseInt(mainSub[0]);
+			main = Integer.parseUnsignedInt(mainSub[0]);
 		if (mainSub.length == 2)
-			dptId = String.format("%d.%03d", main, Integer.parseInt(mainSub[1]));
+			dptId = String.format("%d.%03d", main, Integer.parseUnsignedInt(mainSub[1]));
 		return new Object[] { main, dptId };
 	}
 
