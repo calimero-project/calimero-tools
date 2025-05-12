@@ -691,7 +691,7 @@ public class Discover implements Runnable
 			else if (Main.isOption(arg, "netif", "i"))
 				options.put("if", getNetworkIF(i.next()));
 			else if (Main.isOption(arg, "timeout", "t")) {
-				final var timeout = Duration.ofSeconds(Long.parseLong(i.next()));
+				final var timeout = Duration.ofSeconds(Long.parseUnsignedLong(i.next()));
 				// a value of 0 means infinite timeout
 				if (timeout.toMillis() > 0)
 					options.put("timeout", timeout);

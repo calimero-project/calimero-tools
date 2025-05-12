@@ -859,9 +859,9 @@ public class Property implements Runnable
 			return d;
 		}
 		else if (s.length() > 1 && s.startsWith("0"))
-			l = Long.parseLong(s, 8);
+			l = Long.parseUnsignedLong(s, 8);
 		else if (s.startsWith("b"))
-			l = Long.parseLong(s.substring(1), 2);
+			l = Long.parseUnsignedLong(s.substring(1), 2);
 		else
 			l = Long.parseLong(s);
 		int i = 0;
@@ -887,11 +887,11 @@ public class Property implements Runnable
 
 	private static PropertyKey key(final int pid) { return new PropertyKey(PropertyKey.GLOBAL_OBJTYPE, pid); }
 	private static PropertyKey key(final int objectType, final int pid) { return new PropertyKey(objectType, pid); }
-	
+
 	private static final int pidErrorFlags = 53;
 	private static final int pidCouplerServiceControl   = 57;
 	private static final int pidExtGroupObjectReference = 52;
-	
+
 	private final Map<PropertyKey, Function<byte[], String>> customFormatter = Map.ofEntries(
 			entry(key(PID.DESCRIPTION), Property::string),
 			entry(key(PID.PROGRAM_VERSION), Property::programVersion),
@@ -915,11 +915,11 @@ public class Property implements Runnable
 			entry(key(9, PID.TABLE), this::groupObjectDescriptors),
 			entry(key(9, pidGroupObjectTable), this::groupObjectDescriptors),
 			entry(key(9, pidExtGroupObjectReference), this::extGroupObjectReferences),
-		
+
 			// at least jung devices have DD0 also in cEMI server and KNXnet/IP object
 			entry(key(8, PID.DEVICE_DESCRIPTOR), Property::deviceDescriptor),
 			entry(key(11, PID.DEVICE_DESCRIPTOR), Property::deviceDescriptor),
-			
+
 			entry(key(11, PID.MAC_ADDRESS), HexFormat.ofDelimiter(":")::formatHex),
 			entry(key(11, PID.KNXNETIP_DEVICE_CAPABILITIES), Property::deviceCapabilities),
 			entry(key(11, PID.KNXNETIP_ROUTING_CAPABILITIES), Property::routingCapabilities),
@@ -939,7 +939,7 @@ public class Property implements Runnable
 			entry(key(11, PID.ADDITIONAL_INDIVIDUAL_ADDRESSES), Property::individualAddresses),
 			entry(key(11, PID.IP_CAPABILITIES), data -> ipAssignmentMethod(new byte[] { (byte) ((data[0] << 1) | 0x01) }))
 	);
-	
+
 	private static String knxSerialNumber(final byte[] data) {
 		final var hex = HexFormat.of().formatHex(data);
 		return hex.substring(0, 4) + ":" + hex.substring(4);
