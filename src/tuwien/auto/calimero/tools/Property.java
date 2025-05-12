@@ -858,9 +858,9 @@ public class Property implements Runnable
 			return d;
 		}
 		else if (s.length() > 1 && s.startsWith("0"))
-			l = Long.parseLong(s, 8);
+			l = Long.parseUnsignedLong(s, 8);
 		else if (s.startsWith("b"))
-			l = Long.parseLong(s.substring(1), 2);
+			l = Long.parseUnsignedLong(s.substring(1), 2);
 		else
 			l = Long.parseLong(s);
 		int i = 0;

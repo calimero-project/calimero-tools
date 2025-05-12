@@ -347,9 +347,9 @@ final class Main
 		else if (isOption(arg, "json", null))
 			options.put("json", null);
 		else if (isOption(arg, "reconnect-delay", null))
-			options.put("reconnectDelay", Duration.ofSeconds(Long.parseLong(i.next())));
+			options.put("reconnectDelay", Duration.ofSeconds(Long.parseUnsignedLong(i.next())));
 		else if (isOption(arg, "max-reconnect-attempts", null))
-			options.put("maxConnectAttempts", Long.parseLong(i.next()));
+			options.put("maxConnectAttempts", Long.parseUnsignedLong(i.next()));
 		else
 			return false;
 		return true;
