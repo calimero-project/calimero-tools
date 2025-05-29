@@ -104,6 +104,10 @@ dependencies {
 	runtimeOnly("org.slf4j:slf4j-simple:2.0.16")
 }
 
+// we don't need the serial/usb feature jars when publishing
+tasks.named("serialJar") { enabled = false }
+tasks.named("usbJar") { enabled = false }
+
 tasks.named<Jar>("jar") {
 	manifest {
 		val gitHash = providers.exec {
