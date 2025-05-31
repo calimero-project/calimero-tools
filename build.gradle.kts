@@ -93,7 +93,7 @@ tasks.withType<Javadoc>().configureEach {
 dependencies {
 	api("com.github.calimero:calimero-core:$version")
 	implementation("net.lingala.zip4j:zip4j:2.11.5")
-	implementation("org.slf4j:slf4j-api:2.0.16")
+	implementation("org.slf4j:slf4j-api:2.0.17")
 
 	add("serialRuntimeOnly", "com.github.calimero:calimero-rxtx:$version")
 	add("serialRuntimeOnly", "io.calimero:serial-native:$version")
@@ -101,7 +101,7 @@ dependencies {
 	runtimeOnly(sourceSets["serial"].runtimeClasspath)
 	runtimeOnly(sourceSets["usb"].runtimeClasspath)
 
-	runtimeOnly("org.slf4j:slf4j-simple:2.0.16")
+	runtimeOnly("org.slf4j:slf4j-simple:2.0.17")
 }
 
 // we don't need the serial/usb feature jars when publishing
