@@ -125,33 +125,33 @@ Once you enter the CLI of the property client, execute, e.g., `scan all` to scan
 
 ### Using Java
 
-Replace the version in the examples (2.6-rc2) with the exact version you are running. Make sure all dependencies are available, either by relying on the Calimero Tools MANIFEST file or the [Java class path](https://docs.oracle.com/javase/8/docs/technotes/tools/windows/classpath.html) settings (using the `-classpath` option or the [CLASSPATH](https://docs.oracle.com/javase/tutorial/essential/environment/paths.html) environment variable). The simplest way is to have all required `.jar` files in the same directory.
+Replace the version in the examples (2.6) with the exact version you are running. Make sure all dependencies are available, either by relying on the Calimero Tools MANIFEST file or the [Java class path](https://docs.oracle.com/javase/8/docs/technotes/tools/windows/classpath.html) settings (using the `-classpath` option or the [CLASSPATH](https://docs.oracle.com/javase/tutorial/essential/environment/paths.html) environment variable). The simplest way is to have all required `.jar` files in the same directory.
 
 For an overview of tools, run
 
-	java -jar calimero-tools-2.6-rc2.jar
+	java -jar calimero-tools-2.6.jar
 
 **Discover KNXnet/IP devices**
 
 Discover KNXnet/IP servers, with Network Address Translation (NAT) enabled:
 
-	java -jar calimero-tools-2.6-rc2.jar discover search --nat
+	java -jar calimero-tools-2.6.jar discover search --nat
 
 **Process Communication**
 
 Read a KNX datapoint value (switch button on/off) from a group address (`1/2/1`) using the FT1.2 protocol over the serial port `/dev/ttyS01`
 
-	java -jar calimero-tools-2.6-rc2.jar read switch 1/2/1 --ft12 /dev/ttyS01
+	java -jar calimero-tools-2.6.jar read switch 1/2/1 --ft12 /dev/ttyS01
 
 Start process communication group monitoring for a TP1 KNX network (the default) using KNXnet/IP Routing in the multicast group `224.0.23.12`, and a specific local host address (`--localhost`, useful in multihoming to specify the outgoing network interface)
 
-	java -jar calimero-tools-2.6-rc2.jar groupmon --localhost 192.168.10.14 224.0.23.12
+	java -jar calimero-tools-2.6.jar groupmon --localhost 192.168.10.14 224.0.23.12
 
 **Busmonitor**
 
 Start a KNX busmonitor on a KNX TP1 (Twisted Pair) network, using a compact (`-c` or `--compact`) busmonitor indication output format
 
-	java -jar calimero-tools-2.6-rc2.jar monitor -c --usb busch-jaeger
+	java -jar calimero-tools-2.6.jar monitor -c --usb busch-jaeger
 
 Calimero busmonitor output in compact mode looks like
 
@@ -168,7 +168,7 @@ Calimero busmonitor output in compact mode looks like
 
 Read device information of KNX device `1.1.4` in a TP1 network (default medium) using the KNXnet/IP server `192.168.10.12`
 
-	java -cp "calimero-tools-2.6-rc2.jar" devinfo 192.168.10.12 1.1.4
+	java -cp "calimero-tools-2.6.jar" devinfo 192.168.10.12 1.1.4
 
 
 Run tools using Gradle without source code
@@ -181,7 +181,7 @@ plugins { id 'application' }
 repositories { mavenCentral() }
 mainClassName = "tuwien.auto.calimero.tools.Main"
 dependencies {
-  runtimeOnly group: 'com.github.calimero', name: 'calimero-tools', version: '2.6-rc2'
+  runtimeOnly group: 'com.github.calimero', name: 'calimero-tools', version: '2.6'
 }
 ```
 
