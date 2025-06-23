@@ -167,8 +167,9 @@ public class Memory implements Runnable {
 			}
 
 			// setup for reading device info of remote device
-			try (KNXNetworkLink link = Main.newLink(options)) {
-				mp = new ManagementProceduresImpl(link);
+			try (var link = Main.newLink(options);
+				 var mpImpl = new ManagementProceduresImpl(link)) {
+				mp = mpImpl;
 				readWriteMemory();
 			}
 		}
