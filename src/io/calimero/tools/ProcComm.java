@@ -788,7 +788,7 @@ public class ProcComm implements Runnable
 			final MainType main = i.next();
 			try {
 				final String dptid = main.getSubTypes().keySet().iterator().next();
-				final DPTXlator t = TranslatorTypes.createTranslator(main.getMainNumber(), dptid);
+				final DPTXlator t = TranslatorTypes.createTranslator(main.mainNumber(), dptid);
 				t.setData(asdu);
 				sb.append(t.getValue()).append(" [").append(dptid).append("]").append(i.hasNext() ? ", " : "");
 			}

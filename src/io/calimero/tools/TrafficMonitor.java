@@ -393,7 +393,7 @@ public class TrafficMonitor implements Runnable {
 		for (final var mainType : typesBySize) {
 			try {
 				final String dptid = mainType.getSubTypes().keySet().iterator().next();
-				final DPTXlator t = TranslatorTypes.createTranslator(mainType.getMainNumber(), dptid);
+				final DPTXlator t = TranslatorTypes.createTranslator(mainType.mainNumber(), dptid);
 				t.setData(asdu);
 				joiner.add(t.getValue() + " [" + dptid + "]");
 			}
