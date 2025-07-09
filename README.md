@@ -1,5 +1,4 @@
-# Calimero Tools [![Java CI with Gradle](https://github.com/calimero-project/calimero-tools/actions/workflows/gradle.yml/badge.svg)](https://github.com/calimero-project/calimero-tools/actions/workflows/gradle.yml)
-
+# Calimero Tools [![Java CI with Gradle](https://github.com/calimero-project/calimero-tools/actions/workflows/gradle.yml/badge.svg)](https://github.com/calimero-project/calimero-tools/actions/workflows/gradle.yml) [![](https://jitpack.io/v/calimero-project/calimero-tools.svg)](https://jitpack.io/#calimero-project/calimero-tools) [![](https://img.shields.io/badge/jitpack-master-brightgreen?label=JitPack)](https://jitpack.io/#calimero-project/calimero-tools/master)
 
 ~~~ sh
 git clone https://github.com/calimero-project/calimero-tools.git
