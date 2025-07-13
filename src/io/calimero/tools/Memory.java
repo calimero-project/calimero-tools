@@ -54,7 +54,6 @@ import io.calimero.KNXException;
 import io.calimero.KNXFormatException;
 import io.calimero.KNXIllegalArgumentException;
 import io.calimero.knxnetip.KNXnetIPConnection;
-import io.calimero.link.KNXNetworkLink;
 import io.calimero.link.medium.TPSettings;
 import io.calimero.log.LogService;
 import io.calimero.mgmt.ManagementClient;
