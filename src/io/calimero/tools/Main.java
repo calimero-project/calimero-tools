@@ -222,7 +222,7 @@ final class Main
 	{
 		final var joiner = new StringJoiner(System.lineSeparator());
 		joiner.add("Supported commands (always safe without further options, use -h for help):");
-		int maxLength = tools.stream().mapToInt(cmd -> cmd.name().length()).max().orElseThrow();
+		final int maxLength = tools.stream().mapToInt(cmd -> cmd.name().length()).max().orElseThrow();
 		for (final var tool : tools) {
 			joiner.add(String.format("%-" + maxLength + "s - %s", tool.name(), tool.description()));
 		}
