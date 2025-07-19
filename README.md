@@ -6,12 +6,6 @@ git clone https://github.com/calimero-project/calimero-tools.git
 
 A collection of KNX network tools based on Calimero for (secure) process communication, monitoring, and management.
 
-With Maven, execute
-
-	$ mvn install
-
-With Gradle, execute
-
 	./gradlew build
 
 ### Docker image
@@ -69,58 +63,6 @@ Use `-h` or `--help` for help with a tool (here, _scan_ for scanning devices)
 KNX IP Secure multicast group monitor using a keyring
 
 	./gradlew run --args="groupmon 224.0.23.12 --keyring mykeys.knxkeys --keyring-pwd quack"
-
-### Using Maven
-
-Show all supported tools
-
-	mvn exec:java
-
-Run a command with option `--help` to show the help message for usage
-
-	mvn exec:java -Dexec.args="groupmon --help"
-
-The equivalent of the above command using explicit invocation would be
-
-	mvn exec:java -Dexec.mainClass=io.calimero.tools.ProcComm -Dexec.args="--help"
-
-**Discover KNXnet/IP devices**
-
-~~~ sh
-# Variant which executes the `discover` command
-$ mvn exec:java -Dexec.args=discover
-
-# Variant which specifically refers to the tool class
-$ mvn exec:java -Dexec.mainClass=io.calimero.tools.Discover -Dexec.args=--search
-~~~
-
-**Process Communication**
-
-Start process communication for group monitoring (command `groupmon`), accessing a KNX power-line network (`--medium p110` or `-m p110`) using a USB interface with name `busch-jaeger` (or any other KNX vendor or product name, e.g., `siemens`).
-
-	mvn exec:java -Dexec.args="groupmon --usb busch-jaeger -m p110"
-
-With USB, you can also specify the USB interface using the vendor and product ID as `VendorID:ProductID`. If you don't know any identification yet, run the tool using a bogus ID and debug settings to print the available USB interfaces.
-
-Start process communication for group monitoring, accessing an RF network using a Weinzierl USB interface. Adjust the logging level for `debug` output:
-
-	mvn exec:java -Dexec.args="groupmon --usb weinzierl -m rf" -Dorg.slf4j.simpleLogger.defaultLogLevel=debug
-
-**Local Device Management**
-
-Access the KNX properties of your KNXnet/IP server with control endpoint `192.168.10.10` using  _local_ device management
-
-	mvn exec:java -Dexec.args="properties 192.168.10.10"
-
-**Remote Device Management**
-
-Remote property services (this example only works if the KNX device implements _Interface Objects_): open a client to a remote (`-r`) KNX device with the device address `1.1.5`, via KNXnet/IP tunneling to a KNXnet/IP server with control endpoint `192.168.10.10`
-
-	mvn exec:java -Dexec.args="properties 192.168.10.10 -r 1.1.5"
-
-Once you enter the CLI of the property client, execute, e.g., `scan all` to scan all KNX properties of that device.
-
-
 
 ### Using Java
 
