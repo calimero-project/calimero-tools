@@ -1,12 +1,13 @@
 # Calimero Tools [![Java CI with Gradle](https://github.com/calimero-project/calimero-tools/actions/workflows/gradle.yml/badge.svg)](https://github.com/calimero-project/calimero-tools/actions/workflows/gradle.yml) [![](https://jitpack.io/v/calimero-project/calimero-tools.svg)](https://jitpack.io/#calimero-project/calimero-tools) [![](https://img.shields.io/badge/jitpack-master-brightgreen?label=JitPack)](https://jitpack.io/#calimero-project/calimero-tools/master)
 
-~~~ sh
-git clone https://github.com/calimero-project/calimero-tools.git
-~~~
-
 A collection of KNX network tools based on Calimero for (secure) process communication, monitoring, and management.
 
-	./gradlew build
+~~~ sh
+git clone https://github.com/calimero-project/calimero-tools.git
+cd calimero-tools
+# use gradlew.bat on Windows
+./gradlew build
+~~~
 
 ### Docker image
 
@@ -48,21 +49,57 @@ Show all supported tools
 
     ./gradlew run
 
-Discover KNX IP devices
-
-    ./gradlew run --args discover
-
-Run group monitor (using KNXnet/IP Routing)
-
-	./gradlew run --args="groupmon 224.0.23.12"
-
 Use `-h` or `--help` for help with a tool (here, _scan_ for scanning devices)
 
 	./gradlew run --args="scan -h"
-	
+
+Discover KNX IP devices
+
+    ./gradlew run --args="discover"
+
+**Process Communication**
+
+Run group monitor using KNXnet/IP Routing with multicast group 224.0.23.12
+
+	./gradlew run --args="groupmon 224.0.23.12"
+
+Start process communication for group monitoring using the first found KNX USB interface
+
+	./gradlew run --args="groupmon --usb"
+
+Start process communication for group monitoring using a USB interface with name `busch-jaeger` (or any other KNX 
+vendor or product name, e.g., `siemens`), accessing a KNX power-line network (`--medium p110` or `-m p110`):
+
+	./gradlew run --args="groupmon --usb busch-jaeger -m p110"
+
+With USB, you can also specify the USB interface using the vendor and product ID as `VendorID:ProductID`. 
+Run the tool with verbose logging (`-vvv`) to print the available USB interfaces.
+
+	./gradlew run --args="-vvv groupmon --usb"
+
+Start process communication for group monitoring, accessing an RF network using a Weinzierl USB interface
+
+	./gradlew run --args="groupmon --usb weinzierl -m rf"
+
 KNX IP Secure multicast group monitor using a keyring
 
 	./gradlew run --args="groupmon 224.0.23.12 --keyring mykeys.knxkeys --keyring-pwd quack"
+
+**Local Device Management**
+
+Access the KNX properties of your KNXnet/IP server with control endpoint `192.168.10.10` using  _local_ device management
+
+	./gradlew run --args="properties 192.168.10.10"
+
+**Remote Device Management**
+
+Remote property services (this example only works if the KNX device implements _Interface Objects_): open a client to a remote (`-r`) KNX device with the device address `1.1.5`, via KNXnet/IP tunneling to a KNXnet/IP server with control endpoint `192.168.10.10`
+
+	./gradlew run --args="properties 192.168.10.10 -r 1.1.5"
+
+Once you enter the CLI of the property client, execute, e.g., `scan all` to scan all KNX properties of that device.
+
+
 
 ### Using Java
 
