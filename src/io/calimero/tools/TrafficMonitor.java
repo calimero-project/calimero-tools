@@ -183,7 +183,7 @@ public class TrafficMonitor implements Runnable {
 	public static void main(final String... args) {
 		try {
 			final TrafficMonitor pc = new TrafficMonitor(args);
-			final ShutdownHandler sh = new Main.ShutdownHandler().register();
+			final ShutdownHandler sh = new Main.ShutdownHandler();
 			pc.run();
 			sh.unregister();
 		}

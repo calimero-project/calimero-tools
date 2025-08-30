@@ -124,7 +124,7 @@ public class ScanDevices implements Runnable
 	{
 		try {
 			final ScanDevices scan = new ScanDevices(args);
-			final ShutdownHandler sh = new ShutdownHandler().register();
+			final ShutdownHandler sh = new ShutdownHandler();
 			scan.run();
 			sh.unregister();
 		}

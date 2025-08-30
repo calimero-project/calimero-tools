@@ -198,7 +198,7 @@ public class NetworkMonitor implements Runnable
 		try {
 			// if listener is null, we create our default one
 			final NetworkMonitor m = new NetworkMonitor(args);
-			final ShutdownHandler sh = m.new ShutdownHandler().register();
+			final ShutdownHandler sh = m.new ShutdownHandler();
 			m.run();
 			sh.unregister();
 		}
@@ -637,26 +637,19 @@ public class NetworkMonitor implements Runnable
 		return "";
 	}
 
-	private final class ShutdownHandler extends Thread
-	{
-		private ShutdownHandler register()
-		{
-			Runtime.getRuntime().addShutdownHook(this);
-			return this;
+	private final class ShutdownHandler {
+		private final Thread hook;
+
+		ShutdownHandler() {
+			hook = Thread.ofVirtual().unstarted(NetworkMonitor.this::quit);
+			Runtime.getRuntime().addShutdownHook(hook);
 		}
 
-		private void unregister()
-		{
+		private void unregister() {
 			try {
-				Runtime.getRuntime().removeShutdownHook(this);
+				Runtime.getRuntime().removeShutdownHook(hook);
 			}
 			catch (final IllegalStateException expected) {}
-		}
-
-		@Override
-		public void run()
-		{
-			quit();
 		}
 	}
 }

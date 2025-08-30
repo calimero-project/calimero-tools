@@ -142,7 +142,7 @@ public class Memory implements Runnable {
 	public static void main(final String... args) {
 		try {
 			final Memory d = new Memory(args);
-			final ShutdownHandler sh = new ShutdownHandler().register();
+			final ShutdownHandler sh = new ShutdownHandler();
 			d.run();
 			sh.unregister();
 		}
