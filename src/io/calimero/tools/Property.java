@@ -305,19 +305,14 @@ public class Property implements Runnable
 		if (cmd == null)
 			return;
 		try {
-			final String what = cmd[0];
-			if ("get".equals(what))
-				getProperty(cmd);
-			else if ("set".equals(what))
-				setProperty(cmd);
-			else if ("scan".equals(what))
-				scanProperties(cmd);
-			else if ("desc".equals(what))
-				getDescription(cmd);
-			else if ("?".equals(what) || "help".equals(what))
-				showCommandList();
-			else
-				out("unknown command ('?' or 'help' shows help)");
+			switch (cmd[0]) {
+				case "get"       -> getProperty(cmd);
+				case "set"       -> setProperty(cmd);
+				case "scan"      -> scanProperties(cmd);
+				case "desc"      -> getDescription(cmd);
+				case "?", "help" -> showCommandList();
+				default          -> out("unknown command ('?' or 'help' shows help)");
+			}
 		}
 		catch (final NumberFormatException e) {
 			out.log(ERROR, "invalid number (" + e.getMessage() + ")");

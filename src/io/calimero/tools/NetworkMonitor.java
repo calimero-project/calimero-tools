@@ -348,9 +348,8 @@ public class NetworkMonitor implements Runnable
 	}
 
 	private static String toJson(final RawFrame raw, final CEMIBusMon frame) {
-		Json jsonRaw = null;
-		if (raw != null) {
-			if (raw instanceof final RawFrameBase f) {
+		var jsonRaw = switch (raw) {
+			case final RawFrameBase f -> {
 				final byte[] tpdu = f.getTPDU();
 				final String tpci = DataUnitBuilder.decodeTPCI(DataUnitBuilder.getTPDUService(tpdu), f.getDestination());
 				final String apci = DataUnitBuilder.decodeAPCI(DataUnitBuilder.getAPDUService(tpdu));
@@ -359,14 +358,14 @@ public class NetworkMonitor implements Runnable
 				record JsonRawFrame(String svc, boolean extended, IndividualAddress src, KNXAddress dst,
 						boolean repetition, int hopCount, Priority priority, String tpci, String apci, byte[] asdu,
 						int checksum) implements Json {}
-				jsonRaw = new JsonRawFrame(frameFormat(f.getFrameType()), f.extended(), f.getSource(), f.getDestination(),
+				yield new JsonRawFrame(frameFormat(f.getFrameType()), f.extended(), f.getSource(), f.getDestination(),
 						f.isRepetition(), f.getHopcount(), f.getPriority(), tpci, apci, asdu, f.getChecksum());
 			}
-			else if (raw instanceof final RawAckBase ack) {
+			case final RawAckBase ack -> {
 				record JsonRawAck(String svc, String ackType) implements Json {}
-				jsonRaw = new JsonRawAck(frameFormat(ack.getFrameType()), ackType(ack.getAckType()));
+				yield new JsonRawAck(frameFormat(ack.getFrameType()), ackType(ack.getAckType()));
 			}
-			else if (raw instanceof final RFLData rf) {
+			case final RFLData rf -> {
 				final byte[] tpdu = rf.getTpdu();
 				final String tpci = DataUnitBuilder.decodeTPCI(DataUnitBuilder.getTPDUService(tpdu), rf.getDestination());
 				final String apci = DataUnitBuilder.decodeAPCI(DataUnitBuilder.getAPDUService(tpdu));
@@ -377,14 +376,16 @@ public class NetworkMonitor implements Runnable
 				record JsonRfLData(String svc, IndividualAddress src, KNXAddress dst, int frameNumber,
 						boolean systemBroadcast, RSS rss, boolean batteryOk, boolean txOnlyDevice, byte[] doa,
 						byte[] sn, String tpci, String apci, byte[] asdu, int checksum) implements Json {}
-				jsonRaw = new JsonRfLData(frameFormatRf(rf.getFrameType()), rf.getSource(), rf.getDestination(), rf.getFrameNumber(),
-						rf.isSystemBroadcast(), rf.getRss(), rf.isBatteryOk(), rf.isTransmitOnlyDevice(), doa, sn,
-						tpci, apci, asdu, 0);
+				yield new JsonRfLData(frameFormatRf(rf.getFrameType()), rf.getSource(), rf.getDestination(),
+						rf.getFrameNumber(), rf.isSystemBroadcast(), rf.getRss(), rf.isBatteryOk(),
+						rf.isTransmitOnlyDevice(), doa, sn, tpci, apci, asdu, 0);
 			}
-			else {
+			case null -> null;
+			default -> {
 				out.log(INFO, "unsupported frame type " + raw);
+				yield null;
 			}
-		}
+		};
 
 		record JsonMonitorIndication(Instant time, String svc, long relativeTimestamp, int seqNumber, boolean frameError,
 				boolean bitError, boolean parityError, boolean lost, byte[] data, Json rawFrame) implements Json {}
@@ -596,8 +597,7 @@ public class NetworkMonitor implements Runnable
 		return decodeLteFrame(extFormat, frame.getDestination(), DataUnitBuilder.extractASDU(tpdu));
 	}
 
-	protected static String decodeLteFrame(final int extFormat, final KNXAddress dst, final byte[] asdu)
-			throws KNXFormatException {
+	protected static String decodeLteFrame(final int extFormat, final KNXAddress dst, final byte[] asdu) {
 		final StringBuilder sb = new StringBuilder();
 		final var tag = LteHeeTag.from(extFormat, (GroupAddress) dst);
 		sb.append(tag).append(' ');
@@ -619,7 +619,7 @@ public class NetworkMonitor implements Runnable
 		return sb.toString();
 	}
 
-	protected static String decodeBibat(final RFLData frame) throws KNXFormatException {
+	protected static String decodeBibat(final RFLData frame) {
 		final int frameType = frame.getFrameType() >>> 4;
 		final byte[] tpdu = frame.getTpdu();
 

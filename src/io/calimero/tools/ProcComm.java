@@ -675,11 +675,10 @@ public class ProcComm implements Runnable
 
 	private void checkForLteFrame(final FrameEvent e) {
 		final CEMI cemi = e.getFrame();
-		if (!(cemi instanceof CEMILDataEx))
+		if (!(cemi instanceof final CEMILDataEx f))
 			return;
 
 		try {
-			final CEMILDataEx f = (CEMILDataEx) cemi;
 			final byte[] data = f.toByteArray();
 			final int ctrl2 = data[3 + data[1]] & 0xff;
 			if ((ctrl2 & 0x04) == 0)

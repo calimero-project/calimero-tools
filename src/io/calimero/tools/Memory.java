@@ -243,10 +243,10 @@ public class Memory implements Runnable {
 	private void readWriteMemory() throws KNXException, InterruptedException {
 		final IndividualAddress device = (IndividualAddress) options.get("device");
 		for (var cmd = fetchCommand(); cmd != Done; cmd = fetchCommand()) {
-			if (cmd instanceof final Read read) {
-				out.log(DEBUG, "read {0} 0x{1}..0x{2}", device, Long.toHexString(read.startAddress()),
-						Long.toHexString(read.startAddress() + read.length() - 1));
-				onMemoryRead(read.startAddress(), mp.readMemory(device, read.startAddress(), read.length()));
+			if (cmd instanceof Read(int startAddress, int length)) {
+				out.log(DEBUG, "read {0} 0x{1}..0x{2}", device, Long.toHexString(startAddress),
+						Long.toHexString(startAddress + length - 1));
+				onMemoryRead(startAddress, mp.readMemory(device, startAddress, length));
 			}
 			else {
 				final var write = (Write) cmd;

@@ -459,7 +459,7 @@ public class Discover implements Runnable
 		final Srp[] srps = searchParameters.toArray(new Srp[0]);
 
 		if (tcp != null) {
-			final var result = tcp.search(srps).thenApply(list -> list.get(0)).thenAccept(this::onEndpointReceived);
+			final var result = tcp.search(srps).thenApply(List::getFirst).thenAccept(this::onEndpointReceived);
 			joinOnResult(result);
 			return;
 		}

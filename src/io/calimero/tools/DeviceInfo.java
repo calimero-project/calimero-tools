@@ -544,22 +544,13 @@ public class DeviceInfo implements Runnable
 		else if (mc != null)
 			dd = deviceDescriptor(mc.readDeviceDesc(d, 0));
 
-		// check for BCU1/BCU2 first, which don't have interface objects
-		if (dd != null) {
-			if (dd == DD0.TYPE_1013)
-				readPL110Bcu1();
-			else if (dd == DD0.TYPE_0010 || dd == DD0.TYPE_0011 || dd == DD0.TYPE_0012)
-				readTP1Bcu1();
-			else if (dd == DD0.TYPE_0020 || dd == DD0.TYPE_0021 || dd == DD0.TYPE_0025)
-				readTP1Bcu2();
-			else if (dd == DD0.TYPE_0700 || dd == DD0.TYPE_0701)
-				readTP1Bcu1();
-			else {
-				findInterfaceObjects();
-			}
-		}
-		else {
-			findInterfaceObjects();
+		// BCU1/BCU2s don't have interface objects
+		switch (dd) {
+			case DD0.TYPE_1013 -> readPL110Bcu1();
+			case DD0.TYPE_0010, DD0.TYPE_0011, DD0.TYPE_0012 -> readTP1Bcu1();
+			case DD0.TYPE_0020, DD0.TYPE_0021, DD0.TYPE_0025 -> readTP1Bcu2();
+			case DD0.TYPE_0700, DD0.TYPE_0701 -> readTP1Bcu1();
+			case null, default -> findInterfaceObjects();
 		}
 
 		// System B has mask version x7B0 and provides error code property
@@ -1098,7 +1089,7 @@ public class DeviceInfo implements Runnable
 		if (dd.equals(DD0.TYPE_5705))
 			memLocation = addrGroupAddrTableMask5705;
 		else if (ifObjects.containsKey(addresstableObject)) {
-			final int addresstableObjectIdx = ifObjects.get(addresstableObject).get(0);
+			final int addresstableObjectIdx = ifObjects.get(addresstableObject).getFirst();
 			final int tableSize = readElements(addresstableObjectIdx, PID.TABLE);
 			if (tableSize > 0) {
 				final StringJoiner joiner = new StringJoiner(", ");

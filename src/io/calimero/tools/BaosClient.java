@@ -366,7 +366,7 @@ public class BaosClient implements Runnable
 		final var desc = datapointDescription(dpId);
 		if (desc.items().isEmpty())
 			throw new KNXFormatException("no datapoint description for DP #" + dpId);
-		final byte[] data = desc.items().get(0).data();
+		final byte[] data = desc.items().getFirst().data();
 		final int mainNumber = data[2] & 0xff;
 		final var xlator = TranslatorTypes.createTranslator(mainNumber, 0);
 		dpIdToDpt.put(dpId, xlator.getType());
