@@ -538,11 +538,9 @@ public class DeviceInfo implements Runnable
 
 	private void readDeviceInfo() throws KNXException, InterruptedException
 	{
-		// find device descriptor
-		if (dd != null)
-			dd = deviceDescriptor(dd.toByteArray());
-		else if (mc != null)
-			dd = deviceDescriptor(mc.readDeviceDesc(d, 0));
+		if (dd == null && mc != null)
+			dd = DeviceDescriptor.from(mc.readDeviceDesc(d, 0));
+		deviceDescriptorResult();
 
 		// BCU1/BCU2s don't have interface objects
 		switch (dd) {
@@ -628,14 +626,13 @@ public class DeviceInfo implements Runnable
 		}
 	}
 
-	private DD0 deviceDescriptor(final byte[] data)
-	{
-		final DD0 dd = DeviceDescriptor.DD0.from(data);
-		putResult(CommonParameter.DeviceDescriptor, dd.toString(), dd.maskVersion());
-		putResult(CommonParameter.KnxMedium, toMediumTypeString(dd.mediumType()), dd.mediumType());
-		putResult(CommonParameter.FirmwareType, toFirmwareTypeString(dd.firmwareType()), dd.firmwareType());
-		putResult(CommonParameter.FirmwareVersion, "" + dd.firmwareVersion(), dd.firmwareVersion());
-		return dd;
+	private void deviceDescriptorResult() {
+		if (dd instanceof final DD0 dd0) {
+			putResult(CommonParameter.DeviceDescriptor, dd0.toString(), dd0.maskVersion());
+			putResult(CommonParameter.KnxMedium, toMediumTypeString(dd0.mediumType()), dd0.mediumType());
+			putResult(CommonParameter.FirmwareType, toFirmwareTypeString(dd0.firmwareType()), dd0.firmwareType());
+			putResult(CommonParameter.FirmwareVersion, "" + dd0.firmwareVersion(), dd0.firmwareVersion());
+		}
 	}
 
 	private void readDeviceObject(final int objectIdx) throws InterruptedException
@@ -662,10 +659,11 @@ public class DeviceInfo implements Runnable
 		final byte[] data = read(CommonParameter.DeviceDescriptor, objectIdx, PID.DEVICE_DESCRIPTOR);
 		if (data != null) {
 			final DD0 profile = DeviceDescriptor.DD0.from(data);
-			if (dd == null)
-				dd = deviceDescriptor(data);
-			// device with additional profile?
-			else if (!profile.equals(dd))
+			if (dd == null) {
+				dd = profile;
+				deviceDescriptorResult();
+			}
+			else if (!profile.equals(dd)) // device with additional profile?
 				putResult(InternalParameter.AdditionalProfile, profile.toString(), data);
 		}
 
@@ -1086,7 +1084,7 @@ public class DeviceInfo implements Runnable
 	{
 		final int memLocation;
 		// realization type 8
-		if (dd.equals(DD0.TYPE_5705))
+		if (DD0.TYPE_5705.equals(dd))
 			memLocation = addrGroupAddrTableMask5705;
 		else if (ifObjects.containsKey(addresstableObject)) {
 			final int addresstableObjectIdx = ifObjects.get(addresstableObject).getFirst();
