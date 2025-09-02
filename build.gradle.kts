@@ -126,7 +126,7 @@ tasks.startScripts {
 		// put commons-lang jar also on the classpath, used by libusb4java (which is in UNNAMED module)
 		val commonsLang3 = rtClasspath.filter { it.name.startsWith("commons-lang3") }
 		val libName = commonsLang3.first().name
-		unixScriptFile.replace("\n\nMODULE_PATH=", ":${'$'}APP_HOME/lib/$libName\n\nMODULE_PATH=")
+		unixScriptFile.replace("\n\nMODULE_PATH=", $$":$APP_HOME/lib/$$libName\n\nMODULE_PATH=")
 		winScriptFile.replace("\r\nset MODULE_PATH=", ";%APP_HOME%\\lib\\$libName\r\nset MODULE_PATH=")
 	}
 }
