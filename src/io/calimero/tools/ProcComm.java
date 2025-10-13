@@ -1027,7 +1027,7 @@ public class ProcComm implements Runnable
 		if (s.startsWith("-"))
 			return false;
 		final var id = Main.fromDptName(s);
-		final var regex = "[0-9][0-9]*\\.[0-9][0-9][0-9]";
+		final var regex = "[0-9]+\\.[0-9][0-9][0-9]";
 		return Pattern.matches(regex, id);
 	}
 
