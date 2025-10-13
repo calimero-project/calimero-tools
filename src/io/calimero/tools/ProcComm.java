@@ -88,6 +88,7 @@ import io.calimero.datapoint.StateDP;
 import io.calimero.dptxlator.DPT;
 import io.calimero.dptxlator.DPTXlator;
 import io.calimero.dptxlator.DPTXlator8BitEnum;
+import io.calimero.dptxlator.DptId;
 import io.calimero.dptxlator.DptXlator8BitSet;
 import io.calimero.dptxlator.TranslatorTypes;
 import io.calimero.dptxlator.TranslatorTypes.MainType;
@@ -468,7 +469,7 @@ public class ProcComm implements Runnable
 					final Datapoint dp = datapoints.get(e.getDestination());
 
 					if (dp != null)
-						sb.append(asString(asdu, 0, dp.getDPT()));
+						sb.append(asString(asdu, dp.dptId()));
 					else
 						sb.append(decodeAsduByLength(asdu, e.isLengthOptimizedAPDU()));
 				}
@@ -505,19 +506,28 @@ public class ProcComm implements Runnable
 	}
 
 	/**
-	 * Returns a string translation of the datapoint data for the specified datapoint type, using
-	 * the process event ASDU.
-	 *
-	 * @param asdu the process event ASDU with the datapoint data
-	 * @param dptMainNumber DPT main number &ge; 0, can be 0 if the <code>dptID</code> is unique
-	 * @param dptID datapoint type ID to look up the translator
-	 * @return the datapoint value
-	 * @throws KNXException on failed creation of translator, or translator not available
+	 * @deprecated Use {@link #asString(byte[], DptId)}
 	 */
+	@Deprecated
 	protected String asString(final byte[] asdu, final int dptMainNumber, final String dptID)
 		throws KNXException
 	{
 		final DPTXlator t = TranslatorTypes.createTranslator(dptMainNumber, dptID);
+		t.setData(asdu);
+		return t.getValue();
+	}
+
+	/**
+	 * Returns a string translation of the datapoint data for the specified datapoint type, using
+	 * the process event ASDU.
+	 *
+	 * @param asdu the process event ASDU with the datapoint data
+	 * @param dptId datapoint type ID to look up the translator
+	 * @return the datapoint value
+	 * @throws KNXException on failed creation of translator, or translator not available
+	 */
+	protected String asString(final byte[] asdu, final DptId dptId) throws KNXException {
+		final DPTXlator t = TranslatorTypes.createTranslator(dptId);
 		t.setData(asdu);
 		return t.getValue();
 	}
