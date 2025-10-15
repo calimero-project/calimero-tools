@@ -64,12 +64,12 @@ import java.util.HexFormat;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
 
 import io.calimero.CloseEvent;
 import io.calimero.DataUnitBuilder;
@@ -90,6 +90,7 @@ import io.calimero.baos.BaosService.ValueFilter;
 import io.calimero.baos.ip.BaosLinkIp;
 import io.calimero.dptxlator.DPT;
 import io.calimero.dptxlator.DPTXlator;
+import io.calimero.dptxlator.DptId;
 import io.calimero.dptxlator.TranslatorTypes;
 import io.calimero.link.KNXNetworkLink;
 import io.calimero.link.LinkEvent;
@@ -461,9 +462,9 @@ public class BaosClient implements Runnable
 			case NoCommand, SendValueOnBus, ReadValueViaBus, ClearTransmissionState -> Item.datapoint(dpId, cmd, new byte[0]);
 			case SetValue, SetValueAndSendOnBus -> {
 				final DPTXlator xlator;
-				if (isDpt(args[1])) {
-					final var dptId = Main.fromDptName(args[1]);
-					xlator = TranslatorTypes.createTranslator(dptId);
+				final var dptidOpt = checkDpt(args[1]);
+				if (dptidOpt.isPresent()) {
+					xlator = TranslatorTypes.createTranslator(dptidOpt.get());
 					dpIdToDpt.put(dpId, xlator.getType());
 					xlator.setValue(args[2]);
 				}
@@ -640,12 +641,13 @@ public class BaosClient implements Runnable
 	    return ((LocalDate) temporalAccessor).atStartOfDay(ZoneId.systemDefault());
 	}
 
-	private static boolean isDpt(final String s) {
-		if (s.startsWith("-"))
-			return false;
-		final var id = Main.fromDptName(s);
-		final var regex = "[0-9]+\\.[0-9][0-9][0-9]";
-		return Pattern.matches(regex, id);
+	private static Optional<DptId> checkDpt(final String s) {
+		try {
+			if (!s.startsWith("-"))
+				return Optional.of(Main.fromDptName(s));
+		}
+		catch (RuntimeException __) {}
+		return Optional.empty();
 	}
 
 	private static void showToolInfo() {

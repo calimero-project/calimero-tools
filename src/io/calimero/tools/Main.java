@@ -76,7 +76,7 @@ import io.calimero.IndividualAddress;
 import io.calimero.KNXException;
 import io.calimero.KNXFormatException;
 import io.calimero.KNXIllegalArgumentException;
-import io.calimero.KnxRuntimeException;
+import io.calimero.dptxlator.DptId;
 import io.calimero.internal.Manifest;
 import io.calimero.knxnetip.KNXnetIPConnection;
 import io.calimero.knxnetip.SecureConnection;
@@ -721,25 +721,23 @@ final class Main
 		return HexFormat.of().parseHex(hex);
 	}
 
-	static String fromDptName(final String id) {
+	static DptId fromDptName(final String id) {
 		return switch (id) {
-			case "switch" -> "1.001";
-			case "bool" -> "1.002";
-			case "dimmer" -> "3.007";
-			case "blinds" -> "3.008";
-			case "string" -> "16.001";
-			case "temp" -> "9.001";
-			case "float", "float2" -> "9.002";
-			case "float4" -> "14.005";
-			case "ucount" -> "5.010";
-			case "int" -> "13.001";
-			case "angle" -> "5.003";
-			case "percent", "%" -> "5.001";
-			default -> {
-				if (!"-".equals(id) && !Character.isDigit(id.charAt(0)))
-					throw new KnxRuntimeException("unrecognized DPT '" + id + "'");
-				yield id;
-			}
+			case "switch"          -> new DptId(1, 1);
+			case "bool"            -> new DptId(1, 2);
+			case "dimmer"          -> new DptId(3, 7);
+			case "blinds"          -> new DptId(3, 8);
+			case "string"          -> new DptId(16, 1);
+			case "temp"            -> new DptId(9, 1);
+			case "float", "float2" -> new DptId(9, 2);
+			case "float4"          -> new DptId(14, 5);
+			case "ucount"          -> new DptId(5, 10);
+			case "int"             -> new DptId(13, 1);
+			case "angle"           -> new DptId(5, 3);
+			case "percent", "%"    -> new DptId(5, 1);
+			case "-"               -> new DptId(0xffff, 0xffff);
+			case null              -> new DptId(0xffff, 0xffff);
+			default                -> DptId.from(id);
 		};
 	}
 

@@ -64,7 +64,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.function.BiFunction;
-import java.util.regex.Pattern;
 
 import io.calimero.DataUnitBuilder;
 import io.calimero.DetachEvent;
@@ -411,7 +410,7 @@ public class ProcComm implements Runnable
 				StateDP dp;
 
 				final GroupAddress ga = new GroupAddress(addr);
-				dp = new StateDP(ga, "tmp", 0, withDpt ? Main.fromDptName(s[2]) : null);
+				dp = new StateDP(ga, "tmp", withDpt ? Main.fromDptName(s[2]) : new DptId(0xffff, 0xffff));
 				if (withDpt && !s[2].equals("-")) {
 					datapoints.remove(dp);
 					datapoints.add(dp);
@@ -543,28 +542,6 @@ public class ProcComm implements Runnable
 		return Main.newLink(options);
 	}
 
-	/**
-	 * Gets the datapoint type identifier from the <code>options</code>, and maps alias names of
-	 * common datapoint types to its datapoint type ID.
-	 * <p>
-	 * The option map must contain a "dpt" key with value.
-	 *
-	 * @return datapoint type identifier
-	 */
-	private String getDPT(final GroupAddress group)
-	{
-		final String dpt = (String) options.get("dpt");
-		final var datapoint = datapoints.get(group);
-		if (dpt == null)
-			return datapoint != null ? datapoint.getDPT() : null;
-		final var id = Main.fromDptName(dpt);
-		if (datapoint != null)
-			datapoint.setDPT(0, id);
-		else
-			datapoints.add(new StateDP(group, "", 0, id));
-		return id;
-	}
-
 	private void readWrite() throws KNXException, InterruptedException
 	{
 		if (options.containsKey("lte")) {
@@ -577,10 +554,25 @@ public class ProcComm implements Runnable
 		if (!write && !options.containsKey("read"))
 			return;
 		final GroupAddress main = (GroupAddress) options.get("dst");
+
 		// encapsulate information into a datapoint
 		// this is a convenient way to let the process communicator
 		// handle the DPT stuff, so an already formatted string will be returned
-		readWrite(new StateDP(main, "", 0, getDPT(main)), write, (String) options.get("value"));
+		var dptid = Main.fromDptName((String) options.get("dpt"));
+		var datapoint = datapoints.get(main);
+		if (datapoint != null) {
+			if (!dptid.equals(new DptId(0xffff, 0xffff)) && !dptid.equals(datapoint.dptId())) {
+				datapoints.remove(datapoint);
+				datapoint = new StateDP(datapoint.getMainAddress(), datapoint.getName(), dptid);
+				datapoints.add(datapoint);
+			}
+		}
+		else {
+			datapoint = new StateDP(main, "", dptid);
+			datapoints.add(datapoint);
+		}
+
+		readWrite(datapoint, write, (String) options.get("value"));
 	}
 
 	private void readWrite(final Datapoint dp, final boolean write, final String value)
@@ -933,8 +925,8 @@ public class ProcComm implements Runnable
 				if (i.hasNext()) {
 					if ("-".equals(i.peek()))
 						i.next();
-					else if (isDpt(i.peek()))
-						options.put("dpt", i.next());
+					else
+						checkDpt(i.peek()).ifPresent(dpt -> options.put("dpt", i.next()));
 				}
 			}
 			else if (arg.equals("write")) {
@@ -953,8 +945,8 @@ public class ProcComm implements Runnable
 				}
 				if ("-".equals(i.peek()))
 					i.next();
-				else if (isDpt(i.peek()))
-					options.put("dpt", i.next());
+				else
+					checkDpt(i.peek()).ifPresent(dpt -> options.put("dpt", i.next()));
 				final var value = i.next();
 				options.put("value", value);
 				if (isTwoPartValue(value))
@@ -1023,12 +1015,13 @@ public class ProcComm implements Runnable
 		options.put("medium", new RFSettings(device, rf.getDomainAddress(), sn, rf.isUnidirectional()));
 	}
 
-	private static boolean isDpt(final String s) {
-		if (s.startsWith("-"))
-			return false;
-		final var id = Main.fromDptName(s);
-		final var regex = "[0-9]+\\.[0-9][0-9][0-9]";
-		return Pattern.matches(regex, id);
+	private static Optional<DptId> checkDpt(final String s) {
+		try {
+			if (!s.startsWith("-"))
+				return Optional.of(Main.fromDptName(s));
+		}
+		catch (RuntimeException __) {}
+		return Optional.empty();
 	}
 
 	private static boolean isTwoPartValue(final String value) {

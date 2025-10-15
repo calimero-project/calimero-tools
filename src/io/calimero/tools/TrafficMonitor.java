@@ -77,6 +77,7 @@ import io.calimero.datapoint.DatapointMap;
 import io.calimero.datapoint.DatapointModel;
 import io.calimero.datapoint.StateDP;
 import io.calimero.dptxlator.DPTXlator;
+import io.calimero.dptxlator.DptId;
 import io.calimero.dptxlator.TranslatorTypes;
 import io.calimero.dptxlator.TranslatorTypes.MainType;
 import io.calimero.knxnetip.KNXnetIPConnection;
@@ -264,8 +265,8 @@ public class TrafficMonitor implements Runnable {
 			out.log(ERROR, "completed with error", thrown);
 	}
 
-	private String asString(final byte[] asdu, final int dptMainNumber, final String dptID) throws KNXException {
-		final DPTXlator t = TranslatorTypes.createTranslator(dptMainNumber, dptID);
+	private String asString(final byte[] asdu, final DptId dptid) throws KNXException {
+		final DPTXlator t = TranslatorTypes.createTranslator(dptid);
 		t.setData(asdu);
 		return t.getValue();
 	}
@@ -313,7 +314,7 @@ public class TrafficMonitor implements Runnable {
 							final Datapoint dp = datapoints.get((GroupAddress) dst);
 							joiner.add(compact ? "" : ":");
 							if (dp != null)
-								joiner.add(asString(asdu, 0, dp.getDPT()));
+								joiner.add(asString(asdu, dp.dptId()));
 							else
 								joiner.add(decodeAsduByLength(asdu, payload.length == 2));
 						}
@@ -423,7 +424,7 @@ public class TrafficMonitor implements Runnable {
 					try {
 						final var ga = new GroupAddress(cmd);
 						final var dpt = Main.fromDptName(s[1]);
-						final var dp = new StateDP(ga, "tmp", 0, dpt);
+						final var dp = new StateDP(ga, "tmp", dpt);
 						datapoints.remove(dp);
 						datapoints.add(dp);
 					}
