@@ -634,11 +634,12 @@ public class BaosClient implements Runnable
 
 	static ZonedDateTime parseDateTime(final CharSequence dateTime) {
 	    final var temporalAccessor = isoVariants.parseBest(dateTime, ZonedDateTime::from, LocalDateTime::from, LocalDate::from);
-	    if (temporalAccessor instanceof ZonedDateTime)
-			return ((ZonedDateTime) temporalAccessor);
-	    if (temporalAccessor instanceof LocalDateTime)
-			return ((LocalDateTime) temporalAccessor).atZone(ZoneId.systemDefault());
-	    return ((LocalDate) temporalAccessor).atStartOfDay(ZoneId.systemDefault());
+		return switch (temporalAccessor) {
+			case final ZonedDateTime zonedDateTime -> zonedDateTime;
+			case final LocalDateTime localDateTime -> localDateTime.atZone(ZoneId.systemDefault());
+			case final LocalDate localDate -> localDate.atStartOfDay(ZoneId.systemDefault());
+			default -> throw new IllegalStateException("unexpected date/time: " + temporalAccessor);
+		};
 	}
 
 	private static Optional<DptId> checkDpt(final String s) {
@@ -686,7 +687,7 @@ public class BaosClient implements Runnable
 
 	private static StringJoiner listSupportedProperties() {
 		final var joiner = new StringJoiner(System.lineSeparator());
-		for (final var property : BaosService.Property.values())
+		for (final var property : Property.values())
 			if (property.id() != 0)
 				joiner.add(String.format("%2d = %s", property.id(), property));
 		return joiner;
@@ -694,7 +695,7 @@ public class BaosClient implements Runnable
 
 	private static StringJoiner listSupportedDpCommands() {
 		final var joiner = new StringJoiner(System.lineSeparator());
-		for (final var cmd : BaosService.DatapointCommand.values())
+		for (final var cmd : DatapointCommand.values())
 			joiner.add(String.format("%2d = %s", cmd.ordinal(), cmd));
 		return joiner;
 	}

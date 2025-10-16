@@ -622,19 +622,17 @@ public class NetworkMonitor implements Runnable
 	protected static String decodeBibat(final RFLData frame) {
 		final int frameType = frame.getFrameType() >>> 4;
 		final byte[] tpdu = frame.getTpdu();
-
-		if (frameType == 1) // Fast ACK
-			return "Fast ACK";
-		if (frameType == 5) // Sync
-			return "RndPausePtr " + (tpdu[0] & 0xff);
-		if (frameType == 6) // Help
-			return "Retransmitter " + (tpdu[0] & 0xff);
-		if (frameType == 7) { // Help Response
-			final int ticks = ((tpdu[0] & 0xff) << 16) | ((tpdu[1] & 0xff) << 8) | (tpdu[2] & 0xff);
-			final double next = (ticks * 10) / 16384 / 10d;
-			return "NextBlock " + next + " ms NextBlock# " + (tpdu[3] & 0xff) + " RndPausePtr " + (tpdu[4] & 0xff);
-		}
-		return "";
+		return switch (frameType) {
+			case 1 -> "Fast ACK"; // Fast ACK
+			case 5 -> "RndPausePtr " + (tpdu[0] & 0xff); // Sync
+			case 6 -> "Retransmitter " + (tpdu[0] & 0xff); // Help
+			case 7 -> {
+				int ticks = ((tpdu[0] & 0xff) << 16) | ((tpdu[1] & 0xff) << 8) | (tpdu[2] & 0xff);
+				double next = (ticks * 10) / 16384 / 10d;
+				yield "NextBlock " + next + " ms NextBlock# " + (tpdu[3] & 0xff) + " RndPausePtr " + (tpdu[4] & 0xff);
+			}
+			default -> "";
+		};
 	}
 
 	private final class ShutdownHandler {

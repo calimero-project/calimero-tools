@@ -310,8 +310,8 @@ public class TrafficMonitor implements Runnable {
 						}
 					}
 					else {
-						if (asdu.length > 0 && dst instanceof GroupAddress && dst.getRawAddress() != 0) {
-							final Datapoint dp = datapoints.get((GroupAddress) dst);
+						if (asdu.length > 0 && dst instanceof GroupAddress ga && dst.getRawAddress() != 0) {
+							final Datapoint dp = datapoints.get(ga);
 							joiner.add(compact ? "" : ":");
 							if (dp != null)
 								joiner.add(asString(asdu, dp.dptId()));
@@ -382,8 +382,7 @@ public class TrafficMonitor implements Runnable {
 		};
 	}
 
-	private static String decodeLteFrame(final int extFormat, final KNXAddress dst, final byte[] asdu)
-			throws KNXFormatException {
+	private static String decodeLteFrame(final int extFormat, final KNXAddress dst, final byte[] asdu) {
 		return NetworkMonitor.decodeLteFrame(extFormat, dst, asdu);
 	}
 
