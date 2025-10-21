@@ -526,9 +526,7 @@ public class ProcComm implements Runnable
 	 * @throws KNXException on failed creation of translator, or translator not available
 	 */
 	protected String asString(final byte[] asdu, final DptId dptId) throws KNXException {
-		final DPTXlator t = TranslatorTypes.createTranslator(dptId);
-		t.setData(asdu);
-		return t.getValue();
+		return TranslatorTypes.createTranslator(dptId, asdu).getValue();
 	}
 
 	/**

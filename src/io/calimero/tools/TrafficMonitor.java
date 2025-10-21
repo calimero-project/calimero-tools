@@ -266,9 +266,7 @@ public class TrafficMonitor implements Runnable {
 	}
 
 	private String asString(final byte[] asdu, final DptId dptid) throws KNXException {
-		final DPTXlator t = TranslatorTypes.createTranslator(dptid);
-		t.setData(asdu);
-		return t.getValue();
+		return TranslatorTypes.createTranslator(dptid, asdu).getValue();
 	}
 
 	private void onFrameEvent(final FrameEvent e) {
