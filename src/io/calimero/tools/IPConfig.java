@@ -560,6 +560,8 @@ public class IPConfig implements Runnable
 			throw new KNXIllegalArgumentException("no host or serial port specified");
 		if (options.containsKey("ft12") && !options.containsKey("remote"))
 			throw new KNXIllegalArgumentException("--remote option is mandatory with --ft12");
+		if (options.containsKey("tpuart") && !options.containsKey("remote"))
+			throw new KNXIllegalArgumentException("--remote option is mandatory with --tpuart");
 		setDomainAddress(options);
 	}
 

@@ -264,8 +264,12 @@ public class Restart implements Runnable {
 
 		if (!options.containsKey("host"))
 			throw new KNXIllegalArgumentException("no communication device/host specified");
-		if (options.containsKey("ft12") && !options.containsKey("remote"))
-			throw new KNXIllegalArgumentException("--remote option is mandatory with --ft12");
+		if (options.containsKey("ft12") && !options.containsKey("device"))
+			throw new KNXIllegalArgumentException("specify KNX device address to restart");
+		if (options.containsKey("tpuart") && !options.containsKey("device"))
+			throw new KNXIllegalArgumentException("specify KNX device address to restart");
+		if (options.containsKey("usb") && !options.containsKey("device"))
+			throw new KNXIllegalArgumentException("specify KNX device address to restart");
 		Main.setDomainAddress(options);
 	}
 

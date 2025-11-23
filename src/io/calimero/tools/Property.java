@@ -556,6 +556,8 @@ public class Property implements Runnable
 			throw new KNXIllegalArgumentException("no communication device/host specified");
 		if (options.containsKey("ft12") && !options.containsKey("remote"))
 			throw new KNXIllegalArgumentException("--remote option is mandatory with --ft12");
+		if (options.containsKey("tpuart") && !options.containsKey("remote"))
+			throw new KNXIllegalArgumentException("--remote option is mandatory with --tpuart");
 		Main.setDomainAddress(options);
 	}
 
