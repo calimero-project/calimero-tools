@@ -296,9 +296,10 @@ final class Main
 
 	static boolean isOption(final String arg, final String longOpt, final String shortOpt)
 	{
-		final boolean lo = arg.startsWith("--") && arg.regionMatches(2, longOpt, 0, arg.length() - 2);
+		final boolean lo = arg.startsWith("--")
+				&& arg.regionMatches(2, longOpt, 0, Math.max(arg.length() - 2, longOpt.length()));
 		final boolean so = shortOpt != null && arg.startsWith("-")
-				&& arg.regionMatches(1, shortOpt, 0, arg.length() - 1);
+				&& arg.regionMatches(1, shortOpt, 0, Math.max(arg.length() - 1, shortOpt.length()));
 		return lo || so;
 	}
 
