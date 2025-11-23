@@ -105,8 +105,13 @@ val addReads = listOf(
 )
 
 // avoid jvm warning about native access
-val enableNativeAccess = if (JavaLanguageVersion.current() >= JavaLanguageVersion.of(23))
-		listOf("--enable-native-access", "serial.ffm") else listOf()
+val enableNativeAccess =
+	if (JavaLanguageVersion.current() >= JavaLanguageVersion.of(23))
+		listOf(
+			"--enable-native-access", "serial.ffm",
+			"--enable-native-access=ALL-UNNAMED"
+		)
+	else listOf()
 
 tasks.withType<JavaExec>().configureEach {
 	jvmArgs(addReads)
