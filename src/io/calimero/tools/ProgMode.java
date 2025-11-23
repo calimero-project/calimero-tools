@@ -282,8 +282,6 @@ public class ProgMode implements Runnable
 
 		if (!options.containsKey("host"))
 			throw new KNXIllegalArgumentException("no communication device/host specified");
-		if (options.containsKey("ft12") && !options.containsKey("remote"))
-			throw new KNXIllegalArgumentException("--remote option is mandatory with --ft12");
 		if (options.containsKey("localDevMgmt")) {
 			if (options.containsKey("device"))
 				throw new KNXIllegalArgumentException("local device management does not need a KNX device address");
