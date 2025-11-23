@@ -1,0 +1,199 @@
+{
+  "reflection": [
+    {
+      "type": "io.calimero.tools.Main$1"
+    },
+    {
+      "type": "io.calimero.tools.BaosClient",
+      "methods": [
+        { "name": "main", "parameterTypes": ["java.lang.String[]"] }
+      ]
+    },
+    {
+      "type": "io.calimero.tools.DatapointImporter",
+      "methods": [
+        { "name": "main", "parameterTypes": ["java.lang.String[]"] }
+      ]
+    },
+    {
+      "type": "io.calimero.tools.DeviceInfo",
+      "methods": [
+        { "name": "main", "parameterTypes": ["java.lang.String[]"] }
+      ]
+    },
+    {
+      "type": "io.calimero.tools.Discover",
+      "methods": [
+        { "name": "main", "parameterTypes": ["java.lang.String[]"] }
+      ]
+    },
+    {
+      "type": "io.calimero.tools.IPConfig",
+      "methods": [
+        { "name": "main", "parameterTypes": ["java.lang.String[]"] }
+      ]
+    },
+    {
+      "type": "io.calimero.tools.Json",
+      "methods": [
+        { "name": "main", "parameterTypes": ["java.lang.String[]"] }
+      ]
+    },
+    {
+      "type": "io.calimero.tools.KnxProject",
+      "methods": [
+        { "name": "main", "parameterTypes": ["java.lang.String[]"] }
+      ]
+    },
+    {
+      "type": "io.calimero.tools.Memory",
+      "methods": [
+        { "name": "main", "parameterTypes": ["java.lang.String[]"] }
+      ]
+    },
+    {
+      "type": "io.calimero.tools.NetworkMonitor",
+      "methods": [
+        { "name": "main", "parameterTypes": ["java.lang.String[]"] }
+      ]
+    },
+    {
+      "type": "io.calimero.tools.ProcComm",
+      "methods": [
+        { "name": "main", "parameterTypes": ["java.lang.String[]"] }
+      ]
+    },
+    {
+      "type": "io.calimero.tools.ProcComm$1"
+    },
+    {
+      "type": "io.calimero.tools.ProcComm$2"
+    },
+    {
+      "type": "io.calimero.tools.ProgMode",
+      "methods": [
+        { "name": "main", "parameterTypes": ["java.lang.String[]"] }
+      ]
+    },
+    {
+      "type": "io.calimero.tools.PropClient",
+      "methods": [
+        { "name": "main", "parameterTypes": ["java.lang.String[]"] }
+      ]
+    },
+    {
+      "type": "io.calimero.tools.Property",
+      "methods": [
+        { "name": "main", "parameterTypes": ["java.lang.String[]"] }
+      ]
+    },
+    {
+      "type": "io.calimero.tools.Restart",
+      "methods": [
+        { "name": "main", "parameterTypes": ["java.lang.String[]"] }
+      ]
+    },
+    {
+      "type": "io.calimero.tools.ScanDevices",
+      "methods": [
+        { "name": "main", "parameterTypes": ["java.lang.String[]"] }
+      ]
+    },
+    {
+      "type": "io.calimero.tools.TrafficMonitor",
+      "methods": [
+        { "name": "main", "parameterTypes": ["java.lang.String[]"] }
+      ]
+    },
+    {
+      "type": "io.calimero.tools.BaosClient$1JsonBaosService",
+      "allPublicMethods": true
+    },
+    {
+      "type": "io.calimero.tools.ProgMode$1JsonDevices",
+      "allPublicMethods": true
+    },
+    {
+      "type": "io.calimero.tools.NetworkMonitor$1JsonRawFrame",
+      "allPublicMethods": true
+    },
+    {
+      "type": "io.calimero.tools.NetworkMonitor$1JsonRawAck",
+      "allPublicMethods": true
+    },
+    {
+      "type": "io.calimero.tools.NetworkMonitor$1JsonRfLData",
+      "allPublicMethods": true
+    },
+    {
+      "type": "io.calimero.tools.NetworkMonitor$1JsonMonitorIndication",
+      "allPublicMethods": true
+    },
+    {
+      "type": "io.calimero.tools.Discover$1JsonSearchResponse",
+      "allPublicMethods": true
+    },
+    {
+      "type": "io.calimero.tools.ProcComm$1JsonGroupEvent",
+      "allPublicMethods": true
+    },
+    {
+      "type": "io.calimero.tools.Memory$1JsonMemory",
+      "allPublicMethods": true
+    },
+    {
+      "type": "io.calimero.tools.IPConfig$1JsonIpConfig",
+      "allPublicMethods": true
+    },
+    {
+      "type": "io.calimero.tools.Property$JsonProperty",
+      "allPublicMethods": true
+    },
+    {
+      "type": "io.calimero.tools.TrafficMonitor$1JsonRawFrame",
+      "allPublicMethods": true
+    },
+    {
+      "type": "io.calimero.tools.TrafficMonitor$1JsonTrafficEvent",
+      "allPublicMethods": true
+    },
+    {
+      "type": "io.calimero.tools.Discover$JsonDeviceInfo",
+      "allPublicMethods": true
+    },
+    {
+      "type": "io.calimero.tools.Discover$JsonDescriptionResponse",
+      "allPublicMethods": true
+    },
+    {
+      "type": "io.calimero.tools.Property$JsonDescription",
+      "allPublicMethods": true
+    },
+    {
+      "type": "io.calimero.tools.DeviceInfo$JsonResult",
+      "allPublicMethods": true
+    },
+    {
+      "type": "io.calimero.tools.Discover$JsonResult",
+      "allPublicMethods": true
+    },
+    {
+      "type": "io.calimero.tools.DeviceInfo$JsonItem",
+      "allPublicMethods": true
+    },
+    {
+      "type": "io.calimero.tools.ScanDevices$JsonDevice",
+      "allPublicMethods": true
+    }
+  ],
+  "resources": [
+    {
+      "module": "io.calimero.tools",
+      "glob": "META-INF/MANIFEST.MF"
+    },
+    {
+      "module": "io.calimero.tools",
+      "glob": "knxManufacturers.properties"
+    }
+  ]
+}
