@@ -52,9 +52,11 @@ import io.calimero.KNXIllegalArgumentException;
 import io.calimero.knxnetip.KNXnetIPConnection;
 import io.calimero.link.KNXNetworkLink;
 import io.calimero.link.medium.TPSettings;
+import io.calimero.mgmt.LocalDeviceManagementUsb;
 import io.calimero.mgmt.ManagementProceduresImpl;
 import io.calimero.mgmt.PropertyAccess;
 import io.calimero.mgmt.PropertyClient;
+import io.calimero.serial.usb.UsbConnectionFactory;
 
 /**
  * ProgMode lists the current KNX devices in programming mode, and allows to set the programming mode of a device. The
@@ -144,8 +146,12 @@ public class ProgMode implements Runnable
 		Exception thrown = null;
 		boolean canceled = false;
 		try {
-			if (options.containsKey("localDevMgmt"))
-				knxipServerProgMode();
+			if (options.containsKey("localDevMgmt")) {
+				if (options.containsKey("usb"))
+					usbInterfaceProgMode();
+				else
+					knxipServerProgMode();
+			}
 			else
 				progMode();
 		}
@@ -164,28 +170,39 @@ public class ProgMode implements Runnable
 	private void knxipServerProgMode() throws KNXException, InterruptedException {
 		try (var devmgmt = Main.newLocalDeviceMgmt(options, closed -> {});
 			 var pc = new PropertyClient(devmgmt)) {
+			localProgMode(pc);
+		}
+	}
 
-			final String cmd = (String) options.get("command");
-			if ("status".equals(cmd)) {
-				final var subnetAddr = pc.getProperty(0, PropertyAccess.PID.SUBNET_ADDRESS, 1, 1);
-				final var deviceAddr = pc.getProperty(0, PropertyAccess.PID.DEVICE_ADDRESS, 1, 1);
-				final var server = new IndividualAddress(new byte[] { subnetAddr[0], deviceAddr[0] });
+	private void usbInterfaceProgMode() throws KNXException, InterruptedException {
+		try (var conn = UsbConnectionFactory.open((String) options.get("host"));
+		     var ldm = new LocalDeviceManagementUsb(conn, __ -> {}, false);
+		     var pc = new PropertyClient(ldm)) {
+			localProgMode(pc);
+		}
+	}
 
-				while (true) {
-					final var progmode = pc.getProperty(0, PropertyAccess.PID.PROGMODE, 1, 1);
-					if (progmode[0] == 1)
-						devicesInProgMode(server);
-					else
-						devicesInProgMode();
-					Thread.sleep(3000);
-				}
+	private void localProgMode(final PropertyClient pc) throws KNXException, InterruptedException {
+		final String cmd = (String) options.get("command");
+		if ("status".equals(cmd)) {
+			final var subnetAddr = pc.getProperty(0, PropertyAccess.PID.SUBNET_ADDRESS, 1, 1);
+			final var deviceAddr = pc.getProperty(0, PropertyAccess.PID.DEVICE_ADDRESS, 1, 1);
+			final var server = new IndividualAddress(new byte[] { subnetAddr[0], deviceAddr[0] });
+
+			while (true) {
+				final var progmode = pc.getProperty(0, PropertyAccess.PID.PROGMODE, 1, 1);
+				if (progmode[0] == 1)
+					devicesInProgMode(server);
+				else
+					devicesInProgMode();
+				Thread.sleep(3000);
 			}
-			else {
-				final int progmode = "on".equals(cmd) ? 1 : 0;
-				pc.setProperty(0, PropertyAccess.PID.PROGMODE, 1, 1, (byte) progmode);
-				final var check = pc.getProperty(0, PropertyAccess.PID.PROGMODE, 1, 1);
-				out("Programming mode " + (check[0] == 1 ? "active" : "inactive"));
-			}
+		}
+		else {
+			final int progmode = "on".equals(cmd) ? 1 : 0;
+			pc.setProperty(0, PropertyAccess.PID.PROGMODE, 1, 1, (byte) progmode);
+			final var check = pc.getProperty(0, PropertyAccess.PID.PROGMODE, 1, 1);
+			out("Programming mode " + (check[0] == 1 ? "active" : "inactive"));
 		}
 	}
 
