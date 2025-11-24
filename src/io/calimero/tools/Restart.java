@@ -44,16 +44,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
 
+import io.calimero.Connection;
 import io.calimero.IndividualAddress;
 import io.calimero.KNXException;
 import io.calimero.KNXFormatException;
 import io.calimero.KNXIllegalArgumentException;
+import io.calimero.cemi.CEMIDevMgmt;
 import io.calimero.knxnetip.KNXnetIPConnection;
 import io.calimero.link.medium.TPSettings;
 import io.calimero.mgmt.Destination;
 import io.calimero.mgmt.LocalDeviceManagementIp;
 import io.calimero.mgmt.LocalDeviceManagementUds;
+import io.calimero.mgmt.LocalDeviceManagementUsb;
 import io.calimero.mgmt.ManagementClientImpl;
+import io.calimero.serial.usb.UsbConnection;
+import io.calimero.serial.usb.UsbConnectionFactory;
 
 /**
  * Restart performs a basic restart or master reset of a KNX interface or KNX device. The tool supports network access
@@ -184,12 +189,28 @@ public class Restart implements Runnable {
 		}
 	}
 
-	private void localDeviceMgmtReset()
-			throws InterruptedException, KNXException {
+	private void localDeviceMgmtReset() throws InterruptedException, KNXException {
+		final int restartType = (Integer) options.get("restart-type");
+		if (restartType != 0)
+			System.out.println("Using local device management, ignore restart type");
+
+		if (options.containsKey("usb")) {
+			try (var conn = UsbConnectionFactory.open((String) options.get("host"));
+			     var ldm = new LocalDeviceManagementUsb(conn, __ -> {}, false) {
+				     @Override
+				     protected void send(final CEMIDevMgmt frame, final Connection.BlockingMode mode)
+						     throws KNXException, InterruptedException {
+					     super.send(frame, mode);
+				     }
+			     }) {
+				final var emiType = conn.activeEmiType();
+				if (emiType != UsbConnection.EmiType.Cemi)
+					throw new KNXException("reset for KNX USB " + emiType + " not supported");
+				ldm.send(new CEMIDevMgmt(CEMIDevMgmt.MC_RESET_REQ), Connection.BlockingMode.Ack);
+			}
+			return;
+		}
 		try (var mgmt = Main.newLocalDeviceMgmt(options, __ -> {})) {
-			final int restartType = (Integer) options.get("restart-type");
-			if (restartType != 0)
-				System.out.println("Using local device management, ignore restart type");
 			if (mgmt instanceof final LocalDeviceManagementIp ldmIp)
 				ldmIp.reset();
 			else if (mgmt instanceof final LocalDeviceManagementUds ldmUds)
@@ -267,8 +288,6 @@ public class Restart implements Runnable {
 		if (options.containsKey("ft12") && !options.containsKey("device"))
 			throw new KNXIllegalArgumentException("specify KNX device address to restart");
 		if (options.containsKey("tpuart") && !options.containsKey("device"))
-			throw new KNXIllegalArgumentException("specify KNX device address to restart");
-		if (options.containsKey("usb") && !options.containsKey("device"))
 			throw new KNXIllegalArgumentException("specify KNX device address to restart");
 		Main.setDomainAddress(options);
 	}
