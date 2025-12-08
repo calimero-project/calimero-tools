@@ -579,7 +579,7 @@ public class ProcComm implements Runnable
 		if (!write)
 			onReadResponse(dp, pc.read(dp));
 		else {
-			if (dp.getDPT() == null) {
+			if (dp.dptId().equals(new DptId(0xffff, 0xffff))) {
 				System.out.println("cannot write to " + dp.getMainAddress()
 						+ " because DPT is not known yet, retry and specify DPT once");
 				return;
@@ -711,7 +711,7 @@ public class ProcComm implements Runnable
 		if (data.length > 0) {
 			final var dp = datapoints.get(dst);
 			if (dp != null) {
-				final var dpt = dp.getDPT();
+				final var dpt = dp.dptId();
 				value = decodeDpValue(dpt, data, true).or(() -> decodeLteZDpValue(svcCode, dpt, data))
 						.orElse(HexFormat.of().formatHex(data));
 			}
@@ -730,7 +730,7 @@ public class ProcComm implements Runnable
 		return sb.toString();
 	}
 
-	private static Optional<String> decodeDpValue(final String dpt, final byte[] data, final boolean withUnit) {
+	private static Optional<String> decodeDpValue(final DptId dpt, final byte[] data, final boolean withUnit) {
 		try {
 			final var t = TranslatorTypes.createTranslator(dpt, data);
 			t.setAppendUnit(withUnit);
@@ -743,13 +743,13 @@ public class ProcComm implements Runnable
 
 	private static final int GroupPropWrite = 0b1111101010;
 
-	private static Optional<String> decodeLteZDpValue(final int svcCode, final String dpt, final byte[] data) {
+	private static Optional<String> decodeLteZDpValue(final int svcCode, final DptId dpt, final byte[] data) {
 		final var std = lteZToStdMode.get(dpt);
 		if (std == null)
 			return Optional.empty();
 
 		Optional<String> opt = Optional.empty();
-		if (!std.dptId.isEmpty())
+		if (!std.dptId.equals(new DptId(0xffff, 0xffff)))
 			opt = decodeDpValue(std.dptId, Arrays.copyOfRange(data, 0, data.length - 1), std.withUnit);
 		if (std.f != null)
 			opt = Optional.of(std.f.apply(data, std.unit));
@@ -1091,17 +1091,17 @@ public class ProcComm implements Runnable
 		private final BiFunction<byte[], String, String> f;
 		private final String unit;
 
-		private final String dptId;
+		private final DptId dptId;
 		private final boolean withUnit;
 
 		private StdMode(final BiFunction<byte[], String, String> f, final String unit) {
 			this.f = f;
 			this.unit = unit;
-			this.dptId = "";
+			this.dptId = new DptId(0xffff, 0xffff);
 			this.withUnit = true;
 		}
 
-		private StdMode(final String dptId, final boolean withUnit) {
+		private StdMode(final DptId dptId, final boolean withUnit) {
 			this.dptId = dptId;
 			this.withUnit = withUnit;
 
@@ -1114,55 +1114,55 @@ public class ProcComm implements Runnable
 		}
 
 		static StdMode xlator(final String dptId) {
-			return new StdMode(dptId, true);
+			return new StdMode(DptId.from(dptId), true);
 		}
 
 		static StdMode xlatorDimensionless(final String dptId) {
-			return new StdMode(dptId, false);
+			return new StdMode(DptId.from(dptId), false);
 		}
 	}
 
-	private static final Map<String, StdMode> lteZToStdMode = Map.ofEntries(
-			entry("200.100", StdMode.xlator("1.100")),     // DPT_Heat/Cool_Z
-			entry("200.101", StdMode.xlator("1.006")),     // DPT_BinaryValue_Z
-			entry("201.100", StdMode.xlator("20.102")),    // DPT_HVACMode_Z
-			entry("201.102", StdMode.xlator("20.103")),    // DPT_DHWMode_Z
-			entry("201.104", StdMode.xlator("20.105")),    // DPT_HVACContrMode_Z
-			entry("201.105", StdMode.xlator("20.60105")),  // DPT_EnablH/Cstage_Z
-			entry("201.107", StdMode.xlator("20.002")),    // DPT_BuildingMode_Z
-			entry("201.108", StdMode.xlator("20.003")),    // DPT_OccMode_Z
-			entry("201.109", StdMode.xlator("20.106")),    // DPT_HVACEmergMode_Z
-			entry("202.001", StdMode.xlator("5.004")),     // DPT_RelValue_Z
-			entry("202.002", StdMode.xlator("5.010")),     // DPT_UCountValue8_Z
-			entry("203.002", StdMode.xlator("7.002")),     // DPT_TimePeriodMsec_Z
-			entry("203.003", StdMode.xlator("7.003")),     // DPT_TimePeriod10Msec_Z
-			entry("203.004", StdMode.xlator("7.004")),     // DPT_TimePeriod100Msec_Z
-			entry("203.005", StdMode.xlator("7.005")),     // DPT_TimePeriodSec_Z
-			entry("203.006", StdMode.xlator("7.006")),     // DPT_TimePeriodMin_Z
-			entry("203.007", StdMode.xlator("7.007")),     // DPT_TimePeriodHrs_Z
-			entry("203.011", StdMode.function(ProcComm::twoByteUnsigned10Millis, "l/h")),	// DPT_UFlowRateLiter/h_Z
-			entry("203.012", StdMode.xlatorDimensionless("7.001")),							// DPT_UCountValue16_Z
-			entry("203.013", StdMode.function(ProcComm::twoByteUnsigned10Millis, "μA")),	// DPT_UElCurrentμA_Z
-			entry("203.014", StdMode.function(ProcComm::twoByteUnsigned, "kW")),			// DPT_PowerKW_Z
-			entry("203.015", StdMode.function(ProcComm::twoByteUnsigned50Millis, "mbar")),	// DPT_AtmPressureAbs_Z
-			entry("203.017", StdMode.function(ProcComm::twoByteUnsigned10Millis, "%")),		// DPT_PercentU16_Z
-			entry("203.100", StdMode.function(ProcComm::twoByteUnsigned, "ppm")),			// DPT_HVACAirQual_Z
-			entry("203.101", StdMode.function(ProcComm::twoByteUnsigned10Millis, "m/s")),	// DPT_WindSpeed_Z
-			entry("203.102", StdMode.function(ProcComm::twoByteUnsigned50Millis, "W/m²")), // DPT_SunIntensity_Z
-			entry("203.104", StdMode.function(ProcComm::twoByteUnsigned, "m³/h")),		// DPT_HVACAirFlowAbs_Z
-			entry("204.001", StdMode.xlator("6.001")),     // DPT_RelSignedValue_Z
-			entry("205.002", StdMode.xlator("8.002")),     // DPT_DeltaTimeMsec_Z
-			entry("205.003", StdMode.xlator("8.003")),     // DPT_DeltaTime10Msec_Z
-			entry("205.004", StdMode.xlator("8.004")),     // DPT_DeltaTime100Msec_Z
-			entry("205.005", StdMode.xlator("8.005")),     // DPT_DeltaTimeSec_Z
-			entry("205.006", StdMode.xlator("8.006")),     // DPT_DeltaTimeMin_Z
-			entry("205.007", StdMode.xlator("8.007")),     // DPT_DeltaTimeHrs_Z
-			entry("205.017", StdMode.xlator("8.010")),     // DPT_Percent_V16_Z
-			entry("205.100", StdMode.function(ProcComm::twoByteSigned20Millis, "°C")),		// DPT_TempHVACAbs_Z
-			entry("205.101", StdMode.function(ProcComm::twoByteSigned20Millis, "K")),		// DPT_TempHVACRel_Z
-			entry("205.102", StdMode.function(ProcComm::twoByteSigned, "m³/h")),		// DPT_HVACAirFlowRel_Z
-			entry("218.001", StdMode.function(ProcComm::fourByteSigned, "l")),				// DPT_VolumeLiter_Z
-			entry("218.002", StdMode.function(ProcComm::fourByteSigned0001, "m³/h"))	// DPT_FlowRate_m3/h_Z
+	private static final Map<DptId, StdMode> lteZToStdMode = Map.ofEntries(
+			entry(new DptId(200, 100), StdMode.xlator("1.100")),     // DPT_Heat/Cool_Z
+			entry(new DptId(200, 101), StdMode.xlator("1.006")),     // DPT_BinaryValue_Z
+			entry(new DptId(201, 100), StdMode.xlator("20.102")),    // DPT_HVACMode_Z
+			entry(new DptId(201, 102), StdMode.xlator("20.103")),    // DPT_DHWMode_Z
+			entry(new DptId(201, 104), StdMode.xlator("20.105")),    // DPT_HVACContrMode_Z
+			entry(new DptId(201, 105), StdMode.xlator("20.60105")),  // DPT_EnablH/Cstage_Z
+			entry(new DptId(201, 107), StdMode.xlator("20.002")),    // DPT_BuildingMode_Z
+			entry(new DptId(201, 108), StdMode.xlator("20.003")),    // DPT_OccMode_Z
+			entry(new DptId(201, 109), StdMode.xlator("20.106")),    // DPT_HVACEmergMode_Z
+			entry(new DptId(202, 1),   StdMode.xlator("5.004")),     // DPT_RelValue_Z
+			entry(new DptId(202, 2),   StdMode.xlator("5.010")),     // DPT_UCountValue8_Z
+			entry(new DptId(203, 2),   StdMode.xlator("7.002")),     // DPT_TimePeriodMsec_Z
+			entry(new DptId(203, 3),   StdMode.xlator("7.003")),     // DPT_TimePeriod10Msec_Z
+			entry(new DptId(203, 4),   StdMode.xlator("7.004")),     // DPT_TimePeriod100Msec_Z
+			entry(new DptId(203, 5),   StdMode.xlator("7.005")),     // DPT_TimePeriodSec_Z
+			entry(new DptId(203, 6),   StdMode.xlator("7.006")),     // DPT_TimePeriodMin_Z
+			entry(new DptId(203, 7),   StdMode.xlator("7.007")),     // DPT_TimePeriodHrs_Z
+			entry(new DptId(203, 11),  StdMode.function(ProcComm::twoByteUnsigned10Millis, "l/h")),	 // DPT_UFlowRateLiter/h_Z
+			entry(new DptId(203, 12),  StdMode.xlatorDimensionless("7.001")),					     // DPT_UCountValue16_Z
+			entry(new DptId(203, 13),  StdMode.function(ProcComm::twoByteUnsigned10Millis, "μA")),	 // DPT_UElCurrentμA_Z
+			entry(new DptId(203, 14),  StdMode.function(ProcComm::twoByteUnsigned, "kW")),			 // DPT_PowerKW_Z
+			entry(new DptId(203, 15),  StdMode.function(ProcComm::twoByteUnsigned50Millis, "mbar")), // DPT_AtmPressureAbs_Z
+			entry(new DptId(203, 17),  StdMode.function(ProcComm::twoByteUnsigned10Millis, "%")),	 // DPT_PercentU16_Z
+			entry(new DptId(203, 100), StdMode.function(ProcComm::twoByteUnsigned, "ppm")),			 // DPT_HVACAirQual_Z
+			entry(new DptId(203, 101), StdMode.function(ProcComm::twoByteUnsigned10Millis, "m/s")),	 // DPT_WindSpeed_Z
+			entry(new DptId(203, 102), StdMode.function(ProcComm::twoByteUnsigned50Millis, "W/m²")), // DPT_SunIntensity_Z
+			entry(new DptId(203, 104), StdMode.function(ProcComm::twoByteUnsigned, "m³/h")),		 // DPT_HVACAirFlowAbs_Z
+			entry(new DptId(204, 1),   StdMode.xlator("6.001")),     // DPT_RelSignedValue_Z
+			entry(new DptId(205, 2),   StdMode.xlator("8.002")),     // DPT_DeltaTimeMsec_Z
+			entry(new DptId(205, 3),   StdMode.xlator("8.003")),     // DPT_DeltaTime10Msec_Z
+			entry(new DptId(205, 4),   StdMode.xlator("8.004")),     // DPT_DeltaTime100Msec_Z
+			entry(new DptId(205, 5),   StdMode.xlator("8.005")),     // DPT_DeltaTimeSec_Z
+			entry(new DptId(205, 6),   StdMode.xlator("8.006")),     // DPT_DeltaTimeMin_Z
+			entry(new DptId(205, 7),   StdMode.xlator("8.007")),     // DPT_DeltaTimeHrs_Z
+			entry(new DptId(205, 17),  StdMode.xlator("8.010")),     // DPT_Percent_V16_Z
+			entry(new DptId(205, 100), StdMode.function(ProcComm::twoByteSigned20Millis, "°C")),  // DPT_TempHVACAbs_Z
+			entry(new DptId(205, 101), StdMode.function(ProcComm::twoByteSigned20Millis, "K")),	  // DPT_TempHVACRel_Z
+			entry(new DptId(205, 102), StdMode.function(ProcComm::twoByteSigned, "m³/h")),        // DPT_HVACAirFlowRel_Z
+			entry(new DptId(218, 1),   StdMode.function(ProcComm::fourByteSigned, "l")),          // DPT_VolumeLiter_Z
+			entry(new DptId(218, 2),   StdMode.function(ProcComm::fourByteSigned0001, "m³/h"))    // DPT_FlowRate_m3/h_Z
 	);
 
 	private static String twoByteUnsigned(final byte[] data, final String unit) {
