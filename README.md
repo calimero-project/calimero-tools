@@ -166,7 +166,7 @@ dependencies {
 Logging
 -------
 
-Calimero tools use the [System.Logger](https://docs.oracle.com/en/java/javase/19/docs/api/java.base/java/lang/System.Logger.html). Bind any desired logging frameworks of your choice.
+Calimero tools use the [System.Logger](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/System.Logger.html). Bind any desired logging frameworks of your choice.
 
 Extending Tools
 ---------------
