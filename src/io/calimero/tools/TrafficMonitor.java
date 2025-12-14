@@ -236,8 +236,8 @@ public class TrafficMonitor implements Runnable {
 			}
 			@LinkEvent
 			void routingLostMessage(final LostMessageEvent e) {
-				outTimestamped(e.getSender() + " lost " + e.getLostMessages() + " routing messages"
-						+ (e.isKNXFault() ? ", KNX network fault" : ""));
+				outTimestamped(e.getSender().getAddress().getHostAddress() + " lost " + e.getLostMessages()
+						+ " routing messages" + (e.isKNXFault() ? ", KNX network fault" : ""));
 			}
 			@LinkEvent
 			void tunnelingFeature(final TunnelingFeature feature) { outTimestamped(feature.toString()); }
