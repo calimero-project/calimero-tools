@@ -1,7 +1,15 @@
 {
   "reflection": [
     {
-      "type": "io.calimero.tools.Main$1"
+      "type": "io.calimero.tools.Main$1",
+      "methods": [
+        {
+          "name": "connectionStatus",
+          "parameterTypes": [
+            "io.calimero.serial.ConnectionStatus"
+          ]
+        }
+      ]
     },
     {
       "type": "io.calimero.tools.BaosClient",
@@ -58,6 +66,12 @@
       ]
     },
     {
+      "type": "io.calimero.tools.NetworkMonitor$1"
+    },
+    {
+      "type": "io.calimero.tools.NetworkMonitor$2"
+    },
+    {
       "type": "io.calimero.tools.ProcComm",
       "methods": [
         { "name": "main", "parameterTypes": ["java.lang.String[]"] }
@@ -104,6 +118,9 @@
       "methods": [
         { "name": "main", "parameterTypes": ["java.lang.String[]"] }
       ]
+    },
+    {
+      "type": "io.calimero.tools.TrafficMonitor$1"
     },
     {
       "type": "io.calimero.tools.BaosClient$1JsonBaosService",
@@ -188,12 +205,13 @@
   ],
   "resources": [
     {
-      "module": "io.calimero.tools",
       "glob": "META-INF/MANIFEST.MF"
     },
     {
-      "module": "io.calimero.tools",
       "glob": "knxManufacturers.properties"
+    },
+    {
+      "glob": "META-INF/services/javax.xml.parsers.DocumentBuilderFactory"
     }
   ]
 }
