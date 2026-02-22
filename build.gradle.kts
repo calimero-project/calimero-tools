@@ -139,7 +139,7 @@ tasks.startScripts {
 
 dependencies {
 	api("io.calimero:calimero-core:$version")
-	implementation("net.lingala.zip4j:zip4j:2.11.5")
+	implementation("net.lingala.zip4j:zip4j:2.11.6")
 
 	add("serialRuntimeOnly", "io.calimero:calimero-rxtx:$version")
 	add("serialRuntimeOnly", "io.calimero:serial-native:$version")
