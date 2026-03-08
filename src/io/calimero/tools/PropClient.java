@@ -1,6 +1,6 @@
 /*
     Calimero 3 - A library for KNX network access
-    Copyright (c) 2006, 2025 B. Malinowsky
+    Copyright (c) 2006, 2026 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -41,7 +41,6 @@ import static java.lang.System.Logger.Level.ERROR;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.InterruptedIOException;
 import java.nio.charset.Charset;
 
 import io.calimero.KNXIllegalArgumentException;
@@ -99,7 +98,7 @@ public class PropClient implements Runnable
 					}
 				}
 			}
-			catch (InterruptedException | InterruptedIOException e) {
+			catch (final InterruptedException e) {
 				System.out.println("received interrupt, closing ...");
 			}
 			catch (final IOException e) {
