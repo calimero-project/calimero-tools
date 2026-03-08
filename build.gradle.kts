@@ -105,13 +105,10 @@ val addReads = listOf(
 )
 
 // avoid jvm warning about native access
-val enableNativeAccess =
-	if (JavaLanguageVersion.current() >= JavaLanguageVersion.of(23))
-		listOf(
-			"--enable-native-access", "serial.ffm",
-			"--enable-native-access=ALL-UNNAMED"
-		)
-	else listOf()
+val enableNativeAccess = listOf(
+	"--enable-native-access=io.calimero.serial.provider.jni,serial.ffm",
+	"--enable-native-access=ALL-UNNAMED", // libs used by rxtx & usb provider
+)
 
 tasks.withType<JavaExec>().configureEach {
 	jvmArgs(addReads)
