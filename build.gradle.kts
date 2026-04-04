@@ -20,7 +20,7 @@ repositories {
 }
 
 group = "io.calimero"
-version = "3.0-SNAPSHOT"
+version = "3.0-M2"
 
 tasks.withType<JavaCompile>().configureEach {
 	options.encoding = "UTF-8"
