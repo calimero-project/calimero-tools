@@ -1,6 +1,6 @@
 /*
     Calimero 3 - A library for KNX network access
-    Copyright (c) 2006, 2025 B. Malinowsky
+    Copyright (c) 2006, 2026 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -602,7 +602,7 @@ public class ProcComm implements Runnable
 		final int privatePidOffset = "company".equals(s[4]) ? 2 : 0;
 		final int company = privatePidOffset > 0 ? Integer.parseUnsignedInt(s[5]) : 0;
 		final int pid = Integer.parseUnsignedInt(s[4 + privatePidOffset]);
-		final String data = String.join("", Arrays.copyOfRange(s, 5 + privatePidOffset, s.length)).replaceAll("0x", "");
+		final String data = String.join("", Arrays.copyOfRange(s, 5 + privatePidOffset, s.length)).replace("0x", "");
 
 		final String cmd = s[0];
 		final boolean read = cmd.equals("read") || cmd.equals("r");

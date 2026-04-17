@@ -18,7 +18,7 @@ Available Tools
 ---------------
 Use `./gradlew run` or `mvn exec:java` to list available commands.
 
-* Discover - KNXnet/IP discovery and self description
+* Discover - KNXnet/IP discovery and self-description
 * DeviceInfo - shows device information of a device in a KNX network (using the device's interface objects)
 * IPConfig - read/write the IP configuration of a KNXnet/IP server using KNX properties
 * NetworkMonitor - busmonitor for KNX networks (monitor raw frames on the network, completely passive)

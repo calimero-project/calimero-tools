@@ -1,6 +1,6 @@
 /*
     Calimero 3 - A library for KNX network access
-    Copyright (c) 2006, 2025 B. Malinowsky
+    Copyright (c) 2006, 2026 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -90,7 +90,7 @@ import io.calimero.log.LogService;
 import io.calimero.tools.Main.ShutdownHandler;
 
 /**
- * A tool for Calimero showing the KNXnet/IP discovery and self-description feature.
+ * A tool for Calimero KNXnet/IP discovery and self-description.
  * <p>
  * Discover is a {@link Runnable} tool implementation allowing a user to do KNXnet/IP discovery and
  * self-description of KNXnet/IP capable devices. As the protocol name already implies, this is done
@@ -210,7 +210,7 @@ public class Discover implements Runnable
 	 * <li><code>--mac</code> <i>address</i> &nbsp;extended search requesting the specified MAC address</li>
 	 * <li><code>--progmode</code> &nbsp;extended search requesting devices in programming mode</li>
 	 * </ul>
-	 * <li><code>describe <i>host</i></code> &nbsp;query self description from host
+	 * <li><code>describe <i>host</i></code> &nbsp;query self-description from host
 	 * <ul>
 	 * <li><code>--netif -i</code> <i>interface name</i> | <i>IP address</i> &nbsp;local network interface for
 	 * sending description request</li>
@@ -263,7 +263,7 @@ public class Discover implements Runnable
 			else if (options.containsKey("host"))
 				description();
 			else {
-				out(tool + " - KNXnet/IP server discovery & self description");
+				out(tool + " - KNXnet/IP server discovery & self-description");
 				Main.showVersion();
 				out("Type --help for help message");
 			}
@@ -379,7 +379,7 @@ public class Discover implements Runnable
 				: addr.getHostAddress() + " (" + nameOf(r.networkInterface()) + ")";
 
 		sb.append("Using ").append(localEndpoint).append(sep);
-		sb.append("-".repeat(sb.length() - 1)).append(sep);
+		sb.repeat("-", sb.length() - 1).append(sep);
 		if (device != null)
 			sb.append("\"").append(device.getName()).append("\" ");
 		if (controlEp != null) {
@@ -441,7 +441,7 @@ public class Discover implements Runnable
 	protected void onCompletion(final Exception thrown, final boolean canceled)
 	{
 		if (canceled) {
-			final String msg = options.containsKey("search") ? "stopped discovery" : "self description canceled";
+			final String msg = options.containsKey("search") ? "stopped discovery" : "self-description canceled";
 			out.log(INFO, msg);
 		}
 		if (thrown != null)
@@ -565,7 +565,7 @@ public class Discover implements Runnable
 	 * Requests a self-description using the supplied options.
 	 *
 	 * @throws KNXException on problem requesting the description
-	 * @throws InterruptedException
+	 * @throws InterruptedException on interrupt
 	 */
 	private void description() throws KNXException, InterruptedException
 	{
@@ -715,7 +715,7 @@ public class Discover implements Runnable
 			else if (Main.isOption(arg, "progmode", null))
 				searchParameters.add(Srp.withProgrammingMode());
 			else if (Main.isOption(arg, "mac", null))
-				searchParameters.add(Srp.withMacAddress(DataUnitBuilder.fromHex(i.next().replaceAll(":", ""))));
+				searchParameters.add(Srp.withMacAddress(DataUnitBuilder.fromHex(i.next().replace(":", ""))));
 			else if ("describe".equals(arg)) {
 				if (!i.hasNext())
 					throw new KNXIllegalArgumentException("specify remote host");
@@ -787,12 +787,12 @@ public class Discover implements Runnable
 				Usage: %s {search | describe} [options]
 				Supported commands:
 				  search [<host>]            start a discovery search
-				    --withDescription        query self description for each search result
+				    --withDescription        query self-description for each search result
 				    --unicast -u             request unicast response (where multicast would be used)
 				    --netif -i <interface/host name | IP address>    local multicast network interface
 				    --mac <address>          extended search requesting the specified MAC address
 				    --progmode               extended search requesting devices in programming mode
-				  describe <host>            query self description from host
+				  describe <host>            query self-description from host
 				    --netif -i <interface/host name | IP address>    local outgoing network interface
 				    --serverport -p <number> server UDP/TCP port (default %d)
 				  sd                         shortcut for 'search --withDescription'
