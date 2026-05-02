@@ -101,13 +101,13 @@ val addReads = listOf(
 	"--add-reads", "io.calimero.tools=ALL-UNNAMED", // zip4j
 	"--add-reads", "io.calimero.core=io.calimero.tools", // @LinkEvent
 	"--add-reads", "io.calimero.serial.provider.rxtx=ALL-UNNAMED",
-	"--add-reads", "io.calimero.usb.provider.javax=ALL-UNNAMED"
+	"--add-reads", "io.calimero.usb.provider.javax=ALL-UNNAMED" // javax.usb:usb-api
 )
 
 // avoid jvm warning about native access
 val enableNativeAccess = listOf(
-	"--enable-native-access=io.calimero.serial.provider.jni,serial.ffm",
-	"--enable-native-access=ALL-UNNAMED", // libs used by rxtx & usb provider
+	"--enable-native-access=io.calimero.serial.provider.jni,serial.ffm,org.usb4java",
+	"--enable-native-access=ALL-UNNAMED", // libs used by rxtx
 )
 
 tasks.withType<JavaExec>().configureEach {
