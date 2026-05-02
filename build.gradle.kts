@@ -186,7 +186,7 @@ graalvmNative {
 			buildArgs.addAll(
 				listOf(
 					"--enable-sbom=export",
-					"--future-defaults=all",
+//					"--future-defaults=all",
 					"--emit build-report",
 					"--initialize-at-build-time",
 					"--no-fallback",
