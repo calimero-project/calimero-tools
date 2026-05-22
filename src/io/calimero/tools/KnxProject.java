@@ -39,7 +39,6 @@ package io.calimero.tools;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
 import java.lang.invoke.MethodHandles;
@@ -64,6 +63,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 import io.calimero.GroupAddress;
 import io.calimero.KNXFormatException;
+import io.calimero.KnxRuntimeException;
 import io.calimero.datapoint.DatapointMap;
 import io.calimero.datapoint.StateDP;
 import io.calimero.log.LogService;
@@ -93,7 +93,7 @@ public final class KnxProject {
 		}
 	}
 
-	public static KnxProject from(final Path project) {
+	public static KnxProject from(final Path project) throws IOException {
 		try {
 			Path root = project;
 			// extract zipped project
@@ -121,16 +121,16 @@ public final class KnxProject {
 				else if (!Files.isDirectory(path))
 					throw new FileNotFoundException("no root directory found for parsing");
 				else
-					datapoints = parse(path);
+					datapoints = resolveAndParse(path);
 
 				return new KnxProject(root, name, datapoints);
 			}
 		}
-		catch (final IOException e) {
-			throw new UncheckedIOException(e);
+		catch (final KnxRuntimeException e) {
+			throw e;
 		}
-		catch (final Throwable e) {
-			throw new KNXMLException("parsing " + project, e);
+		catch (final RuntimeException e) {
+			throw new KnxRuntimeException("failed to load project '" + project + "'", e);
 		}
 	}
 
@@ -146,20 +146,20 @@ public final class KnxProject {
 
 	public boolean encrypted() { return datapoints == null; }
 
-	public void decrypt(final char[] projectPassword) {
+	public void decrypt(final char[] projectPassword) throws IOException {
 		if (datapoints != null)
 			return;
 
 		final var to = Path.of(project.toString().replace(".zip", ""));
 		try {
 			unzip(project, to, projectPassword);
-			datapoints = parse(to);
+			datapoints = resolveAndParse(to);
 		}
-		catch (final IOException e) {
-			throw new UncheckedIOException(e);
+		catch (final KnxRuntimeException e) {
+			throw e;
 		}
-		catch (final Throwable t) {
-			throw new KNXMLException("loading encrypted project file \"" + project + "\"", t);
+		catch (final RuntimeException e) {
+			throw new KnxRuntimeException("failed to load project '" + to + "'", e);
 		}
 		finally {
 			Arrays.fill(projectPassword, (char) 0);
@@ -169,7 +169,7 @@ public final class KnxProject {
 
 	public DatapointMap<StateDP> datapoints() {
 		if (encrypted())
-			throw new KnxSecureException("project \"" + this + "\" is encrypted");
+			throw new KnxSecureException("project '" + this + "' is encrypted");
 		return datapoints;
 	}
 
@@ -198,6 +198,8 @@ public final class KnxProject {
 	private static void unzip(final Path protectedFile, final Path to, final char[] pwd) throws IOException {
 		try (var zipFile = new ZipFile(protectedFile.toString())) {
 			final var fileHeader = zipFile.getFileHeader("0.xml");
+			if (fileHeader == null)
+				throw new FileNotFoundException("missing required file '0.xml' in archive '" + protectedFile + "'");
 			final var enc = fileHeader.getEncryptionMethod();
 			final var key = enc == EncryptionMethod.AES ? createAesKey(pwd) : pwd;
 			zipFile.setPassword(key);
@@ -220,9 +222,21 @@ public final class KnxProject {
 		}
 	}
 
+	private static DatapointMap<StateDP> resolveAndParse(final Path path) {
+		final Path file = path.resolve("0.xml");
+		try {
+			return parse(file);
+		}
+		catch (final KNXMLException e) {
+			throw e;
+		}
+		catch (final KNXFormatException | RuntimeException e) {
+			throw new KNXMLException("failed to parse project file '" + file + "'", e);
+		}
+	}
+
 	private static DatapointMap<StateDP> parse(final Path path) throws KNXFormatException {
-		final Path parse = path.resolve("0.xml");
-		try (var reader = XmlInputFactory.newInstance().createXMLReader(parse.toString())) {
+		try (var reader = XmlInputFactory.newInstance().createXMLReader(path.toString())) {
 			reader.nextTag();
 			final var namespace = reader.getNamespaceURI();
 			if (!projectNamespace.equals(namespace))
