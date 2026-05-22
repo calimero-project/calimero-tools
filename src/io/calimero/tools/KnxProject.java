@@ -1,6 +1,6 @@
 /*
     Calimero 3 - A library for KNX network access
-    Copyright (c) 2019, 2025 B. Malinowsky
+    Copyright (c) 2019, 2026 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -100,7 +100,9 @@ public final class KnxProject {
 			// extract zipped project
 			if (project.toString().endsWith(knxproj)) {
 				final var extractDir = project.getFileName().toString().replace(knxproj, "");
-				final Path to = project.resolveSibling(extractDir);
+				Path to = project.resolveSibling(extractDir);
+				if (!Files.isWritable(to.toAbsolutePath().getParent()))
+					to = Files.createTempDirectory(project.getFileName().toString());
 				unzip(project, to);
 				root = to;
 			}
