@@ -1,6 +1,6 @@
 /*
     Calimero 3 - A library for KNX network access
-    Copyright (c) 2019, 2025 B. Malinowsky
+    Copyright (c) 2019, 2026 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Locale;
 import java.util.Optional;
 
 import io.calimero.GroupAddress;
@@ -97,32 +98,16 @@ public class DatapointImporter implements Runnable {
 
 	@Override
 	public void run() {
-		final String ext = input.substring(input.lastIndexOf('.') + 1);
-		if (ext.equalsIgnoreCase("xml"))
-			importAddressesFromXml(input);
-		else if (ext.equals("knxproj")) {
-			final var project = KnxProject.from(Path.of(input));
-			if (project.encrypted()) {
-				if (projectPwd.length == 0) {
-					System.err.println("project file is encrypted, password required!");
-					return;
-				}
-				project.decrypt(projectPwd);
-			}
-			try {
-				project.datapoints().getDatapoints().forEach(datapoints::add);
-			}
-			catch (final KNXFormatException e) {
-				e.printStackTrace();
+		final String ext = input.substring(input.lastIndexOf('.') + 1).toLowerCase(Locale.ROOT);
+		try {
+			switch (ext) {
+				case "xml" -> importAddressesFromXml();
+				case "knxproj" -> importAddressesFromKnxproj();
+				default -> importAddressesFromCsv();
 			}
 		}
-		else {
-			try {
-				importAddressesFromCsv(input);
-			}
-			catch (final IOException e) {
-				e.printStackTrace();
-			}
+		catch (final IOException e) {
+			e.printStackTrace();
 		}
 
 		if (datapoints.getDatapoints().isEmpty()) {
@@ -138,24 +123,36 @@ public class DatapointImporter implements Runnable {
 		}
 	}
 
+	private void importAddressesFromKnxproj() throws IOException {
+		final var project = KnxProject.from(Path.of(input));
+		if (project.encrypted()) {
+			if (projectPwd.length == 0) {
+				System.err.println("project file is encrypted, password required!");
+				return;
+			}
+			project.decrypt(projectPwd);
+		}
+		project.datapoints().getDatapoints().forEach(datapoints::add);
+	}
+
 	private XmlWriter createXmlWriter() {
 		final var fac = XmlOutputFactory.newInstance();
 		return output != null ? fac.createXMLWriter(output) : fac.createXMLStreamWriter(System.out);
 	}
 
-	private void importAddressesFromCsv(final String file) throws IOException {
-		try (var lines = Files.lines(Path.of(file), StandardCharsets.UTF_8)) {
+	private void importAddressesFromCsv() throws IOException {
+		try (var lines = Files.lines(Path.of(input), StandardCharsets.UTF_8)) {
 			lines.map(line -> line.split("\"[\t;]\""))
 					.map(DatapointImporter::parseDatapoint)
 					.flatMap(Optional::stream).forEach(datapoints::add);
 		}
 	}
 
-	private void importAddressesFromXml(final String uri) {
+	private void importAddressesFromXml() {
 		final String exportElement = "GroupAddress-Export";
 		final String addressElement = "GroupAddress";
 
-		try (var reader = XmlInputFactory.newInstance().createXMLReader(uri)) {
+		try (var reader = XmlInputFactory.newInstance().createXMLReader(input)) {
 			if (reader.getEventType() != XmlReader.START_ELEMENT)
 				reader.nextTag();
 			if (reader.getEventType() != XmlReader.START_ELEMENT || !reader.getLocalName().equals(exportElement))
