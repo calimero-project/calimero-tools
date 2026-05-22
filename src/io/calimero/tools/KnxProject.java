@@ -56,17 +56,11 @@ import java.util.Base64;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import javax.xml.parsers.DocumentBuilderFactory;
-
-import org.w3c.dom.Document;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.Node;
 
 import io.calimero.GroupAddress;
 import io.calimero.KNXFormatException;
@@ -75,6 +69,8 @@ import io.calimero.datapoint.StateDP;
 import io.calimero.log.LogService;
 import io.calimero.secure.KnxSecureException;
 import io.calimero.xml.KNXMLException;
+import io.calimero.xml.XmlInputFactory;
+import io.calimero.xml.XmlReader;
 import net.lingala.zip4j.ZipFile;
 import net.lingala.zip4j.model.enums.EncryptionMethod;
 
@@ -83,10 +79,13 @@ import net.lingala.zip4j.model.enums.EncryptionMethod;
  */
 public final class KnxProject {
 	private static final String knxproj = ".knxproj";
+	private static final String projectNamespace = "http://knx.org/xml/project/20";
+
+	private static final Logger logger = LogService.getLogger(MethodHandles.lookup().lookupClass());
 
 	private final Path project;
 	private final String name;
-	private volatile Document document; // assigned once with non-null
+	private volatile DatapointMap<StateDP> datapoints; // assigned once with non-null
 
 	public static List<Path> list(final Path dir) throws IOException {
 		try (var list = Files.list(dir)) {
@@ -115,16 +114,16 @@ public final class KnxProject {
 						.orElseThrow(() -> new FileNotFoundException("KNX project does not contain project folder"));
 				root = path;
 
-				Document document = null;
+				DatapointMap<StateDP> datapoints = null;
 				// check password protected project
 				if (path.toString().endsWith(".zip") && isProjectEncrypted(path))
 					; // delay parsing until decryption
 				else if (!Files.isDirectory(path))
 					throw new FileNotFoundException("no root directory found for parsing");
 				else
-					document = parse(path);
+					datapoints = parse(path);
 
-				return new KnxProject(root, name, document);
+				return new KnxProject(root, name, datapoints);
 			}
 		}
 		catch (final IOException e) {
@@ -135,26 +134,26 @@ public final class KnxProject {
 		}
 	}
 
-	private KnxProject(final Path project, final String name, final Document document) {
+	private KnxProject(final Path project, final String name, final DatapointMap<StateDP> datapoints) {
 		this.project = project;
 		this.name = name;
-		this.document = document;
+		this.datapoints = datapoints;
 	}
 
 	public String name() { return name; }
 
 	public URI uri() { return project.getParent().toUri(); }
 
-	public boolean encrypted() { return document == null; }
+	public boolean encrypted() { return datapoints == null; }
 
 	public void decrypt(final char[] projectPassword) {
-		if (document != null)
+		if (datapoints != null)
 			return;
 
 		final var to = Path.of(project.toString().replace(".zip", ""));
 		try {
 			unzip(project, to, projectPassword);
-			document = parse(to);
+			datapoints = parse(to);
 		}
 		catch (final IOException e) {
 			throw new UncheckedIOException(e);
@@ -168,26 +167,9 @@ public final class KnxProject {
 		}
 	}
 
-	public DatapointMap<StateDP> datapoints() throws KNXFormatException {
+	public DatapointMap<StateDP> datapoints() {
 		if (encrypted())
 			throw new KnxSecureException("project \"" + this + "\" is encrypted");
-
-		final var datapoints = new DatapointMap<StateDP>();
-		final var groupAddresses = document.getElementsByTagName("GroupAddress");
-		final int length = groupAddresses.getLength();
-		for (int i = 0; i < length; i++) {
-			final var node = groupAddresses.item(i);
-			final var attributes = node.getAttributes();
-
-//			final var id = attribute(attributes, "Id", "");
-			final var address = new GroupAddress(attribute(attributes, "Address", ""));
-			final var name = attribute(attributes, "Name", "");
-//			final var description = attribute(attributes, "Description", "");
-			final var dpt = parseDpt(attribute(attributes, "DatapointType", ""));
-
-			final var dp = new StateDP(address, name, (int) dpt[0], (String) dpt[1]);
-			datapoints.add(dp);
-		}
 		return datapoints;
 	}
 
@@ -195,13 +177,12 @@ public final class KnxProject {
 	public String toString() { return name(); }
 
 	private static void unzip(final Path project, final Path to) throws IOException {
-		final Logger logger = LogService.getLogger(MethodHandles.lookup().lookupClass());
 		logger.log(Level.DEBUG, "unzip project into directory {0}", to);
 		try (var zis = new ZipInputStream(Files.newInputStream(project))) {
 			for (var entry = zis.getNextEntry(); entry != null; entry = zis.getNextEntry()) {
 				final var target = createPath(to, entry);
 				if (!entry.isDirectory()) {
-					logger.log(Level.DEBUG, "extract {0}", entry.getName());
+					logger.log(Level.TRACE, "extract {0}", entry.getName());
 					Files.copy(zis, target, StandardCopyOption.REPLACE_EXISTING);
 				}
 			}
@@ -239,16 +220,66 @@ public final class KnxProject {
 		}
 	}
 
-	private static Document parse(final Path path) throws Exception {
+	private static DatapointMap<StateDP> parse(final Path path) throws KNXFormatException {
 		final Path parse = path.resolve("0.xml");
+		try (var reader = XmlInputFactory.newInstance().createXMLReader(parse.toString())) {
+			reader.nextTag();
+			final var namespace = reader.getNamespaceURI();
+			if (!projectNamespace.equals(namespace))
+				throw new KNXMLException("project '" + path + "' with unsupported namespace '" + namespace + "'");
 
-		final var builderFactory = DocumentBuilderFactory.newInstance();
-		final var builder = builderFactory.newDocumentBuilder();
-		return builder.parse(parse.toFile());
+			requireElement("Project", reader, path);
+			requireElement("Installations", reader, path);
+			requireElement("Installation", reader, path);
+
+			final var datapoints = new DatapointMap<StateDP>();
+			boolean inInstallation = false;
+			boolean inGroupAddresses = false;
+			for (; reader.getEventType() != XmlReader.END_DOCUMENT; reader.next()) {
+				switch (reader.getEventType()) {
+					case XmlReader.START_ELEMENT -> {
+						switch (reader.getLocalName()) {
+							case "Installation" -> {
+								inInstallation = true;
+								final var instName = reader.getAttributeValue(null, "Name");
+								logger.log(Level.DEBUG, "read installation ''{0}''", instName);
+							}
+							case "GroupAddresses" -> inGroupAddresses = inInstallation;
+							case "GroupAddress" -> {
+								if (inGroupAddresses) {
+									final var address = new GroupAddress(reader.getAttributeValue(null, "Address"));
+									final var dpName = attribute(reader, "Name", "");
+									final var dpt = parseDpt(attribute(reader, "DatapointType", ""));
+
+									final var dp = new StateDP(address, dpName, (int) dpt[0], (String) dpt[1]);
+									datapoints.add(dp);
+								}
+							}
+						}
+					}
+					case XmlReader.END_ELEMENT -> {
+						switch (reader.getLocalName()) {
+							case "Installation" -> inInstallation = false;
+							case "GroupAddresses" -> {
+								inGroupAddresses = false;
+								logger.log(Level.DEBUG, "found {0} group addresses", datapoints.getDatapoints().size());
+							}
+						}
+					}
+				}
+			}
+			return datapoints;
+		}
 	}
 
-	private static String attribute(final NamedNodeMap attributes, final String name, final String defaultValue) {
-		return Optional.ofNullable(attributes.getNamedItem(name)).map(Node::getNodeValue).orElse(defaultValue);
+	private static void requireElement(String name, XmlReader reader, Path path) {
+		reader.nextTag();
+		if (!name.equals(reader.getLocalName()))
+			throw new KNXMLException("project '" + path + "' requires '" + name + "' element");
+	}
+
+	private static String attribute(final XmlReader reader, final String name, final String defaultValue) {
+		return Optional.ofNullable(reader.getAttributeValue(null, name)).orElse(defaultValue);
 	}
 
 	private static Object[] parseDpt(final String dpt) {
