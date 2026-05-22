@@ -89,7 +89,7 @@ public final class KnxProject {
 
 	public static List<Path> list(final Path dir) throws IOException {
 		try (var list = Files.list(dir)) {
-			return list.filter(path -> path.toString().endsWith(knxproj)).collect(Collectors.toList());
+			return list.filter(path -> path.toString().endsWith(knxproj)).toList();
 		}
 	}
 
