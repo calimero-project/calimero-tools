@@ -142,7 +142,7 @@ public final class KnxProject {
 
 	public String name() { return name; }
 
-	public URI uri() { return project.getParent().toUri(); }
+	public URI location() { return project.getParent().toUri(); }
 
 	public boolean encrypted() { return datapoints == null; }
 
