@@ -205,17 +205,17 @@ final class Main
 					final Method main = tool.toolClass().getMethod("main", String[].class);
 					main.invoke(null, new Object[]{ toolargs });
 				}
-				catch (final Exception e) {
-					System.err.print("internal error initializing tool \"" + cmd + "\": ");
-					if (e instanceof InvocationTargetException)
-						e.getCause().printStackTrace();
-					else
-						e.printStackTrace();
+				catch (NoSuchMethodException | IllegalAccessException | IllegalArgumentException | ExceptionInInitializerError e) {
+					System.err.print("error initializing '" + cmd + "': ");
+					e.printStackTrace();
+				}
+				catch (final InvocationTargetException e) {
+					e.getCause().printStackTrace();
 				}
 				return;
 			}
 		}
-		System.out.println("unknown command \"" + cmd + "\"");
+		System.out.println("unknown command '" + cmd + "'");
 	}
 
 	private static void usage()
