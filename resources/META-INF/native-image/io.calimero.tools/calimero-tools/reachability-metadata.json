@@ -205,13 +205,16 @@
   ],
   "resources": [
     {
+      "module": "io.calimero.tools",
       "glob": "META-INF/MANIFEST.MF"
     },
     {
+      "module": "io.calimero.tools",
       "glob": "knxManufacturers.properties"
     },
     {
-      "glob": "META-INF/services/javax.xml.parsers.DocumentBuilderFactory"
+      "module": "io.calimero.tools",
+      "glob": "simplelogger.properties"
     }
   ]
 }
