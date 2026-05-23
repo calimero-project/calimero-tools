@@ -1,6 +1,6 @@
 /*
     Calimero 3 - A library for KNX network access
-    Copyright (c) 2011, 2025 B. Malinowsky
+    Copyright (c) 2011, 2026 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -37,6 +37,7 @@
 package io.calimero.tools;
 
 import static io.calimero.tools.Main.manufacturer;
+import static io.calimero.tools.Main.out;
 import static java.lang.System.Logger.Level.DEBUG;
 import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.INFO;
@@ -436,7 +437,7 @@ public class DeviceInfo implements Runnable
 		if (options.containsKey("json"))
 			jsonResult.info().add(new JsonItem(item.category, item.parameter, item.value, item.raw));
 		else
-			out(item);
+			outputItem(item);
 		onDeviceInformation(item.parameter(), item.value(), item.raw());
 	}
 
@@ -450,14 +451,14 @@ public class DeviceInfo implements Runnable
 	protected void onCompletion(final Exception thrown, final boolean canceled)
 	{
 		if (options.containsKey("json"))
-			System.out.println(jsonResult.toJson());
+			out(jsonResult);
 		if (canceled)
 			out.log(INFO, "reading device info canceled");
 		if (thrown != null)
 			out.log(ERROR, "completed with error", thrown);
 	}
 
-	private void out(final Item item) {
+	private void outputItem(final Item item) {
 		final boolean printUnformatted = false; // TODO create option 'raw/unformatted'
 
 		final boolean printCategory = categories.add(item.category());
@@ -1488,11 +1489,6 @@ public class DeviceInfo implements Runnable
 		joiner.add(Main.printCommonOptions());
 		joiner.add(Main.printSecureOptions());
 		out(joiner.toString());
-	}
-
-	private static void out(final String s)
-	{
-		System.out.println(s);
 	}
 
 	private static long toUnsigned(final byte[] data)

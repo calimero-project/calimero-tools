@@ -42,6 +42,7 @@ import static java.lang.System.Logger.Level.INFO;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -55,14 +56,14 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.time.LocalTime;
-import java.time.temporal.ChronoUnit;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.StringJoiner;
@@ -215,7 +216,7 @@ final class Main
 				return;
 			}
 		}
-		System.out.println("unknown command '" + cmd + "'");
+		err("unknown command '" + cmd + "'");
 	}
 
 	private static void usage()
@@ -226,11 +227,11 @@ final class Main
 		for (final var tool : tools) {
 			joiner.add(String.format("%-" + maxLength + "s - %s", tool.name(), tool.description()));
 		}
-		System.out.println(joiner);
+		out(joiner);
 	}
 
 	static void showVersion() {
-		System.out.println(Manifest.buildInfo(Main.class));
+		out(Manifest.buildInfo(Main.class));
 	}
 
 	//
@@ -437,7 +438,12 @@ final class Main
 		link.addLinkListener(new NetworkLinkListener() {
 			@LinkEvent
 			void connectionStatus(final ConnectionStatus status) {
-				System.out.println(LocalTime.now().truncatedTo(ChronoUnit.MILLIS) + " connection status KNX " + status);
+				if (options.containsKey("json")) {
+					record JsonConnectionStatus(Instant time, ConnectionStatus connectionStatus) implements Json {}
+					out(new JsonConnectionStatus(Instant.now(), status));
+				}
+				else
+					out().log(INFO, "KNX connection status: " + status.toString().toLowerCase(Locale.ROOT));
 			}
 		});
 		return link;
@@ -470,7 +476,7 @@ final class Main
 		if (options.containsKey("tpuart")) {
 			final var link = new KNXNetworkLinkTpuart(host, medium, Collections.emptyList());
 			if (device == null)
-				LogService.getLogger("io.calimero.tools").log(INFO, "TP-UART sends without assigned KNX address (--knx-address)");
+				out().log(INFO, "TP-UART sends without assigned KNX address (--knx-address)");
 			return link;
 		}
 
@@ -585,7 +591,7 @@ final class Main
 			});
 		}
 		else if (optKeyring.isPresent()) // should maybe make this an exception, too
-			System.out.println("both keyring and keyring password are required, secure communication won't be available!");
+			err("both keyring and keyring password are required, secure communication won't be available!");
 	}
 
 	private static Optional<Keyring> cwdKeyring() {
@@ -742,6 +748,28 @@ final class Main
 		};
 	}
 
+	static System.Logger out() {
+		// logger has to be initialized after main, where we set any log level passed to us
+		class Logger {
+			static final System.Logger out = LogService.getLogger("io.calimero.tools");
+		}
+		return Logger.out;
+	}
+
+	static PrintStream stdout() { return System.out; }
+
+	static void out(final Object o) {
+		stdout().println(o instanceof Json json ? json.toJson() : o);
+	}
+
+	static void err(final String s, final Throwable... t) {
+		if (t.length > 0 && t[0] != null) {
+			System.err.print(s + ": ");
+			t[0].printStackTrace();
+		}
+		else
+			System.err.println(s);
+	}
 
 	static final class ShutdownHandler {
 		private final Thread hook;

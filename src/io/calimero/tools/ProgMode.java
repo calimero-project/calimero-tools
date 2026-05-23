@@ -1,6 +1,6 @@
 /*
     Calimero 3 - A library for KNX network access
-    Copyright (c) 2015, 2025 B. Malinowsky
+    Copyright (c) 2015, 2026 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -58,6 +58,8 @@ import io.calimero.mgmt.PropertyAccess;
 import io.calimero.mgmt.PropertyClient;
 import io.calimero.serial.usb.UsbConnectionFactory;
 
+import static io.calimero.tools.Main.out;
+
 /**
  * ProgMode lists the current KNX devices in programming mode, and allows to set the programming mode of a device. The
  * tool supports network access using KNXnet/IP, KNX IP, USB, FT1.2, and TP-UART.
@@ -68,6 +70,11 @@ public class ProgMode implements Runnable
 {
 	private static final String tool = "ProgMode";
 	private static final String sep = System.lineSeparator();
+	private static final boolean ansiSupported =
+			System.getenv("NO_COLOR") == null && !"dumb".equalsIgnoreCase(System.getenv("TERM")) &&
+			(System.getenv("TERM") != null || System.getenv("WT_SESSION") != null || System.console() != null);
+
+	private static final String outputPrefix = "Device(s) in programming mode: ";
 
 	/** Contains tool options after parsing command line. */
 	private final Map<String, Object> options = new HashMap<>();
@@ -131,7 +138,7 @@ public class ProgMode implements Runnable
 			new ProgMode(args).run();
 		}
 		catch (final Throwable t) {
-			out("error parsing arguments (use --help): " + t);
+			Main.err("error parsing arguments (use --help): " + t);
 		}
 	}
 
@@ -213,7 +220,10 @@ public class ProgMode implements Runnable
 			final String cmd = (String) options.get("command");
 			if ("status".equals(cmd)) {
 				if (!options.containsKey("json"))
-					out("Device(s) in programming mode ...", false);
+					if (ansiSupported)
+						print(outputPrefix + "...");
+					else
+						out(outputPrefix + "...");
 				while (true)
 					devicesInProgMode(mgmt.readAddress());
 			}
@@ -228,12 +238,15 @@ public class ProgMode implements Runnable
 	{
 		if (options.containsKey("json")) {
 			record JsonDevices(IndividualAddress... devices) implements Json {}
-			out(new JsonDevices(devices).toJson());
+			out(new JsonDevices(devices));
 			return;
 		}
 		final String output = devices.length == 0 ? "none"
 				: new TreeSet<>(Arrays.asList(devices)).stream().map(Objects::toString).collect(Collectors.joining(", "));
-		out("\33[2K\rDevice(s) in programming mode: " + output + "\t\t", false);
+		if (ansiSupported)
+			print("\u001B[2K\r" + outputPrefix + output);
+		else
+			out(outputPrefix + output);
 	}
 
 	/**
@@ -245,9 +258,9 @@ public class ProgMode implements Runnable
 	protected void onCompletion(final Exception thrown, final boolean canceled)
 	{
 		if (canceled)
-			out(tool + " got canceled");
+			Main.err(tool + " got canceled");
 		if (thrown != null)
-			out(tool + " error", thrown);
+			Main.err(tool + " error", thrown);
 	}
 
 	private KNXNetworkLink createLink() throws KNXException, InterruptedException
@@ -329,22 +342,8 @@ public class ProgMode implements Runnable
 		out(joiner.toString());
 	}
 
-	private static void out(final CharSequence s, final Throwable... t)
-	{
-		if (t.length > 0 && t[0] != null) {
-			System.out.print(s + ": ");
-			t[0].printStackTrace();
-		}
-		else
-			System.out.println(s);
-	}
-
-	private static void out(final CharSequence s, final boolean newline) {
-		if (newline)
-			System.out.println(s);
-		else {
-			System.out.print(s);
-			System.out.flush();
-		}
+	private static void print(final CharSequence s) {
+		Main.stdout().print(s);
+		Main.stdout().flush();
 	}
 }

@@ -1,6 +1,6 @@
 /*
     Calimero 3 - A library for KNX network access
-    Copyright (c) 2013, 2025 B. Malinowsky
+    Copyright (c) 2013, 2026 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -36,6 +36,7 @@
 
 package io.calimero.tools;
 
+import static io.calimero.tools.Main.out;
 import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.INFO;
 
@@ -228,7 +229,7 @@ public class ScanDevices implements Runnable
 		if (options.containsKey("requireDD0"))
 			return;
 		if (options.containsKey("json"))
-			out(new JsonDevice((String) options.get("range"), device, null).toJson());
+			out(new JsonDevice((String) options.get("range"), device, null));
 		else
 			out(device);
 	}
@@ -237,7 +238,7 @@ public class ScanDevices implements Runnable
 		if (!options.containsKey("requireDD0"))
 			return;
 		if (options.containsKey("json"))
-			out(new JsonDevice((String) options.get("range"), device, dd0).toJson());
+			out(new JsonDevice((String) options.get("range"), device, dd0));
 		else
 			out(device + " (DD0 " + dd0 + (")"));
 	}
@@ -316,10 +317,5 @@ public class ScanDevices implements Runnable
 		joiner.add("  --dd                       require response with device descriptor");
 		joiner.add(Main.printSecureOptions());
 		out(joiner.toString());
-	}
-
-	private static void out(final Object s)
-	{
-		System.out.println(s);
 	}
 }

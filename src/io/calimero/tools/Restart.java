@@ -1,6 +1,6 @@
 /*
     Calimero 3 - A library for KNX network access
-    Copyright (c) 2019, 2025 B. Malinowsky
+    Copyright (c) 2019, 2026 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -39,6 +39,7 @@ package io.calimero.tools;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.System.Logger.Level;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,6 +60,8 @@ import io.calimero.mgmt.LocalDeviceManagementUsb;
 import io.calimero.mgmt.ManagementClientImpl;
 import io.calimero.serial.usb.UsbConnection;
 import io.calimero.serial.usb.UsbConnectionFactory;
+
+import static io.calimero.tools.Main.out;
 
 /**
  * Restart performs a basic restart or master reset of a KNX interface or KNX device. The tool supports network access
@@ -134,7 +137,7 @@ public class Restart implements Runnable {
 			new Restart(args).run();
 		}
 		catch (final Throwable t) {
-			out("error parsing arguments (use --help): " + t);
+			Main.err("error parsing arguments (use --help): " + t);
 		}
 	}
 
@@ -192,7 +195,7 @@ public class Restart implements Runnable {
 	private void localDeviceMgmtReset() throws InterruptedException, KNXException {
 		final int restartType = (Integer) options.get("restart-type");
 		if (restartType != 0)
-			System.out.println("Using local device management, ignore restart type");
+			out().log(Level.DEBUG, "restart type ({0}) is ignored with local device management", restartType);
 
 		if (options.containsKey("usb")) {
 			try (var conn = UsbConnectionFactory.open((String) options.get("host"));
@@ -237,9 +240,9 @@ public class Restart implements Runnable {
 	 */
 	protected void onCompletion(final Exception thrown, final boolean canceled) {
 		if (canceled)
-			out(tool + " got canceled");
+			Main.err(tool + " got canceled");
 		if (thrown != null)
-			out(tool + " error", thrown);
+			Main.err(tool + " error", thrown);
 	}
 
 	private void parseOptions(final String[] args) throws KNXFormatException {
@@ -332,14 +335,5 @@ public class Restart implements Runnable {
 		joiner.add(Main.printSecureOptions());
 
 		out(joiner.toString());
-	}
-
-	private static void out(final CharSequence s, final Throwable... t) {
-		if (t.length > 0 && t[0] != null) {
-			System.out.print(s + ": ");
-			t[0].printStackTrace();
-		}
-		else
-			System.out.println(s);
 	}
 }

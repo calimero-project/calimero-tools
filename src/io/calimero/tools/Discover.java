@@ -37,6 +37,7 @@
 package io.calimero.tools;
 
 import static io.calimero.tools.Main.isOption;
+import static io.calimero.tools.Main.out;
 import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.INFO;
 
@@ -305,10 +306,10 @@ public class Discover implements Runnable
 	protected void onEndpointReceived(final Result<SearchResponse> result)
 	{
 		if (options.containsKey("json"))
-			System.out.println(endpointToJson(result));
+			out(endpointToJson(result));
 		else {
 			final SearchResponse sr = result.response();
-			System.out.println(formatResponse(result, sr.getControlEndpoint(), sr.getDevice(), sr.getServiceFamilies(),
+			out(formatResponse(result, sr.getControlEndpoint(), sr.getDevice(), sr.getServiceFamilies(),
 					sr.description()));
 		}
 	}
@@ -328,7 +329,7 @@ public class Discover implements Runnable
 			onDescriptionReceived(result, null);
 	}
 
-	private static String endpointToJson(final Result<SearchResponse> result) {
+	private static Json endpointToJson(final Result<SearchResponse> result) {
 		final SearchResponse sr = result.response();
 		final var jsonDesc = new JsonDescriptionResponse(toJson(sr.getDevice()), sr.getServiceFamilies().families(),
 				sr.description());
@@ -343,13 +344,12 @@ public class Discover implements Runnable
 		final var dr = result.response();
 		final var jsonDesc = new JsonDescriptionResponse(toJson(dr.getDevice()), dr.getServiceFamilies().families(),
 				dr.getDescription());
-		System.out.println(toJson(result, jsonDesc));
+		out(toJson(result, jsonDesc));
 	}
 
-	private static String toJson(final Result<?> result, final Json response) {
-		final var jsonResult = new JsonResult(result.networkInterface().getName(), result.localEndpoint(),
+	private static Json toJson(final Result<?> result, final Json response) {
+		return new JsonResult(result.networkInterface().getName(), result.localEndpoint(),
 				result.remoteEndpoint(), response);
-		return jsonResult.toJson();
 	}
 
 	private static JsonDeviceInfo toJson(final DeviceDIB device) {
@@ -367,7 +367,7 @@ public class Discover implements Runnable
 	private static void onDescriptionReceived(final Result<DescriptionResponse> result, final HPAI hpai)
 	{
 		final DescriptionResponse dr = result.response();
-		System.out.println(formatResponse(result, hpai, dr.getDevice(), dr.getServiceFamilies(), dr.getDescription()));
+		out(formatResponse(result, hpai, dr.getDevice(), dr.getServiceFamilies(), dr.getDescription()));
 	}
 
 	private static String formatResponse(final Result<?> r, final HPAI controlEp, final DeviceDIB device,
@@ -643,7 +643,7 @@ public class Discover implements Runnable
 			onDescriptionReceived(dr, new HPAI(hpai.hostProtocol(), server));
 		}
 		catch (final KNXException e) {
-			System.out.println("description failed for server " + server + " using " + r.localEndpoint().getAddress()
+			Main.err("description failed for server " + server + " using " + r.localEndpoint().getAddress()
 					+ " at " + r.networkInterface().getName() + ": " + e.getMessage());
 		}
 	}
@@ -807,10 +807,5 @@ public class Discover implements Runnable
 				.formatted(tool, KNXnetIPConnection.DEFAULT_PORT);
 
 		out(usage + "\n" + Main.printSecureOptions(false));
-	}
-
-	private static void out(final String s)
-	{
-		System.out.println(s);
 	}
 }

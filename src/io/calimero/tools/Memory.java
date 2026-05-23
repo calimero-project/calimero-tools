@@ -1,6 +1,6 @@
 /*
     Calimero 3 - A library for KNX network access
-    Copyright (c) 2021, 2025 B. Malinowsky
+    Copyright (c) 2021, 2026 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -36,6 +36,7 @@
 
 package io.calimero.tools;
 
+import static io.calimero.tools.Main.out;
 import static java.lang.System.Logger.Level.DEBUG;
 import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.INFO;
@@ -212,10 +213,12 @@ public class Memory implements Runnable {
 	protected void onMemoryRead(final int address, final byte[] data) {
 		if (options.containsKey("json")) {
 			record JsonMemory(String startAddress, int length, byte[] data) implements Json {}
-			out(new JsonMemory(Integer.toHexString(address), data.length, data).toJson());
+			out(new JsonMemory(Integer.toHexString(address), data.length, data));
 			return;
 		}
-		out(data);
+		out(options.containsKey("dec")
+				? new BigInteger(1, data).toString()
+				: "0x" + HexFormat.of().formatHex(data));
 	}
 
 	/**
@@ -229,15 +232,6 @@ public class Memory implements Runnable {
 			out.log(INFO, "memory access canceled");
 		if (thrown != null)
 			out.log(ERROR, "completed with error", thrown);
-	}
-
-	private void out(final byte[] data) {
-		final String s;
-		if (options.containsKey("dec"))
-			s = new BigInteger(1, data).toString();
-		else
-			s = "0x" + HexFormat.of().formatHex(data);
-		out(s);
 	}
 
 	private void readWriteMemory() throws KNXException, InterruptedException {
@@ -333,9 +327,5 @@ public class Memory implements Runnable {
 		joiner.add("  --dec                      interpret memory data in decimal format");
 		joiner.add(Main.printSecureOptions());
 		out(joiner.toString());
-	}
-
-	private static void out(final String s) {
-		System.out.println(s);
 	}
 }

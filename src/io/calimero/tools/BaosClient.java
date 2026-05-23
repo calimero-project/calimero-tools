@@ -1,6 +1,6 @@
 /*
     Calimero 3 - A library for KNX network access
-    Copyright (c) 2019, 2025 B. Malinowsky
+    Copyright (c) 2019, 2026 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -36,8 +36,10 @@
 
 package io.calimero.tools;
 
+import static io.calimero.tools.Main.out;
+import static java.lang.System.Logger.Level.DEBUG;
 import static java.lang.System.Logger.Level.ERROR;
-import static java.lang.System.Logger.Level.INFO;
+import static java.lang.System.Logger.Level.WARNING;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -275,7 +277,7 @@ public class BaosClient implements Runnable
 	 */
 	protected void onBaosEvent(final BaosService svc) {
 		if (options.containsKey("json")) {
-			System.out.println(toJson(svc));
+			out(toJson(svc));
 			return;
 		}
 		out(LocalTime.now().truncatedTo(ChronoUnit.MILLIS) + " " + svc);
@@ -309,11 +311,11 @@ public class BaosClient implements Runnable
 		}
 	}
 
-	private static String toJson(final BaosService svc) {
+	private static Json toJson(final BaosService svc) {
 		// TODO extract items into more json keys
 		record JsonBaosService(Instant time, BaosService svc, int subSvc, boolean response,
 		                       ErrorCode error, List<Item<?>> items) implements Json {}
-		return new JsonBaosService(Instant.now(), svc, svc.subService(), svc.isResponse(), svc.error(), svc.items()).toJson();
+		return new JsonBaosService(Instant.now(), svc, svc.subService(), svc.isResponse(), svc.error(), svc.items());
 	}
 
 	/**
@@ -325,7 +327,7 @@ public class BaosClient implements Runnable
 	protected void onCompletion(final Exception thrown, final boolean canceled)
 	{
 		if (canceled)
-			out.log(INFO, "BAOS communication was stopped");
+			out.log(DEBUG, "BAOS communication was stopped");
 		if (thrown != null)
 			out.log(ERROR, "completed with error", thrown);
 	}
@@ -561,13 +563,13 @@ public class BaosClient implements Runnable
 					if (get || set)
 						issueBaosService(s);
 					else
-						out("unknown command '" + cmd + "'");
+						Main.err("unknown command '" + cmd + "'");
 				}
 				catch (final KNXTimeoutException e) {
-					out(e.getMessage());
+					Main.err(e.getMessage());
 				}
 				catch (KNXException | RuntimeException e) {
-					out.log(ERROR, MessageFormat.format("[{0}]", line), e);
+					out.log(WARNING, MessageFormat.format("[{0}]", line), e);
 				}
 			}
 		}
@@ -698,10 +700,6 @@ public class BaosClient implements Runnable
 		for (final var cmd : DatapointCommand.values())
 			joiner.add(String.format("%2d = %s", cmd.ordinal(), cmd));
 		return joiner;
-	}
-
-	private static void out(final Object s) {
-		System.out.println(s);
 	}
 
 	private static int unsigned(final String s) {

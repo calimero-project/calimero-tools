@@ -1,6 +1,6 @@
 /*
     Calimero 3 - A library for KNX network access
-    Copyright (c) 2006, 2025 B. Malinowsky
+    Copyright (c) 2006, 2026 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -36,6 +36,7 @@
 
 package io.calimero.tools;
 
+import static io.calimero.tools.Main.out;
 import static io.calimero.tools.Main.setDomainAddress;
 import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.INFO;
@@ -261,7 +262,7 @@ public class IPConfig implements Runnable
 	protected void onConfigurationReceived(final List<String[]> config)
 	{
 		if (options.containsKey("json")) {
-			System.out.println(toJson(config));
+			out(toJson(config));
 			return;
 		}
 		final StringBuilder sb = new StringBuilder();
@@ -273,7 +274,7 @@ public class IPConfig implements Runnable
 			final String value = s[2].isEmpty() ? "n/a" : s[2];
 			sb.append(s[1]).append(padding.substring(s[1].length())).append(value).append(sep);
 		}
-		System.out.println(sb);
+		out(sb);
 	}
 
 	/**
@@ -290,14 +291,13 @@ public class IPConfig implements Runnable
 			out.log(ERROR, "completed with error", thrown);
 	}
 
-	private String toJson(final List<String[]> config) {
+	private Json toJson(final List<String[]> config) {
 		final var device = options.containsKey("remote") ? options.get("remote") : options.get("host");
 		// convert String[2] entries into key/value pairs and put them in a map
 		final var map = config.stream().collect(Collectors.toMap(sa -> sa[1], sa -> sa[2]));
 
 		record JsonIpConfig(String device, Map<String, String> ipConfig) implements Json {}
-		final var jsonIpConfig = new JsonIpConfig(device.toString(), map);
-		return jsonIpConfig.toJson();
+		return new JsonIpConfig(device.toString(), map);
 	}
 
 	private void setIPAssignment() throws KNXException, InterruptedException
@@ -587,11 +587,6 @@ public class IPConfig implements Runnable
 		joiner.add("  auto                       enable automatic IP (AutoIP) assignment for current IP address")
 			  .add("                                             (address range 169.254.1.0 to 169.254.254.255)");
 		out(joiner.toString());
-	}
-
-	private static void out(final String s)
-	{
-		System.out.println(s);
 	}
 
 	private static byte[] getAuthorizeKey(final String key)

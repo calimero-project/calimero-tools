@@ -37,7 +37,9 @@
 package io.calimero.tools;
 
 import static io.calimero.tools.Main.isOption;
+import static io.calimero.tools.Main.out;
 import static io.calimero.tools.Main.setDomainAddress;
+import static java.lang.System.Logger.Level.DEBUG;
 import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.INFO;
 import static java.lang.System.Logger.Level.WARNING;
@@ -439,7 +441,7 @@ public class ProcComm implements Runnable
 			final var json = new JsonGroupEvent(Instant.now(), e.getSourceAddr(), e.getDestination(), svcCode,
 					DataUnitBuilder.decodeAPCI(svcCode), e.isLengthOptimizedAPDU(), asdu,
 					decodeAsdu(e, asdu, new StringBuilder()).toString());
-			System.out.println(json.toJson());
+			out(json);
 			return;
 		}
 		final StringBuilder sb = new StringBuilder();
@@ -454,7 +456,7 @@ public class ProcComm implements Runnable
 			sb.append(options.containsKey("compact") ? " " : ": ");
 			decodeAsdu(e, asdu, sb);
 		}
-		System.out.println(LocalTime.now().truncatedTo(ChronoUnit.MILLIS) + " " + sb);
+		out(LocalTime.now().truncatedTo(ChronoUnit.MILLIS) + " " + sb);
 	}
 
 	private StringBuilder decodeAsdu(final ProcessEvent e, final byte[] asdu, final StringBuilder sb) {
@@ -486,7 +488,7 @@ public class ProcComm implements Runnable
 	 * @param value formatted read response, or hexadecimal representation if <code>dp</code> has no {@link DPT} set
 	 */
 	protected void onReadResponse(final Datapoint dp, final String value) {
-		System.out.println("read " + dp.getMainAddress() + " value: " + value);
+		out("read " + dp.getMainAddress() + " value: " + value);
 	}
 
 	/**
@@ -580,21 +582,21 @@ public class ProcComm implements Runnable
 			onReadResponse(dp, pc.read(dp));
 		else {
 			if (dp.dptId().equals(new DptId(0xffff, 0xffff))) {
-				System.out.println("cannot write to " + dp.getMainAddress()
+				out.log(WARNING, "cannot write to " + dp.getMainAddress()
 						+ " because DPT is not known yet, retry and specify DPT once");
 				return;
 			}
 			// note, a write to a non-existing datapoint might finish successfully,
 			// too... no check for existence or read back of a written value is done
 			pc.write(dp, value);
-			System.out.println("write to " + dp.getMainAddress() + " successful");
+			out.log(DEBUG, "write to " + dp.getMainAddress() + " successful");
 		}
 	}
 
 	private void issueLteCommand(final String addr, final String... s)
 		throws KNXTimeoutException, KNXLinkClosedException {
 		if (s.length < 5) {
-			System.out.println("LTE-HEE command: r|w|i address IOT OI [\"company\" company] PID [hex values]");
+			Main.err("LTE-HEE command: r|w|i address IOT OI [\"company\" company] PID [hex values]");
 			return;
 		}
 		final int iot = Integer.parseUnsignedInt(s[2]);
@@ -610,11 +612,11 @@ public class ProcComm implements Runnable
 		final boolean info = cmd.equals("info") || cmd.equals("i");
 		final int svc = write ? 0 : read ? 1 : info ? 2 : -1;
 		if (svc == -1) {
-			System.out.println("unknown command '" + cmd + "'");
+			out("unknown command '" + cmd + "'");
 			return;
 		}
 		if ((info || write) == data.isEmpty())
-			System.out.println("data value(s) required for writing (but never for reading)!");
+			out.log(WARNING, "data value(s) required for writing (but never for reading)!");
 		else {
 			readWrite(svc, addr, iot, oi, company, pid, data);
 		}
@@ -639,7 +641,7 @@ public class ProcComm implements Runnable
 		}
 		asdu[i++] = (byte) pid;
 		if (data.length() % 2 != 0) {
-			System.out.println("error writing [" + data + "]: data length has to be even");
+			Main.err("error writing [" + data + "]: data length has to be even");
 			return;
 		}
 
@@ -668,7 +670,7 @@ public class ProcComm implements Runnable
 		final String svc = cmd == 0 ? "write" : cmd == 1 ? "read" : "info";
 		final String scmp = company > 0 ? " company " + company : "";
 		final String sdata = data.length() > 0 ? " data [" + data + "]" : "";
-		System.out.println("send LTE-HEE " + svc + " " + tag + " IOT " + iot + " OI " + sendOi + scmp + " PID " + pid
+		out.log(DEBUG, "send LTE-HEE " + svc + " " + tag + " IOT " + iot + " OI " + sendOi + scmp + " PID " + pid
 				+ sdata);
 		link.send(ldata, true);
 	}
@@ -1060,15 +1062,6 @@ public class ProcComm implements Runnable
 				.add("  9.002: float/float2 (2-byte float)             14.005: float4 (4-byte float)")
 				.add(" 16.001: string (ISO-8859-1, max. length 14)");
 		return joiner;
-	}
-
-	//
-	// utility methods
-	//
-
-	private static void out(final Object s)
-	{
-		System.out.println(s);
 	}
 
 	private final class ShutdownHandler {

@@ -20,6 +20,7 @@
 package io.calimero.tools;
 
 import java.io.IOException;
+import java.lang.System.Logger.Level;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -37,6 +38,8 @@ import io.calimero.xml.XmlInputFactory;
 import io.calimero.xml.XmlOutputFactory;
 import io.calimero.xml.XmlReader;
 import io.calimero.xml.XmlWriter;
+
+import static io.calimero.tools.Main.out;
 
 /**
  * Imports datapoint information from a KNX project (.knxproj) or group addresses file (in XML or CSV format) and writes
@@ -107,11 +110,11 @@ public class DatapointImporter implements Runnable {
 			}
 		}
 		catch (final IOException e) {
-			e.printStackTrace();
+			out().log(Level.WARNING, "error reading '" + input + "'", e);
 		}
 
 		if (datapoints.getDatapoints().isEmpty()) {
-			out("no datapoints found");
+			out().log(Level.DEBUG, "no datapoints found");
 			return;
 		}
 
@@ -180,7 +183,7 @@ public class DatapointImporter implements Runnable {
 			final var group = new GroupAddress(address);
 			final var types = parseDpt(dpt);
 			final var datapoint = new StateDP(group, name, (int) types[0], (String) types[1]);
-			System.out.println("import " + datapoint);
+			out().log(Level.TRACE, "import " + datapoint);
 			return Optional.of(datapoint);
 		}
 		catch (final KNXFormatException e) {
@@ -218,9 +221,5 @@ public class DatapointImporter implements Runnable {
 				  --freestyle                use unformatted KNX address presentation in the output"""
 				.formatted(name);
 		out(usage);
-	}
-
-	private static void out(final Object o) {
-		System.out.println(o);
 	}
 }

@@ -1,6 +1,6 @@
 /*
     Calimero 3 - A library for KNX network access
-    Copyright (c) 2010, 2025 B. Malinowsky
+    Copyright (c) 2010, 2026 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -36,6 +36,8 @@
 
 package io.calimero.tools;
 
+import static io.calimero.tools.Main.out;
+import static java.lang.System.Logger.Level.DEBUG;
 import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.INFO;
 import static java.util.Map.entry;
@@ -271,7 +273,7 @@ public class Property implements Runnable
 			// run the user command
 			runCommand((String[]) options.get("command"));
 		}
-		catch (KNXException | RuntimeException e) {
+		catch (IOException | KNXException | RuntimeException e) {
 			thrown = e;
 		}
 		catch (final InterruptedException e) {
@@ -298,10 +300,11 @@ public class Property implements Runnable
 	 * Runs a single command.
 	 *
 	 * @param cmd the command to execute together with its parameters
+	 * @throws IOException if an I/O error occurs during user interaction,
+	 *                     such as input/output via a command-line interface
 	 * @throws InterruptedException on thread interrupt
 	 */
-	protected void runCommand(final String... cmd) throws InterruptedException
-	{
+	protected void runCommand(final String... cmd) throws IOException, InterruptedException {
 		if (cmd == null)
 			return;
 		try {
@@ -351,7 +354,7 @@ public class Property implements Runnable
 			final var json = new JsonDescription(d.objectIndex(), d.objectType(), d.objectInstance(), d.pid(),
 					d.propIndex(), name, pidName, d.maxElements(), d.currentElements(), pdt,
 					d.dpt().orElse(null), d.readLevel(), d.writeLevel(), d.writeEnabled());
-			System.out.println(json.toJson());
+			out(json);
 			return;
 		}
 
@@ -376,7 +379,7 @@ public class Property implements Runnable
 		buf.append(", max. ").append(d.maxElements());
 		buf.append(", r/w access ").append(d.readLevel()).append("/").append(d.writeLevel());
 		buf.append(d.writeEnabled() ? ", w.enabled" : ", r.only");
-		System.out.println(buf);
+		out(buf);
 	}
 
 	/**
@@ -390,18 +393,16 @@ public class Property implements Runnable
 	protected void onPropertyValue(final int idx, final int pid, final String value, final List<byte[]> raw)
 	{
 		if (options.containsKey("json"))
-			System.out.println(toJson(idx, pid, value, raw));
+			out(toJson(idx, pid, value, raw));
 		else {
 			final String rawValue = raw.stream().map(HexFormat.of()::formatHex).collect(joining(delimiter, " (", ")"));
-			System.out.println(value + rawValue);
+			out(value + rawValue);
 		}
 	}
 
-	private static String toJson(final int idx, final int pid, final String value, final List<byte[]> raw) {
+	private static Json toJson(final int idx, final int pid, final String value, final List<byte[]> raw) {
 		record JsonProperty(int index, int pid, String value, List<byte[]> data) implements Json {}
-
-		final var json = new JsonProperty(idx, pid, value, raw);
-		return json.toJson();
+		return new JsonProperty(idx, pid, value, raw);
 	}
 
 	/**
@@ -764,7 +765,7 @@ public class Property implements Runnable
 			return;
 		}
 
-		System.out.println("Object Index (OI), Property Index (PI), Object Type (OT), Property ID (PID)");
+		out("Object Index (OI), Property Index (PI), Object Type (OT), Property ID (PID)");
 		if (cnt == 1)
 			pc.scanProperties(false, this::notifyDescription);
 		else if (cnt == 2) {
@@ -776,10 +777,10 @@ public class Property implements Runnable
 		else if (cnt == 3 && args[2].equals("all"))
 			pc.scanProperties(toInt(args[1]), true, this::notifyDescription);
 		else {
-			out("sorry, wrong number of arguments");
+			Main.err("sorry, wrong number of arguments");
 			return;
 		}
-		System.out.println("scan complete");
+		out.log(DEBUG, "scan complete");
 	}
 
 	private static void showCommandList()
@@ -868,11 +869,6 @@ public class Property implements Runnable
 		for (; i-- > 0; l /= 0x100)
 			d[i] = (byte) (l & 0xff);
 		return d;
-	}
-
-	static void out(final String s)
-	{
-		System.out.println(s);
 	}
 
 	// custom formatter stuff

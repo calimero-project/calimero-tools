@@ -1,6 +1,6 @@
 /*
     Calimero 3 - A library for KNX network access
-    Copyright (c) 2019, 2025 B. Malinowsky
+    Copyright (c) 2019, 2026 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -36,6 +36,7 @@
 
 package io.calimero.tools;
 
+import static io.calimero.tools.Main.out;
 import static io.calimero.tools.Main.setDomainAddress;
 import static java.lang.System.Logger.Level.DEBUG;
 import static java.lang.System.Logger.Level.ERROR;
@@ -273,7 +274,7 @@ public class TrafficMonitor implements Runnable {
 		final var frame = e.getFrame();
 
 		if (options.containsKey("json")) {
-			System.out.println(toJson(frame));
+			out(toJson(frame));
 			return;
 		}
 
@@ -329,7 +330,7 @@ public class TrafficMonitor implements Runnable {
 		outTimestamped(joiner.toString());
 	}
 
-	private static String toJson(final CEMI frame) {
+	private static Json toJson(final CEMI frame) {
 		if (frame instanceof final CEMILData ldata) {
 			final var payload = frame.getPayload();
 			String tpci = "";
@@ -352,8 +353,7 @@ public class TrafficMonitor implements Runnable {
 					ldata.getSource(), ldata.getDestination(), ldata.isRepetition(), ldata.getHopCount(), ldata.getPriority(),
 					ldata.isAckRequested(), ldata.isSystemBroadcast(), ldata.isPositiveConfirmation(), tpci, apci,
 					asdu);
-			final var jsonTraffic = new JsonTrafficEvent(Instant.now(), json);
-			return jsonTraffic.toJson();
+			return new JsonTrafficEvent(Instant.now(), json);
 		}
 		else { // we shouldn't receive CEMIBusMon, CEMIDevMgmt, or CemiTData here
 			out.log(DEBUG, "unsupported cEMI frame format " + frame);
@@ -526,9 +526,5 @@ public class TrafficMonitor implements Runnable {
 
 	private static void outTimestamped(final String s) {
 		out(LocalTime.now().truncatedTo(ChronoUnit.MILLIS) + " " + String.join("", s));
-	}
-
-	private static void out(final Object s) {
-		System.out.println(s);
 	}
 }

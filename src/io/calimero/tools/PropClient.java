@@ -36,6 +36,7 @@
 
 package io.calimero.tools;
 
+import static io.calimero.tools.Main.out;
 import static java.lang.System.Logger.Level.ERROR;
 
 import java.io.BufferedReader;
@@ -74,35 +75,26 @@ public class PropClient implements Runnable
 		}
 
 		@Override
-		protected void runCommand(final String... cmd) throws InterruptedException
+		protected void runCommand(final String... cmd) throws IOException, InterruptedException
 		{
 			// ignore any command supplied on command line
 			options.remove("command");
 			// show some command info
 			super.runCommand("?");
-			out("exit - close connection and exit");
-			runReaderLoop(PropClient.this);
+			out("  exit - close connection and exit");
+			runReaderLoop();
 		}
 
-		private void runReaderLoop(final PropClient propClient)
-		{
+		private void runReaderLoop() throws IOException, InterruptedException {
 			// create reader for user input
-			final BufferedReader r = new BufferedReader(new InputStreamReader(System.in, Charset.defaultCharset()));
+			final var r = new BufferedReader(new InputStreamReader(System.in, Charset.defaultCharset()));
 			String[] args;
-			try {
-				while ((args = propClient.readLine(r)) != null) {
-					if (args.length > 0 && !(args.length == 1 && args[0].isEmpty())) {
-						if ("exit".equalsIgnoreCase(args[0]))
-							break;
-						super.runCommand(args);
-					}
+			while ((args = readLine(r)) != null) {
+				if (args.length > 0 && !(args.length == 1 && args[0].isEmpty())) {
+					if ("exit".equalsIgnoreCase(args[0]))
+						break;
+					super.runCommand(args);
 				}
-			}
-			catch (final InterruptedException e) {
-				System.out.println("received interrupt, closing ...");
-			}
-			catch (final IOException e) {
-				System.out.println("I/O error, " + e.getMessage());
 			}
 		}
 	}
@@ -166,7 +158,7 @@ public class PropClient implements Runnable
 			pc.run();
 		}
 		catch (final Throwable t) {
-			Property.out.log(ERROR, "client error", t);
+			out().log(ERROR, "client error", t);
 		}
 	}
 
@@ -187,7 +179,7 @@ public class PropClient implements Runnable
 	 */
 	private String[] readLine(final BufferedReader r) throws IOException, InterruptedException
 	{
-		System.out.print("> ");
+		Main.stdout().print("> ");
 		synchronized (this) {
 			while (property.pc.isOpen() && !r.ready())
 				wait(100);

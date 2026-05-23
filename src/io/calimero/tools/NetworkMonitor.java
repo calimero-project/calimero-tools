@@ -1,6 +1,6 @@
 /*
     Calimero 3 - A library for KNX network access
-    Copyright (c) 2006, 2025 B. Malinowsky
+    Copyright (c) 2006, 2026 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -36,6 +36,7 @@
 
 package io.calimero.tools;
 
+import static io.calimero.tools.Main.out;
 import static io.calimero.tools.Main.tcpConnection;
 import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.INFO;
@@ -308,7 +309,7 @@ public class NetworkMonitor implements Runnable
 		final RawFrame raw = ((MonitorFrameEvent) e).getRawFrame();
 
 		if (options.containsKey("json")) {
-			System.out.println(toJson(raw, frame));
+			out(toJson(raw, frame));
 			return;
 		}
 
@@ -344,10 +345,10 @@ public class NetworkMonitor implements Runnable
 				}
 			}
 		}
-		System.out.println(LocalTime.now() + " " + sb);
+		out(LocalTime.now() + " " + sb);
 	}
 
-	private static String toJson(final RawFrame raw, final CEMIBusMon frame) {
+	private static Json toJson(final RawFrame raw, final CEMIBusMon frame) {
 		var jsonRaw = switch (raw) {
 			case final RawFrameBase f -> {
 				final byte[] tpdu = f.getTPDU();
@@ -389,11 +390,10 @@ public class NetworkMonitor implements Runnable
 
 		record JsonMonitorIndication(Instant time, String svc, long relativeTimestamp, int seqNumber, boolean frameError,
 				boolean bitError, boolean parityError, boolean lost, byte[] data, Json rawFrame) implements Json {}
-		final var json = new JsonMonitorIndication(Instant.now(), TrafficMonitor.svcPrimitive(frame.getMessageCode()),
+		return new JsonMonitorIndication(Instant.now(), TrafficMonitor.svcPrimitive(frame.getMessageCode()),
 				frame.getTimestamp(), frame.getSequenceNumber(),
-				frame.getFrameError(), frame.getBitError(), frame.getParityError(), frame.getLost(), frame.getPayload(),
-				jsonRaw);
-		return json.toJson();
+				frame.getFrameError(), frame.getBitError(), frame.getParityError(), frame.getLost(),
+				frame.getPayload(), jsonRaw);
 	}
 
 	private static String frameFormat(final int format) {
@@ -454,7 +454,7 @@ public class NetworkMonitor implements Runnable
 		monitor.addMonitorListener(new LinkListener() {
 			@LinkEvent
 			void connectionStatus(final ConnectionStatus status) {
-				System.out.println(LocalTime.now().truncatedTo(ChronoUnit.MILLIS) + " connection status KNX " + status);
+				out(LocalTime.now().truncatedTo(ChronoUnit.MILLIS) + " connection status KNX " + status);
 			}
 		});
 		return monitor;
@@ -574,11 +574,6 @@ public class NetworkMonitor implements Runnable
 		joiner.add("  --compact -c               show incoming busmonitor indications in compact format");
 		joiner.add(Main.printSecureOptions(false));
 		out(joiner.toString());
-	}
-
-	private static void out(final String s)
-	{
-		System.out.println(s);
 	}
 
 	protected static String decodeLteFrame(final RFLData frame) throws KNXFormatException {
