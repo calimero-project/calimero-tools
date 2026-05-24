@@ -426,8 +426,22 @@ public class DeviceInfo implements Runnable
 	protected void onDeviceInformation(final Item item) {
 		if (options.containsKey("json"))
 			jsonResult.info().add(new JsonItem(item.category, item.parameter, item.value, item.raw));
-		else
-			outputItem(item);
+		else {
+			final boolean printCategory = categories.add(item.category());
+			if (printCategory && !"General".equals(item.category()))
+				out(System.lineSeparator() + item.category());
+
+			final String s = item.parameter().friendlyName() + " = " + item.value();
+			String detail = "";
+			final boolean printUnformatted = false; // TODO create option 'raw/unformatted'
+			if (printUnformatted) {
+				final String hex = item.raw().length > 0 ? "0x" + HexFormat.of().formatHex(item.raw()) : "n/a";
+				// left-pad unformatted output
+				final int n = Math.max(1, 60 - s.length());
+				detail = String.format(" %" + n + "s%s]", "[", hex);
+			}
+			out(s + detail);
+		}
 	}
 
 	/**
@@ -445,21 +459,6 @@ public class DeviceInfo implements Runnable
 			out.log(INFO, "reading device info canceled");
 		if (thrown != null)
 			out.log(ERROR, "completed with error", thrown);
-	}
-
-	private void outputItem(final Item item) {
-		final boolean printUnformatted = false; // TODO create option 'raw/unformatted'
-
-		final boolean printCategory = categories.add(item.category());
-		if (printCategory && !"General".equals(item.category()))
-			out(System.lineSeparator() + item.category());
-
-		final String s = item.parameter().friendlyName() + " = " + item.value();
-		final String hex = item.raw().length > 0 ? "0x" + HexFormat.of().formatHex(item.raw()) : "n/a";
-		// left-pad unformatted output
-		final int n = Math.max(1, 60 - s.length());
-		final String detail = printUnformatted ? String.format(" %" + n + "s%s]", "[", hex) : "";
-		out(s + detail);
 	}
 
 	private String interfaceObjectName(final int objectIndex) {
