@@ -419,16 +419,6 @@ public class DeviceInfo implements Runnable
 	}
 
 	/**
-	 * Invoked after successfully reading a KNX device parameter. If a device parameter is not available or accessible
-	 * in the KNX device, this method won't be called.
-	 *
-	 * @param parameter the parameter read from the device
-	 * @param value formatted value of that parameter
-	 * @param raw raw value of that parameter
-	 */
-	protected void onDeviceInformation(final Parameter parameter, final String value, final byte[] raw) {}
-
-	/**
 	 * Invoked on each successfully read device parameter of a KNX device.
 	 *
 	 * @param item device parameter and value
@@ -438,7 +428,6 @@ public class DeviceInfo implements Runnable
 			jsonResult.info().add(new JsonItem(item.category, item.parameter, item.value, item.raw));
 		else
 			outputItem(item);
-		onDeviceInformation(item.parameter(), item.value(), item.raw());
 	}
 
 	/**
