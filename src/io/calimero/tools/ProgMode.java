@@ -236,13 +236,14 @@ public class ProgMode implements Runnable
 
 	protected void devicesInProgMode(final IndividualAddress... devices)
 	{
+		final var dedup = new TreeSet<>(Arrays.asList(devices));
 		if (options.containsKey("json")) {
 			record JsonDevices(IndividualAddress... devices) implements Json {}
-			out(new JsonDevices(devices));
+			out(new JsonDevices(dedup.toArray(new IndividualAddress[0])));
 			return;
 		}
 		final String output = devices.length == 0 ? "none"
-				: new TreeSet<>(Arrays.asList(devices)).stream().map(Objects::toString).collect(Collectors.joining(", "));
+				: dedup.stream().map(Objects::toString).collect(Collectors.joining(", "));
 		if (ansiSupported)
 			print("\u001B[2K\r" + outputPrefix + output);
 		else
