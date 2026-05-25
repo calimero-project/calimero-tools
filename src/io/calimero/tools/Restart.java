@@ -194,9 +194,9 @@ public class Restart implements Runnable {
 	}
 
 	private void localDeviceMgmtReset() throws InterruptedException, KNXException {
-		final int restartType = (Integer) options.get("restart-type");
-		if (restartType != 0)
-			out().log(Level.DEBUG, "restart type ({0}) is ignored with local device management", restartType);
+		final int eraseCode = (Integer) options.get("restart-type");
+		if (eraseCode != 0)
+			out().log(Level.DEBUG, "restart type ({0}) is ignored with local device management", restartType(eraseCode));
 
 		if (options.containsKey("usb")) {
 			try (var conn = UsbConnectionFactory.open((String) options.get("host"));
@@ -303,20 +303,18 @@ public class Restart implements Runnable {
 		Main.setDomainAddress(options);
 	}
 
+	private static final List<String> restartTypes = List.of("basic",  "confirmed", "factory-reset", "reset-address",
+			"reset-app", "reset-params", "reset-links", "factory-reset-keep-address", "erase-app-data");
+
 	private static int restartType(final String option) {
-		final var code = option.length() < 2 ? option : option.substring(2);
-		return switch (code) {
-			case "basic" -> 0;
-			case "confirmed" -> 1;
-			case "factory-reset", "reset-factory" -> 2;
-			case "reset-address" -> 3;
-			case "reset-app" -> 4;
-			case "reset-params" -> 5;
-			case "reset-links" -> 6;
-			case "factory-reset-keep-address" -> 7;
-			case "erase-app-data" -> 8;
-			default -> -1;
-		};
+		final var type = option.length() < 2 ? option : option.substring(2).replace("reset-factory", "factory-reset");
+		return restartTypes.indexOf(type);
+	}
+
+	private static String restartType(final int eraseCode) {
+		if (eraseCode >= restartTypes.size())
+			throw new KNXIllegalArgumentException("invalid erase code " + eraseCode);
+		return restartTypes.get(eraseCode);
 	}
 
 	private static void showToolInfo() {
