@@ -127,8 +127,7 @@ public class Restart implements Runnable {
 	 * <li><code>--reset-params</code> &nbsp;reset application parameter memory (used with channel)</li>
 	 * <li><code>--reset-links</code> &nbsp;reset links (used with channel)</li>
 	 * <li><code>--erase-app-data &lt;channel&gt;</code> &nbsp;erase persistently stored application data</li>
-	 * <li><code>--factory-keep-addr</code> &nbsp;factory reset without resetting device addresses (used with
-	 * channel)</li>
+	 * <li><code>--factory-reset-keep-address &lt;channel&gt;</code> &nbsp;factory reset without resetting device address</li>
 	 * </ul>
 	 *
 	 * @param args command line arguments for the tool
@@ -313,7 +312,7 @@ public class Restart implements Runnable {
 			case "reset-app" -> 4;
 			case "reset-params" -> 5;
 			case "reset-links" -> 6;
-			case "factory-keep-addr" -> 7;
+			case "factory-reset-keep-address" -> 7;
 			case "erase-app-data" -> 8;
 			default -> -1;
 		};
@@ -340,7 +339,7 @@ public class Restart implements Runnable {
 				  --reset-params             reset application parameter memory (used with channel)
 				  --reset-links              reset links (used with channel)
 				  --erase-app-data <channel> erase persistently stored application data
-				  --factory-keep-addr        factory reset without resetting device addresses (used with channel)""";
+				  --factory-reset-keep-address <channel>    factory reset without resetting device address""";
 		joiner.add(options);
 		joiner.add(Main.printSecureOptions());
 
