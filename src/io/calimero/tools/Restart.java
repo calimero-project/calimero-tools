@@ -117,18 +117,19 @@ public class Restart implements Runnable {
 	 * communicates with the KNX network, i.e., KNX IP or TP-UART. The selected KNX individual address shall be unique
 	 * in a network, and the subnetwork address (area and line) should be set to match the network configuration.
 	 * <p>
-	 * The supported restart types are (select at most one):
+	 * If a device address is supplied, the supported restart types are (select at most one):
 	 * <ul>
-	 * <li><code>--basic</code> &nbsp;basic restart without confirmation [default]</li>
+	 * <li><code>--basic</code> &nbsp;basic restart without confirmation (default)</li>
 	 * <li><code>--confirmed</code> &nbsp;basic restart with confirmation</li>
-	 * <li><code>--factory-reset</code> &nbsp;factory reset (used with channel)</li>
-	 * <li><code>--reset-address</code> &nbsp;reset device address to its default</li>
-	 * <li><code>--reset-app</code> &nbsp;application program memory to default application</li>
-	 * <li><code>--reset-params</code> &nbsp;reset application parameter memory (used with channel)</li>
-	 * <li><code>--reset-links</code> &nbsp;reset links (used with channel)</li>
+	 * <li><code>--reset-address</code> &nbsp;reset device address to its medium-specific default</li>
+	 * <li><code>--reset-app</code> &nbsp;reset application program memory to the default application</li>
+	 * <li><code>--reset-params &lt;channel&gt;</code> &nbsp;reset application parameter memory to its default value</li>
+	 * <li><code>--reset-links &lt;channel&gt;</code> &nbsp;reset link information for group objects to default state</li>
 	 * <li><code>--erase-app-data &lt;channel&gt;</code> &nbsp;erase persistently stored application data</li>
+	 * <li><code>--factory-reset &lt;channel&gt;</code> &nbsp;reset device to factory state</li>
 	 * <li><code>--factory-reset-keep-address &lt;channel&gt;</code> &nbsp;factory reset without resetting device address</li>
 	 * </ul>
+	 * A channel number of 0 indicates that all application channels shall be reset.
 	 *
 	 * @param args command line arguments for the tool
 	 */
@@ -330,15 +331,15 @@ public class Restart implements Runnable {
 		joiner.add(Main.printCommonOptions());
 		final var options = """
 				  --yes -y                   automatic yes to reset confirmation
-				If a device address is supplied, the supported restart types are (select at most one):
-				  --basic                    basic restart without confirmation [default]
+				Restart type (only applicable if a device address is supplied; channel 0 resets all application channels):
+				  --basic                    basic restart without confirmation (default)
 				  --confirmed                basic restart with confirmation
-				  --factory-reset            factory reset (used with channel)
-				  --reset-address            reset device address to its default
-				  --reset-app                reset application program memory to default application
-				  --reset-params             reset application parameter memory (used with channel)
-				  --reset-links              reset links (used with channel)
+				  --reset-address            reset device address to its medium-specific default
+				  --reset-app                reset application program memory to the default application
+				  --reset-params <channel>   reset application parameter memory to its default value
+				  --reset-links <channel>    reset link information for group objects to default state
 				  --erase-app-data <channel> erase persistently stored application data
+				  --factory-reset <channel>  reset device to factory state
 				  --factory-reset-keep-address <channel>    factory reset without resetting device address""";
 		joiner.add(options);
 		joiner.add(Main.printSecureOptions());
