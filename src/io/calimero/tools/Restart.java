@@ -126,6 +126,7 @@ public class Restart implements Runnable {
 	 * <li><code>--reset-app</code> &nbsp;application program memory to default application</li>
 	 * <li><code>--reset-params</code> &nbsp;reset application parameter memory (used with channel)</li>
 	 * <li><code>--reset-links</code> &nbsp;reset links (used with channel)</li>
+	 * <li><code>--erase-app-data &lt;channel&gt;</code> &nbsp;erase persistently stored application data</li>
 	 * <li><code>--factory-keep-addr</code> &nbsp;factory reset without resetting device addresses (used with
 	 * channel)</li>
 	 * </ul>
@@ -270,7 +271,7 @@ public class Restart implements Runnable {
 				options.put("knx-address", Main.getAddress(i.next()));
 			else if (restartType == -1 && (restartType = restartType(arg)) >= 0) {
 				options.put("restart-type", restartType);
-				if (restartType == 2 || restartType == 5 || restartType == 6 || restartType == 7)
+				if (restartType == 2 || restartType == 5 || restartType == 6 || restartType == 7 || restartType == 8) {
 					options.put("channel", Integer.parseUnsignedInt(i.next()));
 			}
 			else if (restartType >= 0 && (restartType(arg) >= 0))
@@ -306,6 +307,7 @@ public class Restart implements Runnable {
 			case "reset-params" -> 5;
 			case "reset-links" -> 6;
 			case "factory-keep-addr" -> 7;
+			case "erase-app-data" -> 8;
 			default -> -1;
 		};
 	}
@@ -330,6 +332,7 @@ public class Restart implements Runnable {
 				  --reset-app                reset application program memory to default application
 				  --reset-params             reset application parameter memory (used with channel)
 				  --reset-links              reset links (used with channel)
+				  --erase-app-data <channel> erase persistently stored application data
 				  --factory-keep-addr        factory reset without resetting device addresses (used with channel)""";
 		joiner.add(options);
 		joiner.add(Main.printSecureOptions());
