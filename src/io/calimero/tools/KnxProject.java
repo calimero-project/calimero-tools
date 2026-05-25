@@ -50,6 +50,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Comparator;
@@ -85,7 +86,14 @@ public final class KnxProject {
 
 	private final Path project;
 	private final String name;
-	private volatile DatapointMap<StateDP> datapoints; // assigned once with non-null
+	private volatile List<Installation> installations; // assigned once with non-null
+
+	public interface Installation {
+		String name();
+		DatapointMap<StateDP> datapoints();
+	}
+
+	private record DefaultInstallation(String name, DatapointMap<StateDP> datapoints) implements Installation {}
 
 	public static List<Path> list(final Path dir) throws IOException {
 		try (var list = Files.list(dir)) {
@@ -114,16 +122,16 @@ public final class KnxProject {
 						.orElseThrow(() -> new FileNotFoundException("KNX project does not contain project folder"));
 				root = path;
 
-				DatapointMap<StateDP> datapoints = null;
+				List<Installation> installations = null;
 				// check password protected project
 				if (path.toString().endsWith(".zip") && isProjectEncrypted(path))
 					; // delay parsing until decryption
 				else if (!Files.isDirectory(path))
 					throw new FileNotFoundException("no root directory found for parsing");
 				else
-					datapoints = resolveAndParse(path);
+					installations = resolveAndParse(path);
 
-				return new KnxProject(root, name, datapoints);
+				return new KnxProject(root, name, installations);
 			}
 		}
 		catch (final KnxRuntimeException e) {
@@ -134,26 +142,26 @@ public final class KnxProject {
 		}
 	}
 
-	private KnxProject(final Path project, final String name, final DatapointMap<StateDP> datapoints) {
+	private KnxProject(final Path project, final String name, final List<Installation> installations) {
 		this.project = project;
 		this.name = name;
-		this.datapoints = datapoints;
+		this.installations = installations;
 	}
 
 	public String name() { return name; }
 
 	public URI location() { return project.getParent().toUri(); }
 
-	public boolean encrypted() { return datapoints == null; }
+	public boolean encrypted() { return installations == null; }
 
 	public void decrypt(final char[] projectPassword) throws IOException {
-		if (datapoints != null)
+		if (!encrypted())
 			return;
 
 		final var to = Path.of(project.toString().replace(".zip", ""));
 		try {
 			unzip(project, to, projectPassword);
-			datapoints = resolveAndParse(to);
+			installations = resolveAndParse(to);
 		}
 		catch (final KnxRuntimeException e) {
 			throw e;
@@ -167,10 +175,14 @@ public final class KnxProject {
 		}
 	}
 
-	public DatapointMap<StateDP> datapoints() {
+	public List<Installation> installations() {
 		if (encrypted())
 			throw new KnxSecureException("project '" + this + "' is encrypted");
-		return datapoints;
+		return installations;
+	}
+
+	public List<DatapointMap<StateDP>> datapoints() {
+		return installations().stream().map(Installation::datapoints).toList();
 	}
 
 	@Override
@@ -222,7 +234,7 @@ public final class KnxProject {
 		}
 	}
 
-	private static DatapointMap<StateDP> resolveAndParse(final Path path) {
+	private static List<Installation> resolveAndParse(final Path path) {
 		final Path file = path.resolve("0.xml");
 		try {
 			return parse(file);
@@ -235,7 +247,7 @@ public final class KnxProject {
 		}
 	}
 
-	private static DatapointMap<StateDP> parse(final Path path) throws KNXFormatException {
+	private static List<Installation> parse(final Path path) throws KNXFormatException {
 		try (var reader = XmlInputFactory.newInstance().createXMLReader(path.toString())) {
 			reader.nextTag();
 			final var namespace = reader.getNamespaceURI();
@@ -246,7 +258,7 @@ public final class KnxProject {
 			requireElement("Installations", reader, path);
 			requireElement("Installation", reader, path);
 
-			final var datapoints = new DatapointMap<StateDP>();
+			final var installations = new ArrayList<Installation>();
 			boolean inInstallation = false;
 			boolean inGroupAddresses = false;
 			for (; reader.getEventType() != XmlReader.END_DOCUMENT; reader.next()) {
@@ -255,8 +267,9 @@ public final class KnxProject {
 						switch (reader.getLocalName()) {
 							case "Installation" -> {
 								inInstallation = true;
-								final var instName = reader.getAttributeValue(null, "Name");
-								logger.log(Level.DEBUG, "read installation ''{0}''", instName);
+								final String name = reader.getAttributeValue(null, "Name");
+								installations.add(new DefaultInstallation(name, new DatapointMap<>()));
+								logger.log(Level.DEBUG, "read installation ''{0}''", name);
 							}
 							case "GroupAddresses" -> inGroupAddresses = inInstallation;
 							case "GroupAddress" -> {
@@ -266,7 +279,7 @@ public final class KnxProject {
 									final var dpt = parseDpt(attribute(reader, "DatapointType", ""));
 
 									final var dp = new StateDP(address, dpName, (int) dpt[0], (String) dpt[1]);
-									datapoints.add(dp);
+									installations.getLast().datapoints().add(dp);
 								}
 							}
 						}
@@ -276,13 +289,15 @@ public final class KnxProject {
 							case "Installation" -> inInstallation = false;
 							case "GroupAddresses" -> {
 								inGroupAddresses = false;
-								logger.log(Level.DEBUG, "found {0} group addresses", datapoints.getDatapoints().size());
+								final var current = installations.getLast();
+								logger.log(Level.DEBUG, "found {0} group addresses for installation ''{1}''",
+										current.datapoints().getDatapoints().size(), current.name());
 							}
 						}
 					}
 				}
 			}
-			return datapoints;
+			return installations;
 		}
 	}
 

@@ -25,19 +25,21 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.stream.Collector;
 
 import io.calimero.GroupAddress;
 import io.calimero.GroupAddress.Presentation;
 import io.calimero.KNXFormatException;
+import io.calimero.datapoint.Datapoint;
 import io.calimero.datapoint.DatapointMap;
 import io.calimero.datapoint.StateDP;
 import io.calimero.xml.KNXMLException;
 import io.calimero.xml.XmlInputFactory;
 import io.calimero.xml.XmlOutputFactory;
 import io.calimero.xml.XmlReader;
-import io.calimero.xml.XmlWriter;
 
 import static io.calimero.tools.Main.out;
 
@@ -47,9 +49,6 @@ import static io.calimero.tools.Main.out;
  * standard output.
  */
 public class DatapointImporter implements Runnable {
-
-	private final DatapointMap<StateDP> datapoints = new DatapointMap<>();
-
 	private final String input;
 	private final String output;
 	private boolean freeStyle;
@@ -101,60 +100,70 @@ public class DatapointImporter implements Runnable {
 
 	@Override
 	public void run() {
-		final String ext = input.substring(input.lastIndexOf('.') + 1).toLowerCase(Locale.ROOT);
 		try {
-			switch (ext) {
-				case "xml" -> importAddressesFromXml();
-				case "knxproj" -> importAddressesFromKnxproj();
+			final var datapoints = switch (fileExt(input).toLowerCase(Locale.ROOT)) {
+				case ".xml" -> importAddressesFromXml();
+				case ".knxproj" -> importAddressesFromKnxproj();
 				default -> importAddressesFromCsv();
+			};
+			if (datapoints.stream().allMatch(map -> map.getDatapoints().isEmpty())) {
+				out().log(Level.DEBUG, "no datapoints found");
+				return;
+			}
+
+			if (freeStyle)
+				GroupAddress.addressStyle(Presentation.FreeStyle);
+
+			final var fac = XmlOutputFactory.newInstance();
+			for (int i = 0; i < datapoints.size(); i++) {
+				final var writer = switch (output) {
+					case null -> fac.createXMLStreamWriter(System.out);
+					default   -> fac.createXMLWriter(switch (datapoints.size()) {
+						case 1  -> output;
+						default -> { // insert numerator before .ext if > 1 installations
+							final String ext = fileExt(output);
+							yield output.substring(0, output.length() - ext.length()) + "-" + i + ext;
+						}
+					});
+				};
+				try (writer) {
+					datapoints.get(i).save(writer);
+				}
 			}
 		}
-		catch (final IOException e) {
-			out().log(Level.WARNING, "error reading '" + input + "'", e);
-		}
-
-		if (datapoints.getDatapoints().isEmpty()) {
-			out().log(Level.DEBUG, "no datapoints found");
-			return;
-		}
-
-		if (freeStyle)
-			GroupAddress.addressStyle(Presentation.FreeStyle);
-
-		try (var writer = createXmlWriter()) {
-			datapoints.save(writer);
+		catch (IOException | KNXMLException e) {
+			out().log(Level.ERROR, "error importing '" + input + "'", e);
 		}
 	}
 
-	private void importAddressesFromKnxproj() throws IOException {
+	private List<DatapointMap<StateDP>> importAddressesFromKnxproj() throws IOException {
 		final var project = KnxProject.from(Path.of(input));
 		if (project.encrypted()) {
 			if (projectPwd.length == 0) {
 				System.err.println("project file is encrypted, password required!");
-				return;
+				return List.of();
 			}
 			project.decrypt(projectPwd);
 		}
-		project.datapoints().getDatapoints().forEach(datapoints::add);
+		return project.installations().stream().map(KnxProject.Installation::datapoints).toList();
 	}
 
-	private XmlWriter createXmlWriter() {
-		final var fac = XmlOutputFactory.newInstance();
-		return output != null ? fac.createXMLWriter(output) : fac.createXMLStreamWriter(System.out);
-	}
-
-	private void importAddressesFromCsv() throws IOException {
+	private List<DatapointMap<Datapoint>> importAddressesFromCsv() throws IOException {
 		try (var lines = Files.lines(Path.of(input), StandardCharsets.UTF_8)) {
-			lines.map(line -> line.split("\"[\t;]\""))
+			final var map = lines.map(line -> line.split("\"[\t;]\""))
 					.map(DatapointImporter::parseDatapoint)
-					.flatMap(Optional::stream).forEach(datapoints::add);
+					.flatMap(Optional::stream)
+					.collect(Collector.of(DatapointMap::new, DatapointMap::add,
+							(left, right) -> { throw new UnsupportedOperationException(); }));
+			return List.of(map);
 		}
 	}
 
-	private void importAddressesFromXml() {
+	private List<DatapointMap<StateDP>> importAddressesFromXml() {
 		final String exportElement = "GroupAddress-Export";
 		final String addressElement = "GroupAddress";
 
+		final var datapoints = new DatapointMap<StateDP>();
 		try (var reader = XmlInputFactory.newInstance().createXMLReader(input)) {
 			if (reader.getEventType() != XmlReader.START_ELEMENT)
 				reader.nextTag();
@@ -165,6 +174,7 @@ public class DatapointImporter implements Runnable {
 					parseDatapoint(reader).ifPresent(datapoints::add);
 			}
 		}
+		return List.of(datapoints);
 	}
 
 	private static Optional<StateDP> parseDatapoint(final XmlReader reader) {
@@ -200,6 +210,15 @@ public class DatapointImporter implements Runnable {
 		if (mainSub.length == 2)
 			dptId = String.format("%d.%03d", main, Integer.parseUnsignedInt(mainSub[1]));
 		return new Object[] { main, dptId };
+	}
+
+	private static String fileExt(final String path) {
+		if (path.length() > 1) {
+			final int last = path.lastIndexOf('.');
+			if (last > 0 && last < path.length() - 1)
+				return path.substring(last);
+		}
+		return "";
 	}
 
 	private static void showToolInfo() {
