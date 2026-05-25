@@ -272,7 +272,14 @@ public class Restart implements Runnable {
 			else if (restartType == -1 && (restartType = restartType(arg)) >= 0) {
 				options.put("restart-type", restartType);
 				if (restartType == 2 || restartType == 5 || restartType == 6 || restartType == 7 || restartType == 8) {
-					options.put("channel", Integer.parseUnsignedInt(i.next()));
+					final String channel = i.next();
+					try {
+						options.put("channel", Integer.parseUnsignedInt(channel));
+					}
+					catch (NumberFormatException e) {
+						throw new KNXIllegalArgumentException("invalid channel '" + channel + "'");
+					}
+				}
 			}
 			else if (restartType >= 0 && (restartType(arg) >= 0))
 				throw new KNXIllegalArgumentException("specify at most 1 restart type");
