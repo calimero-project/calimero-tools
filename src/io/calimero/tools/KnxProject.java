@@ -80,7 +80,9 @@ import net.lingala.zip4j.model.enums.EncryptionMethod;
  */
 public final class KnxProject {
 	private static final String knxproj = ".knxproj";
+
 	private static final String projectNamespace = "http://knx.org/xml/project/20";
+	private static final String projectNamespaceEts5 = "http://knx.org/xml/project/14";
 
 	private static final Logger logger = LogService.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -251,7 +253,7 @@ public final class KnxProject {
 		try (var reader = XmlInputFactory.newInstance().createXMLReader(path.toString())) {
 			reader.nextTag();
 			final var namespace = reader.getNamespaceURI();
-			if (!projectNamespace.equals(namespace))
+			if (!projectNamespace.equals(namespace) && !projectNamespaceEts5.equals(namespace))
 				throw new KNXMLException("project '" + path + "' with unsupported namespace '" + namespace + "'");
 
 			requireElement("Project", reader, path);
