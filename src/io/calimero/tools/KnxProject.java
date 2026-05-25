@@ -232,7 +232,7 @@ public final class KnxProject {
 			files.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
 		}
 		catch (final IOException e) {
-			e.printStackTrace();
+			Main.err("failed to delete '" + path + "'", e);
 		}
 	}
 
