@@ -37,8 +37,6 @@
 module io.calimero.tools {
 	requires transitive io.calimero.core;
 
-	requires java.xml;
-
 	exports io.calimero.tools;
 
 	opens io.calimero.tools to io.calimero.core; // @LinkEvent
