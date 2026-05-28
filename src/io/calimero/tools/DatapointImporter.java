@@ -25,6 +25,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -134,16 +135,24 @@ public class DatapointImporter implements Runnable {
 		catch (IOException | KNXMLException e) {
 			out().log(Level.ERROR, "error importing '" + input + "'", e);
 		}
+		finally {
+			Arrays.fill(projectPwd, ' ');
+		}
+	}
+
+	protected Optional<char[]> projectPassword() {
+		return projectPwd.length > 0 ? Optional.of(projectPwd) : Optional.empty();
 	}
 
 	private List<DatapointMap<StateDP>> importAddressesFromKnxproj() throws IOException {
 		final var project = KnxProject.from(Path.of(input));
 		if (project.encrypted()) {
-			if (projectPwd.length == 0) {
+			final var pwd = projectPassword();
+			if (pwd.isEmpty()) {
 				System.err.println("project file is encrypted, password required!");
 				return List.of();
 			}
-			project.decrypt(projectPwd);
+			project.decrypt(pwd.orElseThrow());
 		}
 		return project.installations().stream().map(KnxProject.Installation::datapoints).toList();
 	}
