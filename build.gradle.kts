@@ -204,9 +204,7 @@ graalvmNative {
 				listOf(
 					"--module-path", modulePathJars.joinToString(File.pathSeparator),
 					"--module", "io.calimero.tools/io.calimero.tools.Main",
-					"--enable-sbom=export",
 //					"--future-defaults=all",
-					"--emit build-report",
 					"--initialize-at-build-time",
 					"--no-fallback",
 					"-march=native",
@@ -219,6 +217,11 @@ graalvmNative {
 			)
 			buildArgs.addAll(addReads)
 			buildArgs.addAll(enableNativeAccess)
+
+			val oracleGraalVm = System.getProperty("java.vm.vendor").contains("Oracle", true)
+					&& !System.getProperty("java.vm.name").contains("OpenJDK", true)
+			if (oracleGraalVm)
+				buildArgs.addAll("--enable-sbom=export", "--emit build-report")
 		}
 	}
 }
