@@ -201,19 +201,17 @@ graalvmNative {
 			}
 
 			buildArgs.addAll(
-				listOf(
-					"--module-path", modulePathJars.joinToString(File.pathSeparator),
-					"--module", "io.calimero.tools/io.calimero.tools.Main",
-//					"--future-defaults=all",
-					"--initialize-at-build-time",
-					"--no-fallback",
-					"-march=native",
-					"-Os",
-					"--exact-reachability-metadata",
-					"-H:-ReportExceptionStackTraces",
-					"-H:+UnlockExperimentalVMOptions",
-					"-H:-EnableLoggingFeature",
-				)
+				"--module-path", modulePathJars.joinToString(File.pathSeparator),
+				"--module", "io.calimero.tools/io.calimero.tools.Main",
+//				"--future-defaults=all",
+				"--initialize-at-build-time",
+				"--no-fallback",
+				"-march=native",
+				"-Os",
+				"--exact-reachability-metadata",
+				"-H:-ReportExceptionStackTraces",
+				"-H:+UnlockExperimentalVMOptions",
+				"-H:-EnableLoggingFeature",
 			)
 			buildArgs.addAll(addReads)
 			buildArgs.addAll(enableNativeAccess)
