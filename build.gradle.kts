@@ -385,10 +385,17 @@ tasks.register<Exec>("package") {
 	}
 }
 
+val osName = when {
+	os.isWindows -> "win"
+	os.isLinux -> "linux"
+	os.isMacOsX -> "macos"
+	else -> "unknown"
+}
+
 tasks.register<Zip>("zipAppImage") {
 	dependsOn("package")
 	from(appDir.get().dir(appName))
-	archiveFileName.set("$appName.zip")
+	archiveFileName.set("${project.name}-${osName}-$arch-pkg.zip")
 	destinationDirectory.set(file(appDir))
 }
 
@@ -399,7 +406,7 @@ tasks.register<Tar>("tarAppImage") {
 			permissions { unix("rwxr-xr-x") }
 		}
 	}
-	archiveFileName.set("$appName.tar.gz")
+	archiveFileName.set("${project.name}-${osName}-$arch-pkg.tar.gz")
 	destinationDirectory.set(appDir)
 	compression = Compression.GZIP
 }
