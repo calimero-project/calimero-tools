@@ -37,6 +37,7 @@
 package io.calimero.tools;
 
 
+import static java.lang.System.Logger.Level.DEBUG;
 import static java.lang.System.Logger.Level.INFO;
 
 import java.io.BufferedReader;
@@ -769,6 +770,15 @@ final class Main
 		}
 		else
 			System.err.println(s);
+	}
+
+	static void exit(final Throwable t) {
+		final String msg = t.getMessage() != null ? t.getMessage()
+				: t.getCause() != null && t.getCause().getMessage() != null ? t.getCause().getMessage() : t.toString();
+		Main.err("error: " + msg);
+		Main.err("try '--help' for usage information");
+		out().log(DEBUG, "aborting due to invalid arguments", t);
+		System.exit(2);
 	}
 
 	static final class ShutdownHandler {

@@ -138,7 +138,7 @@ public class ProgMode implements Runnable
 			new ProgMode(args).run();
 		}
 		catch (final Throwable t) {
-			Main.err("error parsing arguments (use --help): " + t);
+			Main.exit(t);
 		}
 	}
 

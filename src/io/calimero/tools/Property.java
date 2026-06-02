@@ -219,7 +219,7 @@ public class Property implements Runnable
 			new Property(args).run();
 		}
 		catch (final Throwable t) {
-			out.log(ERROR, "parsing option", t);
+			Main.exit(t);
 		}
 	}
 

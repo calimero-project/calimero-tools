@@ -203,8 +203,8 @@ public class NetworkMonitor implements Runnable
 			m.run();
 			sh.unregister();
 		}
-		catch (final KNXIllegalArgumentException e) {
-			out.log(ERROR, "parsing options", e);
+		catch (final Throwable t) {
+			Main.exit(t);
 		}
 	}
 

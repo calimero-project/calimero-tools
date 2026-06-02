@@ -34,6 +34,7 @@ import java.util.stream.Collector;
 import io.calimero.GroupAddress;
 import io.calimero.GroupAddress.Presentation;
 import io.calimero.KNXFormatException;
+import io.calimero.KNXIllegalArgumentException;
 import io.calimero.datapoint.Datapoint;
 import io.calimero.datapoint.DatapointMap;
 import io.calimero.datapoint.StateDP;
@@ -93,7 +94,7 @@ public class DatapointImporter implements Runnable {
 				i += 2;
 			}
 			else
-				break;
+				Main.exit(new KNXIllegalArgumentException("unknown option '" + args[i] + "'"));
 		}
 		input = args[i++];
 		output = args.length > i ? args[i] : null;

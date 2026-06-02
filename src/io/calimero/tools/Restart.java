@@ -138,7 +138,7 @@ public class Restart implements Runnable {
 			new Restart(args).run();
 		}
 		catch (final Throwable t) {
-			Main.err("error parsing arguments (use --help): " + t);
+			Main.exit(t);
 		}
 	}
 

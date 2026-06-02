@@ -360,7 +360,7 @@ public class DeviceInfo implements Runnable
 			sh.unregister();
 		}
 		catch (final Throwable t) {
-			out.log(ERROR, "parsing options", t);
+			Main.exit(t);
 		}
 	}
 

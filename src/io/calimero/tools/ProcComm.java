@@ -276,7 +276,7 @@ public class ProcComm implements Runnable
 			sh.unregister();
 		}
 		catch (final Throwable t) {
-			out.log(ERROR, "tool options", t);
+			Main.exit(t);
 		}
 	}
 

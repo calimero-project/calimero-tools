@@ -186,7 +186,7 @@ public class IPConfig implements Runnable
 			new IPConfig(args).run();
 		}
 		catch (final Throwable t) {
-			out.log(ERROR, "IP config", t);
+			Main.exit(t);
 		}
 	}
 
