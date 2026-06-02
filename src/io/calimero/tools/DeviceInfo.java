@@ -1442,7 +1442,7 @@ public class DeviceInfo implements Runnable
 					options.put("device", new IndividualAddress(arg));
 				}
 				catch (final KNXFormatException e) {
-					throw new KNXIllegalArgumentException("KNX device " + e, e);
+					throw new KNXIllegalArgumentException(e);
 				}
 			else
 				throw new KNXIllegalArgumentException("unknown option " + arg);
