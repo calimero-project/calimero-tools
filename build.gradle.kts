@@ -132,8 +132,8 @@ dependencies {
 	runtimeOnly(sourceSets["serial"].runtimeClasspath)
 	runtimeOnly(sourceSets["usb"].runtimeClasspath)
 
-	runtimeOnly("org.slf4j:slf4j-jdk-platform-logging:2.0.17")
-	runtimeOnly("org.slf4j:slf4j-simple:2.0.17")
+	runtimeOnly("org.slf4j:slf4j-jdk-platform-logging:2.0.18")
+	runtimeOnly("org.slf4j:slf4j-simple:2.0.18")
 }
 
 // we don't need the serial/usb feature jars when publishing
