@@ -732,7 +732,7 @@ public class Discover implements Runnable
 					options.put("host", Main.parseHost(arg));
 			}
 			else
-				throw new KNXIllegalArgumentException("unknown option " + arg);
+				throw new KNXIllegalArgumentException("unrecognized option", arg);
 		}
 
 		if (options.containsKey("describe") && !options.containsKey("host"))
@@ -774,11 +774,10 @@ public class Discover implements Runnable
 			nif = NetworkInterface.getByInetAddress(InetAddress.getByName(id));
 			if (nif != null)
 				return nif;
-			throw new KNXIllegalArgumentException("no network interface associated with " + id);
+			throw new KNXIllegalArgumentException("no network interface associated with", id);
 		}
 		catch (final IOException e) {
-			throw new KNXIllegalArgumentException("error getting network interface, "
-					+ e.getMessage(), e);
+			throw new KNXIllegalArgumentException("error getting network interface, " + e.getMessage(), e);
 		}
 	}
 

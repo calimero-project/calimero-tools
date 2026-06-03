@@ -276,7 +276,7 @@ public class Restart implements Runnable {
 						options.put("channel", Integer.parseUnsignedInt(channel));
 					}
 					catch (NumberFormatException e) {
-						throw new KNXIllegalArgumentException("invalid channel '" + channel + "'");
+						throw new KNXIllegalArgumentException("invalid channel", channel);
 					}
 				}
 			}
@@ -288,6 +288,8 @@ public class Restart implements Runnable {
 				options.put("host", arg);
 			else if (!arg.startsWith("-"))
 				options.put("device", Main.getAddress(arg));
+			else
+				throw new KNXIllegalArgumentException("unrecognized option", arg);
 		}
 		// we allow a default usb config where the first found knx usb device is used
 		if (options.containsKey("usb") && !options.containsKey("host"))

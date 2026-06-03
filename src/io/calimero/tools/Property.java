@@ -540,7 +540,7 @@ public class Property implements Runnable
 			else if (!arg.startsWith("-") && !options.containsKey("host"))
 				options.put("host", arg);
 			else
-				throw new KNXIllegalArgumentException("unknown option " + arg);
+				throw new KNXIllegalArgumentException("unrecognized option", arg);
 		}
 		// we allow a default usb config where the first found knx usb device is used
 		if (options.containsKey("usb") && !options.containsKey("host"))

@@ -546,7 +546,7 @@ public class IPConfig implements Runnable
 			else if (!arg.startsWith("-") && !options.containsKey("host"))
 				options.put("host", arg);
 			else
-				throw new KNXIllegalArgumentException("unknown option \"" + arg + "\"");
+				throw new KNXIllegalArgumentException("unrecognized option", arg);
 		}
 		if (!options.containsKey("remote"))
 			options.put("localDM", null);

@@ -402,7 +402,7 @@ public class BaosClient implements Runnable
 		return switch (args[0]) {
 			case "get" -> get(args);
 			case "set" -> set(args);
-			default -> throw new KNXIllegalArgumentException("unknown command " + args[0]);
+			default -> throw new KNXIllegalArgumentException("unknown command", args[0]);
 		};
 	}
 
@@ -426,7 +426,7 @@ public class BaosClient implements Runnable
 				yield BaosService.getDatapointHistory(id, items, start, end);
 			}
 			case "hs" -> BaosService.getDatapointHistoryState(id, items);
-			default -> throw new KNXIllegalArgumentException("unsupported BAOS service '" + svc + "'");
+			default -> throw new KNXIllegalArgumentException("unsupported BAOS service", svc);
 		};
 	}
 
@@ -452,7 +452,7 @@ public class BaosClient implements Runnable
 			case "all" -> ValueFilter.All;
 			case "valid" -> ValueFilter.ValidOnly;
 			case "updated" -> ValueFilter.UpdatedOnly;
-			default -> throw new KNXIllegalArgumentException("unknown value filter " + arg);
+			default -> throw new KNXIllegalArgumentException("unknown value filter", arg);
 		};
 	}
 
@@ -612,7 +612,7 @@ public class BaosClient implements Runnable
 			else if (!arg.startsWith("-") && !options.containsKey("host"))
 				options.put("host", arg);
 			else
-				throw new KNXIllegalArgumentException("unknown option " + arg);
+				throw new KNXIllegalArgumentException("unrecognized option", arg);
 		}
 		// we allow a default usb config where the first found knx usb device is used
 		if (options.containsKey("usb") && !options.containsKey("host"))
