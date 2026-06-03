@@ -725,7 +725,7 @@ public class Discover implements Runnable
 				options.put("serverport", Integer.decode(i.next()));
 			else if (isOption(arg, "json", null))
 				options.put("json", null);
-			else if (options.containsKey("search") || options.containsKey("describe")) {
+			else if (!arg.startsWith("-") && (options.containsKey("search") || options.containsKey("describe"))) {
 				if (options.containsKey("unix-socket"))
 					options.put("host", arg);
 				else

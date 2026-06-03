@@ -552,7 +552,7 @@ public class NetworkMonitor implements Runnable
 				;
 			else if (Main.isOption(arg, "compact", "c"))
 				options.put("compact", null);
-			else if (!options.containsKey("host"))
+			else if (!arg.startsWith("-") && !options.containsKey("host"))
 				options.put("host", arg);
 			else
 				throw new KNXIllegalArgumentException("unknown option " + arg);

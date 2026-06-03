@@ -287,10 +287,10 @@ public class ScanDevices implements Runnable
 				options.put("knx-address", Main.getAddress(i.next()));
 			else if (Main.isOption(arg, "dd", null))
 				options.put("requireDD0", arg);
-			else if (!options.containsKey("host"))
+			else if (!arg.startsWith("-") && !options.containsKey("host"))
 				// otherwise add a host key with argument as host
 				options.put("host", arg);
-			else if (!options.containsKey("range"))
+			else if (!arg.startsWith("-") && !options.containsKey("range"))
 				// otherwise save the range for scanning
 				options.put("range", arg);
 			else

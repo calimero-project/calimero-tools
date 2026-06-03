@@ -474,7 +474,7 @@ public class TrafficMonitor implements Runnable {
 				options.put("compact", null);
 			else if (Main.isOption(arg, "timeout", "t"))
 				options.put("timeout", Duration.ofSeconds(Integer.decode(i.next())));
-			else if (!options.containsKey("host"))
+			else if (!arg.startsWith("-") && !options.containsKey("host"))
 				options.put("host", arg);
 			else
 				throw new KNXIllegalArgumentException("unknown option " + arg);

@@ -543,7 +543,7 @@ public class IPConfig implements Runnable
 				parseIP(i.next(), "gateway", options);
 			else if (arg.equalsIgnoreCase("multicast"))
 				parseIP(i.next(), "multicast", options);
-			else if (!options.containsKey("host"))
+			else if (!arg.startsWith("-") && !options.containsKey("host"))
 				options.put("host", arg);
 			else
 				throw new KNXIllegalArgumentException("unknown option \"" + arg + "\"");

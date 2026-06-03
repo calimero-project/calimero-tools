@@ -285,9 +285,9 @@ public class Restart implements Runnable {
 				throw new KNXIllegalArgumentException("specify at most 1 restart type");
 			else if (Main.isOption(arg, "yes", "y"))
 				options.put("yes", null);
-			else if (!options.containsKey("host"))
+			else if (!arg.startsWith("-") && !options.containsKey("host"))
 				options.put("host", arg);
-			else
+			else if (!arg.startsWith("-"))
 				options.put("device", new IndividualAddress(arg));
 		}
 		// we allow a default usb config where the first found knx usb device is used

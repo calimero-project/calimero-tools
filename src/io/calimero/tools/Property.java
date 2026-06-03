@@ -537,7 +537,7 @@ public class Property implements Runnable
 				;
 			else if (arg.equals("?"))
 				options.put("command", new String[] { "?" });
-			else if (!options.containsKey("host"))
+			else if (!arg.startsWith("-") && !options.containsKey("host"))
 				options.put("host", arg);
 			else
 				throw new KNXIllegalArgumentException("unknown option " + arg);

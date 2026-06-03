@@ -298,13 +298,13 @@ public class ProgMode implements Runnable
 				options.put("command", arg);
 				setmode = true;
 			}
-			else if (setmode) {
+			else if (!arg.startsWith("-") && setmode) {
 				options.put("device", new IndividualAddress(arg));
 				setmode = false;
 			}
-			else if (!options.containsKey("host"))
+			else if (!arg.startsWith("-") && !options.containsKey("host"))
 				options.put("host", arg);
-			else
+			else if (!arg.startsWith("-"))
 				options.put("device", new IndividualAddress(arg));
 		}
 		// we allow a default usb config where the first found knx usb device is used
