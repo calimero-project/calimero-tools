@@ -1438,12 +1438,7 @@ public class DeviceInfo implements Runnable
 				options.put("host", arg);
 			else if (!arg.startsWith("-") && !options.containsKey("device"))
 				// otherwise create the KNX device address from the argument
-				try {
-					options.put("device", new IndividualAddress(arg));
-				}
-				catch (final KNXFormatException e) {
-					throw new KNXIllegalArgumentException(e);
-				}
+				options.put("device", Main.getAddress(arg));
 			else
 				throw new KNXIllegalArgumentException("unknown option " + arg);
 		}

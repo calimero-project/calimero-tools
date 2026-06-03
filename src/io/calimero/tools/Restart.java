@@ -48,7 +48,6 @@ import java.util.StringJoiner;
 import io.calimero.Connection;
 import io.calimero.IndividualAddress;
 import io.calimero.KNXException;
-import io.calimero.KNXFormatException;
 import io.calimero.KNXIllegalArgumentException;
 import io.calimero.cemi.CEMIDevMgmt;
 import io.calimero.knxnetip.KNXnetIPConnection;
@@ -88,7 +87,7 @@ public class Restart implements Runnable {
 		catch (final KNXIllegalArgumentException e) {
 			throw e;
 		}
-		catch (KNXFormatException | RuntimeException e) {
+		catch (final RuntimeException e) {
 			throw new KNXIllegalArgumentException(e.getMessage(), e);
 		}
 	}
@@ -246,7 +245,7 @@ public class Restart implements Runnable {
 			Main.err(tool + " error", thrown);
 	}
 
-	private void parseOptions(final String[] args) throws KNXFormatException {
+	private void parseOptions(final String[] args) {
 		if (args.length == 0) {
 			options.put("about", (Runnable) Restart::showToolInfo);
 			return;
@@ -288,7 +287,7 @@ public class Restart implements Runnable {
 			else if (!arg.startsWith("-") && !options.containsKey("host"))
 				options.put("host", arg);
 			else if (!arg.startsWith("-"))
-				options.put("device", new IndividualAddress(arg));
+				options.put("device", Main.getAddress(arg));
 		}
 		// we allow a default usb config where the first found knx usb device is used
 		if (options.containsKey("usb") && !options.containsKey("host"))

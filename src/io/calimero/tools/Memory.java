@@ -52,7 +52,6 @@ import java.util.StringJoiner;
 import io.calimero.DataUnitBuilder;
 import io.calimero.IndividualAddress;
 import io.calimero.KNXException;
-import io.calimero.KNXFormatException;
 import io.calimero.KNXIllegalArgumentException;
 import io.calimero.knxnetip.KNXnetIPConnection;
 import io.calimero.link.medium.TPSettings;
@@ -295,12 +294,7 @@ public class Memory implements Runnable {
 				options.put("host", arg);
 			else if (!arg.startsWith("-") && !options.containsKey("device"))
 				// otherwise create the KNX device address from the argument
-				try {
-					options.put("device", new IndividualAddress(arg));
-				}
-				catch (final KNXFormatException e) {
-					throw new KNXIllegalArgumentException("KNX device " + e, e);
-				}
+				options.put("device", Main.getAddress(arg));
 			else
 				throw new KNXIllegalArgumentException("unknown option " + arg);
 		}

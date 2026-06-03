@@ -47,7 +47,6 @@ import java.util.stream.Collectors;
 
 import io.calimero.IndividualAddress;
 import io.calimero.KNXException;
-import io.calimero.KNXFormatException;
 import io.calimero.KNXIllegalArgumentException;
 import io.calimero.knxnetip.KNXnetIPConnection;
 import io.calimero.link.KNXNetworkLink;
@@ -93,7 +92,7 @@ public class ProgMode implements Runnable
 		catch (final KNXIllegalArgumentException e) {
 			throw e;
 		}
-		catch (KNXFormatException | RuntimeException e) {
+		catch (final RuntimeException e) {
 			throw new KNXIllegalArgumentException(e.getMessage(), e);
 		}
 	}
@@ -269,7 +268,7 @@ public class ProgMode implements Runnable
 		return Main.newLink(options);
 	}
 
-	private void parseOptions(final String[] args) throws KNXFormatException
+	private void parseOptions(final String[] args)
 	{
 		if (args.length == 0) {
 			options.put("about", (Runnable) ProgMode::showToolInfo);
@@ -299,13 +298,13 @@ public class ProgMode implements Runnable
 				setmode = true;
 			}
 			else if (!arg.startsWith("-") && setmode) {
-				options.put("device", new IndividualAddress(arg));
+				options.put("device", Main.getAddress(arg));
 				setmode = false;
 			}
 			else if (!arg.startsWith("-") && !options.containsKey("host"))
 				options.put("host", arg);
 			else if (!arg.startsWith("-"))
-				options.put("device", new IndividualAddress(arg));
+				options.put("device", Main.getAddress(arg));
 		}
 		// we allow a default usb config where the first found knx usb device is used
 		if (options.containsKey("usb") && !options.containsKey("host"))
