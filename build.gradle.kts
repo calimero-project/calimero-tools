@@ -174,7 +174,7 @@ tasks.named<JavaExec>("run") {
 }
 
 // graalvm native image uses jdk 25, so we can include serial-ffm which requires java 23
-val nativeImageSerialFfm by configurations.creating
+val nativeImageSerialFfm = configurations.create("nativeImageSerialFfm")
 dependencies {
 	nativeImageSerialFfm("io.calimero:calimero-serial-ffm:$version")
 }
