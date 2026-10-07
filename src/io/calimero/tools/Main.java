@@ -581,18 +581,17 @@ final class Main
 
 	private static Keyring toolKeyring;
 
+	// check for keyring password _and_ user-supplied keyring or any keyring in current working directory
 	static void lookupKeyring(final Map<String, Object> options) {
-		// check for keyring password, and user-supplied keyring or any keyring in current working directory
-		final boolean gotPwd = options.containsKey("keyring-pwd");
 		final Optional<Keyring> optKeyring = Optional.ofNullable((Keyring) options.get("keyring"));
-		if (gotPwd) {
-			optKeyring.or(Main::cwdKeyring).ifPresent(keyring -> {
-					Security.defaultInstallation().useKeyring(keyring, (char[]) options.get("keyring-pwd"));
-					toolKeyring = keyring;
-			});
+		if (options.containsKey("keyring-pwd")) {
+			final var keyring = optKeyring.or(Main::cwdKeyring).orElseThrow(
+					() -> new KNXIllegalArgumentException("keyring password provided, but no keyring found"));
+			Security.defaultInstallation().useKeyring(keyring, (char[]) options.get("keyring-pwd"));
+			toolKeyring = keyring;
 		}
-		else if (optKeyring.isPresent()) // should maybe make this an exception, too
-			err("both keyring and keyring password are required, secure communication won't be available!");
+		else if (optKeyring.isPresent())
+			throw new KNXIllegalArgumentException("keyring password required");
 	}
 
 	private static Optional<Keyring> cwdKeyring() {
