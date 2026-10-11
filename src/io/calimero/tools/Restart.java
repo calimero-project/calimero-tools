@@ -56,6 +56,7 @@ import io.calimero.mgmt.Destination;
 import io.calimero.mgmt.LocalDeviceManagementIp;
 import io.calimero.mgmt.LocalDeviceManagementUds;
 import io.calimero.mgmt.LocalDeviceManagementUsb;
+import io.calimero.mgmt.ManagementClient.EraseCode;
 import io.calimero.mgmt.ManagementClientImpl;
 import io.calimero.serial.usb.UsbConnection;
 import io.calimero.serial.usb.UsbConnectionFactory;
@@ -183,8 +184,9 @@ public class Restart implements Runnable {
 				final boolean yes = options.containsKey("yes") || restartType == 1 || confirm(destination);
 				if (yes) {
 					final int channel = (Integer) options.getOrDefault("channel", 0);
-					final int time = mgmt.restart(destination, restartType, channel);
-					System.out.format("restart takes %d seconds%n", time > 0 ? time : 5);
+					final var time = mgmt.restart(destination, EraseCode.of(restartType), channel);
+					System.out.format("restarting device %s may take up to %d seconds%n", remote,
+							time.isZero() ? 5 : time.toSeconds());
 				}
 			}
 			else
