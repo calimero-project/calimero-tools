@@ -271,6 +271,8 @@ public class Restart implements Runnable {
 			else if (restartType == -1 && (restartType = restartType(arg)) >= 0) {
 				options.put("restart-type", restartType);
 				if (restartType == 2 || restartType == 5 || restartType == 6 || restartType == 7 || restartType == 8) {
+					if (!i.hasNext())
+						throw new KNXIllegalArgumentException(arg + " requires channel number");
 					final String channel = i.next();
 					try {
 						options.put("channel", Integer.parseUnsignedInt(channel));
