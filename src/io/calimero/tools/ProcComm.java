@@ -1080,26 +1080,13 @@ public class ProcComm implements Runnable
 		}
 	}
 
-	private static final class StdMode {
-		private final BiFunction<byte[], String, String> f;
-		private final String unit;
-
-		private final DptId dptId;
-		private final boolean withUnit;
-
+	private record StdMode(BiFunction<byte[], String, String> f, String unit, DptId dptId, boolean withUnit) {
 		private StdMode(final BiFunction<byte[], String, String> f, final String unit) {
-			this.f = f;
-			this.unit = unit;
-			this.dptId = new DptId(0xffff, 0xffff);
-			this.withUnit = true;
+			this(f, unit, new DptId(0xffff, 0xffff), true);
 		}
 
 		private StdMode(final DptId dptId, final boolean withUnit) {
-			this.dptId = dptId;
-			this.withUnit = withUnit;
-
-			this.f = null;
-			this.unit = null;
+			this(null, null, dptId, withUnit);
 		}
 
 		static StdMode function(final BiFunction<byte[], String, String> f, final String unit) {
