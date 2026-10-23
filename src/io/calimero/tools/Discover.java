@@ -309,8 +309,8 @@ public class Discover implements Runnable
 			out(endpointToJson(result));
 		else {
 			final SearchResponse sr = result.response();
-			out(formatResponse(result, sr.getControlEndpoint(), sr.getDevice(), sr.getServiceFamilies(),
-					sr.description()));
+			out(formatResponse(result, sr.getControlEndpoint(), options.containsKey("nat"), sr.getDevice(),
+					sr.getServiceFamilies(), sr.description()));
 		}
 	}
 
@@ -326,7 +326,7 @@ public class Discover implements Runnable
 		if (options.containsKey("json"))
 			descriptionToJson(result);
 		else
-			onDescriptionReceived(result, null);
+			onDescriptionReceived(result, null, options.containsKey("nat"));
 	}
 
 	private static Json endpointToJson(final Result<SearchResponse> result) {
@@ -364,14 +364,14 @@ public class Discover implements Runnable
 				device.getProject());
 	}
 
-	private static void onDescriptionReceived(final Result<DescriptionResponse> result, final HPAI hpai)
-	{
+	private static void onDescriptionReceived(final Result<DescriptionResponse> result, final HPAI controlEp,
+			final boolean natRequest) {
 		final DescriptionResponse dr = result.response();
-		out(formatResponse(result, hpai, dr.getDevice(), dr.getServiceFamilies(), dr.getDescription()));
+		out(formatResponse(result, controlEp, natRequest, dr.getDevice(), dr.getServiceFamilies(), dr.getDescription()));
 	}
 
-	private static String formatResponse(final Result<?> r, final HPAI controlEp, final DeviceDIB device,
-			final ServiceFamiliesDIB serviceFamilies, final Collection<DIB> description) {
+	private static String formatResponse(final Result<?> r, final HPAI controlEp, final boolean natRequest,
+			final DeviceDIB device, final ServiceFamiliesDIB serviceFamilies, final Collection<DIB> description) {
 		final StringBuilder sb = new StringBuilder();
 
 		final var addr = r.localEndpoint().getAddress();
@@ -383,7 +383,7 @@ public class Discover implements Runnable
 		if (device != null)
 			sb.append("\"").append(device.getName()).append("\" ");
 		if (controlEp != null) {
-			var endpoint = controlEp.toString();
+			var endpoint = formatEndpoint(controlEp, natRequest, r);
 			if (serviceFamilies != null) {
 				final var tcp = serviceFamilies.families().getOrDefault(ServiceFamily.Core, 0) > 1;
 				if (tcp)
@@ -419,6 +419,12 @@ public class Discover implements Runnable
 		desc.forEach(dib -> joiner.add(dib.toString()));
 		// add empty line for visual gap with subsequent responses
 		return joiner.add("").toString();
+	}
+
+	private static String formatEndpoint(final HPAI controlEp, final boolean natRequest, final Result<?> r) {
+		if (controlEp.nat() && natRequest)
+			return "%s:%d (UDP)".formatted(r.remoteEndpoint().getAddress().getHostAddress(), r.remoteEndpoint().getPort());
+		return controlEp.toString();
 	}
 
 	private static Optional<DIB> extractDib(final int typeCode, final Collection<DIB> description) {
@@ -628,7 +634,7 @@ public class Discover implements Runnable
 			if (tcp != null) {
 				try {
 					final var description = tcp.description();
-					onDescriptionReceived(description, new HPAI(hpai.hostProtocol(), server));
+					onDescriptionReceived(description, new HPAI(hpai.hostProtocol(), server), options.containsKey("nat"));
 				}
 				catch (final InterruptedException e) {
 					Thread.currentThread().interrupt();
@@ -640,7 +646,7 @@ public class Discover implements Runnable
 					: new Discoverer(r.localEndpoint().getAddress(), 0, options.containsKey("nat"), false);
 			final int timeout = 2;
 			final Result<DescriptionResponse> dr = discoverer.getDescription(server, timeout);
-			onDescriptionReceived(dr, new HPAI(hpai.hostProtocol(), server));
+			onDescriptionReceived(dr, new HPAI(hpai.hostProtocol(), server), options.containsKey("nat"));
 		}
 		catch (final KNXException e) {
 			Main.err("description failed for server " + server + " using " + r.localEndpoint().getAddress()
