@@ -737,6 +737,14 @@ public class Discover implements Runnable
 
 		if (options.containsKey("describe") && !options.containsKey("host"))
 			throw new KNXIllegalArgumentException("specify remote host");
+		if (options.containsKey("udp") && options.containsKey("tcp"))
+			throw new KNXIllegalArgumentException("specify either UDP or TCP, not both");
+		if (options.containsKey("nat")) {
+			if (options.containsKey("tcp"))
+				throw new KNXIllegalArgumentException("NAT is not supported over TCP");
+			options.put("udp", null);
+			options.put("mcastResponse", false);
+		}
 	}
 
 	private static String nameOf(final NetworkInterface nif)
