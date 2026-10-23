@@ -57,6 +57,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.StringJoiner;
@@ -115,6 +116,8 @@ public class Discover implements Runnable
 	private static final String sep = System.lineSeparator();
 
 	private static final Logger out = LogService.getLogger(Discoverer.LOG_SERVICE);
+
+	private static final boolean win = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows");
 
 	private final Discoverer d;
 	private final DiscovererTcp tcp;
@@ -758,8 +761,14 @@ public class Discover implements Runnable
 			return Optional.empty();
 		final String name = nif.getName();
 		final String friendly = nif.getDisplayName();
-		if (friendly != null && !name.equals(friendly))
-			return Optional.of(name + " (" + friendly + ")");
+		if (friendly != null) {
+			// on Windows, Java queries the interface name using ConvertInterfaceLuidToNameW, resulting in names
+			// like "ethernet_1234"; there is no good reason to show that output on the CLI
+			if (win)
+				return Optional.of(friendly);
+			if (!name.equals(friendly))
+				return Optional.of(name + " (" + friendly + ")");
+		}
 		return Optional.of(name);
 	}
 
