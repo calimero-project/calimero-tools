@@ -376,7 +376,7 @@ public class Discover implements Runnable
 
 		final var addr = r.localEndpoint().getAddress();
 		final var localEndpoint = addr instanceof Inet6Address ? addr.toString()
-				: addr.getHostAddress() + " (" + nameOf(r.networkInterface()) + ")";
+				: addr.getHostAddress() + nameOf(r.networkInterface()).map(name -> " (" + name + ")").orElse("");
 
 		sb.append("Using ").append(localEndpoint).append(sep);
 		sb.repeat("-", sb.length() - 1).append(sep);
@@ -753,15 +753,14 @@ public class Discover implements Runnable
 		}
 	}
 
-	private static String nameOf(final NetworkInterface nif)
-	{
+	private static Optional<String> nameOf(final NetworkInterface nif) {
 		if (nif == null)
-			return "default";
+			return Optional.empty();
 		final String name = nif.getName();
 		final String friendly = nif.getDisplayName();
 		if (friendly != null && !name.equals(friendly))
-			return name + " (" + friendly + ")";
-		return name;
+			return Optional.of(name + " (" + friendly + ")");
+		return Optional.of(name);
 	}
 
 	private InetAddress inetAddress(final NetworkInterface nif) {
