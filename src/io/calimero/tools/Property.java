@@ -706,7 +706,7 @@ public class Property implements Runnable
 			onPropertyValue(oi, pid, s, raw);
 		}
 		else
-			out("sorry, wrong number of arguments");
+			out("wrong number of arguments");
 	}
 
 	private void getDescription(final String[] args) throws KNXException, InterruptedException
@@ -718,7 +718,7 @@ public class Property implements Runnable
 		else if (args.length == 2 && args[1].equals("?"))
 			printHelp("desc object-idx pid" + sep + "desc object-idx \"i\" prop-idx");
 		else
-			out("sorry, wrong number of arguments");
+			out("wrong number of arguments");
 	}
 
 	private void setProperty(final String[] args) throws KNXException, InterruptedException
@@ -730,7 +730,7 @@ public class Property implements Runnable
 			return;
 		}
 		if (args.length < 4 || args.length > 6) {
-			out("sorry, wrong number of arguments");
+			out("wrong number of arguments");
 			return;
 		}
 		final int cnt = args.length;
@@ -777,7 +777,7 @@ public class Property implements Runnable
 		else if (cnt == 3 && args[2].equals("all"))
 			pc.scanProperties(toInt(args[1]), true, this::notifyDescription);
 		else {
-			Main.err("sorry, wrong number of arguments");
+			Main.err("wrong number of arguments");
 			return;
 		}
 		out.log(DEBUG, "scan complete");
