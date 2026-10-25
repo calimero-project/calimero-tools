@@ -78,6 +78,7 @@ import io.calimero.IndividualAddress;
 import io.calimero.KNXException;
 import io.calimero.KNXFormatException;
 import io.calimero.KNXIllegalArgumentException;
+import io.calimero.KNXRemoteException;
 import io.calimero.dptxlator.DptId;
 import io.calimero.internal.Manifest;
 import io.calimero.knxnetip.KNXnetIPConnection;
@@ -764,8 +765,14 @@ final class Main
 
 	static void err(final String s, final Throwable... t) {
 		if (t.length > 0 && t[0] != null) {
-			System.err.print(s + ": ");
-			t[0].printStackTrace();
+			if (t[0] instanceof final KNXRemoteException e) {
+				final String prefix = s.endsWith(" error") ? s.substring(0, s.length() - " error".length()) : s;
+				System.err.println(prefix + " remote error: " + e.getMessage());
+			}
+			else {
+				System.err.print(s + ": ");
+				t[0].printStackTrace();
+			}
 		}
 		else
 			System.err.println(s);
