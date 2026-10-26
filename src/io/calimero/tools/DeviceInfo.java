@@ -946,7 +946,7 @@ public class DeviceInfo implements Runnable
 			"error against access & roles" };
 		final var error = errorTypes[msgInfo.get() & 0xff];
 
-		return String.format("%s->%s seq %d: %s", src, dst, seqNo, error);
+		return String.format("%s→%s seq %d: %s", src, dst, seqNo, error);
 	}
 
 	// same as BCU error flags located at 0x10d

@@ -445,7 +445,7 @@ public class ProcComm implements Runnable
 			return;
 		}
 		final StringBuilder sb = new StringBuilder();
-		sb.append(e.getSourceAddr()).append("->");
+		sb.append(e.getSourceAddr()).append("→");
 		if (!options.containsKey("lte"))
 			sb.append(e.getDestination());
 		if (!options.containsKey("compact")) {

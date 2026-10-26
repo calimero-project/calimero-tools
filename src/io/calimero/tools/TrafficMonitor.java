@@ -285,7 +285,7 @@ public class TrafficMonitor implements Runnable {
 
 			final boolean compact = options.containsKey("compact");
 			if (compact)
-				joiner.add(ldata.getSource() + "->" + dst);
+				joiner.add(ldata.getSource() + "→" + dst);
 			else
 				joiner.add(frame.toString()).add("--");
 
