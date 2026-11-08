@@ -62,6 +62,7 @@ import io.calimero.serial.usb.UsbConnection;
 import io.calimero.serial.usb.UsbConnectionFactory;
 
 import static io.calimero.tools.Main.out;
+import static io.calimero.tools.TermColor.clr;
 
 /**
  * Restart performs a basic restart or master reset of a KNX interface or KNX device. The tool supports network access
@@ -185,8 +186,8 @@ public class Restart implements Runnable {
 				if (yes) {
 					final int channel = (Integer) options.getOrDefault("channel", 0);
 					final var time = mgmt.restart(destination, EraseCode.of(restartType), channel);
-					System.out.format("restarting device %s may take up to %d seconds%n", remote,
-							time.isZero() ? 5 : time.toSeconds());
+					System.out.format("restarting device %s may take up to %s seconds%n", clr().address(remote),
+							clr().value(time.isZero() ? 5 : time.toSeconds()));
 				}
 			}
 			else
@@ -224,7 +225,7 @@ public class Restart implements Runnable {
 	}
 
 	private static boolean confirm(final Destination destination) {
-		System.out.format("Reset device %s? [y/N] ", destination.getAddress());
+		System.out.format("%s %s? %s ", clr().action("Reset device"), clr().address(destination.getAddress()), clr().metadata("[y/N]"));
 		try {
 			final String input = new BufferedReader(new InputStreamReader(System.in)).readLine();
 			return "yes".equalsIgnoreCase(input) || "y".equalsIgnoreCase(input);

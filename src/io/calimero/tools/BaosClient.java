@@ -37,6 +37,7 @@
 package io.calimero.tools;
 
 import static io.calimero.tools.Main.out;
+import static io.calimero.tools.TermColor.clr;
 import static java.lang.System.Logger.Level.DEBUG;
 import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.WARNING;
@@ -280,7 +281,7 @@ public class BaosClient implements Runnable
 			out(toJson(svc));
 			return;
 		}
-		out(LocalTime.now().truncatedTo(ChronoUnit.MILLIS) + " " + svc);
+		out(clr().timestamp(LocalTime.now().truncatedTo(ChronoUnit.MILLIS)) + " " + clr().service(svc));
 		if (svc.error() != ErrorCode.NoError)
 			return;
 
@@ -530,7 +531,7 @@ public class BaosClient implements Runnable
 
 	private void issueBaosService(final String[] args) throws KNXException, InterruptedException {
 		final var svc = parse(args);
-		out(svc);
+		out(clr().service(svc));
 		link.send(svc);
 		waitForResponse(svc.subService());
 	}

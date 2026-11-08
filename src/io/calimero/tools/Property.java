@@ -37,6 +37,7 @@
 package io.calimero.tools;
 
 import static io.calimero.tools.Main.out;
+import static io.calimero.tools.TermColor.clr;
 import static java.lang.System.Logger.Level.DEBUG;
 import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.INFO;
@@ -359,26 +360,26 @@ public class Property implements Runnable
 		}
 
 		final StringBuilder buf = new StringBuilder();
-		buf.append("OI ").append(alignRight(d.objectIndex(), 2));
-		buf.append(", PI ").append(alignRight(d.propIndex(), 2)).append(" |");
-		buf.append(" OT ").append(alignRight(d.objectType(), 3));
-		buf.append(", PID ").append(alignRight(d.pid(), 3));
+		buf.append(clr().text("OI ")).append(clr().value(alignRight(d.objectIndex(), 2)));
+		buf.append(clr().text(", PI ")).append(clr().value(alignRight(d.propIndex(), 2))).append(" |");
+		buf.append(clr().text(" OT ")).append(clr().value(alignRight(d.objectType(), 3)));
+		buf.append(clr().text(", PID ")).append(clr().value(alignRight(d.pid(), 3)));
 		buf.append(" | ");
 		if (p != null) {
 			buf.append(p.propertyName());
 			while (buf.length() < 65)
 				buf.append(' ');
 			buf.append(" (");
-			buf.append(p.pidName());
+			buf.append(clr().metadata(p.pidName()));
 			buf.append(")");
 		}
 		else
-			buf.append(new String(new char[33]).replace('\0', ' ')).append("(n/a)");
-		buf.append(", PDT ").append(pdt == -1 ? "-" : pdt);
-		buf.append(", curr. elems ").append(d.currentElements());
-		buf.append(", max. ").append(d.maxElements());
-		buf.append(", r/w access ").append(d.readLevel()).append("/").append(d.writeLevel());
-		buf.append(d.writeEnabled() ? ", w.enabled" : ", r.only");
+			buf.repeat(" ", 33).append(clr().metadata("(n/a)"));
+		buf.append(", ").append(clr().text("PDT ")).append(pdt == -1 ? "-" : clr().value(pdt));
+		buf.append(", ").append(clr().text("curr. elems ")).append(clr().value(d.currentElements()));
+		buf.append(", ").append(clr().text("max. ")).append(clr().value(d.maxElements()));
+		buf.append(", ").append(clr().text("r/w access ")).append(clr().value(d.readLevel() + "/" + d.writeLevel()));
+		buf.append(clr().value(d.writeEnabled() ? ", w.enabled" : ", r.only"));
 		out(buf);
 	}
 
@@ -395,8 +396,8 @@ public class Property implements Runnable
 		if (options.containsKey("json"))
 			out(toJson(idx, pid, value, raw));
 		else {
-			final String rawValue = raw.stream().map(HexFormat.of()::formatHex).collect(joining(delimiter, " (", ")"));
-			out(value + rawValue);
+			final String rawValue = raw.stream().map(HexFormat.of()::formatHex).map(clr()::text).collect(joining(delimiter, " (", ")"));
+			out(clr().value(value) + rawValue);
 		}
 	}
 
@@ -765,7 +766,7 @@ public class Property implements Runnable
 			return;
 		}
 
-		out("Object Index (OI), Property Index (PI), Object Type (OT), Property ID (PID)");
+		out(clr().notice("Object Index (OI), Property Index (PI), Object Type (OT), Property ID (PID)"));
 		if (cnt == 1)
 			pc.scanProperties(false, this::notifyDescription);
 		else if (cnt == 2) {

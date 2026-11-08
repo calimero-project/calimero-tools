@@ -38,6 +38,7 @@ package io.calimero.tools;
 
 import static io.calimero.tools.Main.out;
 import static io.calimero.tools.Main.setDomainAddress;
+import static io.calimero.tools.TermColor.clr;
 import static java.lang.System.Logger.Level.DEBUG;
 import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.INFO;
@@ -233,12 +234,13 @@ public class TrafficMonitor implements Runnable {
 
 			@LinkEvent
 			void routingBusy(final RoutingBusyEvent e) {
-				outTimestamped(e.sender().getAddress().getHostAddress() + " sent " + e.get());
+				outTimestamped(clr().address(e.sender().getAddress().getHostAddress()) + " sent " + clr().warn(e.get()));
 			}
 			@LinkEvent
 			void routingLostMessage(final LostMessageEvent e) {
-				outTimestamped(e.getSender().getAddress().getHostAddress() + " lost " + e.getLostMessages()
-						+ " routing messages" + (e.isKNXFault() ? ", KNX network fault" : ""));
+				outTimestamped(clr().address(e.getSender().getAddress().getHostAddress()) + " lost "
+						+ clr().value(e.getLostMessages()) + " routing messages"
+						+ (e.isKNXFault() ? ", " + clr().warn("KNX network fault") : ""));
 			}
 			@LinkEvent
 			void tunnelingFeature(final TunnelingFeature feature) { outTimestamped(feature.toString()); }
@@ -285,11 +287,11 @@ public class TrafficMonitor implements Runnable {
 
 			final boolean compact = options.containsKey("compact");
 			if (compact)
-				joiner.add(ldata.getSource() + "→" + dst);
+				joiner.add(clr().address(ldata.getSource() + "→" + dst));
 			else
 				joiner.add(frame.toString()).add("--");
 
-			joiner.add(DataUnitBuilder.decode(payload, dst));
+			joiner.add(clr().service(DataUnitBuilder.decode(payload, dst)));
 			if (payload.length > 1) {
 				final byte[] asdu = DataUnitBuilder.extractASDU(payload);
 				if (asdu.length > 0)
@@ -313,7 +315,7 @@ public class TrafficMonitor implements Runnable {
 							final Datapoint dp = datapoints.get(ga);
 							joiner.add(compact ? "" : ":");
 							if (dp != null)
-								joiner.add(asString(asdu, dp.dptId()));
+								joiner.add(clr().value(asString(asdu, dp.dptId())));
 							else
 								joiner.add(decodeAsduByLength(asdu, payload.length == 2));
 						}
@@ -393,7 +395,7 @@ public class TrafficMonitor implements Runnable {
 				final String dptid = mainType.getSubTypes().keySet().iterator().next();
 				final DPTXlator t = TranslatorTypes.createTranslator(mainType.mainNumber(), dptid);
 				t.setData(asdu);
-				joiner.add(t.getValue() + " [" + dptid + "]");
+				joiner.add(clr().value(t.getValue()) + clr().metadata(" [" + dptid + "]"));
 			}
 			catch (final KNXException | KNXIllegalArgumentException ignore) {}
 		}
@@ -525,6 +527,6 @@ public class TrafficMonitor implements Runnable {
 	}
 
 	private static void outTimestamped(final String s) {
-		out(LocalTime.now().truncatedTo(ChronoUnit.MILLIS) + " " + String.join("", s));
+		out(clr().timestamp(LocalTime.now().truncatedTo(ChronoUnit.MILLIS)) + " " + String.join("", s));
 	}
 }

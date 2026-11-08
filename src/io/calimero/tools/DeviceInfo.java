@@ -38,6 +38,7 @@ package io.calimero.tools;
 
 import static io.calimero.tools.Main.manufacturer;
 import static io.calimero.tools.Main.out;
+import static io.calimero.tools.TermColor.clr;
 import static java.lang.System.Logger.Level.DEBUG;
 import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.INFO;
@@ -429,9 +430,9 @@ public class DeviceInfo implements Runnable
 		else {
 			final boolean printCategory = categories.add(item.category());
 			if (printCategory && !"General".equals(item.category()))
-				out(System.lineSeparator() + item.category());
+				out(System.lineSeparator() + clr().metadata(item.category()));
 
-			final String s = item.parameter().friendlyName() + " = " + item.value();
+			final String s = clr().text(item.parameter().friendlyName()) + " = " + clr().value(item.value());
 			String detail = "";
 			final boolean printUnformatted = false; // TODO create option 'raw/unformatted'
 			if (printUnformatted) {

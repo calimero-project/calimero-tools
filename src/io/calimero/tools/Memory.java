@@ -215,9 +215,9 @@ public class Memory implements Runnable {
 			out(new JsonMemory(Integer.toHexString(address), data.length, data));
 			return;
 		}
-		out(options.containsKey("dec")
+		out(TermColor.clr().value(options.containsKey("dec")
 				? new BigInteger(1, data).toString()
-				: "0x" + HexFormat.of().formatHex(data));
+				: "0x" + HexFormat.of().formatHex(data)));
 	}
 
 	/**

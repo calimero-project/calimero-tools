@@ -38,6 +38,7 @@ package io.calimero.tools;
 
 import static io.calimero.tools.Main.isOption;
 import static io.calimero.tools.Main.out;
+import static io.calimero.tools.TermColor.clr;
 import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.INFO;
 
@@ -381,10 +382,10 @@ public class Discover implements Runnable
 		final var localEndpoint = addr instanceof Inet6Address ? addr.toString()
 				: addr.getHostAddress() + nameOf(r.networkInterface()).map(name -> " (" + name + ")").orElse("");
 
-		sb.append("Using ").append(localEndpoint).append(sep);
+		sb.append("Using ").append(clr().address(localEndpoint)).append(sep);
 		sb.repeat("-", sb.length() - 1).append(sep);
 		if (device != null)
-			sb.append("\"").append(device.getName()).append("\" ");
+			sb.append("\"").append(clr().value(device.getName())).append("\" ");
 		if (controlEp != null) {
 			var endpoint = formatEndpoint(controlEp, natRequest, r);
 			if (serviceFamilies != null) {
@@ -392,7 +393,7 @@ public class Discover implements Runnable
 				if (tcp)
 					endpoint = endpoint.replace("UDP", "UDP & TCP");
 			}
-			sb.append("endpoint ").append(endpoint);
+			sb.append("endpoint ").append(clr().address(endpoint));
 		}
 
 		if (device != null) {
@@ -402,12 +403,12 @@ public class Discover implements Runnable
 			// skip SN in search responses
 			final boolean search = r.response() instanceof SearchResponse;
 			final String formatted = search ? withoutName.substring(0, withoutName.lastIndexOf(",")) : withoutName;
-			sb.append(formatted).append(sep);
+			sb.append(clr().text(formatted)).append(sep);
 		}
 
 		String basic = sb.toString().replaceAll(", ", sep);
 		if (serviceFamilies != null)
-			basic += "Supported services: " + serviceFamilies;
+			basic += clr().text("Supported services: ") + clr().value(serviceFamilies);
 
 		final var joiner = new StringJoiner(sep);
 		joiner.add(basic);
@@ -417,9 +418,9 @@ public class Discover implements Runnable
 		desc.remove(serviceFamilies);
 
 		extractDib(DIB.SecureServiceFamilies, desc).map(dib -> " ".repeat(20) + dib).ifPresent(joiner::add);
-		extractDib(DIB.AdditionalDeviceInfo, desc).map(dib -> dib.toString().replace(", ", sep)).ifPresent(joiner::add);
-		extractDib(DIB.TunnelingInfo, desc).map(dib -> dib.toString().replaceFirst(", ", sep)).ifPresent(joiner::add);
-		desc.forEach(dib -> joiner.add(dib.toString()));
+		extractDib(DIB.AdditionalDeviceInfo, desc).map(dib -> dib.toString().replace(", ", sep)).map(clr()::metadata).ifPresent(joiner::add);
+		extractDib(DIB.TunnelingInfo, desc).map(dib -> dib.toString().replaceFirst(", ", sep)).map(clr()::metadata).ifPresent(joiner::add);
+		desc.forEach(dib -> joiner.add(clr().metadata(dib.toString())));
 		// add empty line for visual gap with subsequent responses
 		return joiner.add("").toString();
 	}
@@ -689,7 +690,9 @@ public class Discover implements Runnable
 				return;
 			}
 
-			if (Main.parseSecureOption(arg, i, options)) {
+			if (Main.parseColorOption(arg, i))
+				;
+			else if (Main.parseSecureOption(arg, i, options)) {
 				if (options.containsKey("group-key"))
 					throw new KNXIllegalArgumentException("secure multicast is not specified for search & description");
 			}

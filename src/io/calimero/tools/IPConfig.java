@@ -38,6 +38,7 @@ package io.calimero.tools;
 
 import static io.calimero.tools.Main.out;
 import static io.calimero.tools.Main.setDomainAddress;
+import static io.calimero.tools.TermColor.clr;
 import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.INFO;
 
@@ -266,13 +267,13 @@ public class IPConfig implements Runnable
 			return;
 		}
 		final StringBuilder sb = new StringBuilder();
-		sb.append("KNX IP device ").append(config.get(0)[2]).append(" ")
-				.append(config.get(1)[2]).append(sep);
+		sb.append("KNX IP device ").append(clr().address(config.get(0)[2])).append(" ")
+				.append(clr().value(config.get(1)[2])).append(sep);
 		final String padding = "                                   ";
 		for (int i = 2; i < config.size(); ++i) {
 			final String[] s = config.get(i);
 			final String value = s[2].isEmpty() ? "n/a" : s[2];
-			sb.append(s[1]).append(padding.substring(s[1].length())).append(value).append(sep);
+			sb.append(clr().text(s[1])).append(padding.substring(s[1].length())).append(clr().value(value)).append(sep);
 		}
 		out(sb);
 	}

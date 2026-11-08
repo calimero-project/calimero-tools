@@ -37,6 +37,7 @@
 package io.calimero.tools;
 
 import static io.calimero.tools.Main.out;
+import static io.calimero.tools.TermColor.clr;
 import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.INFO;
 
@@ -188,7 +189,7 @@ public class ScanDevices implements Runnable
 				}
 				else {
 					for (final int line : lines) {
-						out("start scan of " + area + "." + line + ".[0..255] ...");
+						out("start scan of " + clr().address(area + "." + line + ".[0..255] ..."));
 						mp.scanNetworkDevices(area, line, this::onDeviceFound, this::onDeviceFound);
 					}
 				}
@@ -231,7 +232,7 @@ public class ScanDevices implements Runnable
 		if (options.containsKey("json"))
 			out(new JsonDevice((String) options.get("range"), device, null));
 		else
-			out(device);
+			out(clr().address(device));
 	}
 
 	protected void onDeviceFound(final IndividualAddress device, final DeviceDescriptor.DD0 dd0) {
@@ -240,7 +241,7 @@ public class ScanDevices implements Runnable
 		if (options.containsKey("json"))
 			out(new JsonDevice((String) options.get("range"), device, dd0));
 		else
-			out(device + " (DD0 " + dd0 + (")"));
+			out(clr().address(device) + clr().metadata(" (DD0 " + dd0 + (")")));
 	}
 
 	/**

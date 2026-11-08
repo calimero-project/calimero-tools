@@ -38,6 +38,7 @@ package io.calimero.tools;
 
 import static io.calimero.tools.Main.out;
 import static io.calimero.tools.Main.tcpConnection;
+import static io.calimero.tools.TermColor.clr;
 import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.INFO;
 import static java.lang.System.Logger.Level.WARNING;
@@ -316,7 +317,7 @@ public class NetworkMonitor implements Runnable
 		final StringBuilder sb = new StringBuilder();
 		final boolean compact = options.containsKey("compact");
 		if (compact) {
-			sb.append("Seq ").append(frame.getSequenceNumber());
+			sb.append(clr().notice("Seq " + frame.getSequenceNumber()));
 		}
 		else
 			sb.append(frame);
@@ -325,9 +326,9 @@ public class NetworkMonitor implements Runnable
 			sb.append(compact ? " " : " = ");
 			sb.append(raw);
 			if (raw instanceof final RawFrameBase f) {
-				sb.append(": ").append(DataUnitBuilder.decode(f.getTPDU(), f.getDestination()));
+				sb.append(": ").append(clr().service(DataUnitBuilder.decode(f.getTPDU(), f.getDestination())));
 				sb.append(" ");
-				HexFormat.ofDelimiter(" ").formatHex(sb, DataUnitBuilder.extractASDU(f.getTPDU()));
+				sb.append(clr().value(HexFormat.ofDelimiter(" ").formatHex(DataUnitBuilder.extractASDU(f.getTPDU()))));
 			}
 			else if (raw instanceof final RFLData rf) {
 				try {
@@ -336,7 +337,7 @@ public class NetworkMonitor implements Runnable
 					if (!bibat.isEmpty())
 						sb.append(bibat);
 					else {
-						sb.append(DataUnitBuilder.decode(rf.getTpdu(), rf.getDestination()));
+						sb.append(clr().service(DataUnitBuilder.decode(rf.getTpdu(), rf.getDestination())));
 						sb.append(" ").append(decodeLteFrame(rf));
 					}
 				}
@@ -345,7 +346,7 @@ public class NetworkMonitor implements Runnable
 				}
 			}
 		}
-		out(LocalTime.now() + " " + sb);
+		out(clr().timestamp(LocalTime.now()) + " " + sb);
 	}
 
 	private static Json toJson(final RawFrame raw, final CEMIBusMon frame) {
@@ -454,7 +455,7 @@ public class NetworkMonitor implements Runnable
 		monitor.addMonitorListener(new LinkListener() {
 			@LinkEvent
 			void connectionStatus(final ConnectionStatus status) {
-				out(LocalTime.now().truncatedTo(ChronoUnit.MILLIS) + " connection status KNX " + status);
+				out(clr().timestamp(LocalTime.now().truncatedTo(ChronoUnit.MILLIS)) + " connection status KNX " + status);
 			}
 		});
 		return monitor;

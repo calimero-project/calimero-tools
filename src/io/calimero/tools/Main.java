@@ -37,6 +37,7 @@
 package io.calimero.tools;
 
 
+import static io.calimero.tools.TermColor.clr;
 import static java.lang.System.Logger.Level.DEBUG;
 import static java.lang.System.Logger.Level.INFO;
 
@@ -79,6 +80,7 @@ import io.calimero.KNXException;
 import io.calimero.KNXFormatException;
 import io.calimero.KNXIllegalArgumentException;
 import io.calimero.KNXRemoteException;
+import io.calimero.KNXTimeoutException;
 import io.calimero.dptxlator.DptId;
 import io.calimero.internal.Manifest;
 import io.calimero.knxnetip.KNXnetIPConnection;
@@ -361,6 +363,28 @@ final class Main
 			options.put("reconnectDelay", Duration.ofSeconds(Long.parseUnsignedLong(i.next())));
 		else if (isOption(arg, "max-reconnect-attempts", null))
 			options.put("maxConnectAttempts", Long.parseUnsignedLong(i.next()));
+		else if (parseColorOption(arg, i))
+			;
+		else
+			return false;
+		return true;
+	}
+
+	static boolean parseColorOption(final String arg, final Iterator<String> i) {
+		if (isOption(arg, "color", null)) {
+			var theme = Theme.Auto;
+			try {
+				if (i.hasNext()) {
+					theme = Theme.from(i instanceof PeekingIterator<String> pi ? pi.peek() : i.next());
+					if (i instanceof PeekingIterator<String>)
+						i.next();
+				}
+			}
+			catch (final KNXIllegalArgumentException ignored) {}
+			TermColor.init(theme);
+		}
+		else if (isOption(arg, "no-color", null))
+			TermColor.init(Theme.None);
 		else
 			return false;
 		return true;
@@ -408,7 +432,10 @@ final class Main
 				  --medium -m <id>           KNX medium [tp1|p110|knxip|rf] (default tp1)
 				  --domain <address>         domain address on KNX PL/RF medium (defaults to broadcast domain)
 				  --knx-address -k <addr>    KNX device address of local endpoint
-				  --json                     show JSON-formatted output"""
+				  --json                     show JSON-formatted output
+				  --color [<setting>]        colorize output, setting: none (disable all colors),
+				                             light (theme), dark (theme), auto (default, detect theme)
+				  --no-color                 equivalent to --color none"""
 				.formatted(KNXnetIPConnection.DEFAULT_PORT);
 	}
 
@@ -767,7 +794,7 @@ final class Main
 		if (t.length > 0 && t[0] != null) {
 			if (t[0] instanceof final KNXRemoteException e) {
 				final String prefix = s.endsWith(" error") ? s.substring(0, s.length() - " error".length()) : s;
-				System.err.println(prefix + " remote error: " + e.getMessage());
+				System.err.println(clr().error(prefix + " remote error: " + e.getMessage()));
 			}
 			else {
 				System.err.print(s + ": ");
@@ -775,14 +802,14 @@ final class Main
 			}
 		}
 		else
-			System.err.println(s);
+			System.err.println(clr().error(s));
 	}
 
 	static void exit(final Throwable t) {
 		final String msg = t.getMessage() != null ? t.getMessage()
 				: t.getCause() != null && t.getCause().getMessage() != null ? t.getCause().getMessage() : t.toString();
-		Main.err("error: " + msg);
-		Main.err("try '--help' for usage information");
+		Main.err(clr().error("error: " + msg));
+		Main.err(clr().notice("try '--help' for usage information"));
 		out().log(DEBUG, "aborting due to invalid arguments", t);
 		System.exit(2);
 	}

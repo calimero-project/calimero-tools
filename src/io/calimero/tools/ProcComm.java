@@ -39,6 +39,7 @@ package io.calimero.tools;
 import static io.calimero.tools.Main.isOption;
 import static io.calimero.tools.Main.out;
 import static io.calimero.tools.Main.setDomainAddress;
+import static io.calimero.tools.TermColor.clr;
 import static java.lang.System.Logger.Level.DEBUG;
 import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.INFO;
@@ -445,18 +446,17 @@ public class ProcComm implements Runnable
 			return;
 		}
 		final StringBuilder sb = new StringBuilder();
-		sb.append(e.getSourceAddr()).append("→");
-		if (!options.containsKey("lte"))
-			sb.append(e.getDestination());
+		final String addr = e.getSourceAddr() + "→" + (options.containsKey("lte") ? "" : e.getDestination());
+		sb.append(clr().address(addr));
 		if (!options.containsKey("compact")) {
-			sb.append(" ").append(DataUnitBuilder.decodeAPCI(svcCode)).append(" ");
+			sb.append(" ").append(clr().service(DataUnitBuilder.decodeAPCI(svcCode))).append(" ");
 			HexFormat.ofDelimiter(" ").formatHex(sb, asdu);
 		}
 		if (asdu.length > 0) {
 			sb.append(options.containsKey("compact") ? " " : ": ");
 			decodeAsdu(e, asdu, sb);
 		}
-		out(LocalTime.now().truncatedTo(ChronoUnit.MILLIS) + " " + sb);
+		out(clr().timestamp(LocalTime.now().truncatedTo(ChronoUnit.MILLIS)) + " " + sb);
 	}
 
 	private StringBuilder decodeAsdu(final ProcessEvent e, final byte[] asdu, final StringBuilder sb) {
@@ -470,7 +470,7 @@ public class ProcComm implements Runnable
 					final Datapoint dp = datapoints.get(e.getDestination());
 
 					if (dp != null)
-						sb.append(asString(asdu, dp.dptId()));
+						sb.append(clr().value(asString(asdu, dp.dptId())));
 					else
 						sb.append(decodeAsduByLength(asdu, e.isLengthOptimizedAPDU()));
 				}
@@ -488,7 +488,7 @@ public class ProcComm implements Runnable
 	 * @param value formatted read response, or hexadecimal representation if <code>dp</code> has no {@link DPT} set
 	 */
 	protected void onReadResponse(final Datapoint dp, final String value) {
-		out("read " + dp.getMainAddress() + " value: " + value);
+		out("read " + clr().address(dp.getMainAddress()) + " value: " + clr().value(value));
 	}
 
 	/**
@@ -791,7 +791,8 @@ public class ProcComm implements Runnable
 				final String dptid = main.getSubTypes().keySet().iterator().next();
 				final DPTXlator t = TranslatorTypes.createTranslator(main.mainNumber(), dptid);
 				t.setData(asdu);
-				sb.append(t.getValue()).append(" [").append(dptid).append("]").append(i.hasNext() ? ", " : "");
+				final String metadata = clr().metadata(" [" + dptid + "]");
+				sb.append(clr().value(t.getValue())).append(metadata).append(i.hasNext() ? ", " : "");
 			}
 			catch (final KNXException | KNXIllegalArgumentException ignore) {}
 		}
@@ -815,7 +816,7 @@ public class ProcComm implements Runnable
 				issueCommand(line);
 			}
 			catch (final KNXTimeoutException e) {
-				out(e.getMessage());
+				out(clr().warn(e.getMessage()));
 			}
 			catch (KNXException | RuntimeException e) {
 				out.log(ERROR, "[{0}] {1}", line, e.toString());

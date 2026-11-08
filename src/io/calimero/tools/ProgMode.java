@@ -58,6 +58,7 @@ import io.calimero.mgmt.PropertyClient;
 import io.calimero.serial.usb.UsbConnectionFactory;
 
 import static io.calimero.tools.Main.out;
+import static io.calimero.tools.TermColor.clr;
 
 /**
  * ProgMode lists the current KNX devices in programming mode, and allows to set the programming mode of a device. The
@@ -241,8 +242,8 @@ public class ProgMode implements Runnable
 			out(new JsonDevices(dedup.toArray(new IndividualAddress[0])));
 			return;
 		}
-		final String output = devices.length == 0 ? "none"
-				: dedup.stream().map(Objects::toString).collect(Collectors.joining(", "));
+		final String output = devices.length == 0 ? clr().metadata("none")
+				: dedup.stream().map(clr()::address).collect(Collectors.joining(", "));
 		if (ansiSupported)
 			print("\u001B[2K\r" + outputPrefix + output);
 		else
