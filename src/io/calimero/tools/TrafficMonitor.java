@@ -397,7 +397,7 @@ public class TrafficMonitor implements Runnable {
 				t.setData(asdu);
 				joiner.add(clr().value(t.getValue()) + clr().metadata(" [" + dptid + "]"));
 			}
-			catch (final KNXException | KNXIllegalArgumentException ignore) {}
+			catch (KNXException | KNXIllegalArgumentException ignore) {}
 		}
 		return joiner.toString();
 	}

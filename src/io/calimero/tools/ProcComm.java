@@ -947,7 +947,7 @@ public class ProcComm implements Runnable
 				if ("-".equals(i.peek()))
 					i.next();
 				else
-					checkDpt(i.peek()).ifPresent(dpt -> options.put("dpt", i.next()));
+					checkDpt(i.peek()).ifPresent(__ -> options.put("dpt", i.next()));
 				final var value = i.next();
 				options.put("value", value);
 				if (isTwoPartValue(value))

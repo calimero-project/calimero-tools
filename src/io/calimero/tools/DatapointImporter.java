@@ -242,7 +242,7 @@ public class DatapointImporter implements Runnable {
 		final var name = MethodHandles.lookup().lookupClass().getSimpleName();
 		final String usage = """
 				Usage: %s [options] <project.knxproj or group addresses file [.xml|.csv]> [<output file (xml)>]
-				       if no output file is specified, imported datapoints are written to the standard output
+				       if no output file is specified, imported datapoints are written to standard output
 				Options:
 				  -h --help                  show this help and exit
 				  --version                  show tool/library version and exit

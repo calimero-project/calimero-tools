@@ -171,13 +171,14 @@ final class Main
 	/**
 	 * Provides a common entry point for running the Calimero Tools.
 	 * <p>
-	 * This is useful to start the tools from within a .jar file.
 	 *
-	 * @param args the first argument being the tool to invoke, followed by the command line options of that tool
+	 * @param args the tool to invoke, followed by the command-line options of that tool; if the first argument is
+	 * {@code -v} (single argument) or {@code --version}, shows version information and exits;
+	 * the first argument can also specify logging verbosity {@code -v[v[v]]}, followed by the tool invocation
 	 */
 	public static void main(final String... args)
 	{
-		if (args.length == 1 && (args[0].startsWith("-v") || args[0].equals("--version"))) {
+		if (args.length == 1 && args[0].equals("-v") || args.length >= 1 && args[0].equals("--version")) {
 			showVersion();
 			return;
 		}
@@ -417,8 +418,6 @@ final class Main
 	static String printCommonOptions() {
 		return """
 				Options:
-				  --help -h                  show this help message
-				  --version                  show tool/library version and exit
 				  --localhost <id>           local IP/host name
 				  --localport <number>       local UDP port (default system assigned)
 				  --port -p <number>         UDP/TCP port on <host> (default %d)
@@ -435,7 +434,9 @@ final class Main
 				  --json                     show JSON-formatted output
 				  --color [<setting>]        colorize output, setting: none (disable all colors),
 				                             light (theme), dark (theme), auto (default, detect theme)
-				  --no-color                 equivalent to --color none"""
+				  --no-color                 equivalent to --color none
+				  --help -h                  show this help message
+				  --version                  show version and exit"""
 				.formatted(KNXnetIPConnection.DEFAULT_PORT);
 	}
 
@@ -787,7 +788,7 @@ final class Main
 	static PrintStream stdout() { return System.out; }
 
 	static void out(final Object o) {
-		stdout().println(o instanceof Json json ? json.toJson() : o);
+		stdout().println(o instanceof final Json json ? json.toJson() : o);
 	}
 
 	static void err(final String s, final Throwable... t) {

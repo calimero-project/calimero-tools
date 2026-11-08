@@ -321,7 +321,7 @@ public class Discover implements Runnable
 	/**
 	 * Invoked by this tool immediately after receiving a description response.
 	 * <p>
-	 * This default implementation extracts the information and writes it to the standard output.
+	 * This default implementation extracts the information and writes it to standard output.
 	 *
 	 * @param result the description result containing the received description response
 	 */
