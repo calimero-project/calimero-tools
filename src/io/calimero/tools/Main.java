@@ -796,6 +796,9 @@ final class Main
 				final String prefix = s.endsWith(" error") ? s.substring(0, s.length() - " error".length()) : s;
 				System.err.println(clr().error(prefix + " remote error: " + e.getMessage()));
 			}
+			else if (t[0] instanceof final KNXTimeoutException e) {
+				System.err.println(clr().error(s + ": " + e.getMessage()));
+			}
 			else {
 				System.err.print(s + ": ");
 				t[0].printStackTrace();
