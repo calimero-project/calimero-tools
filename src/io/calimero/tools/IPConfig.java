@@ -39,6 +39,7 @@ package io.calimero.tools;
 import static io.calimero.tools.Main.out;
 import static io.calimero.tools.Main.setDomainAddress;
 import static io.calimero.tools.TermColor.clr;
+import static java.lang.System.Logger.Level.DEBUG;
 import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.INFO;
 
@@ -404,7 +405,7 @@ public class IPConfig implements Runnable
 			return Optional.of(pc.getProperty(objIndex, pid, 1, 1));
 		}
 		catch (final KNXRemoteException e) {
-			out.log(ERROR, "getting property with ID " + pid + " failed: {0}", e.getMessage());
+			out.log(DEBUG, "getting property with ID " + pid + " failed: {0}", e.getMessage());
 			return Optional.empty();
 		}
 	}
