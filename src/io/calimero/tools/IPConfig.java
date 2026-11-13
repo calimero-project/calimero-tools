@@ -51,6 +51,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
@@ -100,6 +101,21 @@ public class IPConfig implements Runnable
 	private int objIndex = -1;
 
 	private final Map<String, Object> options = new HashMap<>();
+
+	private IndividualAddress device;
+	private String friendlyName;
+	private boolean first = true;
+
+
+	/**
+	 * IP configuration property.
+	 *
+	 * @param pid property identifier, {@code pid ≥ 0}
+	 * @param name name of the configuration property
+	 * @param value property value, or an empty {@link Optional} if querying the property failed (e.g., no property entry);
+	 *              a property value might be an empty string
+	 */
+	public record IpConfigProperty(int pid, String name, Optional<String> value) {}
 
 
 	/**
@@ -227,12 +243,14 @@ public class IPConfig implements Runnable
 			setIP(PropertyAccess.PID.SUBNET_MASK, "subnet");
 			setIP(PropertyAccess.PID.DEFAULT_GATEWAY, "gateway");
 			setIP(PropertyAccess.PID.ROUTING_MULTICAST_ADDRESS, "multicast");
-			final List<String[]> config = new ArrayList<>();
+			final var config = new ArrayList<IpConfigProperty>();
 			try {
 				readConfig(config);
 			}
 			finally {
-				onConfigurationReceived(config);
+				onConfiguration(device, friendlyName, config);
+				onConfigurationReceived(config.stream().map(entry ->
+						new String[] { "" + entry.pid(), entry.name(), entry.value().orElse("") } ).toList());
 			}
 		}
 		catch (final KNXException e) {
@@ -252,31 +270,44 @@ public class IPConfig implements Runnable
 	}
 
 	/**
-	 * Supplies information about a received IP configuration.
+	 * Called with the result of querying one IP configuration property.
 	 * <p>
-	 * This default implementation writes information to standard output.
+	 * This default implementation writes the result to standard output.
 	 *
-	 * @param config a list with configuration entries, an entry is of type String[3], with [0]
-	 *        being the property identifier (PID), [1] being a short descriptive name of the
-	 *        configuration property, [2] being the value
+	 * @param device the address of the queried device
+	 * @param friendlyName the name of the device, as set in the KNX/IP Parameter object property "Friendly Name" (PID 76)
+	 * @param property the configuration property
 	 */
-	protected void onConfigurationReceived(final List<String[]> config)
-	{
-		if (options.containsKey("json")) {
-			out(toJson(config));
+	protected void onConfiguration(final IndividualAddress device, final String friendlyName, final IpConfigProperty property) {
+		if (options.containsKey("json"))
 			return;
+		if (first) {
+			first = false;
+			out("KNX IP device " + clr().address(device) + " " + clr().metadata(friendlyName));
 		}
-		final StringBuilder sb = new StringBuilder();
-		sb.append("KNX IP device ").append(clr().address(config.get(0)[2])).append(" ")
-				.append(clr().value(config.get(1)[2])).append(sep);
-		final String padding = "                                   ";
-		for (int i = 2; i < config.size(); ++i) {
-			final String[] s = config.get(i);
-			final String value = s[2].isEmpty() ? "n/a" : s[2];
-			sb.append(clr().text(s[1])).append(padding.substring(s[1].length())).append(clr().value(value)).append(sep);
-		}
-		out(sb);
+		final String value = property.value().map(clr()::value).orElse(clr().metadata("n/a"));
+		out(clr().text(property.name()) + " ".repeat(Math.max(1, 35 - property.name().length())) + value);
 	}
+
+	/**
+	 * Called with the result of querying the IP configuration properties.
+	 * <p>
+	 * This default implementation writes the result to standard output.
+	 *
+	 * @param device the address of the queried device
+	 * @param friendlyName the name of the device, as set in the KNX/IP Parameter object property "Friendly Name" (PID 76)
+	 * @param config a list with the queried configuration properties
+	 */
+	protected void onConfiguration(final IndividualAddress device, final String friendlyName, final List<IpConfigProperty> config) {
+		if (options.containsKey("json"))
+			out(toJson(device, config));
+	}
+
+	/**
+	 * @deprecated Use {@link #onConfiguration(IndividualAddress, String, List)}
+	 */
+	@Deprecated(forRemoval = true)
+	protected void onConfigurationReceived(final List<String[]> config) {}
 
 	/**
 	 * Called by this tool on completion.
@@ -292,10 +323,8 @@ public class IPConfig implements Runnable
 			out.log(ERROR, "completed with error", thrown);
 	}
 
-	private Json toJson(final List<String[]> config) {
-		final var device = options.containsKey("remote") ? options.get("remote") : options.get("host");
-		// convert String[2] entries into key/value pairs and put them in a map
-		final var map = config.stream().collect(Collectors.toMap(sa -> sa[1], sa -> sa[2]));
+	private Json toJson(final IndividualAddress device, final List<IpConfigProperty> config) {
+		final var map = config.stream().collect(Collectors.toMap(IpConfigProperty::name, ce -> ce.value().orElse("")));
 
 		record JsonIpConfig(String device, Map<String, String> ipConfig) implements Json {}
 		return new JsonIpConfig(device.toString(), map);
@@ -328,13 +357,16 @@ public class IPConfig implements Runnable
 			}
 	}
 
-	private void readConfig(final List<String[]> config) throws KNXException, InterruptedException
+	private void readConfig(final List<IpConfigProperty> config) throws KNXException, InterruptedException
 	{
 		int pid = PropertyAccess.PID.KNX_INDIVIDUAL_ADDRESS;
 		byte[] data = query(pid);
-		if (data != null)
-			add(config, pid, "KNXnet/IP server", new IndividualAddress(data).toString());
-		add(config, PropertyAccess.PID.FRIENDLY_NAME, "Name", queryFriendlyName());
+
+		device = data != null ? new IndividualAddress(data) : (IndividualAddress) options.get("remote");
+		if  (device == null)
+			device = new IndividualAddress(0);
+
+		friendlyName = queryFriendlyName();
 
 		pid = PropertyAccess.PID.IP_CAPABILITIES;
 		data = query(pid);
@@ -367,16 +399,16 @@ public class IPConfig implements Runnable
 		addIP(config, PropertyAccess.PID.ROUTING_MULTICAST_ADDRESS, "Routing multicast");
 	}
 
-	private void addIP(final List<String[]> config, final int pid, final String name)
+	private void addIP(final List<IpConfigProperty> config, final int pid, final String name)
 		throws InterruptedException
 	{
 		add(config, pid, name, queryIP(pid));
 	}
 
-	private static void add(final List<String[]> config, final int pid, final String name,
-		final String value)
-	{
-		config.add(new String[] { Integer.toString(pid), name, value });
+	private void add(final List<IpConfigProperty> config, final int pid, final String name, final String value) {
+		var property = new IpConfigProperty(pid, name, Optional.ofNullable(value));
+		config.add(property);
+		onConfiguration(device, friendlyName, property);
 	}
 
 	private String queryFriendlyName() throws KNXException, InterruptedException
@@ -408,7 +440,7 @@ public class IPConfig implements Runnable
 	{
 		try {
 			final byte[] data = query(pid);
-			return data == null ? "" : InetAddress.getByAddress(data).getHostAddress();
+			return data == null ? null : InetAddress.getByAddress(data).getHostAddress();
 		}
 		catch (final UnknownHostException | KNXException e) {}
 		return "-";
