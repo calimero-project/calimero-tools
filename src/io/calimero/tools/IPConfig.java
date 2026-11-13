@@ -53,6 +53,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.StringJoiner;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import io.calimero.IndividualAddress;
@@ -357,56 +358,29 @@ public class IPConfig implements Runnable
 			}
 	}
 
-	private void readConfig(final List<IpConfigProperty> config) throws KNXException, InterruptedException
-	{
-		int pid = PropertyAccess.PID.KNX_INDIVIDUAL_ADDRESS;
-		byte[] data = query(pid);
-
-		device = data != null ? new IndividualAddress(data) : (IndividualAddress) options.get("remote");
-		if  (device == null)
-			device = new IndividualAddress(0);
-
+	private void readConfig(final List<IpConfigProperty> config) throws KNXException, InterruptedException {
+		device = query(PropertyAccess.PID.KNX_INDIVIDUAL_ADDRESS).map(IndividualAddress::new)
+				.orElseGet(() -> (IndividualAddress) options.getOrDefault("remote", new IndividualAddress(0)));
 		friendlyName = queryFriendlyName();
 
-		pid = PropertyAccess.PID.IP_CAPABILITIES;
-		data = query(pid);
-		if (data != null)
-			add(config, pid, "Supported IP assignment methods",
-					getIPAssignment(new byte[] { (byte) (data[0] << 1 | 0x01) }));
-
-		pid = PropertyAccess.PID.IP_ASSIGNMENT_METHOD;
-		data = query(pid);
-		if (data != null)
-			add(config, pid, "Enabled IP assignment methods", getIPAssignment(data));
-
-		pid = PropertyAccess.PID.CURRENT_IP_ASSIGNMENT_METHOD;
-		data = query(pid);
-		if (data != null)
-			add(config, pid, "Current IP assignment method", getIPAssignment(data));
-
-		pid = PropertyAccess.PID.KNXNETIP_ROUTING_CAPABILITIES;
-		data = query(pid);
-		if (data != null)
-			add(config, pid, "Routing capabilities", getRoutingCaps(data));
-
-		addIP(config, PropertyAccess.PID.IP_ADDRESS, "Configured IP address");
-		addIP(config, PropertyAccess.PID.SUBNET_MASK, "Configured subnet mask");
-		addIP(config, PropertyAccess.PID.CURRENT_IP_ADDRESS, "Current IP address");
-		addIP(config, PropertyAccess.PID.CURRENT_SUBNET_MASK, "Current subnet mask");
-		addIP(config, PropertyAccess.PID.DEFAULT_GATEWAY, "Configured default gateway");
-		addIP(config, PropertyAccess.PID.CURRENT_DEFAULT_GATEWAY, "Current default gateway");
-		addIP(config, PropertyAccess.PID.DHCP_BOOTP_SERVER, "DHCP/BootP server");
-		addIP(config, PropertyAccess.PID.ROUTING_MULTICAST_ADDRESS, "Routing multicast");
+		query(config, PropertyAccess.PID.IP_CAPABILITIES, "Supported IP assignment methods",
+				data -> getIPAssignment(new byte[] { (byte) (data[0] << 1 | 0x01) }));
+		query(config, PropertyAccess.PID.IP_ASSIGNMENT_METHOD, "Enabled IP assignment methods", IPConfig::getIPAssignment);
+		query(config, PropertyAccess.PID.CURRENT_IP_ASSIGNMENT_METHOD, "Current IP assignment method", IPConfig::getIPAssignment);
+		query(config, PropertyAccess.PID.KNXNETIP_ROUTING_CAPABILITIES, "Routing capabilities", IPConfig::getRoutingCaps);
+		query(config, PropertyAccess.PID.IP_ADDRESS, "Configured IP address", IPConfig::ipAddress);
+		query(config, PropertyAccess.PID.SUBNET_MASK, "Configured subnet mask", IPConfig::ipAddress);
+		query(config, PropertyAccess.PID.CURRENT_IP_ADDRESS, "Current IP address", IPConfig::ipAddress);
+		query(config, PropertyAccess.PID.CURRENT_SUBNET_MASK, "Current subnet mask", IPConfig::ipAddress);
+		query(config, PropertyAccess.PID.DEFAULT_GATEWAY, "Configured default gateway", IPConfig::ipAddress);
+		query(config, PropertyAccess.PID.CURRENT_DEFAULT_GATEWAY, "Current default gateway", IPConfig::ipAddress);
+		query(config, PropertyAccess.PID.DHCP_BOOTP_SERVER, "DHCP/BootP server", IPConfig::ipAddress);
+		query(config, PropertyAccess.PID.ROUTING_MULTICAST_ADDRESS, "Routing multicast", IPConfig::ipAddress);
 	}
 
-	private void addIP(final List<IpConfigProperty> config, final int pid, final String name)
-		throws InterruptedException
-	{
-		add(config, pid, name, queryIP(pid));
-	}
-
-	private void add(final List<IpConfigProperty> config, final int pid, final String name, final String value) {
-		var property = new IpConfigProperty(pid, name, Optional.ofNullable(value));
+	private void query(final List<IpConfigProperty> config, final int pid, final String name,
+			final Function<byte[], String> mapper) throws KNXException, InterruptedException {
+		final var property = new IpConfigProperty(pid, name, query(pid).map(mapper));
 		config.add(property);
 		onConfiguration(device, friendlyName, property);
 	}
@@ -425,25 +399,22 @@ public class IPConfig implements Runnable
 		}
 	}
 
-	private byte[] query(final int pid) throws KNXException, InterruptedException
-	{
+	private Optional<byte[]> query(final int pid) throws KNXException, InterruptedException {
 		try {
-			return pc.getProperty(objIndex, pid, 1, 1);
+			return Optional.of(pc.getProperty(objIndex, pid, 1, 1));
 		}
 		catch (final KNXRemoteException e) {
 			out.log(ERROR, "getting property with ID " + pid + " failed: {0}", e.getMessage());
-			return null;
+			return Optional.empty();
 		}
 	}
 
-	private String queryIP(final int pid) throws InterruptedException
-	{
+	private static String ipAddress(final byte[] data) {
 		try {
-			final byte[] data = query(pid);
-			return data == null ? null : InetAddress.getByAddress(data).getHostAddress();
+			return InetAddress.getByAddress(data).getHostAddress();
 		}
-		catch (final UnknownHostException | KNXException e) {}
-		return "-";
+		catch (final UnknownHostException ignored) {}
+		return null;
 	}
 
 	private static String getIPAssignment(final byte[] value)
