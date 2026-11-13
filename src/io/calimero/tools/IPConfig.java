@@ -344,8 +344,7 @@ public class IPConfig implements Runnable
 		if (options.containsKey("auto"))
 			assignment |= 0x08;
 		if (assignment != 0)
-			pc.setProperty(objIndex, PropertyAccess.PID.IP_ASSIGNMENT_METHOD, 1, 1,
-					(byte) assignment);
+			pc.setProperty(objIndex, PropertyAccess.PID.IP_ASSIGNMENT_METHOD, 1, 1, (byte) assignment);
 	}
 
 	private void setIP(final int pid, final String key) throws InterruptedException
@@ -391,8 +390,7 @@ public class IPConfig implements Runnable
 		final char[] name = new char[30];
 		int start = 0;
 		while (true) {
-			final byte[] data = pc.getProperty(objIndex, PropertyAccess.PID.FRIENDLY_NAME,
-					start + 1, 10);
+			final byte[] data = pc.getProperty(objIndex, PropertyAccess.PID.FRIENDLY_NAME, start + 1, 10);
 			for (int i = 0; i < 10 && data[i] != 0; ++i, ++start)
 				name[start] = (char) (data[i] & 0xff);
 			if (start >= 30 || data[9] == 0)
@@ -477,7 +475,7 @@ public class IPConfig implements Runnable
 	 * @throws InterruptedException on interrupted thread
 	 */
 	private PropertyAdapter createLocalDMAdapter() throws KNXException, InterruptedException {
-		return Main.newLocalDeviceMgmt(options, closed -> {});
+		return Main.newLocalDeviceMgmt(options, __ -> {});
 	}
 
 	/**
@@ -495,8 +493,8 @@ public class IPConfig implements Runnable
 		// connection oriented mode and tries to authenticate
 		final byte[] authKey = (byte[]) options.get("authorize");
 		if (authKey != null)
-			return new RemotePropertyServiceAdapter(lnk, remote, close -> {}, authKey);
-		return new RemotePropertyServiceAdapter(lnk, remote, close -> {}, options.containsKey("connect"));
+			return new RemotePropertyServiceAdapter(lnk, remote, __ -> {}, authKey);
+		return new RemotePropertyServiceAdapter(lnk, remote, __ -> {}, options.containsKey("connect"));
 	}
 
 	private void parseOptions(final String[] args)
