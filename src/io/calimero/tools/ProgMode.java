@@ -329,7 +329,7 @@ public class ProgMode implements Runnable
 	{
 		out(tool + " - Check/set device(s) in programming mode");
 		Main.showVersion();
-		out("Use --help for help message");
+		Main.notice("Use --help for usage information.");
 	}
 
 	private static void showUsage()

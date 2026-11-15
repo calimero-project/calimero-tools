@@ -788,6 +788,10 @@ final class Main
 		stdout().println(o instanceof final Json json ? json.toJson() : o);
 	}
 
+	static void notice(final String s) {
+		System.err.println(clr().notice(s));
+	}
+
 	static void err(final String s, final Throwable... t) {
 		if (t.length > 0 && t[0] != null) {
 			if (t[0] instanceof final KNXRemoteException e) {
@@ -809,8 +813,8 @@ final class Main
 	static void exit(final Throwable t) {
 		final String msg = t.getMessage() != null ? t.getMessage()
 				: t.getCause() != null && t.getCause().getMessage() != null ? t.getCause().getMessage() : t.toString();
-		Main.err(clr().error("error: " + msg));
-		Main.err(clr().notice("try '--help' for usage information"));
+		err(clr().error("error: " + msg));
+		notice("Use --help for usage information.");
 		out().log(DEBUG, "aborting due to invalid arguments", t);
 		System.exit(2);
 	}

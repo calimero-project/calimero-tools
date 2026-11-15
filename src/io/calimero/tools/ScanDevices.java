@@ -164,7 +164,7 @@ public class ScanDevices implements Runnable
 			if (options.isEmpty()) {
 				out(tool + " - Determine existing KNX devices on a KNX subnetwork");
 				Main.showVersion();
-				out("Type --help for help message");
+				Main.notice("Use --help for usage information.");
 				return;
 			}
 			if (options.containsKey("about")) {

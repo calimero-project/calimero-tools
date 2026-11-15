@@ -376,7 +376,7 @@ public class DeviceInfo implements Runnable
 			if (options.isEmpty()) {
 				out(tool + " - Read KNX device information");
 				Main.showVersion();
-				out("Type --help for help message");
+				Main.notice("Use --help for usage information.");
 				return;
 			}
 			if (options.containsKey("about")) {

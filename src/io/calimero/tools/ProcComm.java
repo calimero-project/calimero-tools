@@ -1032,7 +1032,7 @@ public class ProcComm implements Runnable
 	private static void showToolInfo() {
 		out(tool + " - KNX process communication & group monitor");
 		Main.showVersion();
-		out("Type --help for help message");
+		Main.notice("Use --help for usage information.");
 	}
 
 	private static void showUsage()

@@ -270,7 +270,7 @@ public class Discover implements Runnable
 			else {
 				out(tool + " - KNXnet/IP server discovery & self-description");
 				Main.showVersion();
-				out("Type --help for help message");
+				Main.notice("Use --help for usage information.");
 			}
 		}
 		catch (final KNXException | RuntimeException e) {

@@ -233,7 +233,7 @@ public class Property implements Runnable
 			if (options.isEmpty()) {
 				out(tool + " - Access KNX properties");
 				Main.showVersion();
-				out("Type --help for help message");
+				Main.notice("Use --help for usage information.");
 				return;
 			}
 			if (options.containsKey("about")) {
