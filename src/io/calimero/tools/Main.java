@@ -197,6 +197,11 @@ final class Main
 			cmdIdx++;
 		}
 
+		if (cmdIdx >= args.length) {
+			TermColor.init(Theme.Auto);
+			usage();
+			return;
+		}
 		final String cmd = args[cmdIdx];
 		for (final var tool : tools) {
 			if (tool.name().equals(cmd)) {
