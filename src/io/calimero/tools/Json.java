@@ -98,9 +98,9 @@ interface Json {
 		else if (value instanceof Number || value instanceof Boolean)
 			sb.append(value);
 		else if (value instanceof final Collection<?> c)
-			toJsonArray(c, "", "", o -> "", Function.identity(), sb, indent);
+			toJsonArray(c, "", "", __ -> "", Function.identity(), sb, indent);
 		else if (value instanceof final Object[] oa)
-			toJsonArray(List.of(oa), "", "", o -> "", Function.identity(), sb, indent);
+			toJsonArray(List.of(oa), "", "", __ -> "", Function.identity(), sb, indent);
 		else if (value instanceof final Map<?, ?> m)
 			toJsonArray(m.entrySet(), "{ ", " }", e -> e.getKey().toString(), Map.Entry::getValue, sb, indent);
 		else if (value instanceof final byte[] ba)

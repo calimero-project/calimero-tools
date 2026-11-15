@@ -43,7 +43,6 @@ import static java.lang.System.Logger.Level.INFO;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.HexFormat;
-import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
 
@@ -231,7 +230,7 @@ public class Memory implements Runnable {
 	private void readWriteMemory() throws KNXException, InterruptedException {
 		final IndividualAddress device = (IndividualAddress) options.get("device");
 		for (var cmd = fetchCommand(); cmd != Done; cmd = fetchCommand()) {
-			if (cmd instanceof Read(int startAddress, int length)) {
+			if (cmd instanceof Read(final int startAddress, final int length)) {
 				out().log(DEBUG, "read {0} 0x{1}..0x{2}", device, Long.toHexString(startAddress),
 						Long.toHexString(startAddress + length - 1));
 				onMemoryRead(startAddress, mp.readMemory(device, startAddress, length));

@@ -91,7 +91,6 @@ public class IPConfig implements Runnable
 {
 	private static final String tool = "IPConfig";
 
-	private static final String sep = System.lineSeparator();
 	private static final int IPObjType = 11;
 
 	private KNXNetworkLink lnk;
@@ -250,7 +249,7 @@ public class IPConfig implements Runnable
 						new String[] { "" + entry.pid(), entry.name(), entry.value().orElse("") } ).toList());
 			}
 		}
-		catch (final KNXException e) {
+		catch (KNXException | RuntimeException e) {
 			thrown = e;
 		}
 		catch (final InterruptedException e) {
@@ -565,7 +564,7 @@ public class IPConfig implements Runnable
 
 	private static void showUsage()
 	{
-		final var joiner = new StringJoiner(sep);
+		final var joiner = new StringJoiner(System.lineSeparator());
 		joiner.add("Usage: " + tool + " [options] <host|port>");
 		joiner.add(Main.printCommonOptions());
 		joiner.add("  --local -l                 local device management (default)");

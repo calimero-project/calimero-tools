@@ -41,7 +41,6 @@ import static io.calimero.tools.TermColor.clr;
 import static java.lang.System.Logger.Level.INFO;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
 import java.util.stream.IntStream;

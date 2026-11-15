@@ -558,7 +558,7 @@ public class ProcComm implements Runnable
 		// encapsulate information into a datapoint
 		// this is a convenient way to let the process communicator
 		// handle the DPT stuff, so an already formatted string will be returned
-		var dptid = Main.fromDptName((String) options.get("dpt"));
+		final var dptid = Main.fromDptName((String) options.get("dpt"));
 		var datapoint = datapoints.get(main);
 		if (datapoint != null) {
 			if (!dptid.equals(new DptId(0xffff, 0xffff)) && !dptid.equals(datapoint.dptId())) {
@@ -927,7 +927,7 @@ public class ProcComm implements Runnable
 					if ("-".equals(i.peek()))
 						i.next();
 					else
-						checkDpt(i.peek()).ifPresent(dpt -> options.put("dpt", i.next()));
+						checkDpt(i.peek()).ifPresent(__ -> options.put("dpt", i.next()));
 				}
 			}
 			else if (arg.equals("write")) {
@@ -1021,7 +1021,7 @@ public class ProcComm implements Runnable
 			if (!s.startsWith("-"))
 				return Optional.of(Main.fromDptName(s));
 		}
-		catch (RuntimeException __) {}
+		catch (final RuntimeException __) {}
 		return Optional.empty();
 	}
 

@@ -164,7 +164,7 @@ public class DatapointImporter implements Runnable {
 					.map(DatapointImporter::parseDatapoint)
 					.flatMap(Optional::stream)
 					.collect(Collector.of(DatapointMap::new, DatapointMap::add,
-							(left, right) -> { throw new UnsupportedOperationException(); }));
+							(_1, _2) -> { throw new UnsupportedOperationException(); }));
 			return List.of(map);
 		}
 	}

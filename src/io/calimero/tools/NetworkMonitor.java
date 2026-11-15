@@ -50,7 +50,6 @@ import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.HexFormat;
-import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
 
@@ -346,7 +345,7 @@ public class NetworkMonitor implements Runnable
 	}
 
 	private static Json toJson(final RawFrame raw, final CEMIBusMon frame) {
-		var jsonRaw = switch (raw) {
+		final var jsonRaw = switch (raw) {
 			case final RawFrameBase f -> {
 				final byte[] tpdu = f.getTPDU();
 				final String tpci = DataUnitBuilder.decodeTPCI(DataUnitBuilder.getTPDUService(tpdu), f.getDestination());
@@ -619,8 +618,8 @@ public class NetworkMonitor implements Runnable
 			case 5 -> "RndPausePtr " + (tpdu[0] & 0xff); // Sync
 			case 6 -> "Retransmitter " + (tpdu[0] & 0xff); // Help
 			case 7 -> {
-				int ticks = ((tpdu[0] & 0xff) << 16) | ((tpdu[1] & 0xff) << 8) | (tpdu[2] & 0xff);
-				double next = (ticks * 10) / 16384 / 10d;
+				final int ticks = ((tpdu[0] & 0xff) << 16) | ((tpdu[1] & 0xff) << 8) | (tpdu[2] & 0xff);
+				final double next = (ticks * 10) / 16384 / 10d;
 				yield "NextBlock " + next + " ms NextBlock# " + (tpdu[3] & 0xff) + " RndPausePtr " + (tpdu[4] & 0xff);
 			}
 			default -> "";

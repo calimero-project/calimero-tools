@@ -262,7 +262,7 @@ public class TrafficMonitor implements Runnable {
 	 */
 	protected void onCompletion(final Exception thrown, final boolean canceled) {
 		if (canceled)
-			out.log(INFO, "traffic monitor was stopped");
+			out.log(DEBUG, "traffic monitor was stopped");
 		if (thrown != null)
 			Main.err("error", thrown);
 	}

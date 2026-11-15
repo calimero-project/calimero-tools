@@ -38,9 +38,7 @@ package io.calimero.tools;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
@@ -175,7 +173,7 @@ public class ProgMode implements Runnable
 	}
 
 	private void knxipServerProgMode() throws KNXException, InterruptedException {
-		try (var devmgmt = Main.newLocalDeviceMgmt(options, closed -> {});
+		try (var devmgmt = Main.newLocalDeviceMgmt(options, __ -> {});
 			 var pc = new PropertyClient(devmgmt)) {
 			localProgMode(pc);
 		}

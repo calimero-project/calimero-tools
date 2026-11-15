@@ -382,7 +382,7 @@ public class DeviceInfo implements Runnable
 			if (device != null) {
 				// setup for reading device info of remote device
 				try (KNXNetworkLink link = createLink();
-						var adapter = new RemotePropertyServiceAdapter(link, device, e -> {}, true)) {
+						var adapter = new RemotePropertyServiceAdapter(link, device, __ -> {}, true)) {
 					mc = adapter.managementClient();
 					d = adapter.destination();
 					readDeviceInfo(adapter, "device " + device);
@@ -391,13 +391,13 @@ public class DeviceInfo implements Runnable
 			else if (options.containsKey("usb")) {
 				// setup for reading device info of usb interface
 				try (UsbConnection conn = UsbConnectionFactory.open((String) options.get("host"));
-						PropertyAdapter adapter = new LocalDeviceManagementUsb(conn, e -> {}, false)) {
+						PropertyAdapter adapter = new LocalDeviceManagementUsb(conn, __ -> {}, false)) {
 					dd = conn.deviceDescriptor();
 					readDeviceInfo(adapter, "KNX USB adapter " + dd);
 				}
 			}
 			else {
-				try (PropertyAdapter adapter = Main.newLocalDeviceMgmt(options, closed -> {})) {
+				try (PropertyAdapter adapter = Main.newLocalDeviceMgmt(options, __ -> {})) {
 					readDeviceInfo(adapter, "KNXnet/IP " + adapter.getName());
 				}
 			}

@@ -713,7 +713,9 @@ public class Property implements Runnable
 		else if (args.length == 4 && args[2].equals("i"))
 			notifyDescription(pc.getDescriptionByIndex(toInt(args[1]), toInt(args[3])));
 		else if (args.length == 2 && args[1].equals("?"))
-			printHelp("desc object-idx pid" + sep + "desc object-idx \"i\" prop-idx");
+			out("""
+					desc object-idx pid
+					desc object-idx "i" prop-idx""");
 		else
 			out("wrong number of arguments");
 	}
@@ -721,9 +723,10 @@ public class Property implements Runnable
 	private void setProperty(final String[] args) throws KNXException, InterruptedException
 	{
 		if (args.length == 2 && args[1].equals("?")) {
-			printHelp("set object-idx pid [start-idx] string-value" + sep
-					+ "set object-idx pid start-idx elements [\"0x\"|\"0\"|\"b\"]data" + sep
-					+ "(use hexadecimal format for more than 8 byte data or leading zeros)");
+			out("""
+					set object-idx pid [start-idx] string-value
+					set object-idx pid start-idx elements ["0x"|"0"|"b"]data
+					    (use hexadecimal format for more than 8 byte data or leading zeros)""");
 			return;
 		}
 		if (args.length < 4 || args.length > 6) {
@@ -758,7 +761,7 @@ public class Property implements Runnable
 	{
 		final int cnt = args.length;
 		if (cnt == 2 && args[1].equals("?")) {
-			printHelp("scan [object-idx] [\"all\" for all object properties]");
+			out("scan [object-idx] [\"all\" for all object properties]");
 			return;
 		}
 
@@ -788,11 +791,6 @@ public class Property implements Runnable
 				  set  - write property value(s)
 				  desc - read one property description
 				  scan - read property descriptions""");
-	}
-
-	private static void printHelp(final String help)
-	{
-		out(help);
 	}
 
 	private static void showUsage()
