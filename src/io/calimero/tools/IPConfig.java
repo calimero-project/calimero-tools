@@ -232,10 +232,9 @@ public class IPConfig implements Runnable
 				if (d.objectType() == IPObjType)
 					objIndex = d.objectIndex();
 			});
-			if (objIndex == -1) {
-				out.log(ERROR, PropertyClient.getObjectTypeName(IPObjType) + " not found");
-				return;
-			}
+			if (objIndex == -1)
+				throw new KNXException(PropertyClient.getObjectTypeName(IPObjType) + " not found");
+
 			setIPAssignment();
 			setIP(PropertyAccess.PID.IP_ADDRESS, "ip");
 			setIP(PropertyAccess.PID.SUBNET_MASK, "subnet");
