@@ -266,7 +266,7 @@ public class Memory implements Runnable {
 		options.put("port", KNXnetIPConnection.DEFAULT_PORT);
 		options.put("bytes", 1);
 
-		for (final var i = List.of(args).iterator(); i.hasNext();) {
+		for (final var i = Main.PeekingIterator.of(args); i.hasNext();) {
 			final String arg = i.next();
 			if (Main.isOption(arg, "help", "h")) {
 				options.put("about", (Runnable) Memory::showUsage);

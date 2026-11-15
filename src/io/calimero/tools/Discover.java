@@ -679,7 +679,7 @@ public class Discover implements Runnable
 		if (args.length == 0)
 			return;
 
-		for (final var i = List.of(args).iterator(); i.hasNext();) {
+		for (final var i = Main.PeekingIterator.of(args); i.hasNext();) {
 			final String arg = i.next();
 			if (Main.isOption(arg, "help", "h")) {
 				options.put("help", null);

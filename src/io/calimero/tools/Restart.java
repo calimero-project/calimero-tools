@@ -259,7 +259,7 @@ public class Restart implements Runnable {
 		options.put("restart-type", 0); // basic restart
 
 		int restartType = -1;
-		for (final var i = List.of(args).iterator(); i.hasNext();) {
+		for (final var i = Main.PeekingIterator.of(args); i.hasNext();) {
 			final String arg = i.next();
 			if (Main.isOption(arg, "help", "h")) {
 				options.put("about", (Runnable) Restart::showUsage);

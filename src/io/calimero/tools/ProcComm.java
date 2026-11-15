@@ -879,7 +879,7 @@ public class ProcComm implements Runnable
 		options.put("medium", new TPSettings());
 		boolean lte = false;
 
-		for (final var i = new Main.PeekingIterator<>(List.of(args).iterator()); i.hasNext();) {
+		for (final var i = Main.PeekingIterator.of(args); i.hasNext();) {
 			final String arg = i.next();
 			if (isOption(arg, "help", "h")) {
 				options.put("about", (Runnable) ProcComm::showUsage);

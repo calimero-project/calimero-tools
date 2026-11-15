@@ -1422,7 +1422,7 @@ public class DeviceInfo implements Runnable
 		// add defaults
 		options.put("port", KNXnetIPConnection.DEFAULT_PORT);
 
-		for (final var i = List.of(args).iterator(); i.hasNext();) {
+		for (final var i = Main.PeekingIterator.of(args); i.hasNext();) {
 			final String arg = i.next();
 			if (Main.isOption(arg, "help", "h")) {
 				options.put("about", (Runnable) DeviceInfo::showUsage);

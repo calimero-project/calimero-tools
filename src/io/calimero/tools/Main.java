@@ -329,7 +329,7 @@ final class Main
 					+ " networks don't use domain addresses, use --medium to specify KNX network medium");
 	}
 
-	static boolean parseCommonOption(final String arg, final Iterator<String> i, final Map<String, Object> options) {
+	static boolean parseCommonOption(final String arg, final PeekingIterator<String> i, final Map<String, Object> options) {
 		if (isOption(arg, "version", null))
 			options.put("about", (Runnable) Main::showVersion);
 		else if (isOption(arg, "localhost", null))
@@ -371,15 +371,12 @@ final class Main
 		return true;
 	}
 
-	static boolean parseColorOption(final String arg, final Iterator<String> i) {
+	static boolean parseColorOption(final String arg, final PeekingIterator<String> i) {
 		if (isOption(arg, "color", null)) {
 			var theme = Theme.Auto;
-			try {
-				if (i.hasNext()) {
-					theme = Theme.from(i instanceof PeekingIterator<String> pi ? pi.peek() : i.next());
-					if (i instanceof PeekingIterator<String>)
-						i.next();
-				}
+			if (i.hasNext()) try {
+				theme = Theme.from(i.peek());
+				i.next();
 			}
 			catch (final KNXIllegalArgumentException ignored) {}
 			TermColor.init(theme);
@@ -835,6 +832,8 @@ final class Main
 	static final class PeekingIterator<E> implements Iterator<E> {
 		private final Iterator<E> i;
 		private E next;
+
+		static PeekingIterator<String> of(String... args) { return new PeekingIterator<>(Arrays.asList(args).iterator()); }
 
 		PeekingIterator(final Iterator<E> i) { this.i = i; }
 

@@ -509,7 +509,7 @@ public class IPConfig implements Runnable
 		options.put("port", KNXnetIPConnection.DEFAULT_PORT);
 		options.put("medium", new TPSettings());
 
-		for (final var i = l.iterator(); i.hasNext();) {
+		for (final var i = new Main.PeekingIterator<>(l.iterator()); i.hasNext();) {
 			final String arg = i.next();
 			if (Main.isOption(arg, "help", "h")) {
 				options.put("about", (Runnable) IPConfig::showUsage);
