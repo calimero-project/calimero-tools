@@ -80,7 +80,6 @@ import io.calimero.KNXException;
 import io.calimero.KNXFormatException;
 import io.calimero.KNXIllegalArgumentException;
 import io.calimero.KNXRemoteException;
-import io.calimero.KNXTimeoutException;
 import io.calimero.dptxlator.DptId;
 import io.calimero.internal.Manifest;
 import io.calimero.knxnetip.KNXnetIPConnection;
@@ -798,7 +797,7 @@ final class Main
 				final String prefix = s.endsWith(" error") ? s.substring(0, s.length() - " error".length()) : s;
 				System.err.println(clr().error(prefix + " remote error: " + e.getMessage()));
 			}
-			else if (t[0] instanceof final KNXTimeoutException e) {
+			else if (t[0] instanceof final KNXException e) {
 				System.err.println(clr().error(s + ": " + e.getMessage()));
 			}
 			else {
