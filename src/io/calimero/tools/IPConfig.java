@@ -322,7 +322,7 @@ public class IPConfig implements Runnable
 		if (canceled)
 			out.log(INFO, "configuration canceled");
 		if (thrown != null)
-			out.log(ERROR, "completed with error", thrown);
+			Main.err("error", thrown);
 	}
 
 	private Json toJson(final IndividualAddress device, final List<IpConfigProperty> config) {

@@ -38,7 +38,6 @@ package io.calimero.tools;
 
 import static io.calimero.tools.Main.out;
 import static java.lang.System.Logger.Level.DEBUG;
-import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.INFO;
 
 import java.lang.System.Logger;
@@ -230,7 +229,7 @@ public class Memory implements Runnable {
 		if (canceled)
 			out.log(INFO, "memory access canceled");
 		if (thrown != null)
-			out.log(ERROR, "completed with error", thrown);
+			Main.err("error", thrown);
 	}
 
 	private void readWriteMemory() throws KNXException, InterruptedException {

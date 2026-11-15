@@ -443,7 +443,7 @@ public class NetworkMonitor implements Runnable
 		if (canceled)
 			out.log(INFO, tool + " stopped");
 		if (thrown != null)
-			out.log(ERROR, thrown.getMessage() != null ? thrown.getMessage() : thrown.getClass().getName());
+			Main.err("error", thrown);
 	}
 
 	private KNXNetworkMonitor newMonitor() throws KNXException, InterruptedException {

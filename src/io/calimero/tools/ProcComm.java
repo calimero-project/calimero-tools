@@ -503,7 +503,7 @@ public class ProcComm implements Runnable
 		if (canceled)
 			out.log(INFO, "process communication was stopped");
 		if (thrown != null)
-			out.log(ERROR, "completed with error", thrown);
+			Main.err("error", thrown);
 	}
 
 	/**

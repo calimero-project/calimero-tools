@@ -418,7 +418,7 @@ public class Property implements Runnable
 		if (canceled)
 			out("reading property canceled");
 		if (thrown != null)
-			out.log(ERROR, "on completion", thrown);
+			Main.err("error", thrown);
 	}
 
 	/** @return the network link used by this tool */

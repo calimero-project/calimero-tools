@@ -39,7 +39,6 @@ package io.calimero.tools;
 import static io.calimero.tools.Main.isOption;
 import static io.calimero.tools.Main.out;
 import static io.calimero.tools.TermColor.clr;
-import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.INFO;
 
 import java.io.IOException;
@@ -455,7 +454,7 @@ public class Discover implements Runnable
 			out.log(INFO, msg);
 		}
 		if (thrown != null)
-			out.log(ERROR, "completed with error", thrown);
+			Main.err("error", thrown);
 	}
 
 	/**

@@ -39,7 +39,6 @@ package io.calimero.tools;
 import static io.calimero.tools.Main.out;
 import static io.calimero.tools.TermColor.clr;
 import static java.lang.System.Logger.Level.DEBUG;
-import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.WARNING;
 
 import java.io.BufferedReader;
@@ -330,7 +329,7 @@ public class BaosClient implements Runnable
 		if (canceled)
 			out.log(DEBUG, "BAOS communication was stopped");
 		if (thrown != null)
-			out.log(ERROR, "completed with error", thrown);
+			Main.err("error", thrown);
 	}
 
 	private BaosLink newBaosLink() throws KNXException, InterruptedException {
