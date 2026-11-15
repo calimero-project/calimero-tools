@@ -229,7 +229,8 @@ final class Main
 		joiner.add("Supported commands (always safe without further options, use -h for help):");
 		final int maxLength = tools.stream().mapToInt(cmd -> cmd.name().length()).max().orElseThrow();
 		for (final var tool : tools) {
-			joiner.add(String.format("%-" + maxLength + "s - %s", tool.name(), tool.description()));
+			joiner.add(clr().action(String.format("%-" + maxLength + "s", tool.name()))
+					+ " - " + clr().metadata(tool.description()));
 		}
 		out(joiner);
 	}
@@ -801,7 +802,7 @@ final class Main
 				System.err.println(clr().error(s + ": " + e.getMessage()));
 			}
 			else {
-				System.err.print(s + ": ");
+				System.err.print(clr().error(s + ": "));
 				t[0].printStackTrace();
 			}
 		}
