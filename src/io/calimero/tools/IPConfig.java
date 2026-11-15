@@ -43,7 +43,6 @@ import static java.lang.System.Logger.Level.DEBUG;
 import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.INFO;
 
-import java.lang.System.Logger;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -64,7 +63,6 @@ import io.calimero.KNXRemoteException;
 import io.calimero.knxnetip.KNXnetIPConnection;
 import io.calimero.link.KNXNetworkLink;
 import io.calimero.link.medium.TPSettings;
-import io.calimero.log.LogService;
 import io.calimero.mgmt.PropertyAccess;
 import io.calimero.mgmt.PropertyAdapter;
 import io.calimero.mgmt.PropertyClient;
@@ -95,8 +93,6 @@ public class IPConfig implements Runnable
 
 	private static final String sep = System.lineSeparator();
 	private static final int IPObjType = 11;
-
-	private static final Logger out = LogService.getLogger("io.calimero.tools");
 
 	private KNXNetworkLink lnk;
 	private PropertyClient pc;
@@ -320,7 +316,7 @@ public class IPConfig implements Runnable
 	protected void onCompletion(final Exception thrown, final boolean canceled)
 	{
 		if (canceled)
-			out.log(INFO, "configuration canceled");
+			out().log(INFO, "configuration canceled");
 		if (thrown != null)
 			Main.err("error", thrown);
 	}
@@ -354,7 +350,7 @@ public class IPConfig implements Runnable
 				pc.setProperty(objIndex, pid, 1, 1, ((InetAddress) options.get(key)).getAddress());
 			}
 			catch (final KNXException e) {
-				out.log(ERROR, "setting " + key + " failed, " + e.getMessage());
+				out().log(ERROR, "setting " + key + " failed, " + e.getMessage());
 			}
 	}
 
@@ -403,7 +399,7 @@ public class IPConfig implements Runnable
 			return Optional.of(pc.getProperty(objIndex, pid, 1, 1));
 		}
 		catch (final KNXRemoteException e) {
-			out.log(DEBUG, "getting property with ID " + pid + " failed: {0}", e.getMessage());
+			out().log(DEBUG, "getting property with ID " + pid + " failed: {0}", e.getMessage());
 			return Optional.empty();
 		}
 	}

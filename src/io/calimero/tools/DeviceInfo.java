@@ -46,7 +46,6 @@ import static java.lang.System.Logger.Level.WARNING;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.lang.System.Logger;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
@@ -84,7 +83,6 @@ import io.calimero.knxnetip.KNXnetIPConnection;
 import io.calimero.link.KNXLinkClosedException;
 import io.calimero.link.KNXNetworkLink;
 import io.calimero.link.medium.TPSettings;
-import io.calimero.log.LogService;
 import io.calimero.mgmt.Destination;
 import io.calimero.mgmt.LocalDeviceManagementUsb;
 import io.calimero.mgmt.ManagementClient;
@@ -268,9 +266,6 @@ public class DeviceInfo implements Runnable
 
 	// maps object type to object indices in device
 	private final Map<Integer, List<Integer>> ifObjects = new HashMap<>();
-
-	private static final Logger out = LogService.getLogger("io.calimero.tools");
-
 
 	private ManagementClient mc;
 	private Destination d;
@@ -457,7 +452,7 @@ public class DeviceInfo implements Runnable
 		if (options.containsKey("json"))
 			out(jsonResult);
 		if (canceled)
-			out.log(INFO, "reading device info canceled");
+			out().log(DEBUG, "reading device info canceled");
 		if (thrown != null)
 			Main.err("error", thrown);
 	}
@@ -503,7 +498,7 @@ public class DeviceInfo implements Runnable
 
 			if (ifObjects.size() == 1) {
 				ifObjects.put(cemiServerObject, List.of(1));
-				out.log(INFO, "Device implements only Device Object and cEMI Object");
+				out().log(INFO, "Device implements only Device Object and cEMI Object");
 			}
 		}
 	}
@@ -516,13 +511,13 @@ public class DeviceInfo implements Runnable
 		     var r = XmlInputFactory.newInstance().createXMLStreamReader(is)) {
 			pc.addDefinitions(new PropertyClient.XmlPropertyDefinitions().load(r));
 		} catch (IOException | RuntimeException e) {
-			out.log(DEBUG, "failed to load property definitions: {0}", e.toString());
+			out().log(DEBUG, "failed to load property definitions: {0}", e.toString());
 		}
 	}
 
 	private void readDeviceInfo(final PropertyAdapter adapter, final String device) throws KNXException, InterruptedException {
 		createPropertyClient(adapter);
-		out.log(INFO, "Reading info of {0}, might take some seconds ...", device);
+		out().log(DEBUG, "Reading info of {0}, might take some seconds ...", device);
 		readDeviceInfo();
 	}
 
@@ -571,7 +566,7 @@ public class DeviceInfo implements Runnable
 			iterate(knxnetipObject, this::readKnxipInfo);
 		}
 		catch (InterruptedException | KNXException e) { throw e; }
-		catch (final Exception e) { out.log(WARNING, e); }
+		catch (final Exception e) { out().log(WARNING, e); }
 
 		iterate(securityObject, this::readSecurityObject);
 	}
@@ -612,7 +607,7 @@ public class DeviceInfo implements Runnable
 			}
 		}
 		catch (final KNXException e) {
-			out.log(ERROR, "reading memory location 0x60", e);
+			out().log(WARNING, "reading memory location 0x60", e);
 		}
 	}
 
@@ -884,7 +879,7 @@ public class DeviceInfo implements Runnable
 			putResult(CommonParameter.ActualPeiType, toPeiTypeString(peitype), peitype);
 		}
 		catch (final KNXException e) {
-			out.log(ERROR, MessageFormat.format("reading actual PEI type (A/D converter channel {0}, repeat {1})", channel, repeat), e);
+			out().log(ERROR, MessageFormat.format("reading actual PEI type (A/D converter channel {0}, repeat {1})", channel, repeat), e);
 		}
 	}
 
@@ -1036,7 +1031,7 @@ public class DeviceInfo implements Runnable
 		final long swDev = (appId >> 8) & 0xff;
 		final long swVersion = appId & 0xff;
 
-		out.log(INFO, "appId 0x{0} - app manufacturer: {1}, SW dev type {2}, SW version {3}", Long.toHexString(appId),
+		out().log(INFO, "appId 0x{0} - app manufacturer: {1}, SW dev type {2}, SW version {3}", Long.toHexString(appId),
 				appMf, swDev, swVersion);
 
 		readBcuInfo(false);
@@ -1240,13 +1235,13 @@ public class DeviceInfo implements Runnable
 			return null;
 
 		final int oinstance = 1;
-		out.log(DEBUG, "read {0} function property state {1}({2})|{3} service {4}", p.friendlyName(), objectType,
+		out().log(DEBUG, "read {0} function property state {1}({2})|{3} service {4}", p.friendlyName(), objectType,
 				oinstance, propertyId, service);
 		try {
 			return mc.readFunctionPropertyState(d, objectType, oinstance, propertyId, service, info).result();
 		}
 		catch (final KNXException e) {
-			out.log(DEBUG, e.getMessage());
+			out().log(DEBUG, e.getMessage());
 		}
 		return null;
 	}
@@ -1261,7 +1256,7 @@ public class DeviceInfo implements Runnable
 
 	private void read(final Parameter p, final Callable<String> c) throws KNXLinkClosedException, InterruptedException {
 		try {
-			out.log(DEBUG, "read {0} ...", p.friendlyName());
+			out().log(DEBUG, "read {0} ...", p.friendlyName());
 			final String s = c.call();
 			putResult(p, s, s.getBytes(StandardCharsets.ISO_8859_1));
 		}
@@ -1269,10 +1264,10 @@ public class DeviceInfo implements Runnable
 			throw e;
 		}
 		catch (final KNXRemoteException e) {
-			out.log(WARNING, "reading {0}: {1}", p, e.getMessage());
+			out().log(WARNING, "reading {0}: {1}", p, e.getMessage());
 		}
 		catch (final Exception e) {
-			out.log(ERROR, "error reading " + p, e);
+			out().log(WARNING, "error reading " + p, e);
 		}
 	}
 
@@ -1306,7 +1301,7 @@ public class DeviceInfo implements Runnable
 
 	private byte[] read(final Parameter p, final int objectIndex, final int pid) throws InterruptedException
 	{
-		out.log(DEBUG, "read {0}|{1} {2}", objectIndex, pid, p.friendlyName());
+		out().log(DEBUG, "read {0}|{1} {2}", objectIndex, pid, p.friendlyName());
 		return read(objectIndex, pid, 1, 1, false);
 	}
 
@@ -1332,7 +1327,7 @@ public class DeviceInfo implements Runnable
 			if (property != null && !property.propertyName().isEmpty())
 				friendlyName = " " + property.propertyName();
 
-			out.log(DEBUG, "read {0}|{1}{2}", objectIndex, pid, friendlyName);
+			out().log(DEBUG, "read {0}|{1}{2}", objectIndex, pid, friendlyName);
 		}
 		try {
 			// since we don't know the max. allowed APDU length, play it safe
@@ -1344,7 +1339,7 @@ public class DeviceInfo implements Runnable
 			return res.toByteArray();
 		}
 		catch (final KNXException e) {
-			out.log(DEBUG, "reading KNX property " + objectIndex + "|" + pid + ": " + e.getMessage());
+			out().log(DEBUG, "reading KNX property " + objectIndex + "|" + pid + ": " + e.getMessage());
 		}
 		return null;
 	}
@@ -1362,7 +1357,8 @@ public class DeviceInfo implements Runnable
 	private int readMem(final int startAddr, final int bytes, final boolean hex, final Parameter p)
 			throws InterruptedException
 	{
-		out.log(DEBUG, "read 0x{0}..0x{1} {2}", Long.toHexString(startAddr), Long.toHexString(startAddr + bytes), p.friendlyName());
+		out().log(DEBUG, "read 0x{0}..0x{1} {2}", Long.toHexString(startAddr), Long.toHexString(startAddr + bytes),
+				p.friendlyName());
 		final long v = readMemLong(startAddr, bytes);
 		if (v != -1)
 			putResult(p, hex ? Long.toHexString(v) : Long.toString(v), v);
@@ -1389,7 +1385,7 @@ public class DeviceInfo implements Runnable
 			return toUnsigned(mc.readMemory(d, startAddr, bytes));
 		}
 		catch (final KNXException e) {
-			out.log(DEBUG, "error reading 0x{0}..0x{1}: {2}", Long.toHexString(startAddr),
+			out().log(DEBUG, "error reading 0x{0}..0x{1}: {2}", Long.toHexString(startAddr),
 					Long.toHexString(startAddr + bytes), e.toString());
 			return -1;
 		}

@@ -40,7 +40,6 @@ import static io.calimero.tools.Main.out;
 import static io.calimero.tools.TermColor.clr;
 import static java.lang.System.Logger.Level.INFO;
 
-import java.lang.System.Logger;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,7 +53,6 @@ import io.calimero.KNXIllegalArgumentException;
 import io.calimero.knxnetip.KNXnetIPConnection;
 import io.calimero.link.KNXNetworkLink;
 import io.calimero.link.medium.TPSettings;
-import io.calimero.log.LogService;
 import io.calimero.mgmt.ManagementProcedures;
 import io.calimero.mgmt.ManagementProceduresImpl;
 import io.calimero.tools.Main.ShutdownHandler;
@@ -85,8 +83,6 @@ public class ScanDevices implements Runnable
 {
 	private static final String tool = "ScanDevices";
 	private static final String sep = System.lineSeparator();
-
-	private static final Logger out = LogService.getLogger("io.calimero.tools");
 
 	private final Map<String, Object> options = new HashMap<>();
 
@@ -252,7 +248,7 @@ public class ScanDevices implements Runnable
 	protected void onCompletion(final Exception thrown, final boolean canceled)
 	{
 		if (canceled)
-			out.log(INFO, "scanning for devices canceled");
+			out().log(INFO, "scanning for devices canceled");
 		if (thrown != null)
 			Main.err("error", thrown);
 	}

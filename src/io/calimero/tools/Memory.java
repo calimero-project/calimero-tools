@@ -40,7 +40,6 @@ import static io.calimero.tools.Main.out;
 import static java.lang.System.Logger.Level.DEBUG;
 import static java.lang.System.Logger.Level.INFO;
 
-import java.lang.System.Logger;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.HexFormat;
@@ -54,7 +53,6 @@ import io.calimero.KNXException;
 import io.calimero.KNXIllegalArgumentException;
 import io.calimero.knxnetip.KNXnetIPConnection;
 import io.calimero.link.medium.TPSettings;
-import io.calimero.log.LogService;
 import io.calimero.mgmt.ManagementClient;
 import io.calimero.mgmt.ManagementProcedures;
 import io.calimero.mgmt.ManagementProceduresImpl;
@@ -74,8 +72,6 @@ import io.calimero.tools.Main.ShutdownHandler;
  */
 public class Memory implements Runnable {
 	private static final String tool = "Memory";
-
-	private static final Logger out = LogService.getLogger("io.calimero.tools");
 
 	private ManagementProcedures mp;
 
@@ -227,7 +223,7 @@ public class Memory implements Runnable {
 	 */
 	protected void onCompletion(final Exception thrown, final boolean canceled) {
 		if (canceled)
-			out.log(INFO, "memory access canceled");
+			out().log(INFO, "memory access canceled");
 		if (thrown != null)
 			Main.err("error", thrown);
 	}
@@ -236,7 +232,7 @@ public class Memory implements Runnable {
 		final IndividualAddress device = (IndividualAddress) options.get("device");
 		for (var cmd = fetchCommand(); cmd != Done; cmd = fetchCommand()) {
 			if (cmd instanceof Read(int startAddress, int length)) {
-				out.log(DEBUG, "read {0} 0x{1}..0x{2}", device, Long.toHexString(startAddress),
+				out().log(DEBUG, "read {0} 0x{1}..0x{2}", device, Long.toHexString(startAddress),
 						Long.toHexString(startAddress + length - 1));
 				onMemoryRead(startAddress, mp.readMemory(device, startAddress, length));
 			}
@@ -244,7 +240,7 @@ public class Memory implements Runnable {
 				final var write = (Write) cmd;
 				final int startAddr = write.startAddress();
 				final byte[] data = write.data();
-				out.log(DEBUG, "write to {0} 0x{1}..0x{2}: {3}", device, Long.toHexString(startAddr),
+				out().log(DEBUG, "write to {0} 0x{1}..0x{2}: {3}", device, Long.toHexString(startAddr),
 						Long.toHexString(startAddr + data.length - 1), HexFormat.ofDelimiter(" ").formatHex(data));
 				mp.writeMemory(device, startAddr, data, false, false);
 			}

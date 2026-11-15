@@ -47,7 +47,6 @@ import static java.util.stream.Collectors.joining;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.System.Logger;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
@@ -78,7 +77,6 @@ import io.calimero.dptxlator.TranslatorTypes;
 import io.calimero.knxnetip.KNXnetIPConnection;
 import io.calimero.link.KNXNetworkLink;
 import io.calimero.link.medium.TPSettings;
-import io.calimero.log.LogService;
 import io.calimero.mgmt.Description;
 import io.calimero.mgmt.LocalDeviceManagementIp;
 import io.calimero.mgmt.LocalDeviceManagementUsb;
@@ -116,8 +114,6 @@ public class Property implements Runnable
 {
 	private static final String tool = "Property";
 	private static final String sep = System.lineSeparator();
-
-	static Logger out = LogService.getLogger("io.calimero.tools");
 
 	/** Contains tool options after parsing command line. */
 	protected final Map<String, Object> options = new HashMap<>();
@@ -268,7 +264,7 @@ public class Property implements Runnable
 				definitions = pc.getDefinitions();
 			}
 			catch (IOException | KNXMLException e) {
-				out.log(ERROR, "loading definitions from " + resource + " failed", e);
+				out().log(ERROR, "loading definitions from " + resource + " failed", e);
 			}
 
 			// run the user command
@@ -319,10 +315,10 @@ public class Property implements Runnable
 			}
 		}
 		catch (final NumberFormatException e) {
-			out.log(ERROR, "invalid number (" + e.getMessage() + ")");
+			out().log(ERROR, "invalid number (" + e.getMessage() + ")");
 		}
 		catch (final KNXException | RuntimeException e) {
-			out.log(ERROR, e.getMessage());
+			out().log(ERROR, e.getMessage());
 		}
 	}
 
@@ -482,7 +478,7 @@ public class Property implements Runnable
 		final byte[] authKey = (byte[]) options.get("authorize");
 		if (authKey != null) {
 			final RemotePropertyServiceAdapter adapter = new RemotePropertyServiceAdapter(link, remote, this::adapterClosed, authKey);
-			out.log(INFO, "{0} granted access level {1}", remote, adapter.accessLevel());
+			out().log(INFO, "{0} granted access level {1}", remote, adapter.accessLevel());
 			return adapter;
 		}
 		return new RemotePropertyServiceAdapter(link, remote, this::adapterClosed, options.containsKey("connect"));
@@ -781,7 +777,7 @@ public class Property implements Runnable
 			Main.err("wrong number of arguments");
 			return;
 		}
-		out.log(DEBUG, "scan complete");
+		out().log(DEBUG, "scan complete");
 	}
 
 	private static void showCommandList()

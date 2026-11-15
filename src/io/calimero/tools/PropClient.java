@@ -44,7 +44,6 @@ import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 
 import io.calimero.KNXIllegalArgumentException;
-import io.calimero.log.LogService;
 import io.calimero.mgmt.PropertyAdapter;
 import io.calimero.mgmt.PropertyClient;
 
@@ -151,7 +150,6 @@ public class PropClient implements Runnable
 	 */
 	public static void main(final String... args)
 	{
-		Property.out = LogService.getLogger("io.calimero.tools");
 		try {
 			final PropClient pc = new PropClient(args);
 			pc.run();

@@ -43,7 +43,6 @@ import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.INFO;
 import static java.lang.System.Logger.Level.WARNING;
 
-import java.lang.System.Logger;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.time.Instant;
@@ -86,7 +85,6 @@ import io.calimero.link.medium.RawFrame;
 import io.calimero.link.medium.RawFrameBase;
 import io.calimero.link.medium.TP1Ack;
 import io.calimero.link.medium.TPSettings;
-import io.calimero.log.LogService;
 import io.calimero.serial.ConnectionStatus;
 
 /**
@@ -122,8 +120,6 @@ public class NetworkMonitor implements Runnable
 	private static final String tool = "NetworkMonitor";
 	private static final String sep = System.lineSeparator();
 
-	private static final Logger out = LogService.getLogger("io.calimero.tools");
-
 	private final Map<String, Object> options = new HashMap<>();
 	private KNXNetworkMonitor m;
 
@@ -135,13 +131,13 @@ public class NetworkMonitor implements Runnable
 				NetworkMonitor.this.onIndication(e);
 			}
 			catch (final RuntimeException rte) {
-				out.log(WARNING, "on indication", rte);
+				out().log(WARNING, "on indication", rte);
 			}
 		}
 		@Override
 		public void linkClosed(final CloseEvent e)
 		{
-			out.log(INFO, "network monitor closed (" + e.getReason() + ")");
+			out().log(INFO, "network monitor closed (" + e.getReason() + ")");
 			synchronized (NetworkMonitor.this) {
 				NetworkMonitor.this.notify();
 			}
@@ -342,7 +338,7 @@ public class NetworkMonitor implements Runnable
 					}
 				}
 				catch (final Exception ex) {
-					out.log(ERROR, "decoding RF frame", ex);
+					out().log(ERROR, "decoding RF frame", ex);
 				}
 			}
 		}
@@ -384,7 +380,7 @@ public class NetworkMonitor implements Runnable
 			}
 			case null -> null;
 			default -> {
-				out.log(INFO, "unsupported frame type " + raw);
+				out().log(INFO, "unsupported frame type " + raw);
 				yield null;
 			}
 		};
@@ -441,7 +437,7 @@ public class NetworkMonitor implements Runnable
 	protected void onCompletion(final Exception thrown, final boolean canceled)
 	{
 		if (canceled)
-			out.log(INFO, tool + " stopped");
+			out().log(INFO, tool + " stopped");
 		if (thrown != null)
 			Main.err("error", thrown);
 	}
