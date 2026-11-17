@@ -654,9 +654,7 @@ public class BaosClient implements Runnable
 	}
 
 	private static void showToolInfo() {
-		out(tool + " - KNX BAOS communication");
-		Main.showVersion();
-		Main.notice("Use --help for usage information.");
+		Main.showToolInfo(tool, "KNX BAOS communication");
 	}
 
 	private static void showUsage()

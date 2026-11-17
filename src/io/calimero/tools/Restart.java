@@ -324,9 +324,7 @@ public class Restart implements Runnable {
 	}
 
 	private static void showToolInfo() {
-		out(tool + " - Restart a KNX interface or KNX device");
-		Main.showVersion();
-		out("Use --help for help message");
+		Main.showToolInfo(tool, "Restart a KNX interface or KNX device");
 	}
 
 	private static void showUsage() {

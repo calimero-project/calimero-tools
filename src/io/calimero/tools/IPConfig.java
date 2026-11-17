@@ -211,9 +211,7 @@ public class IPConfig implements Runnable
 		boolean canceled = false;
 		try {
 			if (options.isEmpty()) {
-				out(tool + " - KNXnet/IP address configuration");
-				Main.showVersion();
-				Main.notice("Use --help for usage information.");
+				Main.showToolInfo(tool, "KNXnet/IP address configuration");
 				return;
 			}
 			if (options.containsKey("about")) {

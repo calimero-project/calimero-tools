@@ -506,9 +506,7 @@ public class TrafficMonitor implements Runnable {
 	}
 
 	private static void showToolInfo() {
-		out(tool + " - KNX traffic monitor");
-		Main.showVersion();
-		Main.notice("Use --help for usage information.");
+		Main.showToolInfo(tool, "KNX traffic monitor");
 	}
 
 	private static void showUsage() {

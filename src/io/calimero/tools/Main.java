@@ -461,6 +461,12 @@ final class Main
 		return printSecureOptions(true);
 	}
 
+	static void showToolInfo(final String tool, final String desc) {
+		out(clr().action(tool) + " - " + clr().metadata(desc));
+		Main.showVersion();
+		Main.notice("Use --help for usage information.");
+	}
+
 	static KNXNetworkLink newLink(final Map<String, Object> options) throws KNXException, InterruptedException {
 		@SuppressWarnings("resource")
 		final var link = new Connector().reconnectOn(false, true, true)

@@ -232,10 +232,8 @@ public class DatapointImporter implements Runnable {
 	}
 
 	private static void showToolInfo() {
-		final var name = MethodHandles.lookup().lookupClass().getSimpleName();
-		out(name + " - Import datapoints from a KNX project (.knxproj) or group addresses file (.xml|.csv)");
-		Main.showVersion();
-		out("Use --help for help message");
+		Main.showToolInfo(MethodHandles.lookup().lookupClass().getSimpleName(),
+				"Import datapoints from a KNX project (.knxproj) or group addresses file (.xml|.csv)");
 	}
 
 	private static void showUsage() {

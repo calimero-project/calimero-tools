@@ -227,9 +227,7 @@ public class Property implements Runnable
 		boolean canceled = false;
 		try {
 			if (options.isEmpty()) {
-				out(tool + " - Access KNX properties");
-				Main.showVersion();
-				Main.notice("Use --help for usage information.");
+				Main.showToolInfo(tool, "Access KNX properties");
 				return;
 			}
 			if (options.containsKey("about")) {

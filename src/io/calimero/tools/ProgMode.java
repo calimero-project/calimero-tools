@@ -323,11 +323,8 @@ public class ProgMode implements Runnable
 		Main.setDomainAddress(options);
 	}
 
-	private static void showToolInfo()
-	{
-		out(tool + " - Check/set device(s) in programming mode");
-		Main.showVersion();
-		Main.notice("Use --help for usage information.");
+	private static void showToolInfo() {
+		Main.showToolInfo(tool, "Check/set device(s) in programming mode");
 	}
 
 	private static void showUsage()

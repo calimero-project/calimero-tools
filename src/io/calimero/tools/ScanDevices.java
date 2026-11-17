@@ -156,9 +156,7 @@ public class ScanDevices implements Runnable
 		boolean canceled = false;
 		try {
 			if (options.isEmpty()) {
-				out(tool + " - Determine existing KNX devices on a KNX subnetwork");
-				Main.showVersion();
-				Main.notice("Use --help for usage information.");
+				Main.showToolInfo(tool, "Determine existing KNX devices on a KNX subnetwork");
 				return;
 			}
 			if (options.containsKey("about")) {

@@ -152,9 +152,7 @@ public class Memory implements Runnable {
 
 		try {
 			if (options.isEmpty()) {
-				out(tool + " - Access KNX device memory");
-				Main.showVersion();
-				Main.notice("Use --help for usage information.");
+				Main.showToolInfo(tool, "Access KNX device memory");
 				return;
 			}
 			if (options.containsKey("about")) {

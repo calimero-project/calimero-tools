@@ -266,11 +266,8 @@ public class Discover implements Runnable
 			}
 			else if (options.containsKey("host"))
 				description();
-			else {
-				out(tool + " - KNXnet/IP server discovery & self-description");
-				Main.showVersion();
-				Main.notice("Use --help for usage information.");
-			}
+			else
+				Main.showToolInfo(tool, "KNXnet/IP server discovery & self-description");
 		}
 		catch (final KNXException | RuntimeException e) {
 			thrown = e;

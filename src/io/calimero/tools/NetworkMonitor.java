@@ -259,9 +259,7 @@ public class NetworkMonitor implements Runnable
 	public void start() throws KNXException, InterruptedException
 	{
 		if (options.isEmpty()) {
-			out(tool + " - Monitor a KNX network (passive busmonitor mode)");
-			Main.showVersion();
-			Main.notice("Use --help for usage information.");
+			Main.showToolInfo(tool, "Monitor a KNX network (passive busmonitor mode)");
 			return;
 		}
 		if (options.containsKey("about")) {
