@@ -134,7 +134,7 @@ public class DatapointImporter implements Runnable {
 			}
 		}
 		catch (IOException | KNXMLException e) {
-			out().log(Level.ERROR, "error importing '" + input + "'", e);
+			Main.err("error importing '" + input + "'", e);
 		}
 		finally {
 			Arrays.fill(projectPwd, ' ');
@@ -150,7 +150,7 @@ public class DatapointImporter implements Runnable {
 		if (project.encrypted()) {
 			final var pwd = projectPassword();
 			if (pwd.isEmpty()) {
-				System.err.println("project file is encrypted, password required!");
+				Main.err("project file is encrypted, password required!");
 				return List.of();
 			}
 			project.decrypt(pwd.orElseThrow());
@@ -242,10 +242,10 @@ public class DatapointImporter implements Runnable {
 				Usage: %s [options] <project.knxproj or group addresses file [.xml|.csv]> [<output file (xml)>]
 				       if no output file is specified, imported datapoints are written to standard output
 				Options:
-				  -h --help                  show this help and exit
-				  --version                  show tool/library version and exit
 				  --pwd                      password for encrypted KNX projects
-				  --freestyle                use unformatted KNX address presentation in the output"""
+				  --freestyle                use unformatted KNX address presentation in the output
+				  -h --help                  show this help
+				  --version                  show version and exit"""
 				.formatted(name);
 		out(usage);
 	}

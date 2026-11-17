@@ -234,19 +234,15 @@ final class Main
 		joiner.add("Supported commands (always safe without further options, use -h for help):");
 		final int maxLength = tools.stream().mapToInt(cmd -> cmd.name().length()).max().orElseThrow();
 		for (final var tool : tools) {
-			joiner.add(clr().action(String.format("%-" + maxLength + "s", tool.name()))
+			joiner.add(clr().value(String.format("%-" + maxLength + "s", tool.name()))
 					+ " - " + clr().metadata(tool.description()));
 		}
 		out(joiner);
 	}
 
 	static void showVersion() {
-		out(Manifest.buildInfo(Main.class));
+		out(clr().text(Manifest.buildInfo(Main.class).toString()));
 	}
-
-	//
-	// Utility methods used by the various tools
-	//
 
 	private static final Map<Integer, String> manufacturer;
 	static {
