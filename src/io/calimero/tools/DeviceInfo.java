@@ -612,6 +612,8 @@ public class DeviceInfo implements Runnable
 	private void deviceDescriptorResult() {
 		if (dd instanceof final DD0 dd0) {
 			putResult(CommonParameter.DeviceDescriptor, dd0.toString(), dd0.maskVersion());
+			if (dd0 == DD0.Invalid)
+				return;
 			putResult(CommonParameter.KnxMedium, toMediumTypeString(dd0.mediumType()), dd0.mediumType());
 			putResult(CommonParameter.FirmwareType, toFirmwareTypeString(dd0.firmwareType()), dd0.firmwareType());
 			putResult(CommonParameter.FirmwareVersion, "" + dd0.firmwareVersion(), dd0.firmwareVersion());
